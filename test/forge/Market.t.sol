@@ -11,6 +11,8 @@ import {OracleMock as Oracle} from "src/mocks/OracleMock.sol";
 contract MarketTest is Test {
     using MathLib for uint;
 
+    address private constant borrower = address(1234);
+
     Market private market;
     ERC20 private borrowableAsset;
     ERC20 private collateralAsset;
@@ -29,8 +31,17 @@ contract MarketTest is Test {
             address(collateralOracle)
         );
 
+        // We set the price of the borrowable asset to zero so that borrowers
+        // don't need to deposit any collateral.
         borrowableOracle.setPrice(0);
         collateralOracle.setPrice(1e18);
+
+        borrowableAsset.approve(address(market), type(uint).max);
+        collateralAsset.approve(address(market), type(uint).max);
+        vm.startPrank(borrower);
+        borrowableAsset.approve(address(market), type(uint).max);
+        collateralAsset.approve(address(market), type(uint).max);
+        vm.stopPrank();
     }
 
     function invariantParams() public {
@@ -54,264 +65,189 @@ contract MarketTest is Test {
         assertGe(borrowableAsset.balanceOf(address(market)), expectedMinimumBalance);
     }
 
-    function testDeposit(address user, uint amount, uint maxLLTV) public {
+    function testDeposit(uint amount, uint bucket) public {
         amount = bound(amount, 1, 2 ** 64);
-        vm.assume(user != address(market));
-        vm.assume(maxLLTV < N);
+        vm.assume(bucket < N);
 
-        borrowableAsset.setBalance(user, amount);
+        borrowableAsset.setBalance(address(this), amount);
+        market.modifyDeposit(int(amount), bucket);
 
-        vm.startPrank(user);
-        borrowableAsset.approve(address(market), type(uint).max);
-        market.modifyDeposit(int(amount), maxLLTV);
-        vm.stopPrank();
-
-        assertEq(market.supplyShare(user, maxLLTV), 1e18, "supply balance user");
-        assertEq(borrowableAsset.balanceOf(user), 0, "token balance user");
-        assertEq(borrowableAsset.balanceOf(address(market)), amount, "token balance market");
+        assertEq(market.supplyShare(address(this), bucket), 1e18);
+        assertEq(borrowableAsset.balanceOf(address(this)), 0);
+        assertEq(borrowableAsset.balanceOf(address(market)), amount);
     }
 
-    function testBorrow(address lender, uint maxLLTV, uint amountLent, address borrower, uint amountBorrowed) public {
+    function testBorrow(uint amountLent, uint amountBorrowed, uint bucket) public {
         amountLent = bound(amountLent, 0, 2 ** 64);
         amountBorrowed = bound(amountBorrowed, 0, 2 ** 64);
-        vm.assume(lender != address(market));
-        vm.assume(maxLLTV < N);
+        vm.assume(bucket < N);
 
-        borrowableAsset.setBalance(lender, amountLent);
-
-        vm.startPrank(lender);
-        borrowableAsset.approve(address(market), type(uint).max);
-        market.modifyDeposit(int(amountLent), maxLLTV);
-        vm.stopPrank();
+        borrowableAsset.setBalance(address(this), amountLent);
+        market.modifyDeposit(int(amountLent), bucket);
 
         if (amountBorrowed == 0) {
-            // No need to deposit any collateral as the price of the borrowed asset is 0.
-            market.modifyBorrow(int(amountBorrowed), maxLLTV);
+            market.modifyBorrow(int(amountBorrowed), bucket);
             return;
         }
 
         if (amountBorrowed > amountLent) {
             vm.prank(borrower);
             vm.expectRevert("not enough liquidity");
-            // No need to deposit any collateral as the price of the borrowed asset is 0.
-            market.modifyBorrow(int(amountBorrowed), maxLLTV);
+            market.modifyBorrow(int(amountBorrowed), bucket);
             return;
         }
 
         vm.prank(borrower);
-        // No need to deposit any collateral as the price of the borrowed asset is 0.
-        market.modifyBorrow(int(amountBorrowed), maxLLTV);
+        market.modifyBorrow(int(amountBorrowed), bucket);
 
-        assertEq(market.borrowShare(borrower, maxLLTV), 1e18, "borrow balance borrower");
-        assertEq(borrowableAsset.balanceOf(borrower), amountBorrowed, "token balance borrower");
-        assertEq(borrowableAsset.balanceOf(address(market)), amountLent - amountBorrowed, "token balance market");
+        assertEq(market.borrowShare(borrower, bucket), 1e18);
+        assertEq(borrowableAsset.balanceOf(borrower), amountBorrowed);
+        assertEq(borrowableAsset.balanceOf(address(market)), amountLent - amountBorrowed);
     }
 
-    function testWithdraw(
-        address lender,
-        uint maxLLTV,
-        uint amountLent,
-        uint amountWithdrawn,
-        address borrower,
-        uint amountBorrowed
-    ) public {
+    function testWithdraw(uint amountLent, uint amountWithdrawn, uint amountBorrowed, uint bucket) public {
         amountLent = bound(amountLent, 1, 2 ** 64);
-        vm.assume(lender != address(market));
-        vm.assume(lender != borrower);
-        vm.assume(maxLLTV < N);
+        vm.assume(bucket < N);
         vm.assume(amountLent >= amountBorrowed);
         vm.assume(int(amountWithdrawn) >= 0);
 
-        borrowableAsset.setBalance(lender, amountLent);
+        borrowableAsset.setBalance(address(this), amountLent);
+        market.modifyDeposit(int(amountLent), bucket);
 
-        vm.startPrank(lender);
-        borrowableAsset.approve(address(market), type(uint).max);
-        market.modifyDeposit(int(amountLent), maxLLTV);
-        vm.stopPrank();
-
-        vm.startPrank(borrower);
-        market.modifyBorrow(int(amountBorrowed), maxLLTV);
-        vm.stopPrank();
+        vm.prank(borrower);
+        market.modifyBorrow(int(amountBorrowed), bucket);
 
         // Should revert because not enough liquidity.
         if (amountWithdrawn > amountLent - amountBorrowed) {
-            vm.prank(lender);
             vm.expectRevert();
-            market.modifyDeposit(-int(amountWithdrawn), maxLLTV);
+            market.modifyDeposit(-int(amountWithdrawn), bucket);
             return;
         }
 
-        vm.prank(lender);
-        market.modifyDeposit(-int(amountWithdrawn), maxLLTV);
+        market.modifyDeposit(-int(amountWithdrawn), bucket);
 
         assertApproxEqAbs(
-            market.supplyShare(lender, maxLLTV),
-            (amountLent - amountWithdrawn) * 1e18 / amountLent,
-            1e3,
-            "supply balance lender"
+            market.supplyShare(address(this), bucket), (amountLent - amountWithdrawn) * 1e18 / amountLent, 1e3
         );
-        assertEq(borrowableAsset.balanceOf(lender), amountWithdrawn, "token balance lender");
-        assertEq(
-            borrowableAsset.balanceOf(address(market)),
-            amountLent - amountBorrowed - amountWithdrawn,
-            "token balance market"
-        );
+        assertEq(borrowableAsset.balanceOf(address(this)), amountWithdrawn);
+        assertEq(borrowableAsset.balanceOf(address(market)), amountLent - amountBorrowed - amountWithdrawn);
     }
 
     function testCollateralRequirements(
-        address lender,
-        address borrower,
         uint amountCollateral,
         uint amountBorrowed,
         uint priceCollateral,
-        uint priceBorrowable
+        uint priceBorrowable,
+        uint bucket
     ) public {
-        vm.assume(lender != address(market));
-        vm.assume(borrower != address(market));
-        vm.assume(lender != borrower);
         amountBorrowed = bound(amountBorrowed, 0, 2 ** 64);
-        priceBorrowable = bound(priceBorrowable, 1, 2 ** 64);
+        priceBorrowable = bound(priceBorrowable, 0, 2 ** 64);
         amountCollateral = bound(amountCollateral, 0, 2 ** 64);
-        priceCollateral = bound(priceCollateral, 1, 2 ** 64);
+        priceCollateral = bound(priceCollateral, 0, 2 ** 64);
+        vm.assume(bucket < N);
 
         borrowableOracle.setPrice(priceBorrowable);
         collateralOracle.setPrice(priceCollateral);
 
-        borrowableAsset.setBalance(lender, amountBorrowed);
+        borrowableAsset.setBalance(address(this), amountBorrowed);
         collateralAsset.setBalance(borrower, amountCollateral);
 
-        vm.startPrank(lender);
-        borrowableAsset.approve(address(market), type(uint).max);
-        market.modifyDeposit(int(amountBorrowed), 1);
-        vm.stopPrank();
+        market.modifyDeposit(int(amountBorrowed), bucket);
 
-        vm.startPrank(borrower);
-        collateralAsset.approve(address(market), type(uint).max);
-        market.modifyCollateral(int(amountCollateral), 1);
-        vm.stopPrank();
+        vm.prank(borrower);
+        market.modifyCollateral(int(amountCollateral), bucket);
 
         uint collateralValue = amountCollateral.wMul(priceCollateral);
         uint borrowValue = amountBorrowed.wMul(priceBorrowable);
-        if (borrowValue == 0 || (collateralValue > 0 && borrowValue <= collateralValue.wMul(bucketToLLTV(1)))) {
+        if (borrowValue == 0 || (collateralValue > 0 && borrowValue <= collateralValue.wMul(bucketToLLTV(bucket)))) {
             vm.prank(borrower);
-            market.modifyBorrow(int(amountBorrowed), 1);
+            market.modifyBorrow(int(amountBorrowed), bucket);
         } else {
             vm.prank(borrower);
             vm.expectRevert("not enough collateral");
-            market.modifyBorrow(int(amountBorrowed), 1);
+            market.modifyBorrow(int(amountBorrowed), bucket);
         }
     }
 
-    function testRepay(
-        address lender,
-        uint maxLLTV,
-        uint amountLent,
-        address borrower,
-        uint amountBorrowed,
-        uint amountRepaid
-    ) public {
+    function testRepay(uint amountLent, uint amountBorrowed, uint amountRepaid, uint bucket) public {
         amountLent = bound(amountLent, 1, 2 ** 64);
         amountBorrowed = bound(amountBorrowed, 1, amountLent);
         amountRepaid = bound(amountRepaid, 0, amountBorrowed);
-        vm.assume(lender != address(market));
-        vm.assume(lender != borrower);
-        vm.assume(maxLLTV < N);
+        vm.assume(bucket < N);
 
-        borrowableAsset.setBalance(lender, amountLent);
-
-        vm.startPrank(lender);
-        borrowableAsset.approve(address(market), type(uint).max);
-        market.modifyDeposit(int(amountLent), maxLLTV);
-        vm.stopPrank();
+        borrowableAsset.setBalance(address(this), amountLent);
+        market.modifyDeposit(int(amountLent), bucket);
 
         vm.startPrank(borrower);
-        market.modifyBorrow(int(amountBorrowed), maxLLTV);
-        borrowableAsset.approve(address(market), type(uint).max);
-        market.modifyBorrow(-int(amountRepaid), maxLLTV);
+        market.modifyBorrow(int(amountBorrowed), bucket);
+        market.modifyBorrow(-int(amountRepaid), bucket);
         vm.stopPrank();
 
         assertApproxEqAbs(
-            market.borrowShare(borrower, maxLLTV),
-            (amountBorrowed - amountRepaid) * 1e18 / amountBorrowed,
-            1e3,
-            "borrow balance borrower"
+            market.borrowShare(borrower, bucket), (amountBorrowed - amountRepaid) * 1e18 / amountBorrowed, 1e3
         );
-        assertEq(borrowableAsset.balanceOf(borrower), amountBorrowed - amountRepaid, "token balance borrower");
-        assertEq(
-            borrowableAsset.balanceOf(address(market)),
-            amountLent - amountBorrowed + amountRepaid,
-            "token balance market"
-        );
+        assertEq(borrowableAsset.balanceOf(borrower), amountBorrowed - amountRepaid);
+        assertEq(borrowableAsset.balanceOf(address(market)), amountLent - amountBorrowed + amountRepaid);
     }
 
-    function testDepositCollateral(address user, uint amount, uint lLTV) public {
-        vm.assume(lLTV < N);
-
-        collateralAsset.setBalance(user, amount);
+    function testDepositCollateral(uint amount, uint bucket) public {
+        vm.assume(bucket < N);
         vm.assume(int(amount) >= 0);
-        vm.assume(user != address(market));
 
-        vm.startPrank(user);
-        collateralAsset.approve(address(market), type(uint).max);
-        market.modifyCollateral(int(amount), lLTV);
-        vm.stopPrank();
+        collateralAsset.setBalance(address(this), amount);
+        market.modifyCollateral(int(amount), bucket);
 
-        assertEq(market.collateral(user, lLTV), amount);
-        assertEq(collateralAsset.balanceOf(user), 0);
+        assertEq(market.collateral(address(this), bucket), amount);
+        assertEq(collateralAsset.balanceOf(address(this)), 0);
         assertEq(collateralAsset.balanceOf(address(market)), amount);
     }
 
-    function testWithdrawCollateral(address user, uint amountDeposited, uint amountWithdrawn, uint lLTV) public {
-        vm.assume(lLTV < N);
+    function testWithdrawCollateral(uint amountDeposited, uint amountWithdrawn, uint bucket) public {
+        vm.assume(bucket < N);
 
         vm.assume(amountDeposited >= amountWithdrawn);
         vm.assume(int(amountDeposited) >= 0);
-        vm.assume(user != address(market));
 
-        collateralAsset.setBalance(user, amountDeposited);
+        collateralAsset.setBalance(address(this), amountDeposited);
+        market.modifyCollateral(int(amountDeposited), bucket);
+        market.modifyCollateral(-int(amountWithdrawn), bucket);
 
-        vm.startPrank(user);
-        collateralAsset.approve(address(market), type(uint).max);
-        market.modifyCollateral(int(amountDeposited), lLTV);
-        vm.stopPrank();
-
-        vm.prank(user);
-        market.modifyCollateral(-int(amountWithdrawn), lLTV);
-
-        assertEq(market.collateral(user, lLTV), amountDeposited - amountWithdrawn);
-        assertEq(collateralAsset.balanceOf(user), amountWithdrawn);
+        assertEq(market.collateral(address(this), bucket), amountDeposited - amountWithdrawn);
+        assertEq(collateralAsset.balanceOf(address(this)), amountWithdrawn);
         assertEq(collateralAsset.balanceOf(address(market)), amountDeposited - amountWithdrawn);
     }
 
-    function testTwoUsersSupply(
-        address firstUser,
-        uint firstAmount,
-        uint maxLLTV,
-        address secondUser,
-        uint secondAmount
-    ) public {
-        vm.assume(firstUser != secondUser);
-        vm.assume(firstUser != address(market));
-        vm.assume(secondUser != address(market));
-        vm.assume(maxLLTV < N);
+    function testTwoUsersSupply(uint firstAmount, uint secondAmount, uint bucket) public {
+        vm.assume(bucket < N);
         firstAmount = bound(firstAmount, 1, 2 ** 64);
         secondAmount = bound(secondAmount, 0, 2 ** 64);
 
-        borrowableAsset.setBalance(firstUser, firstAmount);
-        vm.startPrank(firstUser);
-        borrowableAsset.approve(address(market), type(uint).max);
-        market.modifyDeposit(int(firstAmount), maxLLTV);
-        vm.stopPrank();
+        borrowableAsset.setBalance(address(this), firstAmount);
+        market.modifyDeposit(int(firstAmount), bucket);
 
-        borrowableAsset.setBalance(secondUser, secondAmount);
-        vm.startPrank(secondUser);
-        borrowableAsset.approve(address(market), type(uint).max);
-        market.modifyDeposit(int(secondAmount), maxLLTV);
-        vm.stopPrank();
+        borrowableAsset.setBalance(borrower, secondAmount);
+        vm.prank(borrower);
+        market.modifyDeposit(int(secondAmount), bucket);
 
-        assertEq(market.supplyShare(firstUser, maxLLTV), 1e18, "first user supply balance");
-        assertEq(
-            market.supplyShare(secondUser, maxLLTV), secondAmount * 1e18 / firstAmount, "second user supply balance"
-        );
+        assertEq(market.supplyShare(address(this), bucket), 1e18);
+        assertEq(market.supplyShare(borrower, bucket), secondAmount * 1e18 / firstAmount);
+    }
+
+    function testModifyDepositUnknownBucket(uint bucket) public {
+        vm.assume(bucket > N);
+        vm.expectRevert("unknown bucket");
+        market.modifyDeposit(1, bucket);
+    }
+
+    function testModifyBorrowUnknownBucket(uint bucket) public {
+        vm.assume(bucket > N);
+        vm.expectRevert("unknown bucket");
+        market.modifyBorrow(1, bucket);
+    }
+
+    function testModifyCollateralUnknownBucket(uint bucket) public {
+        vm.assume(bucket > N);
+        vm.expectRevert("unknown bucket");
+        market.modifyCollateral(1, bucket);
     }
 }
