@@ -187,12 +187,12 @@ contract MarketTest is Test {
 
         vm.startPrank(borrower);
         collateralAsset.approve(address(market), type(uint).max);
-        market.modifyCollateral(int(amountCollateral));
+        market.modifyCollateral(int(amountCollateral), 1);
         vm.stopPrank();
 
         uint collateralValue = amountCollateral.wMul(priceCollateral);
         uint borrowValue = amountBorrowed.wMul(priceBorrowable);
-        if (borrowValue == 0 || (collateralValue > 0 && borrowValue.wDiv(bucketToLLTV(1)) <= collateralValue)) {
+        if (borrowValue == 0 || (collateralValue > 0 && borrowValue <= collateralValue.wMul(bucketToLLTV(1)))) {
             vm.prank(borrower);
             market.modifyBorrow(int(amountBorrowed), 1);
         } else {
@@ -244,22 +244,26 @@ contract MarketTest is Test {
         );
     }
 
-    function testDepositCollateral(address user, uint amount) public {
+    function testDepositCollateral(address user, uint amount, uint lLTV) public {
+        vm.assume(lLTV < N);
+
         collateralAsset.setBalance(user, amount);
         vm.assume(int(amount) >= 0);
         vm.assume(user != address(market));
 
         vm.startPrank(user);
         collateralAsset.approve(address(market), type(uint).max);
-        market.modifyCollateral(int(amount));
+        market.modifyCollateral(int(amount), lLTV);
         vm.stopPrank();
 
-        assertEq(market.collateral(user), amount);
+        assertEq(market.collateral(user, lLTV), amount);
         assertEq(collateralAsset.balanceOf(user), 0);
         assertEq(collateralAsset.balanceOf(address(market)), amount);
     }
 
-    function testWithdrawCollateral(address user, uint amountDeposited, uint amountWithdrawn) public {
+    function testWithdrawCollateral(address user, uint amountDeposited, uint amountWithdrawn, uint lLTV) public {
+        vm.assume(lLTV < N);
+
         vm.assume(amountDeposited >= amountWithdrawn);
         vm.assume(int(amountDeposited) >= 0);
         vm.assume(user != address(market));
@@ -268,13 +272,13 @@ contract MarketTest is Test {
 
         vm.startPrank(user);
         collateralAsset.approve(address(market), type(uint).max);
-        market.modifyCollateral(int(amountDeposited));
+        market.modifyCollateral(int(amountDeposited), lLTV);
         vm.stopPrank();
 
         vm.prank(user);
-        market.modifyCollateral(-int(amountWithdrawn));
+        market.modifyCollateral(-int(amountWithdrawn), lLTV);
 
-        assertEq(market.collateral(user), amountDeposited - amountWithdrawn);
+        assertEq(market.collateral(user, lLTV), amountDeposited - amountWithdrawn);
         assertEq(collateralAsset.balanceOf(user), amountWithdrawn);
         assertEq(collateralAsset.balanceOf(address(market)), amountDeposited - amountWithdrawn);
     }

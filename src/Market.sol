@@ -40,7 +40,7 @@ contract Market {
     // User' borrow balances.
     mapping(address => mapping(uint => uint)) public borrowShare;
     // User' collateral balance.
-    mapping(address => uint) public collateral;
+    mapping(address => mapping(uint => uint)) public collateral;
     // Market total supply.
     mapping(uint => uint) public totalSupply;
     // Market total supply shares.
@@ -114,7 +114,7 @@ contract Market {
         totalBorrow[bucket] = uint(int(totalBorrow[bucket]) + amount);
 
         if (amount > 0) {
-            checkHealth(msg.sender);
+            checkHealth(msg.sender, bucket);
             require(totalBorrow[bucket] <= totalSupply[bucket], "not enough liquidity");
         }
 
@@ -122,10 +122,15 @@ contract Market {
     }
 
     /// @dev positive amount to deposit.
-    function modifyCollateral(int amount) external {
-        collateral[msg.sender] = (int(collateral[msg.sender]) + amount).safeToUint();
+    function modifyCollateral(int amount, uint bucket) external {
+        if (amount == 0) return;
+        require(bucket < N, "unknown bucket");
 
-        if (amount < 0) checkHealth(msg.sender);
+        accrueInterests(bucket);
+
+        collateral[msg.sender][bucket] = (int(collateral[msg.sender][bucket]) + amount).safeToUint();
+
+        if (amount < 0) checkHealth(msg.sender, bucket);
 
         IERC20(collateralAsset).handleTransfer({user: msg.sender, amountIn: amount});
     }
@@ -147,20 +152,13 @@ contract Market {
 
     // Health check.
 
-    function checkHealth(address user) public view {
-        // Temporary trick to ease testing.
-        if (IOracle(borrowableOracle).price() == 0) return;
-        uint collateralValueRequired;
-        for (uint bucket = 1; bucket < N; bucket++) {
-            if (totalBorrowShares[bucket] > 0 && borrowShare[user][bucket] > 0) {
-                uint borrowAtBucket =
-                    borrowShare[user][bucket].wMul(totalBorrow[bucket]).wDiv(totalBorrowShares[bucket]);
-                collateralValueRequired +=
-                    borrowAtBucket.wMul(IOracle(borrowableOracle).price()).wDiv(bucketToLLTV(bucket));
-            }
+    function checkHealth(address user, uint bucket) public view {
+        if (totalBorrowShares[bucket] > 0 && borrowShare[user][bucket] > 0) {
+            uint borrowValue = borrowShare[user][bucket].wMul(totalBorrow[bucket]).wDiv(totalBorrowShares[bucket]).wMul(
+                IOracle(borrowableOracle).price()
+            );
+            uint collateralValue = collateral[user][bucket].wMul(IOracle(collateralOracle).price());
+            require(collateralValue.wMul(bucketToLLTV(bucket)) >= borrowValue, "not enough collateral");
         }
-        require(
-            collateral[user].wMul(IOracle(collateralOracle).price()) >= collateralValueRequired, "not enough collateral"
-        );
     }
 }

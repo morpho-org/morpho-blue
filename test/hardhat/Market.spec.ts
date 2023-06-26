@@ -80,10 +80,10 @@ describe("Market", () => {
         let liq = BigNumber.from(totalSupply).sub(BigNumber.from(totalBorrow));
         amount = BigNumber.min(amount, BigNumber.from(liq).div(2));
 
-        await market.connect(user).modifyCollateral(amount);
+        await market.connect(user).modifyCollateral(amount, bucket);
         await market.connect(user).modifyBorrow(amount.div(2), bucket);
         await market.connect(user).modifyBorrow(amount.div(4).mul(-1), bucket);
-        await market.connect(user).modifyCollateral(amount.div(8).mul(-1));
+        await market.connect(user).modifyCollateral(amount.div(8).mul(-1), bucket);
       }
     }
   });
