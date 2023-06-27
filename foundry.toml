@@ -4,6 +4,13 @@ out = "out"
 libs = ["lib"]
 via-ir = true
 
+[fuzz]
+runs = 2048
+
+[invariant]
+runs = 2048
+depth = 32
+
 [fmt]
 int_types = "short"
 

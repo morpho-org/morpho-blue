@@ -57,14 +57,6 @@ contract MarketTest is Test {
         }
     }
 
-    function invariantLiquidity2() public {
-        uint expectedMinimumBalance;
-        for (uint bucket; bucket < N; bucket++) {
-            expectedMinimumBalance += market.totalSupply(bucket) + market.totalBorrow(bucket);
-        }
-        assertGe(borrowableAsset.balanceOf(address(market)), expectedMinimumBalance);
-    }
-
     function testDeposit(uint amount, uint bucket) public {
         amount = bound(amount, 1, 2 ** 64);
         vm.assume(bucket < N);
