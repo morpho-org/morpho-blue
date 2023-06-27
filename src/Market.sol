@@ -156,22 +156,26 @@ contract Market {
             sumBorrow += borrow;
         }
 
-        IERC20(borrowableAsset).handleTransfer(msg.sender, -sumBorrow);
         IERC20(collateralAsset).handleTransfer(msg.sender, sumCollat);
+        IERC20(borrowableAsset).handleTransfer(msg.sender, -sumBorrow);
     }
 
+    /// @return collat The negative amount of collateral added.
+    /// @return borrow The negative amount of borrow added.
     function liquidate(address borrower, uint bucket, uint maxCollat) internal returns (int collat, int borrow) {
+        if (maxCollat == 0) return (0, 0);
+        require(bucket < N, "unknown bucket");
+
         accrueInterests(bucket);
 
-        uint bucketLLTV = bucketToLLTV(bucket);
         require(!isHealthy(borrower, bucket), "cannot liquidate a healthy position");
 
-        uint incentive = WAD + alpha.wMul(WAD.wDiv(bucketLLTV) - WAD);
-        uint borrowablePrice = IOracle(borrowableOracle).price();
-        uint collateralPrice = IOracle(collateralOracle).price();
+        uint incentive = WAD + alpha.wMul(WAD.wDiv(bucketToLLTV(bucket)) - WAD);
+        uint borrowPrice = IOracle(borrowableOracle).price();
+        uint collatPrice = IOracle(collateralOracle).price();
         // Safe to cast because it's smaller than collateral[borrower][bucket]
         collat = -int(maxCollat.min(collateral[borrower][bucket]));
-        borrow = collat.wMul(collateralPrice).wDiv(incentive).wDiv(borrowablePrice);
+        borrow = collat.wMul(collatPrice).wDiv(incentive).wDiv(borrowPrice);
 
         int shares = borrow.wMul(totalBorrowShares[bucket]).wDiv(totalBorrow[bucket]);
         borrowShare[borrower][bucket] = (int(borrowShare[borrower][bucket]) + shares).safeToUint();
