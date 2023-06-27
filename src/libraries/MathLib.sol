@@ -5,24 +5,24 @@ pragma solidity ^0.8.0;
 library MathLib {
     uint internal constant WAD = 1e18;
 
-    /// @dev Rounds down.
+    /// @dev Rounds towards zero.
     function wMul(uint x, uint y) internal pure returns (uint z) {
-        z = x * y / WAD;
+        z = (x * y) / WAD;
     }
 
-    /// @dev Rounds down.
+    /// @dev Rounds towards zero.
     function wMul(int x, uint y) internal pure returns (int z) {
-        z = x * int(y) / int(WAD);
+        z = (x * int(y)) / int(WAD);
     }
 
-    /// @dev Rounds down.
+    /// @dev Rounds towards zero.
     function wDiv(uint x, uint y) internal pure returns (uint z) {
-        z = x * WAD / y;
+        z = (x * WAD) / y;
     }
 
-    /// @dev Rounds down.
+    /// @dev Rounds towards zero.
     function wDiv(int x, uint y) internal pure returns (int z) {
-        z = x * int(WAD) / int(y);
+        z = (x * int(WAD)) / int(y);
     }
 
     /// @dev Reverts if x is negative.
