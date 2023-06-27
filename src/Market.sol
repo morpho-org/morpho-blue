@@ -50,7 +50,7 @@ contract Market {
     // Market total borrow shares.
     mapping(uint => uint) public totalBorrowShares;
     // Interests last update.
-    uint public lastUpdate;
+    mapping(uint => uint) public lastUpdate;
 
     // Constructor.
 
@@ -143,11 +143,11 @@ contract Market {
         if (bucketTotalSupply == 0) return;
         uint utilization = bucketTotalBorrow.wDiv(bucketTotalSupply);
         uint borrowRate = irm(utilization);
-        uint accruedInterests = bucketTotalBorrow.wMul(borrowRate).wMul(block.timestamp - lastUpdate);
+        uint accruedInterests = bucketTotalBorrow.wMul(borrowRate).wMul(block.timestamp - lastUpdate[bucket]);
 
         totalSupply[bucket] = bucketTotalSupply + accruedInterests;
         totalBorrow[bucket] = bucketTotalBorrow + accruedInterests;
-        lastUpdate = block.timestamp;
+        lastUpdate[bucket] = block.timestamp;
     }
 
     // Health check.
