@@ -29,7 +29,7 @@ library MathLib {
         z = (x * int(WAD)) / int(y);
     }
 
-    /// @dev Reverts if the input is negative.
+    /// @dev Reverts if `x` is negative.
     function safeToUint(int x) internal pure returns (uint z) {
         require(x >= 0);
         z = uint(x);
