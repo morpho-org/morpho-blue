@@ -145,35 +145,33 @@ contract Market {
         uint maxCollat;
     }
 
-    // @dev positive amount to seize.
     function batchLiquidate(Liquidation[] memory liquidations) external {
         int sumCollat;
         int sumBorrow;
 
         for (uint i; i < liquidations.length; i++) {
             Liquidation memory liq = liquidations[i];
-            (int collat, int borrow) = _liquidate(liq.borrower, liq.bucket, liq.maxCollat);
+            (int collat, int borrow) = liquidate(liq.borrower, liq.bucket, liq.maxCollat);
             sumCollat += collat;
             sumBorrow += borrow;
         }
 
-        IERC20(borrowableAsset).handleTransfer(msg.sender, sumBorrow);
+        IERC20(borrowableAsset).handleTransfer(msg.sender, -sumBorrow);
         IERC20(collateralAsset).handleTransfer(msg.sender, sumCollat);
     }
 
-    function _liquidate(address borrower, uint bucket, uint maxCollat) internal returns (int collat, int borrow) {
+    function liquidate(address borrower, uint bucket, uint maxCollat) internal returns (int collat, int borrow) {
         accrueInterests(bucket);
 
         uint bucketLLTV = bucketToLLTV(bucket);
-        require(!isHealthy(borrower, bucket), "Cannot liquidate a healthy position");
+        require(!isHealthy(borrower, bucket), "cannot liquidate a healthy position");
 
         uint incentive = WAD + alpha.wMul(WAD.wDiv(bucketLLTV) - WAD);
         uint borrowablePrice = IOracle(borrowableOracle).price();
         uint collateralPrice = IOracle(collateralOracle).price();
-        maxCollat = maxCollat.min(collateral[borrower][bucket]);
-        // Safe to cast to int because maxCollat <= collateral[borrower][bucket]
-        collat = int(maxCollat);
-        borrow = -(maxCollat.wMul(collateralPrice).wDiv(incentive).wDiv(borrowablePrice)).safeToInt();
+        // Safe to cast because it's smaller than collateral[borrower][bucket]
+        collat = -int(maxCollat.min(collateral[borrower][bucket]));
+        borrow = collat.wMul(collateralPrice).wDiv(incentive).wDiv(borrowablePrice);
 
         int shares = borrow.wMul(totalBorrowShares[bucket]).wDiv(totalBorrow[bucket]);
         borrowShare[borrower][bucket] = (int(borrowShare[borrower][bucket]) + shares).safeToUint();

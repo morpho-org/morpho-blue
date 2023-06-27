@@ -34,10 +34,4 @@ library MathLib {
         require(x >= 0);
         z = uint(x);
     }
-
-    /// @dev Reverts if the result is negative.
-    function safeToInt(uint x) internal pure returns (int z) {
-        z = int(x);
-        require(z >= 0);
-    }
 }
