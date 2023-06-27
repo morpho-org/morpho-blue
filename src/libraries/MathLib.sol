@@ -6,7 +6,7 @@ library MathLib {
     uint internal constant WAD = 1e18;
 
     function min(uint x, uint y) internal pure returns (uint z) {
-        z = x > y ? x : y;
+        z = x < y ? x : y;
     }
 
     /// @dev Rounds towards zero.
