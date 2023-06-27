@@ -10,7 +10,7 @@ import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 uint constant N = 10;
 
 function bucketToLLTV(uint bucket) pure returns (uint) {
-    return MathLib.wDiv(bucket, N - 1);
+    return MathLib.wDiv(bucket + 1, N + 1);
 }
 
 function irm(uint utilization) pure returns (uint) {
@@ -153,7 +153,8 @@ contract Market {
     // Health check.
 
     function checkHealth(address user, uint bucket) public view {
-        if (totalBorrowShares[bucket] > 0 && borrowShare[user][bucket] > 0) {
+        if (borrowShare[user][bucket] > 0) {
+            // totalBorrowShares[bucket] > 0 because borrowShare[user][bucket] > 0.
             uint borrowValue = borrowShare[user][bucket].wMul(totalBorrow[bucket]).wDiv(totalBorrowShares[bucket]).wMul(
                 IOracle(borrowableOracle).price()
             );

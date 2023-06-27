@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {IOracle} from "src/Market.sol";
+import {IOracle} from "src/interfaces/IOracle.sol";
 
 contract OracleMock is IOracle {
     uint public price;

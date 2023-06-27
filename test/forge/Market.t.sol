@@ -117,9 +117,12 @@ contract MarketTest is Test {
         vm.prank(borrower);
         market.modifyBorrow(int(amountBorrowed), bucket);
 
-        // Should revert because not enough liquidity.
         if (amountWithdrawn > amountLent - amountBorrowed) {
-            vm.expectRevert();
+            if (amountWithdrawn > amountLent) {
+                vm.expectRevert();
+            } else {
+                vm.expectRevert("not enough liquidity");
+            }
             market.modifyDeposit(-int(amountWithdrawn), bucket);
             return;
         }
