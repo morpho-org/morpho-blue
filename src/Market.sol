@@ -7,6 +7,10 @@ import {IOracle} from "src/interfaces/IOracle.sol";
 import {MathLib} from "src/libraries/MathLib.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 
+uint constant WAD = 1e18;
+
+uint constant alpha = 0.5e18;
+
 uint constant N = 10;
 
 function bucketToLLTV(uint bucket) pure returns (uint) {
@@ -76,8 +80,8 @@ contract Market {
         accrueInterests(bucket);
 
         if (totalSupply[bucket] == 0) {
-            supplyShare[msg.sender][bucket] = 1e18;
-            totalSupplyShares[bucket] = 1e18;
+            supplyShare[msg.sender][bucket] = WAD;
+            totalSupplyShares[bucket] = WAD;
         } else {
             int shares = amount.wMul(totalSupplyShares[bucket]).wDiv(totalSupply[bucket]);
             supplyShare[msg.sender][bucket] = (int(supplyShare[msg.sender][bucket]) + shares).safeToUint();
@@ -102,8 +106,8 @@ contract Market {
         accrueInterests(bucket);
 
         if (totalBorrow[bucket] == 0) {
-            borrowShare[msg.sender][bucket] = 1e18;
-            totalBorrowShares[bucket] = 1e18;
+            borrowShare[msg.sender][bucket] = WAD;
+            totalBorrowShares[bucket] = WAD;
         } else {
             int shares = amount.wMul(totalBorrowShares[bucket]).wDiv(totalBorrow[bucket]);
             borrowShare[msg.sender][bucket] = (int(borrowShare[msg.sender][bucket]) + shares).safeToUint();
@@ -114,7 +118,7 @@ contract Market {
         totalBorrow[bucket] = uint(int(totalBorrow[bucket]) + amount);
 
         if (amount > 0) {
-            checkHealth(msg.sender, bucket);
+            require(isHealthy(msg.sender, bucket), "not enough collateral");
             require(totalBorrow[bucket] <= totalSupply[bucket], "not enough liquidity");
         }
 
@@ -130,9 +134,52 @@ contract Market {
 
         collateral[msg.sender][bucket] = (int(collateral[msg.sender][bucket]) + amount).safeToUint();
 
-        if (amount < 0) checkHealth(msg.sender, bucket);
+        require(amount > 0 || isHealthy(msg.sender, bucket), "not enough collateral");
 
         IERC20(collateralAsset).handleTransfer({user: msg.sender, amountIn: amount});
+    }
+
+    struct Liquidation {
+        address borrower;
+        uint bucket;
+        uint maxCollat;
+    }
+
+    // @dev positive amount to seize.
+    function batchLiquidate(Liquidation[] memory liquidations) external {
+        int sumCollat;
+        int sumBorrow;
+
+        for (uint i; i < liquidations.length; i++) {
+            Liquidation memory liq = liquidations[i];
+            (int collat, int borrow) = _liquidate(liq.borrower, liq.bucket, liq.maxCollat);
+            sumCollat += collat;
+            sumBorrow += borrow;
+        }
+
+        IERC20(borrowableAsset).handleTransfer(msg.sender, sumBorrow);
+        IERC20(collateralAsset).handleTransfer(msg.sender, sumCollat);
+    }
+
+    function _liquidate(address borrower, uint bucket, uint maxCollat) internal returns (int collat, int borrow) {
+        accrueInterests(bucket);
+
+        uint bucketLLTV = bucketToLLTV(bucket);
+        require(!isHealthy(borrower, bucket), "Cannot liquidate a healthy position");
+
+        uint incentive = WAD + alpha.wMul(WAD.wDiv(bucketLLTV) - WAD);
+        uint borrowablePrice = IOracle(borrowableOracle).price();
+        uint collateralPrice = IOracle(collateralOracle).price();
+        maxCollat = maxCollat.min(collateral[borrower][bucket]);
+        // Safe to cast to int because maxCollat <= collateral[borrower][bucket]
+        collat = int(maxCollat);
+        borrow = -(maxCollat.wMul(collateralPrice).wDiv(incentive).wDiv(borrowablePrice)).safeToInt();
+
+        int shares = borrow.wMul(totalBorrowShares[bucket]).wDiv(totalBorrow[bucket]);
+        borrowShare[borrower][bucket] = (int(borrowShare[borrower][bucket]) + shares).safeToUint();
+        totalBorrowShares[bucket] = (int(totalBorrowShares[bucket]) + shares).safeToUint();
+        totalBorrow[bucket] = (int(totalBorrow[bucket]) + borrow).safeToUint();
+        collateral[borrower][bucket] = (int(collateral[borrower][bucket]) + collat).safeToUint();
     }
 
     // Interests management.
@@ -152,14 +199,15 @@ contract Market {
 
     // Health check.
 
-    function checkHealth(address user, uint bucket) public view {
+    function isHealthy(address user, uint bucket) public view returns (bool) {
         if (borrowShare[user][bucket] > 0) {
             // totalBorrowShares[bucket] > 0 because borrowShare[user][bucket] > 0.
             uint borrowValue = borrowShare[user][bucket].wMul(totalBorrow[bucket]).wDiv(totalBorrowShares[bucket]).wMul(
                 IOracle(borrowableOracle).price()
             );
             uint collateralValue = collateral[user][bucket].wMul(IOracle(collateralOracle).price());
-            require(collateralValue.wMul(bucketToLLTV(bucket)) >= borrowValue, "not enough collateral");
+            return collateralValue.wMul(bucketToLLTV(bucket)) >= borrowValue;
         }
+        return true;
     }
 }

@@ -5,6 +5,10 @@ pragma solidity ^0.8.0;
 library MathLib {
     uint internal constant WAD = 1e18;
 
+    function min(uint x, uint y) internal pure returns (uint z) {
+        z = x > y ? x : y;
+    }
+
     /// @dev Rounds towards zero.
     function wMul(uint x, uint y) internal pure returns (uint z) {
         z = (x * y) / WAD;
@@ -25,9 +29,15 @@ library MathLib {
         z = (x * int(WAD)) / int(y);
     }
 
-    /// @dev Reverts if x is negative.
+    /// @dev Reverts if the input is negative.
     function safeToUint(int x) internal pure returns (uint z) {
         require(x >= 0);
         z = uint(x);
+    }
+
+    /// @dev Reverts if the result is negative.
+    function safeToInt(uint x) internal pure returns (int z) {
+        z = int(x);
+        require(z >= 0);
     }
 }
