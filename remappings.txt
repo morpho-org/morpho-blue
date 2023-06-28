@@ -1,0 +1,6 @@
+src/=src/
+
+@morpho-utils/=lib/morpho-utils/src/
+@solmate/=lib/solmate/src/
+@morpho-data-structures/=lib/morpho-data-structures/src/
+@openzepellin/=lib/openzepellin-contracts/
