@@ -163,6 +163,20 @@ contract Market {
         IERC20(borrowableAsset).handleTransfer(msg.sender, -sumBorrow);
     }
 
+    function naiveBatchLiquidate(Liquidation[] memory liquidationData)
+        external
+        returns (int sumCollat, int sumBorrow)
+    {
+        for (uint i; i < liquidationData.length; i++) {
+            Liquidation memory liq = liquidationData[i];
+            (int collat, int borrow) = liquidate(liq.bucket, liq.borrower, liq.maxCollat);
+            IERC20(collateralAsset).handleTransfer(msg.sender, collat);
+            IERC20(borrowableAsset).handleTransfer(msg.sender, -borrow);
+            sumCollat += collat;
+            sumBorrow += borrow;
+        }
+    }
+
     /// @return collat The negative amount of collateral added.
     /// @return borrow The negative amount of borrow added.
     function liquidate(uint bucket, address borrower, uint maxCollat) internal returns (int collat, int borrow) {
