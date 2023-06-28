@@ -94,6 +94,8 @@ abstract contract BlueInternal is BlueStorage {
         Types.Tranche storage tranche = market.tranches[lltv];
         Types.Position storage position = tranche.positions[_userIdKey(onBehalf, positionId)];
 
+        _accrueCollateral(params, lltv, onBehalf, positionId);
+
         _transfer(params.debtToken, from, address(this), amount);
         _accrue(params, lltv);
 
@@ -117,7 +119,9 @@ abstract contract BlueInternal is BlueStorage {
         Types.Tranche storage tranche = market.tranches[lltv];
         Types.Position storage position = tranche.positions[_userIdKey(onBehalf, positionId)];
 
+        _accrueCollateral(params, lltv, onBehalf, positionId);
         _accrue(params, lltv);
+
         require(tranche.supply.amount - amount >= tranche.debt.amount);
 
         uint256 shares = _assetsToSharesUp(amount, tranche.supply);
@@ -183,7 +187,6 @@ abstract contract BlueInternal is BlueStorage {
     function _liquidate(
         Types.MarketParams calldata params,
         uint256 lltv,
-        uint256 amount,
         address liquidator,
         address liquidatee,
         uint96 positionId
@@ -198,13 +201,19 @@ abstract contract BlueInternal is BlueStorage {
         require(!oracleData.liquidationPaused);
         require(!_liquidityCheck(params, lltv, liquidatee, positionId, oracleData));
 
-        _transfer(params.debtToken, liquidator, address(this), amount);
+        uint256 debtAmount = Math.min(_sharesToAssetsUp(position.debtShares, tranche.debt), tranche.debt.amount);
 
-        liquidated = amount.rayDiv(oracleData.price).rayMul(WadRayMath.RAY + tranche.liquidationBonus);
+        liquidated = position.collateral;
+        position.collateral = 0;
 
-        position.collateral -= liquidated;
+        tranche.supply.amount -= debtAmount;
+        tranche.debt.amount -= debtAmount;
 
-        _transfer(params.collateralToken, address(this), liquidator, liquidated);
+        uint256 liquidatorBonus = liquidated.percentMulDown(tranche.liquidationBonus);
+        uint256 lenderCollateral = liquidated - liquidatorBonus;
+
+        tranche.collateralAccrualIndex += lenderCollateral.rayDiv(tranche.supply.shares);
+        _transfer(params.collateralToken, address(this), liquidator, liquidatorBonus);
     }
 
     function _accrue(Types.MarketParams calldata params, uint256 lltv) internal {
@@ -225,6 +234,19 @@ abstract contract BlueInternal is BlueStorage {
             tranche.positions[market.feeRecipient].supplyShares += feeShares;
             tranche.supply.shares += feeShares;
         }
+    }
+
+    function _accrueCollateral(Types.MarketParams calldata params, uint256 lltv, address user, uint96 positionId)
+        internal
+    {
+        Types.Market storage market = _markets[_marketId(params)];
+        Types.Tranche storage tranche = market.tranches[lltv];
+        Types.Position storage position = tranche.positions[_userIdKey(user, positionId)];
+
+        uint256 collateralAccrual =
+            position.supplyShares.rayMulDown(tranche.collateralAccrualIndex - position.collateralAccrualIndex);
+        position.collateralAccrualIndex = tranche.collateralAccrualIndex;
+        position.collateral += collateralAccrual;
     }
 
     function _transfer(address asset, address from, address to, uint256 amount) internal {

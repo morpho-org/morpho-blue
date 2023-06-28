@@ -22,6 +22,7 @@ library Types {
         Liquidity debt;
         uint256 liquidationBonus;
         uint256 lastUpdateTimestamp;
+        uint256 collateralAccrualIndex;
         mapping(bytes32 positionKey => Position) positions;
     }
 
@@ -34,6 +35,7 @@ library Types {
         uint256 collateral;
         uint256 supplyShares;
         uint256 debtShares;
+        uint256 collateralAccrualIndex;
     }
 
     struct OracleData {

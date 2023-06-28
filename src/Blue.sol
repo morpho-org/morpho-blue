@@ -77,13 +77,11 @@ contract Blue is BlueGetters {
         return _repay(params, lltv, amount, msg.sender, onBehalf, positionId);
     }
 
-    function liquidate(
-        Types.MarketParams calldata params,
-        uint256 lltv,
-        uint256 amount,
-        address liquidatee,
-        uint96 positionId
-    ) external trancheInitialized(params, lltv) returns (uint256 liquidated) {
-        return _liquidate(params, lltv, amount, msg.sender, liquidatee, positionId);
+    function liquidate(Types.MarketParams calldata params, uint256 lltv, address liquidatee, uint96 positionId)
+        external
+        trancheInitialized(params, lltv)
+        returns (uint256 liquidated)
+    {
+        return _liquidate(params, lltv, msg.sender, liquidatee, positionId);
     }
 }
