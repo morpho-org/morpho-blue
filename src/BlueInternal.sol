@@ -37,7 +37,7 @@ abstract contract BlueInternal is BlueStorage {
 
     function _initializeTranche(Types.MarketParams calldata params, uint256 lltv, uint256 liquidationBonus) internal {
         Types.Tranche storage tranche = _markets[_marketId(params)].tranches[lltv];
-        require(tranche.liquidationBonus == 0 && liquidationBonus != 0 && liquidationBonus <= (WadRayMath.RAY - lltv));
+        require(tranche.liquidationBonus == 0 && liquidationBonus != 0 && liquidationBonus <= PercentageMath.PERCENTAGE_FACTOR);
         tranche.liquidationBonus = liquidationBonus;
     }
 
