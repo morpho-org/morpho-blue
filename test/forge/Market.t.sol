@@ -181,7 +181,10 @@ contract MarketTest is Test {
 
         uint collateralValue = amountCollateral.wMul(priceCollateral);
         uint borrowValue = amountBorrowed.wMul(priceBorrowable);
-        if (borrowValue == 0 || (collateralValue > 0 && borrowValue <= collateralValue.wMul(bucketToLLTV(bucket)))) {
+        if (
+            borrowValue == 0
+                || (collateralValue > 0 && borrowValue <= collateralValue.wMul(market.bucketToLLTV(bucket)))
+        ) {
             vm.prank(borrower);
             market.modifyBorrow(int(amountBorrowed), bucket);
         } else {
@@ -251,7 +254,7 @@ contract MarketTest is Test {
         vm.assume(bucket < N);
 
         uint amountCollateral = amountLent;
-        uint lLTV = bucketToLLTV(bucket);
+        uint lLTV = market.bucketToLLTV(bucket);
         uint borrowingPower = amountCollateral.wMul(lLTV);
         uint amountBorrowed = borrowingPower.wMul(0.8e18);
         uint maxCollat = amountCollateral.wMul(lLTV);
