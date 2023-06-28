@@ -21,7 +21,7 @@ library BadDebtAccounting {
     /// @notice Computes the bad debt of a user and puts his position on the threshold of liquidation.
     /// @notice Reduces the supply index to take into account the bad debt for suppliers.
     function computeBadDebt(Types.Market storage market, address user) internal {
-        (uint256 debt, uint256 avgLltv) = HealthFactor.computeDebtAndAvgLltv(market, user, 0, 0);
+        (uint256 debt,) = HealthFactor.computeDebtAndAvgLltv(market, user, 0, 0);
 
         uint256 collateralBalance = market.collateralBalance[user];
         (,, uint256 borrowUnit, uint256 borrowPrice) = HealthFactor.assetData(market);
@@ -40,10 +40,6 @@ library BadDebtAccounting {
         while (i >= 0) {
             tranche = borrowerLltvMap[length - i];
             borrowBalance = market.borrowBalance[user][tranche].rayMul(market.tranches[tranche].borrowIndex);
-            if (debt > borrowBalance) {
-                avgLltv = (avgLltv - HealthFactor.getLiquidationLtv(tranche) / debt)
-                    * (debt / debt.zeroFloorSub(borrowBalance));
-            }
 
             if (
                 collateralValue.wadDivDown(WadRayMath.WAD + HealthFactor.getLiquidationBonus(tranche))
