@@ -37,7 +37,7 @@ library BadDebtAccounting {
         uint256 length = borrowerLltvMap.length;
         uint256 tranche;
         uint256 borrowBalance;
-        while (i >= 0) {
+        while (i < length) {
             tranche = borrowerLltvMap[length - i];
             borrowBalance = market.borrowBalance[user][tranche].rayMul(market.tranches[tranche].borrowIndex);
 
@@ -45,13 +45,18 @@ library BadDebtAccounting {
                 collateralValue.wadDivDown(WadRayMath.WAD + HealthFactor.getLiquidationBonus(tranche))
                     > (debt.zeroFloorSub(borrowBalance)) * borrowPrice / borrowUnit
             ) {
-                i = length;
+                i = length + 1;
+                borrowBalance = debt
+                    - (collateralValue.wadDivDown(WadRayMath.WAD + HealthFactor.getLiquidationBonus(tranche)) * borrowUnit)
+                        / borrowPrice;
+                updateMarketTranche(market, borrowBalance, tranche);
+                market.borrowBalance[user][tranche] -= borrowBalance.rayDiv(market.tranches[tranche].borrowIndex);
+            } else {
+                debt -= borrowBalance;
+                updateMarketTranche(market, borrowBalance, tranche);
+                market.borrowBalance[user][tranche] = 0;
+                ++i;
             }
-
-            debt -= borrowBalance;
-            updateMarketTranche(market, borrowBalance, tranche);
-            market.borrowBalance[user][tranche] = 0;
-            ++i;
         }
     }
 
