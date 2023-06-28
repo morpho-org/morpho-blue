@@ -7,6 +7,8 @@ import {IOracle} from "src/interfaces/IOracle.sol";
 import {MathLib} from "src/libraries/MathLib.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 
+import "forge-std/console.sol";
+
 uint constant WAD = 1e18;
 
 uint constant alpha = 0.5e18;
@@ -139,19 +141,20 @@ contract Market {
         IERC20(collateralAsset).handleTransfer({user: msg.sender, amountIn: amount});
     }
 
+    // Liquidation.
+
     struct Liquidation {
-        address borrower;
         uint bucket;
+        address borrower;
         uint maxCollat;
     }
 
-    function batchLiquidate(Liquidation[] memory liquidations) external {
-        int sumCollat;
-        int sumBorrow;
-
-        for (uint i; i < liquidations.length; i++) {
-            Liquidation memory liq = liquidations[i];
-            (int collat, int borrow) = liquidate(liq.borrower, liq.bucket, liq.maxCollat);
+    /// @return sumCollat The negative amount of collateral added.
+    /// @return sumBorrow The negative amount of borrow added.
+    function batchLiquidate(Liquidation[] memory liquidationData) external returns (int sumCollat, int sumBorrow) {
+        for (uint i; i < liquidationData.length; i++) {
+            Liquidation memory liq = liquidationData[i];
+            (int collat, int borrow) = liquidate(liq.bucket, liq.borrower, liq.maxCollat);
             sumCollat += collat;
             sumBorrow += borrow;
         }
@@ -162,7 +165,7 @@ contract Market {
 
     /// @return collat The negative amount of collateral added.
     /// @return borrow The negative amount of borrow added.
-    function liquidate(address borrower, uint bucket, uint maxCollat) internal returns (int collat, int borrow) {
+    function liquidate(uint bucket, address borrower, uint maxCollat) internal returns (int collat, int borrow) {
         if (maxCollat == 0) return (0, 0);
         require(bucket < N, "unknown bucket");
 

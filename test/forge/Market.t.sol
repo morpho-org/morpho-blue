@@ -12,6 +12,7 @@ contract MarketTest is Test {
     using MathLib for uint;
 
     address private constant borrower = address(1234);
+    address private constant liquidator = address(5678);
 
     Market private market;
     ERC20 private borrowableAsset;
@@ -44,6 +45,30 @@ contract MarketTest is Test {
         vm.stopPrank();
     }
 
+    // To move to a test utils file later.
+
+    function networth(address user) internal view returns (uint) {
+        uint collateralAssetValue = collateralAsset.balanceOf(user).wMul(collateralOracle.price());
+        uint borrowableAssetValue = borrowableAsset.balanceOf(user).wMul(borrowableOracle.price());
+        return collateralAssetValue + borrowableAssetValue;
+    }
+
+    function supplyBalance(uint bucket, address user) internal view returns (uint) {
+        uint supplyShares = market.supplyShare(user, bucket);
+        uint totalShares = market.totalSupplyShares(bucket);
+        uint totalSupply = market.totalSupply(bucket);
+        return supplyShares.wMul(totalSupply).wDiv(totalShares);
+    }
+
+    function borrowBalance(uint bucket, address user) internal view returns (uint) {
+        uint borrowerShares = market.borrowShare(user, bucket);
+        uint totalShares = market.totalBorrowShares(bucket);
+        uint totalBorrow = market.totalBorrow(bucket);
+        return borrowerShares.wMul(totalBorrow).wDiv(totalShares);
+    }
+
+    // Invariants
+
     function invariantParams() public {
         assertEq(market.borrowableAsset(), address(borrowableAsset));
         assertEq(market.collateralAsset(), address(collateralAsset));
@@ -56,6 +81,8 @@ contract MarketTest is Test {
             assertLe(market.totalBorrow(bucket), market.totalSupply(bucket));
         }
     }
+
+    // Tests
 
     function testDeposit(uint amount, uint bucket) public {
         amount = bound(amount, 1, 2 ** 64);
@@ -210,6 +237,61 @@ contract MarketTest is Test {
         assertEq(market.collateral(address(this), bucket), amountDeposited - amountWithdrawn);
         assertEq(collateralAsset.balanceOf(address(this)), amountWithdrawn);
         assertEq(collateralAsset.balanceOf(address(market)), amountDeposited - amountWithdrawn);
+    }
+
+    function testLiquidate(uint bucket, uint amountLent) public {
+        borrowableOracle.setPrice(1e18);
+        amountLent = bound(amountLent, 1000, 2 ** 64);
+        vm.assume(bucket < N);
+
+        uint amountCollateral = amountLent;
+        uint lLTV = bucketToLLTV(bucket);
+        uint borrowingPower = amountCollateral.wMul(lLTV);
+        uint amountBorrowed = borrowingPower.wMul(0.8e18);
+        uint maxCollat = amountCollateral.wMul(lLTV);
+
+        borrowableAsset.setBalance(address(this), amountLent);
+        collateralAsset.setBalance(borrower, amountCollateral);
+        borrowableAsset.setBalance(liquidator, amountBorrowed);
+
+        // Lend
+        borrowableAsset.approve(address(market), type(uint).max);
+        market.modifyDeposit(int(amountLent), bucket);
+
+        // Borrow
+        vm.startPrank(borrower);
+        collateralAsset.approve(address(market), type(uint).max);
+        market.modifyCollateral(int(amountCollateral), bucket);
+        market.modifyBorrow(int(amountBorrowed), bucket);
+        vm.stopPrank();
+
+        // Price change
+        borrowableOracle.setPrice(2e18);
+
+        uint liquidatorNetWorthBefore = networth(liquidator);
+
+        // Liquidate
+        Market.Liquidation[] memory liquidationData = new Market.Liquidation[](1);
+        liquidationData[0] = Market.Liquidation(bucket, borrower, maxCollat);
+        vm.startPrank(liquidator);
+        borrowableAsset.approve(address(market), type(uint).max);
+        (int sumCollat, int sumBorrow) = market.batchLiquidate(liquidationData);
+        vm.stopPrank();
+
+        uint liquidatorNetWorthAfter = networth(liquidator);
+
+        assertGt(liquidatorNetWorthAfter, liquidatorNetWorthBefore, "liquidator's networth");
+        assertLt(sumCollat, 0, "collateral seized");
+        assertLt(sumBorrow, 0, "borrow repaid");
+        assertApproxEqAbs(
+            int(borrowBalance(bucket, borrower)), int(amountBorrowed) + sumBorrow, 100, "collateral balance borrower"
+        );
+        assertApproxEqAbs(
+            int(market.collateral(borrower, bucket)),
+            int(amountCollateral) + sumCollat,
+            100,
+            "collateral balance borrower"
+        );
     }
 
     function testTwoUsersSupply(uint firstAmount, uint secondAmount, uint bucket) public {
