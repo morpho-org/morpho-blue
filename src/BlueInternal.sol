@@ -205,6 +205,7 @@ abstract contract BlueInternal is BlueStorage {
 
         liquidated = position.collateral;
         position.collateral = 0;
+        tranche.debt.shares -= position.debtShares;
         position.debtShares = 0;
 
         tranche.supply.amount -= debtAmount;
