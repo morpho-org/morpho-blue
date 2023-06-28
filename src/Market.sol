@@ -15,10 +15,6 @@ uint constant alpha = 0.5e18;
 
 uint constant N = 10;
 
-function bucketToLLTV(uint bucket) pure returns (uint) {
-    return MathLib.wDiv(bucket + 1, N + 1);
-}
-
 function irm(uint utilization) pure returns (uint) {
     // Divide by the number of seconds in a year.
     // This is a very simple model (to refine later) where x% utilization corresponds to x% APR.
@@ -29,6 +25,10 @@ contract Market {
     using MathLib for int;
     using MathLib for uint;
     using SafeTransferLib for IERC20;
+
+    function bucketToLLTV(uint bucket) public pure returns (uint) {
+        return MathLib.wDiv(bucket + 1, N + 1);
+    }
 
     // Constants.
 

@@ -1,13 +1,12 @@
-import { BigNumber, Wallet, constants } from "ethers";
+import { BigNumber, constants } from "ethers";
 import hre from "hardhat";
 
-import { hexZeroPad } from "@ethersproject/bytes";
 import { setBalance } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 import { Market, OracleMock, ERC20Mock } from "types";
 
-const iterations = 500;
+let nbLiquidations = 3;
 
 let seed = 42;
 
@@ -18,6 +17,12 @@ function next() {
 
 function random() {
   return (next() - 1) / 2147483646;
+}
+
+function assert(condition: boolean, message: string) {
+  if (!condition) {
+    throw message || "Assertion failed";
+  }
 }
 
 describe("Market", () => {
@@ -37,12 +42,15 @@ describe("Market", () => {
     const ERC20MockFactory = await hre.ethers.getContractFactory("ERC20Mock", signers[0]);
 
     borrowable = await ERC20MockFactory.deploy("DAI", "DAI", 18);
-    collateral = await ERC20MockFactory.deploy("Wrapped BTC", "WBTC", 18);
+    collateral = await ERC20MockFactory.deploy("USDC", "USDC", 18);
 
     const OracleMockFactory = await hre.ethers.getContractFactory("OracleMock", signers[0]);
 
     borrowableOracle = await OracleMockFactory.deploy();
     collateralOracle = await OracleMockFactory.deploy();
+
+    await borrowableOracle.connect(signers[0]).setPrice("1000000000000000000");
+    await collateralOracle.connect(signers[0]).setPrice("1000000000000000000");
 
     const MarketFactory = await hre.ethers.getContractFactory("Market", signers[0]);
 
@@ -56,11 +64,15 @@ describe("Market", () => {
 
   it("should simulate gas cost", async () => {
     const n = (await market.getN()).toNumber();
+    assert(nbLiquidations < n, "more liquidations than buckets");
+    assert(nbLiquidations < 20, "more liquidations than signers");
 
-    for (let i = 1; i < iterations; ++i) {
-      console.log(i, "/", iterations);
+    let liquidationData = []
 
-      const user = new Wallet(hexZeroPad(BigNumber.from(i).toHexString(), 32), hre.ethers.provider);
+    // Create accounts close to liquidation
+    for (let i = 0; i < nbLiquidations; ++i) {
+      const user = signers[i];
+      const bucket = i;
       await setBalance(user.address, initBalance);
       await borrowable.setBalance(user.address, initBalance);
       await borrowable.connect(user).approve(market.address, constants.MaxUint256);
@@ -68,23 +80,21 @@ describe("Market", () => {
       await collateral.connect(user).approve(market.address, constants.MaxUint256);
 
       let amount = BigNumber.WAD.mul(1 + Math.floor(random() * 100));
-      const bucket = Math.floor(random() * n);
 
-      let supplyOnly: boolean = random() < 2 / 3;
-      if (supplyOnly) {
-        await market.connect(user).modifyDeposit(amount, bucket);
-        await market.connect(user).modifyDeposit(amount.div(2).mul(-1), bucket);
-      } else {
-        const totalSupply = await market.totalSupply(bucket);
-        const totalBorrow = await market.totalBorrow(bucket);
-        let liq = BigNumber.from(totalSupply).sub(BigNumber.from(totalBorrow));
-        amount = BigNumber.min(amount, BigNumber.from(liq).div(2));
+      await market.connect(user).modifyDeposit(amount, bucket);
+      await market.connect(user).modifyCollateral(amount, bucket);
 
-        await market.connect(user).modifyCollateral(amount, bucket);
-        await market.connect(user).modifyBorrow(amount.div(2), bucket);
-        await market.connect(user).modifyBorrow(amount.div(4).mul(-1), bucket);
-        await market.connect(user).modifyCollateral(amount.div(8).mul(-1), bucket);
-      }
+      let lltv = await market.bucketToLLTV(bucket);
+      let borrowedAmount = amount.mul(lltv).div(BigNumber.WAD);
+      await market.connect(user).modifyBorrow(borrowedAmount, bucket);
+
+      let maxCollat = borrowedAmount.div(1000);
+
+      liquidationData.push({ bucket: bucket, borrower: user.address, maxCollat: maxCollat });
     }
+
+    await borrowableOracle.connect(signers[0]).setPrice("2000000000000000000");
+
+    await market.connect(signers[0]).batchLiquidate(liquidationData);
   });
 });
