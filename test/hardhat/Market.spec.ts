@@ -4,7 +4,7 @@ import hre from "hardhat";
 import { setBalance } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
-import { Market, OracleMock, ERC20Mock } from "types";
+import { Market, OracleMock, ERC20Mock, LiquidatorMock } from "types";
 
 function assert(condition: boolean, message: string) {
   if (!condition) {
@@ -24,7 +24,7 @@ function random() {
 }
 
 let nbLiquidations = 5;
-let naiveBatching = true;
+let nativeBatching = false;
 let closePositions = false;
 
 assert(nbLiquidations < 20, "more liquidations than signers");
@@ -37,6 +37,7 @@ describe("Market", () => {
   let borrowableOracle: OracleMock;
   let collateralOracle: OracleMock;
   let market: Market;
+  let liquidatorContract: LiquidatorMock;
   let admin: SignerWithAddress;
   let liquidator: SignerWithAddress;
 
@@ -47,7 +48,7 @@ describe("Market", () => {
     admin = signers[nbLiquidations];
     liquidator = signers[nbLiquidations + 1];
 
-    const ERC20MockFactory = await hre.ethers.getContractFactory("ERC20Mock", signers[0]);
+    const ERC20MockFactory = await hre.ethers.getContractFactory("ERC20Mock", admin);
 
     borrowable = await ERC20MockFactory.deploy("DAI", "DAI", 18);
     collateral = await ERC20MockFactory.deploy("USDC", "USDC", 18);
@@ -60,7 +61,7 @@ describe("Market", () => {
     await borrowableOracle.connect(admin).setPrice(BigNumber.WAD);
     await collateralOracle.connect(admin).setPrice(BigNumber.WAD);
 
-    const MarketFactory = await hre.ethers.getContractFactory("Market", signers[0]);
+    const MarketFactory = await hre.ethers.getContractFactory("Market", admin);
 
     market = await MarketFactory.deploy(
       borrowable.address,
@@ -68,6 +69,10 @@ describe("Market", () => {
       borrowableOracle.address,
       collateralOracle.address
     );
+
+    const LiquidatorMockFactory = await hre.ethers.getContractFactory("LiquidatorMock", admin);
+
+    liquidatorContract = await LiquidatorMockFactory.deploy();
   });
 
   it("should simulate gas cost", async () => {
@@ -102,12 +107,12 @@ describe("Market", () => {
     await borrowableOracle.connect(admin).setPrice(BigNumber.WAD.mul(1000));
 
     await setBalance(liquidator.address, initBalance);
-    await borrowable.setBalance(liquidator.address, initBalance);
-    await borrowable.connect(liquidator).approve(market.address, constants.MaxUint256);
-    if (naiveBatching) {
-      await market.connect(liquidator).naiveBatchLiquidate(liquidationData);
+    await borrowable.setBalance(liquidatorContract.address, initBalance);
+    await liquidatorContract.connect(liquidator).approveBorrowable(market.address);
+    if (nativeBatching) {
+      await liquidatorContract.connect(liquidator).nativeBatchLiquidate(market.address, liquidationData);
     } else {
-      await market.connect(liquidator).batchLiquidate(liquidationData);
+      await liquidatorContract.connect(liquidator).manualBatchLiquidate(market.address, liquidationData);
     }
 
     for (let i = 0; i < nbLiquidations; i++) {
