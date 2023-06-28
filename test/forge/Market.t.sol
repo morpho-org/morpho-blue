@@ -274,7 +274,7 @@ contract MarketTest is Test {
         // Price change
         borrowableOracle.setPrice(2e18);
 
-        uint liquidatorNetWorthBefore = networth(liquidator);
+        uint liquidatorNetworthBefore = networth(liquidator);
 
         // Liquidate
         Market.Liquidation[] memory liquidationData = new Market.Liquidation[](1);
@@ -284,9 +284,9 @@ contract MarketTest is Test {
         (int sumCollat, int sumBorrow) = market.batchLiquidate(liquidationData);
         vm.stopPrank();
 
-        uint liquidatorNetWorthAfter = networth(liquidator);
+        uint liquidatorNetworthAfter = networth(liquidator);
 
-        assertGt(liquidatorNetWorthAfter, liquidatorNetWorthBefore, "liquidator's networth");
+        assertGt(liquidatorNetworthAfter, liquidatorNetworthBefore, "liquidator's networth");
         assertLt(sumCollat, 0, "collateral seized");
         assertLt(sumBorrow, 0, "borrow repaid");
         assertApproxEqAbs(
@@ -312,8 +312,10 @@ contract MarketTest is Test {
         vm.prank(borrower);
         market.modifyDeposit(int(secondAmount), bucket);
 
-        assertEq(market.supplyShare(address(this), bucket), 1e18);
-        assertEq(market.supplyShare(borrower, bucket), secondAmount * 1e18 / firstAmount);
+        assertApproxEqAbs(supplyBalance(bucket, address(this)), firstAmount, 100, "same balance first user");
+        assertEq(market.supplyShare(address(this), bucket), 1e18, "expected shares first user");
+        assertApproxEqAbs(supplyBalance(bucket, borrower), secondAmount, 100, "same balance second user");
+        assertEq(market.supplyShare(borrower, bucket), secondAmount * 1e18 / firstAmount, "expected shares second user");
     }
 
     function testModifyDepositUnknownBucket(uint bucket) public {
