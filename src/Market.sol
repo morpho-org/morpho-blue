@@ -193,12 +193,23 @@ contract Market {
         // Safe to cast because it's smaller than collateral[borrower][bucket]
         collat = -int(maxCollat.min(collateral[borrower][bucket]));
         borrow = collat.wMul(collatPrice).wDiv(incentive).wDiv(borrowPrice);
-
         int shares = borrow.wMul(totalBorrowShares[bucket]).wDiv(totalBorrow[bucket]);
-        borrowShare[borrower][bucket] = (int(borrowShare[borrower][bucket]) + shares).safeToUint();
-        totalBorrowShares[bucket] = (int(totalBorrowShares[bucket]) + shares).safeToUint();
+
+        uint priorBorrowShares = borrowShare[borrower][bucket];
+        // Limit the liquidation to the debt of the borrower.
+        uint newBorrowShares = (int(priorBorrowShares) + shares).safeToUint();
+        uint newCollateral = (int(collateral[borrower][bucket]) + collat).safeToUint();
+
         totalBorrow[bucket] = (int(totalBorrow[bucket]) + borrow).safeToUint();
-        collateral[borrower][bucket] = (int(collateral[borrower][bucket]) + collat).safeToUint();
+        if (newCollateral == 0) {
+            // Realize the bad debt.
+            totalBorrowShares[bucket] -= priorBorrowShares;
+            borrowShare[borrower][bucket] = 0;
+        } else {
+            totalBorrowShares[bucket] = (int(totalBorrowShares[bucket]) + shares).safeToUint();
+            borrowShare[borrower][bucket] = newBorrowShares;
+        }
+        collateral[borrower][bucket] = newCollateral;
     }
 
     // Interests management.
