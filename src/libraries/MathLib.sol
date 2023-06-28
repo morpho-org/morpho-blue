@@ -31,7 +31,7 @@ library MathLib {
 
     /// @dev Reverts if `x` is negative.
     function safeToUint(int x) internal pure returns (uint z) {
-        require(x >= 0);
+        require(x >= 0, "negative");
         z = uint(x);
     }
 }

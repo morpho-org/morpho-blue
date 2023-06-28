@@ -226,12 +226,18 @@ contract MarketTest is Test {
 
     function testWithdrawCollateral(uint amountDeposited, uint amountWithdrawn, uint bucket) public {
         vm.assume(bucket < N);
-
-        vm.assume(amountDeposited >= amountWithdrawn);
-        vm.assume(int(amountDeposited) >= 0);
+        vm.assume(int(amountDeposited) > 0);
+        vm.assume(int(amountWithdrawn) > 0);
 
         collateralAsset.setBalance(address(this), amountDeposited);
         market.modifyCollateral(int(amountDeposited), bucket);
+
+        if (amountWithdrawn > amountDeposited) {
+            vm.expectRevert("negative");
+            market.modifyCollateral(-int(amountWithdrawn), bucket);
+            return;
+        }
+
         market.modifyCollateral(-int(amountWithdrawn), bucket);
 
         assertEq(market.collateral(address(this), bucket), amountDeposited - amountWithdrawn);
@@ -326,5 +332,26 @@ contract MarketTest is Test {
         vm.assume(bucket > N);
         vm.expectRevert("unknown bucket");
         market.modifyCollateral(1, bucket);
+    }
+
+    function testWithdrawEmptyMarket(int amount, uint bucket) public {
+        vm.assume(bucket < N);
+        vm.assume(amount < 0);
+        vm.expectRevert(stdError.divisionError);
+        market.modifyDeposit(amount, bucket);
+    }
+
+    function testRepayEmptyMarket(int amount, uint bucket) public {
+        vm.assume(bucket < N);
+        vm.assume(amount < 0);
+        vm.expectRevert(stdError.divisionError);
+        market.modifyBorrow(amount, bucket);
+    }
+
+    function testWithdrawCollateralEmptyMarket(int amount, uint bucket) public {
+        vm.assume(bucket < N);
+        vm.assume(amount < 0);
+        vm.expectRevert("negative");
+        market.modifyCollateral(amount, bucket);
     }
 }

@@ -81,7 +81,7 @@ contract Market {
 
         accrueInterests(bucket);
 
-        if (totalSupply[bucket] == 0) {
+        if (totalSupply[bucket] == 0 && amount > 0) {
             supplyShare[msg.sender][bucket] = WAD;
             totalSupplyShares[bucket] = WAD;
         } else {
@@ -107,7 +107,7 @@ contract Market {
 
         accrueInterests(bucket);
 
-        if (totalBorrow[bucket] == 0) {
+        if (totalBorrow[bucket] == 0 && amount > 0) {
             borrowShare[msg.sender][bucket] = WAD;
             totalBorrowShares[bucket] = WAD;
         } else {
