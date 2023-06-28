@@ -27,7 +27,7 @@ let nbLiquidations = 5;
 let nativeBatching = false;
 let closePositions = false;
 
-assert(nbLiquidations < 20, "more liquidations than signers");
+assert(2 * nbLiquidations + 1 < 20, "more liquidations than signers");
 
 describe("Market", () => {
   let signers: SignerWithAddress[];
@@ -45,8 +45,8 @@ describe("Market", () => {
 
   beforeEach(async () => {
     signers = await hre.ethers.getSigners();
-    admin = signers[nbLiquidations];
-    liquidator = signers[nbLiquidations + 1];
+    admin = signers[2 * nbLiquidations];
+    liquidator = signers[2 * nbLiquidations + 1];
 
     const ERC20MockFactory = await hre.ethers.getContractFactory("ERC20Mock", admin);
 
@@ -77,13 +77,13 @@ describe("Market", () => {
 
   it("should simulate gas cost", async () => {
     const n = (await market.getN()).toNumber();
-    assert(nbLiquidations <= n, "more liquidations than buckets");
+    assert(2 * nbLiquidations <= n, "more liquidations than buckets");
     let liquidationData = []
 
     // Create accounts close to liquidation
-    for (let i = 0; i < nbLiquidations; ++i) {
+    for (let i = 0; i < 2 * nbLiquidations; ++i) {
       const user = signers[i];
-      const bucket = i;
+      const bucket = Math.floor(i / 2);
       await setBalance(user.address, initBalance);
       await borrowable.setBalance(user.address, initBalance);
       await borrowable.connect(user).approve(market.address, constants.MaxUint256);
@@ -101,7 +101,9 @@ describe("Market", () => {
 
       let maxCollat = closePositions ? constants.MaxUint256 : amount.div(2);
 
-      liquidationData.push({ bucket: bucket, borrower: user.address, maxCollat: maxCollat });
+      if (i % 2 == 0) {
+        liquidationData.push({ bucket: bucket, borrower: user.address, maxCollat: maxCollat });
+      }
     }
 
     await borrowableOracle.connect(admin).setPrice(BigNumber.WAD.mul(1000));
@@ -115,9 +117,9 @@ describe("Market", () => {
       await liquidatorContract.connect(liquidator).manualBatchLiquidate(market.address, liquidationData);
     }
 
-    for (let i = 0; i < nbLiquidations; i++) {
+    for (let i = 0; i < 2 * nbLiquidations; i++) {
       const user = signers[i];
-      const bucket = i;
+      const bucket = Math.floor(i / 2);
       let collat = await market.collateral(user.address, bucket);
       assert(closePositions || collat != BigNumber.from(0), "did not take the whole collateral when closing the position");
     }
