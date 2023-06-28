@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {IERC20} from "src/interfaces/IERC20.sol";
-import {IOracle} from "src/interfaces/IOracle.sol";
-
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
@@ -119,7 +116,9 @@ contract BlueTest is Test {
 
         blue.modifyDeposit(info, -int(amountWithdrawn));
 
-        assertApproxEqAbs(blue.supplyShare(id, address(this)), (amountLent - amountWithdrawn) * 1e18 / amountLent, 1e3);
+        assertApproxEqAbs(
+            blue.supplyShare(id, address(this)), ((amountLent - amountWithdrawn) * 1e18) / amountLent, 1e3
+        );
         assertEq(borrowableAsset.balanceOf(address(this)), amountWithdrawn);
         assertEq(borrowableAsset.balanceOf(address(blue)), amountLent - amountBorrowed - amountWithdrawn);
     }
@@ -171,7 +170,9 @@ contract BlueTest is Test {
         blue.modifyBorrow(info, -int(amountRepaid));
         vm.stopPrank();
 
-        assertApproxEqAbs(blue.borrowShare(id, borrower), (amountBorrowed - amountRepaid) * 1e18 / amountBorrowed, 1e3);
+        assertApproxEqAbs(
+            blue.borrowShare(id, borrower), ((amountBorrowed - amountRepaid) * 1e18) / amountBorrowed, 1e3
+        );
         assertEq(borrowableAsset.balanceOf(borrower), amountBorrowed - amountRepaid);
         assertEq(borrowableAsset.balanceOf(address(blue)), amountLent - amountBorrowed + amountRepaid);
     }
@@ -219,7 +220,7 @@ contract BlueTest is Test {
         blue.modifyDeposit(info, int(secondAmount));
 
         assertEq(blue.supplyShare(id, address(this)), 1e18);
-        assertEq(blue.supplyShare(id, borrower), secondAmount * 1e18 / firstAmount);
+        assertEq(blue.supplyShare(id, borrower), (secondAmount * 1e18) / firstAmount);
     }
 
     function testModifyDepositUnknownMarket(Info memory infoFuzz) public {

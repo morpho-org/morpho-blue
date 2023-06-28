@@ -19,6 +19,25 @@ struct Info {
     uint lLTV;
 }
 
+struct Market {
+    // User' supply balances.
+    mapping(address => uint) supplyShare;
+    // User' borrow balances.
+    mapping(address => uint) borrowShare;
+    // User' collateral balance.
+    mapping(address => uint) collateral;
+    // Market total supply.
+    uint totalSupply;
+    // Market total supply shares.
+    uint totalSupplyShares;
+    // Market total borrow.
+    uint totalBorrow;
+    // Market total borrow shares.
+    uint totalBorrowShares;
+    // Interests last update (used to check if a market has been created).
+    uint lastUpdate;
+}
+
 function irm(uint utilization) pure returns (uint) {
     // Divide by the number of seconds in a year.
     // This is a very simple model (to refine later) where x% utilization corresponds to x% APR.
@@ -32,55 +51,42 @@ contract Blue {
 
     // Storage.
 
-    // User' supply balances.
-    mapping(Id => mapping(address => uint)) public supplyShare;
-    // User' borrow balances.
-    mapping(Id => mapping(address => uint)) public borrowShare;
-    // User' collateral balance.
-    mapping(Id => mapping(address => uint)) public collateral;
-    // Market total supply.
-    mapping(Id => uint) public totalSupply;
-    // Market total supply shares.
-    mapping(Id => uint) public totalSupplyShares;
-    // Market total borrow.
-    mapping(Id => uint) public totalBorrow;
-    // Market total borrow shares.
-    mapping(Id => uint) public totalBorrowShares;
-    // Interests last update (used to check if a market has been created).
-    mapping(Id => uint) public lastUpdate;
+    mapping(Id => Market) private markets;
 
     // Markets management.
 
     function createMarket(Info calldata info) external {
-        Id id = Id.wrap(keccak256(abi.encode(info)));
-        require(lastUpdate[id] == 0, "market already exists");
+        Market storage m = markets[Id.wrap(keccak256(abi.encode(info)))];
+        require(m.lastUpdate == 0, "market already exists");
 
-        accrueInterests(id);
+        accrueInterests(m);
     }
 
     // Suppliers position management.
 
     /// @dev positive amount to deposit.
     function modifyDeposit(Info calldata info, int amount) external {
-        Id id = Id.wrap(keccak256(abi.encode(info)));
+        Market storage m = markets[Id.wrap(keccak256(abi.encode(info)))];
         if (amount == 0) return;
-        require(lastUpdate[id] != 0, "unknown market");
+        require(m.lastUpdate != 0, "unknown market");
 
-        accrueInterests(id);
+        accrueInterests(m);
 
-        if (totalSupply[id] == 0 && amount > 0) {
-            supplyShare[id][msg.sender] = 1e18;
-            totalSupplyShares[id] = 1e18;
+        if (m.totalSupply == 0 && amount > 0) {
+            m.supplyShare[msg.sender] = 1e18;
+            m.totalSupplyShares = 1e18;
         } else {
-            int shares = amount.wMul(totalSupplyShares[id]).wDiv(totalSupply[id]);
-            supplyShare[id][msg.sender] = (int(supplyShare[id][msg.sender]) + shares).safeToUint();
-            totalSupplyShares[id] = (int(totalSupplyShares[id]) + shares).safeToUint();
+            int shares = amount.wMul(m.totalSupplyShares).wDiv(m.totalSupply);
+            m.supplyShare[msg.sender] = (int(m.supplyShare[msg.sender]) + shares).safeToUint();
+            m.totalSupplyShares = (int(m.totalSupplyShares) + shares).safeToUint();
         }
 
         // No need to check if the integer is positive.
-        totalSupply[id] = uint(int(totalSupply[id]) + amount);
+        m.totalSupply = uint(int(m.totalSupply) + amount);
 
-        if (amount < 0) require(totalBorrow[id] <= totalSupply[id], "not enough liquidity");
+        if (amount < 0) {
+            require(m.totalBorrow <= m.totalSupply, "not enough liquidity");
+        }
 
         info.borrowableAsset.handleTransfer({user: msg.sender, amountIn: amount});
     }
@@ -89,27 +95,27 @@ contract Blue {
 
     /// @dev positive amount to borrow (to discuss).
     function modifyBorrow(Info calldata info, int amount) external {
-        Id id = Id.wrap(keccak256(abi.encode(info)));
+        Market storage m = markets[Id.wrap(keccak256(abi.encode(info)))];
         if (amount == 0) return;
-        require(lastUpdate[id] != 0, "unknown market");
+        require(m.lastUpdate != 0, "unknown market");
 
-        accrueInterests(id);
+        accrueInterests(m);
 
-        if (totalBorrow[id] == 0 && amount > 0) {
-            borrowShare[id][msg.sender] = 1e18;
-            totalBorrowShares[id] = 1e18;
+        if (m.totalBorrow == 0 && amount > 0) {
+            m.borrowShare[msg.sender] = 1e18;
+            m.totalBorrowShares = 1e18;
         } else {
-            int shares = amount.wMul(totalBorrowShares[id]).wDiv(totalBorrow[id]);
-            borrowShare[id][msg.sender] = (int(borrowShare[id][msg.sender]) + shares).safeToUint();
-            totalBorrowShares[id] = (int(totalBorrowShares[id]) + shares).safeToUint();
+            int shares = amount.wMul(m.totalBorrowShares).wDiv(m.totalBorrow);
+            m.borrowShare[msg.sender] = (int(m.borrowShare[msg.sender]) + shares).safeToUint();
+            m.totalBorrowShares = (int(m.totalBorrowShares) + shares).safeToUint();
         }
 
         // No need to check if the integer is positive.
-        totalBorrow[id] = uint(int(totalBorrow[id]) + amount);
+        m.totalBorrow = uint(int(m.totalBorrow) + amount);
 
         if (amount > 0) {
-            checkHealth(info, id, msg.sender);
-            require(totalBorrow[id] <= totalSupply[id], "not enough liquidity");
+            checkHealth(info, msg.sender);
+            require(m.totalBorrow <= m.totalSupply, "not enough liquidity");
         }
 
         info.borrowableAsset.handleTransfer({user: msg.sender, amountIn: -amount});
@@ -117,46 +123,82 @@ contract Blue {
 
     /// @dev positive amount to deposit.
     function modifyCollateral(Info calldata info, int amount) external {
-        Id id = Id.wrap(keccak256(abi.encode(info)));
+        Market storage m = markets[Id.wrap(keccak256(abi.encode(info)))];
         if (amount == 0) return;
-        require(lastUpdate[id] != 0, "unknown market");
+        require(m.lastUpdate != 0, "unknown market");
 
-        accrueInterests(id);
+        accrueInterests(m);
 
-        collateral[id][msg.sender] = (int(collateral[id][msg.sender]) + amount).safeToUint();
+        m.collateral[msg.sender] = (int(m.collateral[msg.sender]) + amount).safeToUint();
 
-        if (amount < 0) checkHealth(info, id, msg.sender);
+        if (amount < 0) checkHealth(info, msg.sender);
 
         info.collateralAsset.handleTransfer({user: msg.sender, amountIn: amount});
     }
 
     // Interests management.
 
-    function accrueInterests(Id id) internal {
-        uint bucketTotalSupply = totalSupply[id];
+    function accrueInterests(Market storage m) internal {
+        uint bucketTotalSupply = m.totalSupply;
 
         if (bucketTotalSupply != 0) {
-            uint bucketTotalBorrow = totalBorrow[id];
+            uint bucketTotalBorrow = m.totalBorrow;
             uint utilization = bucketTotalBorrow.wDiv(bucketTotalSupply);
             uint borrowRate = irm(utilization);
-            uint accruedInterests = bucketTotalBorrow.wMul(borrowRate).wMul(block.timestamp - lastUpdate[id]);
-            totalSupply[id] = bucketTotalSupply + accruedInterests;
-            totalBorrow[id] = bucketTotalBorrow + accruedInterests;
+            uint accruedInterests = bucketTotalBorrow.wMul(borrowRate).wMul(block.timestamp - m.lastUpdate);
+            m.totalSupply = bucketTotalSupply + accruedInterests;
+            m.totalBorrow = bucketTotalBorrow + accruedInterests;
         }
 
-        lastUpdate[id] = block.timestamp;
+        m.lastUpdate = block.timestamp;
     }
 
     // Health check.
 
-    function checkHealth(Info calldata info, Id id, address user) public view {
-        if (borrowShare[id][user] > 0) {
+    function checkHealth(Info calldata info, address user) public view {
+        Market storage m = markets[Id.wrap(keccak256(abi.encode(info)))];
+
+        if (m.borrowShare[user] > 0) {
             // totalBorrowShares[bucket] > 0 because borrowShare[user][bucket] > 0.
-            uint borrowValue = borrowShare[id][user].wMul(totalBorrow[id]).wDiv(totalBorrowShares[id]).wMul(
+            uint borrowValue = m.borrowShare[user].wMul(m.totalBorrow).wDiv(m.totalBorrowShares).wMul(
                 IOracle(info.borrowableOracle).price()
             );
-            uint collateralValue = collateral[id][user].wMul(IOracle(info.collateralOracle).price());
+            uint collateralValue = m.collateral[user].wMul(IOracle(info.collateralOracle).price());
             require(collateralValue.wMul(info.lLTV) >= borrowValue, "not enough collateral");
         }
+    }
+
+    // View functions.
+
+    function supplyShare(Id id, address user) external view returns (uint) {
+        return markets[id].supplyShare[user];
+    }
+
+    function borrowShare(Id id, address user) external view returns (uint) {
+        return markets[id].borrowShare[user];
+    }
+
+    function collateral(Id id, address user) external view returns (uint) {
+        return markets[id].collateral[user];
+    }
+
+    function totalSupply(Id id) external view returns (uint) {
+        return markets[id].totalSupply;
+    }
+
+    function totalSupplyShares(Id id) external view returns (uint) {
+        return markets[id].totalSupplyShares;
+    }
+
+    function totalBorrow(Id id) external view returns (uint) {
+        return markets[id].totalBorrow;
+    }
+
+    function totalBorrowShares(Id id) external view returns (uint) {
+        return markets[id].totalBorrowShares;
+    }
+
+    function lastUpdate(Id id) external view returns (uint) {
+        return markets[id].lastUpdate;
     }
 }
