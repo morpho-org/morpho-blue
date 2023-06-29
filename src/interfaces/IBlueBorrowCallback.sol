@@ -2,5 +2,5 @@
 pragma solidity >= 0.5.0;
 
 interface IBlueBorrowCallback {
-    function blueBorrowCallback(bytes calldata) external;
+    function blueBorrowCallback(int256 collateralDelta, int256 borrowDelta, bytes calldata) external;
 }

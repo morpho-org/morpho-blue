@@ -120,9 +120,9 @@ contract Blue {
         if (collateralDelta < 0) IERC20(collateral).transfer(account.addr(), uint256(-collateralDelta));
         if (borrowDelta > 0) IERC20(borrowing).transfer(account.addr(), uint256(borrowDelta));
 
-        if (data.length > 0) IBlueBorrowCallback(msg.sender).blueBorrowCallback(data);
-
         tranches[account.lltv()].commit(tranche);
+
+        if (data.length > 0) IBlueBorrowCallback(msg.sender).blueBorrowCallback(collateralDelta, borrowDelta, data);
 
         if (collateralDelta > 0) IERC20(collateral).transferFrom(msg.sender, address(this), uint256(collateralDelta));
         if (borrowDelta < 0) IERC20(borrowing).transferFrom(msg.sender, address(this), uint256(-borrowDelta));
@@ -147,7 +147,7 @@ contract Blue {
 
         IERC20(collateral).transfer(msg.sender, seized);
         IBlueLiquidateCallback(msg.sender).blueLiquidateCallback(repaid, seized, data);
-        IERC20(collateral).transferFrom(msg.sender, address(this), repaid);
+        IERC20(borrowing).transferFrom(msg.sender, address(this), repaid);
     }
 
     function _liquidate(LiquidationData calldata liquidationData, IBlueOracle.BlueOracleResult memory oracleResult)
