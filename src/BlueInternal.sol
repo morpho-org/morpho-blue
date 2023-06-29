@@ -19,7 +19,7 @@ abstract contract BlueInternal is BlueStorage {
     using SafeTransferLib for ERC20;
 
     modifier marketInitialized(Types.MarketParams calldata params) {
-        require(_markets[_marketId(params)].initialized);
+        require(_markets[_marketId(params)].deployer != address(0));
         _;
     }
 
@@ -30,14 +30,19 @@ abstract contract BlueInternal is BlueStorage {
 
     function _initializeMarket(Types.MarketParams calldata params, address feeRecipient, uint96 positionId) internal {
         Types.Market storage market = _markets[_marketId(params)];
-        require(!market.initialized);
+        require(market.deployer == address(0));
         market.feeRecipient = _userIdKey(feeRecipient, positionId);
-        market.initialized = true;
+        market.deployer = msg.sender;
     }
 
     function _initializeTranche(Types.MarketParams calldata params, uint256 lltv, uint256 liquidationBonus) internal {
-        Types.Tranche storage tranche = _markets[_marketId(params)].tranches[lltv];
-        require(tranche.liquidationBonus == 0 && liquidationBonus != 0 && liquidationBonus <= PercentageMath.PERCENTAGE_FACTOR);
+        Types.Market storage market = _markets[_marketId(params)];
+        Types.Tranche storage tranche = market.tranches[lltv];
+        require(msg.sender == market.deployer);
+        require(
+            tranche.liquidationBonus == 0 && liquidationBonus != 0
+                && liquidationBonus <= PercentageMath.PERCENTAGE_FACTOR
+        );
         tranche.liquidationBonus = liquidationBonus;
     }
 

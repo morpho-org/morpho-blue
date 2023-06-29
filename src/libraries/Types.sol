@@ -14,7 +14,7 @@ library Types {
         mapping(uint256 lltv => Tranche) tranches;
         bytes32 feeRecipient;
         uint256 fee; // in basis points
-        bool initialized;
+        address deployer;
     }
 
     struct Tranche {
