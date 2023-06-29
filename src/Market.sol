@@ -7,8 +7,6 @@ import {IOracle} from "src/interfaces/IOracle.sol";
 import {MathLib} from "src/libraries/MathLib.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 
-import "forge-std/console.sol";
-
 uint constant WAD = 1e18;
 
 uint constant alpha = 0.5e18;
@@ -185,21 +183,28 @@ contract Market {
         // Safe to cast because it's smaller than collateral[borrower][bucket]
         collat = -int(maxCollat.min(collateral[borrower][bucket]));
         borrow = collat.wMul(collatPrice).wDiv(incentive).wDiv(borrowPrice);
+        uint priorBorrowShares = borrowShare[borrower][bucket];
+        uint priorBorrow = priorBorrowShares.wMul(totalBorrow[bucket]).wDiv(totalBorrowShares[bucket]);
+        if (int(priorBorrow) + borrow < 0) {
+            borrow = -int(priorBorrow);
+            collat = borrow.wDiv(collatPrice).wMul(incentive).wMul(borrowPrice);
+        }
         int shares = borrow.wMul(totalBorrowShares[bucket]).wDiv(totalBorrow[bucket]);
 
-        uint priorBorrowShares = borrowShare[borrower][bucket];
-        // Limit the liquidation to the debt of the borrower.
-        uint newBorrowShares = (int(priorBorrowShares) + shares).safeToUint();
-        uint newCollateral = (int(collateral[borrower][bucket]) + collat).safeToUint();
+        // Keep this next computation outside of the if-then-else.
+        uint newTotalSupply = (int(totalSupply[bucket]) - int(priorBorrow) - borrow).safeToUint();
 
-        totalBorrow[bucket] = (int(totalBorrow[bucket]) + borrow).safeToUint();
+        uint newCollateral = uint(int(collateral[borrower][bucket]) + collat);
         if (newCollateral == 0) {
-            // Realize the bad debt.
+            totalBorrow[bucket] -= priorBorrow;
             totalBorrowShares[bucket] -= priorBorrowShares;
             borrowShare[borrower][bucket] = 0;
+            // Realize the bad debt.
+            totalSupply[bucket] = newTotalSupply;
         } else {
+            totalBorrow[bucket] = (int(totalBorrow[bucket]) + borrow).safeToUint();
             totalBorrowShares[bucket] = (int(totalBorrowShares[bucket]) + shares).safeToUint();
-            borrowShare[borrower][bucket] = newBorrowShares;
+            borrowShare[borrower][bucket] = (int(priorBorrowShares) + shares).safeToUint();
         }
         collateral[borrower][bucket] = newCollateral;
     }

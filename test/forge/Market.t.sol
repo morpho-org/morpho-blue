@@ -55,6 +55,7 @@ contract MarketTest is Test {
 
     function supplyBalance(uint bucket, address user) internal view returns (uint) {
         uint supplyShares = market.supplyShare(user, bucket);
+        if (supplyShares == 0) return 0;
         uint totalShares = market.totalSupplyShares(bucket);
         uint totalSupply = market.totalSupply(bucket);
         return supplyShares.wMul(totalSupply).wDiv(totalShares);
@@ -62,6 +63,7 @@ contract MarketTest is Test {
 
     function borrowBalance(uint bucket, address user) internal view returns (uint) {
         uint borrowerShares = market.borrowShare(user, bucket);
+        if (borrowerShares == 0) return 0;
         uint totalShares = market.totalBorrowShares(bucket);
         uint totalBorrow = market.totalBorrow(bucket);
         return borrowerShares.wMul(totalBorrow).wDiv(totalShares);
@@ -300,6 +302,59 @@ contract MarketTest is Test {
             int(amountCollateral) + sumCollat,
             100,
             "collateral balance borrower"
+        );
+    }
+
+    function testRealizeBadDebt(uint bucket, uint amountLent) public {
+        borrowableOracle.setPrice(1e18);
+        amountLent = bound(amountLent, 1000, 2 ** 64);
+        vm.assume(bucket < N);
+
+        uint amountCollateral = amountLent;
+        uint lLTV = market.bucketToLLTV(bucket);
+        uint borrowingPower = amountCollateral.wMul(lLTV);
+        uint amountBorrowed = borrowingPower.wMul(0.8e18);
+        uint maxCollat = type(uint).max;
+
+        borrowableAsset.setBalance(address(this), amountLent);
+        collateralAsset.setBalance(borrower, amountCollateral);
+        borrowableAsset.setBalance(liquidator, amountBorrowed);
+
+        // Lend
+        borrowableAsset.approve(address(market), type(uint).max);
+        market.modifyDeposit(int(amountLent), bucket);
+
+        // Borrow
+        vm.startPrank(borrower);
+        collateralAsset.approve(address(market), type(uint).max);
+        market.modifyCollateral(int(amountCollateral), bucket);
+        market.modifyBorrow(int(amountBorrowed), bucket);
+        vm.stopPrank();
+
+        // Price change
+        borrowableOracle.setPrice(100e18);
+
+        uint liquidatorNetworthBefore = networth(liquidator);
+
+        // Liquidate
+        Market.Liquidation[] memory liquidationData = new Market.Liquidation[](1);
+        liquidationData[0] = Market.Liquidation(bucket, borrower, maxCollat);
+        vm.startPrank(liquidator);
+        borrowableAsset.approve(address(market), type(uint).max);
+        (int sumCollat, int sumBorrow) = market.batchLiquidate(liquidationData);
+        vm.stopPrank();
+
+        uint liquidatorNetworthAfter = networth(liquidator);
+
+        assertGt(liquidatorNetworthAfter, liquidatorNetworthBefore, "liquidator's networth");
+        assertEq(sumCollat, -int(amountCollateral), "collateral seized");
+        assertLt(sumBorrow, 0, "borrow repaid");
+        assertEq(int(borrowBalance(bucket, borrower)), 0, "collateral balance borrower");
+        assertEq(int(market.collateral(borrower, bucket)), 0, "collateral balance borrower");
+        int expectedBadDebt = int(amountBorrowed) + sumBorrow;
+        assertGt(expectedBadDebt, 0, "positive bad debt");
+        assertApproxEqAbs(
+            int(supplyBalance(bucket, address(this))), int(amountLent) - expectedBadDebt, 10, "realized bad debt"
         );
     }
 
