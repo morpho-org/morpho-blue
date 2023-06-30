@@ -90,7 +90,7 @@ library HealthFactor {
         returns (uint256, uint256)
     {
         amount = Math.min(
-            amount, market.borrowBalance[user][trancheNumber].rayMulUp(market.tranches[trancheNumber].borrowIndex)
+            amount, market.borrowBalance[user][trancheNumber].rayMul(market.tranches[trancheNumber].borrowIndex)
         );
 
         uint256 liquidationBonus = getLiquidationBonus(trancheNumber);

@@ -12,7 +12,7 @@ import {Errors} from "src/libraries/Errors.sol";
 import {Events} from "src/libraries/Events.sol";
 import {InterestRatesManager} from "src/libraries/InterestRatesManager.sol";
 import {HealthFactor} from "src/libraries/HealthFactor.sol";
-
+import {AccountManager} from "src/libraries/AccountManager.sol";
 import {EnumerableSet} from "lib/openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
 import {IOracle} from "src/interfaces/IOracle.sol";
 
@@ -75,27 +75,24 @@ contract BluePool is BlueStorage {
 
         market.updateIndexes(trancheNumber);
 
-        uint256 withdrawAmount = amount.rayDivUp(market.tranches[trancheNumber].supplyIndex);
-        withdrawAmount = Math.min(withdrawAmount, market.supplyBalance[msg.sender][trancheNumber]);
+        uint256 supplyIndex = market.tranches[trancheNumber].supplyIndex;
+        uint256 withdrawAmount = Math.min(amount, market.supplyBalance[msg.sender][trancheNumber].rayMul(supplyIndex));
 
         if (
-            (
-                (market.tranches[trancheNumber].totalSupply - withdrawAmount).rayMul(
-                    market.tranches[trancheNumber].supplyIndex
-                )
-            ) < market.tranches[trancheNumber].totalBorrow.rayMul(market.tranches[trancheNumber].borrowIndex)
+            ((market.tranches[trancheNumber].totalSupply - withdrawAmount).rayMul(supplyIndex))
+                < market.tranches[trancheNumber].totalBorrow.rayMul(market.tranches[trancheNumber].borrowIndex)
         ) revert Errors.NotEnoughLiquidityToWithdraw();
 
-        market.supplyBalance[msg.sender][trancheNumber] -= withdrawAmount;
-        market.tranches[trancheNumber].totalSupply -= withdrawAmount;
+        uint256 scaledWithdrawAmount = withdrawAmount.rayDivUp(supplyIndex);
+        market.supplyBalance[msg.sender][trancheNumber] -= scaledWithdrawAmount;
+        market.tranches[trancheNumber].totalSupply -= scaledWithdrawAmount;
+
         if (market.supplyBalance[msg.sender][trancheNumber] == 0) {
             EnumerableSet.remove(market.supplierLltvMapSet[msg.sender], trancheNumber);
         }
 
-        ERC20(market.token).safeTransfer(
-            receiver, withdrawAmount.rayMulDown(market.tranches[trancheNumber].supplyIndex)
-        );
-        emit Events.Withdrawn(msg.sender, msg.sender, receiver, pool, amount, trancheNumber);
+        ERC20(market.token).safeTransfer(receiver, withdrawAmount);
+        emit Events.Withdrawn(msg.sender, msg.sender, receiver, pool, withdrawAmount, trancheNumber);
     }
 
     function supplyCollateral(address pool, uint256 amount, uint256 trancheNumber) external {
@@ -128,7 +125,7 @@ contract BluePool is BlueStorage {
         market.collateralBalance[msg.sender] -= withdrawAmount;
 
         ERC20(market.token).safeTransfer(receiver, withdrawAmount);
-        emit Events.CollateralWithdrawn(msg.sender, msg.sender, receiver, pool, amount);
+        emit Events.CollateralWithdrawn(msg.sender, msg.sender, receiver, pool, withdrawAmount);
     }
 
     function borrow(address pool, address receiver, uint256 amount, uint256 trancheNumber) external {
@@ -171,16 +168,18 @@ contract BluePool is BlueStorage {
 
         market.updateIndexes(trancheNumber);
 
-        ERC20(market.token).safeTransferFrom(msg.sender, address(this), amount);
+        uint256 borrowIndex = market.tranches[trancheNumber].borrowIndex;
+        uint256 repaidAmount = Math.min(amount, market.borrowBalance[msg.sender][trancheNumber].rayMulUp(borrowIndex));
 
-        uint256 repaidAmount = amount.rayDivUp(market.tranches[trancheNumber].borrowIndex);
+        ERC20(market.token).safeTransferFrom(msg.sender, address(this), repaidAmount);
 
-        market.borrowBalance[msg.sender][trancheNumber] -= repaidAmount;
-        market.tranches[trancheNumber].totalBorrow -= repaidAmount;
+        uint256 scaledRepaidAmount = repaidAmount.rayDivDown(borrowIndex);
+        market.borrowBalance[msg.sender][trancheNumber] -= scaledRepaidAmount;
+        market.tranches[trancheNumber].totalBorrow -= scaledRepaidAmount;
         if (market.borrowBalance[msg.sender][trancheNumber] == 0) {
             EnumerableSet.remove(market.supplierLltvMapSet[msg.sender], trancheNumber);
         }
-        emit Events.Repaid(msg.sender, msg.sender, pool, amount, trancheNumber);
+        emit Events.Repaid(msg.sender, msg.sender, pool, repaidAmount, trancheNumber);
     }
 
     function liquidate(address pool, address user, uint256 amount, uint256 trancheNumber) external {
@@ -200,9 +199,10 @@ contract BluePool is BlueStorage {
         (amount, seized) = market.calculateAmountToSeize(amount, user, trancheNumber);
 
         if (amount == 0) revert Errors.AmountIsZero();
+        uint256 scaledRepaidAmount = amount.rayDivDown(market.tranches[trancheNumber].borrowIndex);
 
-        market.borrowBalance[user][trancheNumber] -= amount.rayDivDown(market.tranches[trancheNumber].borrowIndex);
-        market.tranches[trancheNumber].totalBorrow -= amount.rayDivDown(market.tranches[trancheNumber].borrowIndex);
+        market.borrowBalance[user][trancheNumber] -= scaledRepaidAmount;
+        market.tranches[trancheNumber].totalBorrow -= scaledRepaidAmount;
         market.collateralBalance[user] -= seized;
 
         ERC20(market.token).safeTransferFrom(msg.sender, address(this), amount);
