@@ -29,20 +29,26 @@ abstract contract BlueInternal is BlueStorage {
         _;
     }
 
-    modifier callBack(Types.MarketParams calldata params, uint256 lltv) {
+    modifier callBackAfter(Types.MarketParams calldata params, uint256 lltv) {
         _;
         Types.Market storage market = _markets[_marketId(params)];
-        address toCallBack = market.callBack;
-        if (toCallBack != address(0)) {
-            ICallBack(toCallBack).callBack(params, lltv);
+        address callBack = market.callBack;
+        if (callBack != address(0)) {
+            ICallBack(callBack).callBack(params, lltv);
         }
     }
 
-    function _initializeMarket(Types.MarketParams calldata params, address feeRecipient, uint96 positionId) internal {
+    function _initializeMarket(
+        Types.MarketParams calldata params,
+        address feeRecipient,
+        uint96 positionId,
+        address callBack
+    ) internal {
         Types.Market storage market = _markets[_marketId(params)];
         require(market.deployer == address(0));
         market.feeRecipient = _userIdKey(feeRecipient, positionId);
         market.deployer = msg.sender;
+        market.callBack = callBack;
     }
 
     function _initializeTranche(Types.MarketParams calldata params, uint256 lltv, uint256 liquidationBonus) internal {

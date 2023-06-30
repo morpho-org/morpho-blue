@@ -6,8 +6,13 @@ import {BlueStorage} from "src/BlueStorage.sol";
 import {Types} from "src/libraries/Types.sol";
 
 contract Blue is BlueGetters {
-    function initializeMarket(Types.MarketParams calldata params, address feeRecipient, uint96 positionId) external {
-        _initializeMarket(params, feeRecipient, positionId);
+    function initializeMarket(
+        Types.MarketParams calldata params,
+        address feeRecipient,
+        uint96 positionId,
+        address callBack
+    ) external {
+        _initializeMarket(params, feeRecipient, positionId, callBack);
     }
 
     function initializeTranche(Types.MarketParams calldata params, uint256 lltv, uint256 liquidationBonus)
@@ -43,7 +48,7 @@ contract Blue is BlueGetters {
         uint256 amount,
         address onBehalf,
         uint96 positionId
-    ) external trancheInitialized(params, lltv) callBack(params, lltv) returns (uint256 supplied) {
+    ) external trancheInitialized(params, lltv) callBackAfter(params, lltv) returns (uint256 supplied) {
         return _supply(params, lltv, amount, msg.sender, onBehalf, positionId);
     }
 
@@ -53,7 +58,7 @@ contract Blue is BlueGetters {
         uint256 amount,
         address receiver,
         uint96 positionId
-    ) external trancheInitialized(params, lltv) callBack(params, lltv) returns (uint256 withdrawn) {
+    ) external trancheInitialized(params, lltv) callBackAfter(params, lltv) returns (uint256 withdrawn) {
         return _withdraw(params, lltv, amount, msg.sender, receiver, positionId);
     }
 
@@ -63,7 +68,7 @@ contract Blue is BlueGetters {
         uint256 amount,
         address receiver,
         uint96 positionId
-    ) external trancheInitialized(params, lltv) callBack(params, lltv) returns (uint256 borrowed) {
+    ) external trancheInitialized(params, lltv) callBackAfter(params, lltv) returns (uint256 borrowed) {
         return _borrow(params, lltv, amount, msg.sender, receiver, positionId);
     }
 
@@ -73,14 +78,14 @@ contract Blue is BlueGetters {
         uint256 amount,
         address onBehalf,
         uint96 positionId
-    ) external trancheInitialized(params, lltv) callBack(params, lltv) returns (uint256 repaid) {
+    ) external trancheInitialized(params, lltv) callBackAfter(params, lltv) returns (uint256 repaid) {
         return _repay(params, lltv, amount, msg.sender, onBehalf, positionId);
     }
 
     function liquidate(Types.MarketParams calldata params, uint256 lltv, address liquidatee, uint96 positionId)
         external
         trancheInitialized(params, lltv)
-        callBack(params, lltv)
+        callBackAfter(params, lltv)
         returns (uint256 liquidated)
     {
         return _liquidate(params, lltv, msg.sender, liquidatee, positionId);
