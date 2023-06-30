@@ -4,6 +4,7 @@ pragma solidity 0.8.20;
 import {Types} from "src/libraries/Types.sol";
 import {IBlueOracle} from "src/interfaces/IBlueOracle.sol";
 import {IBlueInterestModel} from "src/interfaces/IBlueInterestModel.sol";
+import {ICallBack} from "src/interfaces/ICallBack.sol";
 import {Math} from "@morpho-utils/math/Math.sol";
 import {WadRayMath} from "@morpho-utils/math/WadRayMath.sol";
 import {PercentageMath} from "@morpho-utils/math/PercentageMath.sol";
@@ -26,6 +27,15 @@ abstract contract BlueInternal is BlueStorage {
     modifier trancheInitialized(Types.MarketParams calldata params, uint256 lltv) {
         require(_markets[_marketId(params)].tranches[lltv].liquidationBonus != 0);
         _;
+    }
+
+    modifier callBack(Types.MarketParams calldata params, uint256 lltv) {
+        _;
+        Types.Market storage market = _markets[_marketId(params)];
+        address toCallBack = market.callBack;
+        if (toCallBack != address(0)) {
+            ICallBack(toCallBack).callBack(params, lltv);
+        }
     }
 
     function _initializeMarket(Types.MarketParams calldata params, address feeRecipient, uint96 positionId) internal {

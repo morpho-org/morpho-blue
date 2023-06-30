@@ -15,6 +15,7 @@ library Types {
         bytes32 feeRecipient;
         uint256 fee; // in basis points
         address deployer;
+        address callBack;
     }
 
     struct Tranche {
