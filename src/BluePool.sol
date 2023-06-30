@@ -12,7 +12,7 @@ import {Errors} from "src/libraries/Errors.sol";
 import {Events} from "src/libraries/Events.sol";
 import {InterestRatesManager} from "src/libraries/InterestRatesManager.sol";
 import {HealthFactor} from "src/libraries/HealthFactor.sol";
-import {AccountManager} from "src/libraries/AccountManager.sol";
+
 import {EnumerableSet} from "lib/openzeppelin-contracts/contracts/utils/structs/EnumerableSet.sol";
 import {IOracle} from "src/interfaces/IOracle.sol";
 
