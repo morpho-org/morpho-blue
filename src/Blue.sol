@@ -10,9 +10,10 @@ contract Blue is BlueGetters {
         Types.MarketParams calldata params,
         address feeRecipient,
         uint96 positionId,
+        uint256 fee,
         address callBack
     ) external {
-        _initializeMarket(params, feeRecipient, positionId, callBack);
+        _initializeMarket(params, feeRecipient, positionId, fee, callBack);
     }
 
     function initializeTranche(Types.MarketParams calldata params, uint256 lltv, uint256 liquidationBonus)

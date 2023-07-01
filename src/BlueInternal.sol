@@ -42,11 +42,14 @@ abstract contract BlueInternal is BlueStorage {
         Types.MarketParams calldata params,
         address feeRecipient,
         uint96 positionId,
+        uint256 fee,
         address callBack
     ) internal {
         Types.Market storage market = _markets[_marketId(params)];
         require(market.deployer == address(0));
+        require(fee < PercentageMath.PERCENTAGE_FACTOR);
         market.feeRecipient = _userIdKey(feeRecipient, positionId);
+        market.fee = fee;
         market.deployer = msg.sender;
         market.callBack = callBack;
     }
@@ -252,7 +255,6 @@ abstract contract BlueInternal is BlueStorage {
         tranche.debt.amount += accrual;
         uint256 fee = market.fee;
         if (fee > 0) {
-            require(fee <= PercentageMath.PERCENTAGE_FACTOR);
             uint256 feeShares = _assetsToSharesDown(accrual.percentMulDown(fee), tranche.supply);
             tranche.positions[market.feeRecipient].supplyShares += feeShares;
             tranche.supply.shares += feeShares;
