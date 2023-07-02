@@ -8,12 +8,7 @@ import {IERC20} from "src/interfaces/IERC20.sol";
 /// @dev Use with caution! Some functions in this library knowingly create dirty bits at the destination of the free memory pointer.
 /// @dev Note that none of the functions in this library check that a token has code at all! That responsibility is delegated to the caller.
 library SafeTransferLib {
-    function handleTransfer(IERC20 token, address user, int amountIn) internal {
-        if (amountIn > 0) return safeTransferFrom(token, user, address(this), uint(amountIn));
-        return safeTransfer(token, user, uint(-amountIn));
-    }
-
-    function safeTransferFrom(IERC20 token, address from, address to, uint amount) private {
+    function safeTransferFrom(IERC20 token, address from, address to, uint amount) internal {
         bool success;
 
         /// @solidity memory-safe-assembly
@@ -43,7 +38,7 @@ library SafeTransferLib {
         require(success, "TRANSFER_FROM_FAILED");
     }
 
-    function safeTransfer(IERC20 token, address to, uint amount) private {
+    function safeTransfer(IERC20 token, address to, uint amount) internal {
         bool success;
 
         /// @solidity memory-safe-assembly

@@ -26,7 +26,6 @@ function irm(uint utilization) pure returns (uint) {
 }
 
 contract Blue {
-    using MathLib for int;
     using MathLib for uint;
     using SafeTransferLib for IERC20;
 
@@ -58,13 +57,12 @@ contract Blue {
         accrueInterests(id);
     }
 
-    // Suppliers position management.
+    // Supply management.
 
-    /// @dev positive amount to deposit.
-    function modifyDeposit(Info calldata info, int amount) external {
+    function supply(Info calldata info, uint amount) external {
         Id id = Id.wrap(keccak256(abi.encode(info)));
-        if (amount == 0) return;
         require(lastUpdate[id] != 0, "unknown market");
+        require(amount > 0, "zero amount");
 
         accrueInterests(id);
 
@@ -72,62 +70,102 @@ contract Blue {
             supplyShare[id][msg.sender] = 1e18;
             totalSupplyShares[id] = 1e18;
         } else {
-            int shares = amount.wMul(totalSupplyShares[id]).wDiv(totalSupply[id]);
-            supplyShare[id][msg.sender] = (int(supplyShare[id][msg.sender]) + shares).safeToUint();
-            totalSupplyShares[id] = (int(totalSupplyShares[id]) + shares).safeToUint();
+            uint shares = amount.wMul(totalSupplyShares[id]).wDiv(totalSupply[id]);
+            supplyShare[id][msg.sender] += supplyShare[id][msg.sender] + shares;
+            totalSupplyShares[id] += shares;
         }
 
-        // No need to check if the integer is positive.
-        totalSupply[id] = uint(int(totalSupply[id]) + amount);
+        totalSupply[id] += amount;
 
-        if (amount < 0) require(totalBorrow[id] <= totalSupply[id], "not enough liquidity");
-
-        info.borrowableAsset.handleTransfer({user: msg.sender, amountIn: amount});
+        info.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
 
-    // Borrowers position management.
-
-    /// @dev positive amount to borrow (to discuss).
-    function modifyBorrow(Info calldata info, int amount) external {
+    function withdraw(Info calldata info, uint amount) external {
         Id id = Id.wrap(keccak256(abi.encode(info)));
-        if (amount == 0) return;
         require(lastUpdate[id] != 0, "unknown market");
+        require(amount > 0, "zero amount");
 
         accrueInterests(id);
 
-        if (totalBorrow[id] == 0 && amount > 0) {
+        uint shares = amount.wMul(totalSupplyShares[id]).wDiv(totalSupply[id]);
+        supplyShare[id][msg.sender] -= shares;
+        totalSupplyShares[id] -= shares;
+        
+        totalSupply[id] -= amount;
+
+        require(totalBorrow[id] <= totalSupply[id], "not enough liquidity");
+
+        info.borrowableAsset.safeTransfer(msg.sender, amount);
+    }
+
+    // Borrow management.
+
+    function borrow(Info calldata info, uint amount) external {
+        Id id = Id.wrap(keccak256(abi.encode(info)));
+        require(lastUpdate[id] != 0, "unknown market");
+        require(amount > 0, "zero amount");
+
+        accrueInterests(id);
+
+        if (totalBorrow[id] == 0) {
             borrowShare[id][msg.sender] = 1e18;
             totalBorrowShares[id] = 1e18;
         } else {
-            int shares = amount.wMul(totalBorrowShares[id]).wDiv(totalBorrow[id]);
-            borrowShare[id][msg.sender] = (int(borrowShare[id][msg.sender]) + shares).safeToUint();
-            totalBorrowShares[id] = (int(totalBorrowShares[id]) + shares).safeToUint();
+            uint shares = amount.wMul(totalBorrowShares[id]).wDiv(totalBorrow[id]);
+            borrowShare[id][msg.sender] += shares;
+            totalBorrowShares[id] += shares;
         }
 
-        // No need to check if the integer is positive.
-        totalBorrow[id] = uint(int(totalBorrow[id]) + amount);
+        totalBorrow[id] += amount;
 
-        if (amount > 0) {
-            checkHealth(info, id, msg.sender);
-            require(totalBorrow[id] <= totalSupply[id], "not enough liquidity");
-        }
+        checkHealth(info, id, msg.sender);
+        require(totalBorrow[id] <= totalSupply[id], "not enough liquidity");
 
-        info.borrowableAsset.handleTransfer({user: msg.sender, amountIn: -amount});
+        info.borrowableAsset.safeTransfer(msg.sender, amount);
     }
 
-    /// @dev positive amount to deposit.
-    function modifyCollateral(Info calldata info, int amount) external {
+    function repay(Info calldata info, uint amount) external {
         Id id = Id.wrap(keccak256(abi.encode(info)));
-        if (amount == 0) return;
         require(lastUpdate[id] != 0, "unknown market");
+        require(amount > 0, "zero amount");
 
         accrueInterests(id);
 
-        collateral[id][msg.sender] = (int(collateral[id][msg.sender]) + amount).safeToUint();
+        uint shares = amount.wMul(totalBorrowShares[id]).wDiv(totalBorrow[id]);
+        borrowShare[id][msg.sender] -= shares;
+        totalBorrowShares[id] -= shares;
 
-        if (amount < 0) checkHealth(info, id, msg.sender);
+        totalBorrow[id] -= amount;
 
-        info.collateralAsset.handleTransfer({user: msg.sender, amountIn: amount});
+        info.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
+    }
+
+    // Collateral management.
+
+    function supplyCollateral(Info calldata info, uint amount) external {
+        Id id = Id.wrap(keccak256(abi.encode(info)));
+        require(lastUpdate[id] != 0, "unknown market");
+        require(amount > 0, "zero amount");
+
+        accrueInterests(id);
+
+        collateral[id][msg.sender] += amount;
+
+        info.collateralAsset.transferFrom(msg.sender, address(this), amount);
+    }
+
+    function withdrawCollateral(Info calldata info, uint amount) external {
+        Id id = Id.wrap(keccak256(abi.encode(info)));
+        require(lastUpdate[id] != 0, "unknown market");
+        require(amount > 0, "zero amount");
+
+        accrueInterests(id);
+
+        collateral[id][msg.sender] -= amount;
+
+        checkHealth(info, id, msg.sender);
+
+        info.collateralAsset.transfer(msg.sender, amount);
     }
 
     // Interests management.

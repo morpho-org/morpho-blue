@@ -62,7 +62,7 @@ contract BlueTest is Test {
         amount = bound(amount, 1, 2 ** 64);
 
         borrowableAsset.setBalance(address(this), amount);
-        blue.modifyDeposit(info, int(amount));
+        blue.supply(info, amount);
 
         assertEq(blue.supplyShare(id, address(this)), 1e18);
         assertEq(borrowableAsset.balanceOf(address(this)), 0);
@@ -70,26 +70,26 @@ contract BlueTest is Test {
     }
 
     function testBorrow(uint amountLent, uint amountBorrowed) public {
-        amountLent = bound(amountLent, 0, 2 ** 64);
-        amountBorrowed = bound(amountBorrowed, 0, 2 ** 64);
+        amountLent = bound(amountLent, 1, 2 ** 64);
+        amountBorrowed = bound(amountBorrowed, 1, 2 ** 64);
 
         borrowableAsset.setBalance(address(this), amountLent);
-        blue.modifyDeposit(info, int(amountLent));
+        blue.supply(info, amountLent);
 
         if (amountBorrowed == 0) {
-            blue.modifyBorrow(info, int(amountBorrowed));
+            blue.borrow(info, amountBorrowed);
             return;
         }
 
         if (amountBorrowed > amountLent) {
             vm.prank(borrower);
             vm.expectRevert("not enough liquidity");
-            blue.modifyBorrow(info, int(amountBorrowed));
+            blue.borrow(info, amountBorrowed);
             return;
         }
 
         vm.prank(borrower);
-        blue.modifyBorrow(info, int(amountBorrowed));
+        blue.borrow(info, amountBorrowed);
 
         assertEq(blue.borrowShare(id, borrower), 1e18);
         assertEq(borrowableAsset.balanceOf(borrower), amountBorrowed);
@@ -98,14 +98,15 @@ contract BlueTest is Test {
 
     function testWithdraw(uint amountLent, uint amountWithdrawn, uint amountBorrowed) public {
         amountLent = bound(amountLent, 1, 2 ** 64);
+        amountWithdrawn = bound(amountWithdrawn, 1, 2 ** 64);
+        amountBorrowed = bound(amountBorrowed, 1, 2 ** 64);
         vm.assume(amountLent >= amountBorrowed);
-        vm.assume(int(amountWithdrawn) >= 0);
 
         borrowableAsset.setBalance(address(this), amountLent);
-        blue.modifyDeposit(info, int(amountLent));
+        blue.supply(info, amountLent);
 
         vm.prank(borrower);
-        blue.modifyBorrow(info, int(amountBorrowed));
+        blue.borrow(info, amountBorrowed);
 
         if (amountWithdrawn > amountLent - amountBorrowed) {
             if (amountWithdrawn > amountLent) {
@@ -113,11 +114,11 @@ contract BlueTest is Test {
             } else {
                 vm.expectRevert("not enough liquidity");
             }
-            blue.modifyDeposit(info, -int(amountWithdrawn));
+            blue.withdraw(info, amountWithdrawn);
             return;
         }
 
-        blue.modifyDeposit(info, -int(amountWithdrawn));
+        blue.withdraw(info, amountWithdrawn);
 
         assertApproxEqAbs(blue.supplyShare(id, address(this)), (amountLent - amountWithdrawn) * 1e18 / amountLent, 1e3);
         assertEq(borrowableAsset.balanceOf(address(this)), amountWithdrawn);
@@ -130,9 +131,9 @@ contract BlueTest is Test {
         uint priceCollateral,
         uint priceBorrowable
     ) public {
-        amountBorrowed = bound(amountBorrowed, 0, 2 ** 64);
+        amountBorrowed = bound(amountBorrowed, 1, 2 ** 64);
         priceBorrowable = bound(priceBorrowable, 0, 2 ** 64);
-        amountCollateral = bound(amountCollateral, 0, 2 ** 64);
+        amountCollateral = bound(amountCollateral, 1, 2 ** 64);
         priceCollateral = bound(priceCollateral, 0, 2 ** 64);
 
         borrowableOracle.setPrice(priceBorrowable);
@@ -141,34 +142,34 @@ contract BlueTest is Test {
         borrowableAsset.setBalance(address(this), amountBorrowed);
         collateralAsset.setBalance(borrower, amountCollateral);
 
-        blue.modifyDeposit(info, int(amountBorrowed));
+        blue.supply(info, amountBorrowed);
 
         vm.prank(borrower);
-        blue.modifyCollateral(info, int(amountCollateral));
+        blue.supplyCollateral(info, amountCollateral);
 
         uint collateralValue = amountCollateral.wMul(priceCollateral);
         uint borrowValue = amountBorrowed.wMul(priceBorrowable);
         if (borrowValue == 0 || (collateralValue > 0 && borrowValue <= collateralValue.wMul(lLTV))) {
             vm.prank(borrower);
-            blue.modifyBorrow(info, int(amountBorrowed));
+            blue.borrow(info, amountBorrowed);
         } else {
             vm.prank(borrower);
             vm.expectRevert("not enough collateral");
-            blue.modifyBorrow(info, int(amountBorrowed));
+            blue.borrow(info, amountBorrowed);
         }
     }
 
     function testRepay(uint amountLent, uint amountBorrowed, uint amountRepaid) public {
         amountLent = bound(amountLent, 1, 2 ** 64);
         amountBorrowed = bound(amountBorrowed, 1, amountLent);
-        amountRepaid = bound(amountRepaid, 0, amountBorrowed);
+        amountRepaid = bound(amountRepaid, 1, amountBorrowed);
 
         borrowableAsset.setBalance(address(this), amountLent);
-        blue.modifyDeposit(info, int(amountLent));
+        blue.supply(info, amountLent);
 
         vm.startPrank(borrower);
-        blue.modifyBorrow(info, int(amountBorrowed));
-        blue.modifyBorrow(info, -int(amountRepaid));
+        blue.borrow(info, amountBorrowed);
+        blue.repay(info, amountRepaid);
         vm.stopPrank();
 
         assertApproxEqAbs(blue.borrowShare(id, borrower), (amountBorrowed - amountRepaid) * 1e18 / amountBorrowed, 1e3);
@@ -177,10 +178,10 @@ contract BlueTest is Test {
     }
 
     function testDepositCollateral(uint amount) public {
-        vm.assume(int(amount) >= 0);
+        amount = bound(amount, 1, 2 ** 64);
 
         collateralAsset.setBalance(address(this), amount);
-        blue.modifyCollateral(info, int(amount));
+        blue.supplyCollateral(info, amount);
 
         assertEq(blue.collateral(id, address(this)), amount);
         assertEq(collateralAsset.balanceOf(address(this)), 0);
@@ -188,19 +189,19 @@ contract BlueTest is Test {
     }
 
     function testWithdrawCollateral(uint amountDeposited, uint amountWithdrawn) public {
-        vm.assume(int(amountDeposited) > 0);
-        vm.assume(int(amountWithdrawn) > 0);
+        amountDeposited = bound(amountDeposited, 1, 2 ** 64);
+        amountWithdrawn = bound(amountWithdrawn, 1, 2 ** 64);
 
         collateralAsset.setBalance(address(this), amountDeposited);
-        blue.modifyCollateral(info, int(amountDeposited));
+        blue.supplyCollateral(info, amountDeposited);
 
         if (amountWithdrawn > amountDeposited) {
-            vm.expectRevert("negative");
-            blue.modifyCollateral(info, -int(amountWithdrawn));
+            vm.expectRevert(stdError.arithmeticError);
+            blue.withdrawCollateral(info, amountWithdrawn);
             return;
         }
 
-        blue.modifyCollateral(info, -int(amountWithdrawn));
+        blue.withdrawCollateral(info, amountWithdrawn);
 
         assertEq(blue.collateral(id, address(this)), amountDeposited - amountWithdrawn);
         assertEq(collateralAsset.balanceOf(address(this)), amountWithdrawn);
@@ -209,14 +210,14 @@ contract BlueTest is Test {
 
     function testTwoUsersSupply(uint firstAmount, uint secondAmount) public {
         firstAmount = bound(firstAmount, 1, 2 ** 64);
-        secondAmount = bound(secondAmount, 0, 2 ** 64);
+        secondAmount = bound(secondAmount, 1, 2 ** 64);
 
         borrowableAsset.setBalance(address(this), firstAmount);
-        blue.modifyDeposit(info, int(firstAmount));
+        blue.supply(info, firstAmount);
 
         borrowableAsset.setBalance(borrower, secondAmount);
         vm.prank(borrower);
-        blue.modifyDeposit(info, int(secondAmount));
+        blue.supply(info, secondAmount);
 
         assertEq(blue.supplyShare(id, address(this)), 1e18);
         assertEq(blue.supplyShare(id, borrower), secondAmount * 1e18 / firstAmount);
@@ -225,37 +226,37 @@ contract BlueTest is Test {
     function testModifyDepositUnknownMarket(Info memory infoFuzz) public {
         vm.assume(neq(infoFuzz, info));
         vm.expectRevert("unknown market");
-        blue.modifyDeposit(infoFuzz, 1);
+        blue.supply(infoFuzz, 1);
     }
 
     function testModifyBorrowUnknownMarket(Info memory infoFuzz) public {
         vm.assume(neq(infoFuzz, info));
         vm.expectRevert("unknown market");
-        blue.modifyBorrow(infoFuzz, 1);
+        blue.borrow(infoFuzz, 1);
     }
 
     function testModifyCollateralUnknownMarket(Info memory infoFuzz) public {
         vm.assume(neq(infoFuzz, info));
         vm.expectRevert("unknown market");
-        blue.modifyCollateral(infoFuzz, 1);
+        blue.supplyCollateral(infoFuzz, 1);
     }
 
-    function testWithdrawEmptyMarket(int amount) public {
-        vm.assume(amount < 0);
+    function testWithdrawEmptyMarket(uint amount) public {
+        vm.assume(amount > 0);
         vm.expectRevert(stdError.divisionError);
-        blue.modifyDeposit(info, amount);
+        blue.withdraw(info, amount);
     }
 
-    function testRepayEmptyMarket(int amount) public {
-        vm.assume(amount < 0);
+    function testRepayEmptyMarket(uint amount) public {
+        vm.assume(amount > 0);
         vm.expectRevert(stdError.divisionError);
-        blue.modifyBorrow(info, amount);
+        blue.repay(info, amount);
     }
 
-    function testWithdrawCollateralEmptyMarket(int amount) public {
-        vm.assume(amount < 0);
-        vm.expectRevert("negative");
-        blue.modifyCollateral(info, amount);
+    function testWithdrawCollateralEmptyMarket(uint amount) public {
+        vm.assume(amount > 0);
+        vm.expectRevert(stdError.arithmeticError);
+        blue.withdrawCollateral(info, amount);
     }
 }
 

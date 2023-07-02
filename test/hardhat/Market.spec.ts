@@ -101,18 +101,22 @@ describe("Blue", () => {
 
       let supplyOnly: boolean = random() < 2 / 3;
       if (supplyOnly) {
-        await blue.connect(user).modifyDeposit(info, amount);
-        await blue.connect(user).modifyDeposit(info, amount.div(2).mul(-1));
+        if (amount > BigNumber.from(0)) {
+          await blue.connect(user).supply(info, amount);
+          await blue.connect(user).withdraw(info, amount.div(2));
+        }
       } else {
         const totalSupply = await blue.totalSupply(id);
         const totalBorrow = await blue.totalBorrow(id);
         let liq = BigNumber.from(totalSupply).sub(BigNumber.from(totalBorrow));
         amount = BigNumber.min(amount, BigNumber.from(liq).div(2));
 
-        await blue.connect(user).modifyCollateral(info, amount);
-        await blue.connect(user).modifyBorrow(info, amount.div(2));
-        await blue.connect(user).modifyBorrow(info, amount.div(4).mul(-1));
-        await blue.connect(user).modifyCollateral(info, amount.div(8).mul(-1));
+        if (amount > BigNumber.from(0)) {
+          await blue.connect(user).supplyCollateral(info, amount);
+          await blue.connect(user).borrow(info, amount.div(2));
+          await blue.connect(user).repay(info, amount.div(4));
+          await blue.connect(user).withdrawCollateral(info, amount.div(8));
+        }
       }
     }
   });
