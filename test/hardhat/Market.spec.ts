@@ -1,9 +1,7 @@
 import { hexZeroPad } from "@ethersproject/bytes";
-import { keccak256 } from "@ethersproject/keccak256";
-import { toUtf8Bytes } from "@ethersproject/strings";
 import { setBalance } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { BigNumber, Wallet, constants } from "ethers";
+import { BigNumber, Wallet, constants, utils } from "ethers";
 import hre from "hardhat";
 import { Blue, OracleMock, ERC20Mock } from "types";
 
@@ -72,9 +70,11 @@ describe("Blue", () => {
       lLTV: BigNumber.WAD,
     };
 
-    const encodedInfo = toUtf8Bytes(JSON.stringify(info));
-    const hashedInfoHex = keccak256(encodedInfo);
-    id = Buffer.from(hashedInfoHex.slice(2), "hex");
+    const abiCoder = new utils.AbiCoder();
+    const values = Object.values(info);
+    const encodedInfo = abiCoder.encode(['address', 'address', 'address', 'address', 'uint256'], values);
+
+    id = Buffer.from(utils.keccak256(encodedInfo).slice(2), "hex");
 
     await blue.connect(signers[0]).createMarket(info);
   });
