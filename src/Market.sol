@@ -66,12 +66,12 @@ contract Blue {
 
         accrueInterests(id);
 
-        if (totalSupply[id] == 0 && amount > 0) {
+        if (totalSupply[id] == 0) {
             supplyShare[id][msg.sender] = 1e18;
             totalSupplyShares[id] = 1e18;
         } else {
             uint shares = amount.wMul(totalSupplyShares[id]).wDiv(totalSupply[id]);
-            supplyShare[id][msg.sender] += supplyShare[id][msg.sender] + shares;
+            supplyShare[id][msg.sender] += shares;
             totalSupplyShares[id] += shares;
         }
 
