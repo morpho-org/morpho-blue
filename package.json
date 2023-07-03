@@ -1,0 +1,60 @@
+{
+  "name": "@morpho-labs/blue-poc",
+  "version": "1.0.0",
+  "author": "Morpho Labs <security@morpho.xyz>",
+  "license": "MIT",
+  "scripts": {
+    "postinstall": "husky install",
+    "compile": "npx hardhat compile --force",
+    "coverage": "npx hardhat coverage",
+    "test": "npx hardhat test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/morpho-labs/blue-poc.git"
+  },
+  "bugs": {
+    "url": "https://github.com/morpho-labs/blue-poc/issues"
+  },
+  "dependencies": {
+    "@ethersproject/abi": "^5.7.0",
+    "@ethersproject/bytes": "^5.7.0",
+    "@ethersproject/providers": "^5.7.2",
+    "ethers": "^5.7.2",
+    "ethers-maths": "^3.5.1",
+    "lodash": "^4.17.21"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-chai-matchers": "^1.0.6",
+    "@nomicfoundation/hardhat-foundry": "^1.0.1",
+    "@nomicfoundation/hardhat-network-helpers": "^1.0.8",
+    "@nomiclabs/hardhat-ethers": "^2.2.3",
+    "@trivago/prettier-plugin-sort-imports": "^4.1.1",
+    "@typechain/ethers-v5": "^10.2.1",
+    "@typechain/hardhat": "^6.1.6",
+    "@types/chai": "^4.3.5",
+    "@types/lodash": "^4.14.195",
+    "@types/mocha": "^10.0.1",
+    "@types/node": "^20.3.1",
+    "chai": "^4.3.7",
+    "dotenv": "^16.3.1",
+    "hardhat": "2.15.0",
+    "hardhat-deal": "^1.4.0",
+    "hardhat-gas-reporter": "^1.0.9",
+    "hardhat-tracer": "2.3.2",
+    "husky": "8.0.3",
+    "lint-staged": "13.2.2",
+    "prettier": "^2.8.8",
+    "solidity-coverage": "^0.8.2",
+    "ts-node": "^10.9.1",
+    "typechain": "^8.2.0",
+    "typescript": "5.0.4"
+  },
+  "lint-staged": {
+    "*.sol": "forge fmt",
+    "*.js": "yarn prettier",
+    "*.ts": "yarn prettier",
+    "*.json": "yarn prettier",
+    "*.yml": "yarn prettier"
+  }
+}

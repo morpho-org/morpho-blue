@@ -1,7 +1,10 @@
 [profile.default]
-src = "src"
-out = "out"
-libs = ["lib"]
-via-ir = true
+src = 'src'
+out = 'out'
+test = "test/forge"
+libs = ['lib']
+
+[invariant]
+depth = 16
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config

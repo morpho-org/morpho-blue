@@ -1,0 +1,16 @@
+{
+  "printWidth": 120,
+  "importOrder": [
+    "^(?!([@\\.]|src|types|test|scripts)).*",
+    "^@(?!morpho|/).*",
+    "^@morpho.*",
+    "^@",
+    "^src",
+    "^types",
+    "^test",
+    "^scripts",
+    "^\\.\\.",
+    "^\\."
+  ],
+  "importOrderSeparation": true
+}
