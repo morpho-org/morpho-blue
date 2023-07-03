@@ -31,25 +31,14 @@ abstract contract BlueInternal is BlueStorage {
         _;
     }
 
-    modifier assertSolvent(Types.MarketParams calldata params, uint256 lltv) {
+    modifier accrue(Types.MarketParams calldata params, uint256 lltv) {
+        _accrue(params, lltv);
         _;
-        Types.Tranche storage tranche = _markets[_marketId(params)].tranches[lltv];
-        require(tranche.supply.amount >= tranche.debt.amount);
     }
 
-    modifier callBackAfter(
-        Types.MarketParams calldata params,
-        uint256 lltv,
-        Types.InteractionType interaction,
-        uint256 amount,
-        address onBehalf
-    ) {
+    modifier accrueCollateral(Types.MarketParams calldata params, uint256 lltv, address user, uint96 positionId) {
+        _accrueCollateral(params, lltv, user, positionId);
         _;
-        Types.Market storage market = _markets[_marketId(params)];
-        address callBack = market.callBack;
-        if (callBack != address(0)) {
-            ICallBack(callBack).callBack(params, lltv, interaction, amount, onBehalf);
-        }
     }
 
     function _initializeMarket(
@@ -111,16 +100,11 @@ abstract contract BlueInternal is BlueStorage {
         Types.Market storage market = _markets[_marketId(params)];
         Types.Tranche storage tranche = market.tranches[lltv];
         Types.Position storage position = tranche.positions[_userIdKey(onBehalf, positionId)];
-        Types.OracleData memory oracleData = _oracleData(params);
-
-        _accrue(params, lltv);
 
         position.collateral -= amount;
 
         _transfer(params.collateralToken, address(this), receiver, amount);
         withdrawn = amount;
-
-        _liquidityCheck(params, lltv, onBehalf, positionId, oracleData);
     }
 
     function _supply(
@@ -135,10 +119,7 @@ abstract contract BlueInternal is BlueStorage {
         Types.Tranche storage tranche = market.tranches[lltv];
         Types.Position storage position = tranche.positions[_userIdKey(onBehalf, positionId)];
 
-        _accrueCollateral(params, lltv, onBehalf, positionId);
-
         _transfer(params.debtToken, from, address(this), amount);
-        _accrue(params, lltv);
 
         uint256 shares = _assetsToSharesUp(amount, tranche.supply);
         position.supplyShares += shares;
@@ -159,9 +140,6 @@ abstract contract BlueInternal is BlueStorage {
         Types.Market storage market = _markets[_marketId(params)];
         Types.Tranche storage tranche = market.tranches[lltv];
         Types.Position storage position = tranche.positions[_userIdKey(onBehalf, positionId)];
-
-        _accrueCollateral(params, lltv, onBehalf, positionId);
-        _accrue(params, lltv);
 
         require(tranche.supply.amount - amount >= tranche.debt.amount);
 
@@ -185,11 +163,7 @@ abstract contract BlueInternal is BlueStorage {
         Types.Market storage market = _markets[_marketId(params)];
         Types.Tranche storage tranche = market.tranches[lltv];
         Types.Position storage position = tranche.positions[_userIdKey(onBehalf, positionId)];
-        Types.OracleData memory oracleData = _oracleData(params);
 
-        _accrue(params, lltv);
-
-        require(!oracleData.borrowPaused);
         require(tranche.supply.amount >= tranche.debt.amount + amount);
 
         uint256 shares = _assetsToSharesUp(amount, tranche.debt);
@@ -199,7 +173,6 @@ abstract contract BlueInternal is BlueStorage {
 
         _transfer(params.debtToken, address(this), receiver, amount);
         borrowed = amount;
-        _liquidityCheck(params, lltv, onBehalf, positionId, oracleData);
     }
 
     function _repay(
@@ -213,8 +186,6 @@ abstract contract BlueInternal is BlueStorage {
         Types.Market storage market = _markets[_marketId(params)];
         Types.Tranche storage tranche = market.tranches[lltv];
         Types.Position storage position = tranche.positions[_userIdKey(onBehalf, positionId)];
-
-        _accrue(params, lltv);
 
         _transfer(params.debtToken, from, address(this), amount);
         uint256 shares = _assetsToSharesDown(amount, tranche.debt);
@@ -235,12 +206,6 @@ abstract contract BlueInternal is BlueStorage {
         Types.Market storage market = _markets[_marketId(params)];
         Types.Tranche storage tranche = market.tranches[lltv];
         Types.Position storage position = tranche.positions[_userIdKey(liquidatee, positionId)];
-        Types.OracleData memory oracleData = _oracleData(params);
-
-        _accrue(params, lltv);
-
-        require(!oracleData.liquidationPaused);
-        require(!_liquidityCheck(params, lltv, liquidatee, positionId, oracleData));
 
         uint256 debtAmount = Math.min(_sharesToAssetsUp(position.debtShares, tranche.debt), tranche.debt.amount);
 
@@ -341,5 +306,23 @@ abstract contract BlueInternal is BlueStorage {
 
     function _userIdKey(address user, uint96 positionId) internal pure returns (bytes32) {
         return bytes32((uint256(uint160(user)) << 96) + positionId);
+    }
+
+    function _callbackSingle(Types.MarketParams calldata params, uint256 lltv, Types.CallbackData memory callbackData)
+        internal
+    {
+        Types.CallbackData[] memory callbackDatas = new Types.CallbackData[](1);
+        callbackDatas[0] = callbackData;
+        _callback(params, lltv, callbackDatas);
+    }
+
+    function _callback(Types.MarketParams calldata params, uint256 lltv, Types.CallbackData[] memory callbackDatas)
+        internal
+    {
+        Types.Market storage market = _markets[_marketId(params)];
+        address callBack = market.callBack;
+        if (callBack != address(0)) {
+            ICallBack(callBack).callBack(params, lltv, callbackDatas);
+        }
     }
 }

@@ -5,6 +5,8 @@ import {EnumerableSet} from "@openzeppelin-contracts/utils/structs/EnumerableSet
 
 library Types {
     enum InteractionType {
+        SUPPLY_COLLATERAL,
+        WITHDRAW_COLLATERAL,
         SUPPLY,
         BORROW,
         REPAY,
@@ -53,5 +55,16 @@ library Types {
         uint256 price;
         bool liquidationPaused;
         bool borrowPaused;
+    }
+
+    struct CallbackData {
+        InteractionType interaction;
+        uint256 amount;
+        address user;
+    }
+
+    struct Batch {
+        InteractionType interaction;
+        uint256 amount;
     }
 }

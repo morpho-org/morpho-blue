@@ -32,7 +32,7 @@ contract Blue is BlueGetters {
         uint256 amount,
         address onBehalf,
         uint96 positionId
-    ) external trancheInitialized(params, lltv) assertSolvent(params, lltv) returns (uint256 suppliedCollateral) {
+    ) external trancheInitialized(params, lltv) returns (uint256 suppliedCollateral) {
         return _supplyCollateral(params, lltv, amount, msg.sender, onBehalf, positionId);
     }
 
@@ -42,8 +42,9 @@ contract Blue is BlueGetters {
         uint256 amount,
         address receiver,
         uint96 positionId
-    ) external trancheInitialized(params, lltv) assertSolvent(params, lltv) returns (uint256 withdrawnCollateral) {
-        return _withdrawCollateral(params, lltv, amount, msg.sender, receiver, positionId);
+    ) external trancheInitialized(params, lltv) accrue(params, lltv) returns (uint256 withdrawnCollateral) {
+        withdrawnCollateral = _withdrawCollateral(params, lltv, amount, msg.sender, receiver, positionId);
+        require(_liquidityCheck(params, lltv, msg.sender, positionId, _oracleData(params)));
     }
 
     function supply(
@@ -55,11 +56,12 @@ contract Blue is BlueGetters {
     )
         external
         trancheInitialized(params, lltv)
-        callBackAfter(params, lltv, Types.InteractionType.SUPPLY, amount, onBehalf)
-        assertSolvent(params, lltv)
+        accrue(params, lltv)
+        accrueCollateral(params, lltv, onBehalf, positionId)
         returns (uint256 supplied)
     {
-        return _supply(params, lltv, amount, msg.sender, onBehalf, positionId);
+        supplied = _supply(params, lltv, amount, msg.sender, onBehalf, positionId);
+        _callbackSingle(params, lltv, Types.CallbackData(Types.InteractionType.SUPPLY, amount, onBehalf));
     }
 
     function withdraw(
@@ -71,11 +73,13 @@ contract Blue is BlueGetters {
     )
         external
         trancheInitialized(params, lltv)
-        callBackAfter(params, lltv, Types.InteractionType.WITHDRAW, amount, msg.sender)
-        assertSolvent(params, lltv)
+        accrue(params, lltv)
+        accrueCollateral(params, lltv, msg.sender, positionId)
         returns (uint256 withdrawn)
     {
-        return _withdraw(params, lltv, amount, msg.sender, receiver, positionId);
+        withdrawn = _withdraw(params, lltv, amount, msg.sender, receiver, positionId);
+
+        _callbackSingle(params, lltv, Types.CallbackData(Types.InteractionType.WITHDRAW, amount, msg.sender));
     }
 
     function borrow(
@@ -84,14 +88,14 @@ contract Blue is BlueGetters {
         uint256 amount,
         address receiver,
         uint96 positionId
-    )
-        external
-        trancheInitialized(params, lltv)
-        callBackAfter(params, lltv, Types.InteractionType.BORROW, amount, msg.sender)
-        assertSolvent(params, lltv)
-        returns (uint256 borrowed)
-    {
-        return _borrow(params, lltv, amount, msg.sender, receiver, positionId);
+    ) external trancheInitialized(params, lltv) accrue(params, lltv) returns (uint256 borrowed) {
+        Types.OracleData memory oracleData = _oracleData(params);
+        require(!oracleData.borrowPaused);
+        borrowed = _borrow(params, lltv, amount, msg.sender, receiver, positionId);
+
+        _callbackSingle(params, lltv, Types.CallbackData(Types.InteractionType.BORROW, amount, receiver));
+
+        require(_liquidityCheck(params, lltv, msg.sender, positionId, oracleData));
     }
 
     function repay(
@@ -100,23 +104,24 @@ contract Blue is BlueGetters {
         uint256 amount,
         address onBehalf,
         uint96 positionId
-    )
-        external
-        trancheInitialized(params, lltv)
-        callBackAfter(params, lltv, Types.InteractionType.REPAY, amount, onBehalf)
-        assertSolvent(params, lltv)
-        returns (uint256 repaid)
-    {
-        return _repay(params, lltv, amount, msg.sender, onBehalf, positionId);
+    ) external trancheInitialized(params, lltv) accrue(params, lltv) returns (uint256 repaid) {
+        repaid = _repay(params, lltv, amount, msg.sender, onBehalf, positionId);
+
+        _callbackSingle(params, lltv, Types.CallbackData(Types.InteractionType.REPAY, amount, onBehalf));
     }
 
     function liquidate(Types.MarketParams calldata params, uint256 lltv, address liquidatee, uint96 positionId)
         external
         trancheInitialized(params, lltv)
-        callBackAfter(params, lltv, Types.InteractionType.LIQUIDATE, 0, liquidatee)
-        assertSolvent(params, lltv)
+        accrue(params, lltv)
         returns (uint256 liquidated)
     {
-        return _liquidate(params, lltv, msg.sender, liquidatee, positionId);
+        Types.OracleData memory oracleData = _oracleData(params);
+        require(!oracleData.liquidationPaused);
+
+        require(!_liquidityCheck(params, lltv, liquidatee, positionId, oracleData));
+        liquidated = _liquidate(params, lltv, msg.sender, liquidatee, positionId);
+
+        _callbackSingle(params, lltv, Types.CallbackData(Types.InteractionType.LIQUIDATE, 0, liquidatee));
     }
 }
