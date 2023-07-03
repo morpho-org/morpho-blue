@@ -171,15 +171,15 @@ contract Blue {
     // Interests management.
 
     function accrueInterests(Id id) internal {
-        uint bucketTotalSupply = totalSupply[id];
+        uint marketTotalSupply = totalSupply[id];
 
-        if (bucketTotalSupply != 0) {
-            uint bucketTotalBorrow = totalBorrow[id];
-            uint utilization = bucketTotalBorrow.wDiv(bucketTotalSupply);
+        if (marketTotalSupply != 0) {
+            uint marketTotalBorrow = totalBorrow[id];
+            uint utilization = marketTotalBorrow.wDiv(marketTotalSupply);
             uint borrowRate = irm(utilization);
-            uint accruedInterests = bucketTotalBorrow.wMul(borrowRate).wMul(block.timestamp - lastUpdate[id]);
-            totalSupply[id] = bucketTotalSupply + accruedInterests;
-            totalBorrow[id] = bucketTotalBorrow + accruedInterests;
+            uint accruedInterests = marketTotalBorrow.wMul(borrowRate).wMul(block.timestamp - lastUpdate[id]);
+            totalSupply[id] = marketTotalSupply + accruedInterests;
+            totalBorrow[id] = marketTotalBorrow + accruedInterests;
         }
 
         lastUpdate[id] = block.timestamp;
@@ -189,7 +189,7 @@ contract Blue {
 
     function checkHealth(Info calldata info, Id id, address user) public view {
         if (borrowShare[id][user] > 0) {
-            // totalBorrowShares[bucket] > 0 because borrowShare[user][bucket] > 0.
+            // totalBorrowShares[id] > 0 because borrowShare[id[user] > 0.
             uint borrowValue = borrowShare[id][user].wMul(totalBorrow[id]).wDiv(totalBorrowShares[id]).wMul(
                 IOracle(info.borrowableOracle).price()
             );
