@@ -6,7 +6,7 @@
 	url = https://github.com/transmissions11/solmate
 [submodule "lib/morpho-utils"]
 	path = lib/morpho-utils
-	url = git@github.com:morpho-org/morpho-utils.git
+	url = https://github.com/morpho-dao/morpho-utils
 [submodule "lib/permit2"]
 	path = lib/permit2
 	url = https://github.com/uniswap/permit2
