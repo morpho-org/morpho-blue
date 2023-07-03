@@ -37,12 +37,18 @@ abstract contract BlueInternal is BlueStorage {
         require(tranche.supply.amount >= tranche.debt.amount);
     }
 
-    modifier callBackAfter(Types.MarketParams calldata params, uint256 lltv) {
+    modifier callBackAfter(
+        Types.MarketParams calldata params,
+        uint256 lltv,
+        Types.InteractionType interaction,
+        uint256 amount,
+        address onBehalf
+    ) {
         _;
         Types.Market storage market = _markets[_marketId(params)];
         address callBack = market.callBack;
         if (callBack != address(0)) {
-            ICallBack(callBack).callBack(params, lltv);
+            ICallBack(callBack).callBack(params, lltv, interaction, amount, onBehalf);
         }
     }
 
@@ -129,7 +135,6 @@ abstract contract BlueInternal is BlueStorage {
         Types.Tranche storage tranche = market.tranches[lltv];
         Types.Position storage position = tranche.positions[_userIdKey(onBehalf, positionId)];
 
-        _whitelistCheckSupplier(market, onBehalf);
         _accrueCollateral(params, lltv, onBehalf, positionId);
 
         _transfer(params.debtToken, from, address(this), amount);
@@ -187,7 +192,6 @@ abstract contract BlueInternal is BlueStorage {
         require(!oracleData.borrowPaused);
         require(tranche.supply.amount >= tranche.debt.amount + amount);
 
-        _whitelistCheckBorrower(market, onBehalf);
         uint256 shares = _assetsToSharesUp(amount, tranche.debt);
         position.debtShares += shares;
         tranche.debt.shares += shares;
@@ -289,14 +293,6 @@ abstract contract BlueInternal is BlueStorage {
 
     function _transfer(address asset, address from, address to, uint256 amount) internal {
         ERC20(asset).safeTransferFrom(from, to, amount);
-    }
-
-    function _whitelistCheckSupplier(Types.Market storage market, address supplier) internal view {
-        require(market.wlSuppliers.length() == 0 || market.wlSuppliers.contains(supplier));
-    }
-
-    function _whitelistCheckBorrower(Types.Market storage market, address borrower) internal view {
-        require(market.wlBorrowers.length() == 0 || market.wlBorrowers.contains(borrower));
     }
 
     function _liquidityCheck(

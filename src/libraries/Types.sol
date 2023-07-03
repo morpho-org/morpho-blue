@@ -4,6 +4,14 @@ pragma solidity 0.8.20;
 import {EnumerableSet} from "@openzeppelin-contracts/utils/structs/EnumerableSet.sol";
 
 library Types {
+    enum InteractionType {
+        SUPPLY,
+        BORROW,
+        REPAY,
+        WITHDRAW,
+        LIQUIDATE
+    }
+
     struct MarketParams {
         address collateralToken;
         address debtToken;
@@ -18,8 +26,6 @@ library Types {
         uint256 fee; // in basis points
         address deployer;
         address callBack;
-        EnumerableSet.AddressSet wlSuppliers;
-        EnumerableSet.AddressSet wlBorrowers;
     }
 
     struct Tranche {

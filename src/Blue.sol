@@ -55,7 +55,7 @@ contract Blue is BlueGetters {
     )
         external
         trancheInitialized(params, lltv)
-        callBackAfter(params, lltv)
+        callBackAfter(params, lltv, Types.InteractionType.SUPPLY, amount, onBehalf)
         assertSolvent(params, lltv)
         returns (uint256 supplied)
     {
@@ -71,7 +71,7 @@ contract Blue is BlueGetters {
     )
         external
         trancheInitialized(params, lltv)
-        callBackAfter(params, lltv)
+        callBackAfter(params, lltv, Types.InteractionType.WITHDRAW, amount, msg.sender)
         assertSolvent(params, lltv)
         returns (uint256 withdrawn)
     {
@@ -87,7 +87,7 @@ contract Blue is BlueGetters {
     )
         external
         trancheInitialized(params, lltv)
-        callBackAfter(params, lltv)
+        callBackAfter(params, lltv, Types.InteractionType.BORROW, amount, msg.sender)
         assertSolvent(params, lltv)
         returns (uint256 borrowed)
     {
@@ -103,7 +103,7 @@ contract Blue is BlueGetters {
     )
         external
         trancheInitialized(params, lltv)
-        callBackAfter(params, lltv)
+        callBackAfter(params, lltv, Types.InteractionType.REPAY, amount, onBehalf)
         assertSolvent(params, lltv)
         returns (uint256 repaid)
     {
@@ -113,24 +113,10 @@ contract Blue is BlueGetters {
     function liquidate(Types.MarketParams calldata params, uint256 lltv, address liquidatee, uint96 positionId)
         external
         trancheInitialized(params, lltv)
-        callBackAfter(params, lltv)
+        callBackAfter(params, lltv, Types.InteractionType.LIQUIDATE, 0, liquidatee)
         assertSolvent(params, lltv)
         returns (uint256 liquidated)
     {
         return _liquidate(params, lltv, msg.sender, liquidatee, positionId);
-    }
-
-    function addWhitelistedSupplier(Types.MarketParams calldata params, address supplier) external {
-        Types.Market storage market = _markets[_marketId(params)];
-
-        require(msg.sender == market.deployer);
-        market.wlSuppliers.add(supplier);
-    }
-
-    function addWhitelistedBorrower(Types.MarketParams calldata params, address borrower) external {
-        Types.Market storage market = _markets[_marketId(params)];
-
-        require(msg.sender == market.deployer);
-        market.wlBorrowers.add(borrower);
     }
 }
