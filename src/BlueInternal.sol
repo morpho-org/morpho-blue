@@ -11,6 +11,7 @@ import {PercentageMath} from "@morpho-utils/math/PercentageMath.sol";
 import {ERC20, SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {BlueStorage} from "src/BlueStorage.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
+import {EnumerableSet} from "@openzeppelin-contracts/utils/structs/EnumerableSet.sol";
 
 abstract contract BlueInternal is BlueStorage {
     using WadRayMath for uint256;
@@ -18,6 +19,7 @@ abstract contract BlueInternal is BlueStorage {
     using Math for uint256;
     using FixedPointMathLib for uint256;
     using SafeTransferLib for ERC20;
+    using EnumerableSet for EnumerableSet.AddressSet;
 
     modifier marketInitialized(Types.MarketParams calldata params) {
         require(_markets[_marketId(params)].deployer != address(0));
@@ -27,6 +29,12 @@ abstract contract BlueInternal is BlueStorage {
     modifier trancheInitialized(Types.MarketParams calldata params, uint256 lltv) {
         require(_markets[_marketId(params)].tranches[lltv].liquidationBonus != 0);
         _;
+    }
+
+    modifier assertSolvent(Types.MarketParams calldata params, uint256 lltv) {
+        _;
+        Types.Tranche storage tranche = _markets[_marketId(params)].tranches[lltv];
+        require(tranche.supply.amount >= tranche.debt.amount);
     }
 
     modifier callBackAfter(Types.MarketParams calldata params, uint256 lltv) {
@@ -41,16 +49,18 @@ abstract contract BlueInternal is BlueStorage {
     function _initializeMarket(
         Types.MarketParams calldata params,
         address feeRecipient,
+        address deployer,
         uint96 positionId,
         uint256 fee,
         address callBack
     ) internal {
         Types.Market storage market = _markets[_marketId(params)];
+        require(deployer != address(0));
         require(market.deployer == address(0));
         require(fee < PercentageMath.PERCENTAGE_FACTOR);
         market.feeRecipient = _userIdKey(feeRecipient, positionId);
         market.fee = fee;
-        market.deployer = msg.sender;
+        market.deployer = deployer;
         market.callBack = callBack;
     }
 
@@ -101,9 +111,10 @@ abstract contract BlueInternal is BlueStorage {
 
         position.collateral -= amount;
 
-        _liquidityCheck(params, lltv, onBehalf, positionId, oracleData);
         _transfer(params.collateralToken, address(this), receiver, amount);
         withdrawn = amount;
+
+        _liquidityCheck(params, lltv, onBehalf, positionId, oracleData);
     }
 
     function _supply(
@@ -118,6 +129,7 @@ abstract contract BlueInternal is BlueStorage {
         Types.Tranche storage tranche = market.tranches[lltv];
         Types.Position storage position = tranche.positions[_userIdKey(onBehalf, positionId)];
 
+        _whitelistCheckSupplier(market, onBehalf);
         _accrueCollateral(params, lltv, onBehalf, positionId);
 
         _transfer(params.debtToken, from, address(this), amount);
@@ -168,21 +180,22 @@ abstract contract BlueInternal is BlueStorage {
         Types.Market storage market = _markets[_marketId(params)];
         Types.Tranche storage tranche = market.tranches[lltv];
         Types.Position storage position = tranche.positions[_userIdKey(onBehalf, positionId)];
-
         Types.OracleData memory oracleData = _oracleData(params);
-        require(!oracleData.borrowPaused);
 
         _accrue(params, lltv);
+
+        require(!oracleData.borrowPaused);
         require(tranche.supply.amount >= tranche.debt.amount + amount);
 
+        _whitelistCheckBorrower(market, onBehalf);
         uint256 shares = _assetsToSharesUp(amount, tranche.debt);
         position.debtShares += shares;
         tranche.debt.shares += shares;
         tranche.debt.amount += amount;
 
-        _liquidityCheck(params, lltv, onBehalf, positionId, oracleData);
         _transfer(params.debtToken, address(this), receiver, amount);
         borrowed = amount;
+        _liquidityCheck(params, lltv, onBehalf, positionId, oracleData);
     }
 
     function _repay(
@@ -276,6 +289,14 @@ abstract contract BlueInternal is BlueStorage {
 
     function _transfer(address asset, address from, address to, uint256 amount) internal {
         ERC20(asset).safeTransferFrom(from, to, amount);
+    }
+
+    function _whitelistCheckSupplier(Types.Market storage market, address supplier) internal view {
+        require(market.wlSuppliers.length() == 0 || market.wlSuppliers.contains(supplier));
+    }
+
+    function _whitelistCheckBorrower(Types.Market storage market, address borrower) internal view {
+        require(market.wlBorrowers.length() == 0 || market.wlBorrowers.contains(borrower));
     }
 
     function _liquidityCheck(

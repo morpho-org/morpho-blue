@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.20;
 
+import {EnumerableSet} from "@openzeppelin-contracts/utils/structs/EnumerableSet.sol";
+
 library Types {
     struct MarketParams {
         address collateralToken;
@@ -16,6 +18,8 @@ library Types {
         uint256 fee; // in basis points
         address deployer;
         address callBack;
+        EnumerableSet.AddressSet wlSuppliers;
+        EnumerableSet.AddressSet wlBorrowers;
     }
 
     struct Tranche {
