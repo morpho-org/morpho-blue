@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity 0.8.20;
 
 import {IERC20} from "src/interfaces/IERC20.sol";
 import {IOracle} from "src/interfaces/IOracle.sol";
@@ -11,10 +11,16 @@ uint constant WAD = 1e18;
 
 uint constant alpha = 0.5e18;
 
-uint constant N = 10;
+// Market id.
+type Id is bytes32;
 
-function bucketToLLTV(uint bucket) pure returns (uint) {
-    return MathLib.wDiv(bucket + 1, N + 1);
+// Market.
+struct Market {
+    IERC20 borrowableAsset;
+    IERC20 collateralAsset;
+    IOracle borrowableOracle;
+    IOracle collateralOracle;
+    uint lLTV;
 }
 
 function irm(uint utilization) pure returns (uint) {
@@ -23,211 +29,224 @@ function irm(uint utilization) pure returns (uint) {
     return utilization / 365 days;
 }
 
-contract Market {
-    using MathLib for int;
+contract Blue {
     using MathLib for uint;
     using SafeTransferLib for IERC20;
-
-    // Constants.
-
-    uint public constant getN = N;
-
-    address public immutable borrowableAsset;
-    address public immutable collateralAsset;
-    address public immutable borrowableOracle;
-    address public immutable collateralOracle;
 
     // Storage.
 
     // User' supply balances.
-    mapping(address => mapping(uint => uint)) public supplyShare;
+    mapping(Id => mapping(address => uint)) public supplyShare;
     // User' borrow balances.
-    mapping(address => mapping(uint => uint)) public borrowShare;
+    mapping(Id => mapping(address => uint)) public borrowShare;
     // User' collateral balance.
-    mapping(address => mapping(uint => uint)) public collateral;
+    mapping(Id => mapping(address => uint)) public collateral;
     // Market total supply.
-    mapping(uint => uint) public totalSupply;
+    mapping(Id => uint) public totalSupply;
     // Market total supply shares.
-    mapping(uint => uint) public totalSupplyShares;
+    mapping(Id => uint) public totalSupplyShares;
     // Market total borrow.
-    mapping(uint => uint) public totalBorrow;
+    mapping(Id => uint) public totalBorrow;
     // Market total borrow shares.
-    mapping(uint => uint) public totalBorrowShares;
-    // Interests last update.
-    mapping(uint => uint) public lastUpdate;
+    mapping(Id => uint) public totalBorrowShares;
+    // Interests last update (used to check if a market has been created).
+    mapping(Id => uint) public lastUpdate;
 
-    // Constructor.
+    // Markets management.
 
-    constructor(
-        address newBorrowableAsset,
-        address newCollateralAsset,
-        address newBorrowableOracle,
-        address newCollateralOracle
-    ) {
-        borrowableAsset = newBorrowableAsset;
-        collateralAsset = newCollateralAsset;
-        borrowableOracle = newBorrowableOracle;
-        collateralOracle = newCollateralOracle;
+    function createMarket(Market calldata market) external {
+        Id id = Id.wrap(keccak256(abi.encode(market)));
+        require(lastUpdate[id] == 0, "market already exists");
+
+        accrueInterests(id);
     }
 
-    // Suppliers position management.
+    // Supply management.
 
-    /// @dev positive amount to deposit.
-    function modifyDeposit(int amount, uint bucket) external {
-        if (amount == 0) return;
-        require(bucket < N, "unknown bucket");
+    function supply(Market calldata market, uint amount) external {
+        Id id = Id.wrap(keccak256(abi.encode(market)));
+        require(lastUpdate[id] != 0, "unknown market");
+        require(amount > 0, "zero amount");
 
-        accrueInterests(bucket);
+        accrueInterests(id);
 
-        if (totalSupply[bucket] == 0 && amount > 0) {
-            supplyShare[msg.sender][bucket] = WAD;
-            totalSupplyShares[bucket] = WAD;
+        if (totalSupply[id] == 0) {
+            supplyShare[id][msg.sender] = WAD;
+            totalSupplyShares[id] = WAD;
         } else {
-            int shares = amount.wMul(totalSupplyShares[bucket]).wDiv(totalSupply[bucket]);
-            supplyShare[msg.sender][bucket] = (int(supplyShare[msg.sender][bucket]) + shares).safeToUint();
-            totalSupplyShares[bucket] = (int(totalSupplyShares[bucket]) + shares).safeToUint();
+            uint shares = amount.wMul(totalSupplyShares[id]).wDiv(totalSupply[id]);
+            supplyShare[id][msg.sender] += shares;
+            totalSupplyShares[id] += shares;
         }
 
-        // No need to check if the integer is positive.
-        totalSupply[bucket] = uint(int(totalSupply[bucket]) + amount);
+        totalSupply[id] += amount;
 
-        if (amount < 0) require(totalBorrow[bucket] <= totalSupply[bucket], "not enough liquidity");
-
-        IERC20(borrowableAsset).handleTransfer({user: msg.sender, amountIn: amount});
+        market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
 
-    // Borrowers position management.
+    function withdraw(Market calldata market, uint amount) external {
+        Id id = Id.wrap(keccak256(abi.encode(market)));
+        require(lastUpdate[id] != 0, "unknown market");
+        require(amount > 0, "zero amount");
 
-    /// @dev positive amount to borrow (to discuss).
-    function modifyBorrow(int amount, uint bucket) external {
-        if (amount == 0) return;
-        require(bucket < N, "unknown bucket");
+        accrueInterests(id);
 
-        accrueInterests(bucket);
+        uint shares = amount.wMul(totalSupplyShares[id]).wDiv(totalSupply[id]);
+        supplyShare[id][msg.sender] -= shares;
+        totalSupplyShares[id] -= shares;
 
-        if (totalBorrow[bucket] == 0 && amount > 0) {
-            borrowShare[msg.sender][bucket] = WAD;
-            totalBorrowShares[bucket] = WAD;
+        totalSupply[id] -= amount;
+
+        require(totalBorrow[id] <= totalSupply[id], "not enough liquidity");
+
+        market.borrowableAsset.safeTransfer(msg.sender, amount);
+    }
+
+    // Borrow management.
+
+    function borrow(Market calldata market, uint amount) external {
+        Id id = Id.wrap(keccak256(abi.encode(market)));
+        require(lastUpdate[id] != 0, "unknown market");
+        require(amount > 0, "zero amount");
+
+        accrueInterests(id);
+
+        if (totalBorrow[id] == 0) {
+            borrowShare[id][msg.sender] = WAD;
+            totalBorrowShares[id] = WAD;
         } else {
-            int shares = amount.wMul(totalBorrowShares[bucket]).wDiv(totalBorrow[bucket]);
-            borrowShare[msg.sender][bucket] = (int(borrowShare[msg.sender][bucket]) + shares).safeToUint();
-            totalBorrowShares[bucket] = (int(totalBorrowShares[bucket]) + shares).safeToUint();
+            uint shares = amount.wMul(totalBorrowShares[id]).wDiv(totalBorrow[id]);
+            borrowShare[id][msg.sender] += shares;
+            totalBorrowShares[id] += shares;
         }
 
-        // No need to check if the integer is positive.
-        totalBorrow[bucket] = uint(int(totalBorrow[bucket]) + amount);
+        totalBorrow[id] += amount;
 
-        if (amount > 0) {
-            require(isHealthy(msg.sender, bucket), "not enough collateral");
-            require(totalBorrow[bucket] <= totalSupply[bucket], "not enough liquidity");
-        }
+        require(isHealthy(market, id, msg.sender), "not enough collateral");
+        require(totalBorrow[id] <= totalSupply[id], "not enough liquidity");
 
-        IERC20(borrowableAsset).handleTransfer({user: msg.sender, amountIn: -amount});
+        market.borrowableAsset.safeTransfer(msg.sender, amount);
     }
 
-    /// @dev positive amount to deposit.
-    function modifyCollateral(int amount, uint bucket) external {
-        if (amount == 0) return;
-        require(bucket < N, "unknown bucket");
+    function repay(Market calldata market, uint amount) external {
+        Id id = Id.wrap(keccak256(abi.encode(market)));
+        require(lastUpdate[id] != 0, "unknown market");
+        require(amount > 0, "zero amount");
 
-        accrueInterests(bucket);
+        accrueInterests(id);
 
-        collateral[msg.sender][bucket] = (int(collateral[msg.sender][bucket]) + amount).safeToUint();
+        uint shares = amount.wMul(totalBorrowShares[id]).wDiv(totalBorrow[id]);
+        borrowShare[id][msg.sender] -= shares;
+        totalBorrowShares[id] -= shares;
 
-        require(amount > 0 || isHealthy(msg.sender, bucket), "not enough collateral");
+        totalBorrow[id] -= amount;
 
-        IERC20(collateralAsset).handleTransfer({user: msg.sender, amountIn: amount});
+        market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
+    }
+
+    // Collateral management.
+
+    function supplyCollateral(Market calldata market, uint amount) external {
+        Id id = Id.wrap(keccak256(abi.encode(market)));
+        require(lastUpdate[id] != 0, "unknown market");
+        require(amount > 0, "zero amount");
+
+        accrueInterests(id);
+
+        collateral[id][msg.sender] += amount;
+
+        market.collateralAsset.transferFrom(msg.sender, address(this), amount);
+    }
+
+    function withdrawCollateral(Market calldata market, uint amount) external {
+        Id id = Id.wrap(keccak256(abi.encode(market)));
+        require(lastUpdate[id] != 0, "unknown market");
+        require(amount > 0, "zero amount");
+
+        accrueInterests(id);
+
+        collateral[id][msg.sender] -= amount;
+
+        require(isHealthy(market, id, msg.sender), "not enough collateral");
+
+        market.collateralAsset.transfer(msg.sender, amount);
     }
 
     // Liquidation.
 
-    struct Liquidation {
-        uint bucket;
-        address borrower;
-        uint maxCollat;
-    }
+    function liquidate(Market calldata market, address borrower, uint maxSeized)
+        external
+        returns (uint seized, uint repaid)
+    {
+        Id id = Id.wrap(keccak256(abi.encode(market)));
+        require(lastUpdate[id] != 0, "unknown market");
+        require(maxSeized > 0, "zero amount");
 
-    /// @return sumCollat The negative amount of collateral added.
-    /// @return sumBorrow The negative amount of borrow added.
-    function batchLiquidate(Liquidation[] memory liquidationData) external returns (int sumCollat, int sumBorrow) {
-        for (uint i; i < liquidationData.length; i++) {
-            Liquidation memory liq = liquidationData[i];
-            (int collat, int borrow) = liquidate(liq.bucket, liq.borrower, liq.maxCollat);
-            sumCollat += collat;
-            sumBorrow += borrow;
+        accrueInterests(id);
+
+        require(!isHealthy(market, id, borrower), "cannot liquidate a healthy position");
+
+        uint incentive = WAD + alpha.wMul(WAD.wDiv(market.lLTV) - WAD);
+        uint borrowPrice = market.borrowableOracle.price();
+        uint collatPrice = market.collateralOracle.price();
+        seized = maxSeized.min(collateral[id][borrower]);
+        repaid = seized.wMul(collatPrice).wDiv(incentive).wDiv(borrowPrice);
+        uint priorBorrowShares = borrowShare[id][borrower];
+        uint priorBorrow = priorBorrowShares.wMul(totalBorrow[id]).wDiv(totalBorrowShares[id]);
+        if (repaid > priorBorrow) {
+            repaid = priorBorrow;
+            seized = repaid.wDiv(collatPrice).wMul(incentive).wMul(borrowPrice);
         }
-
-        IERC20(collateralAsset).handleTransfer(msg.sender, sumCollat);
-        IERC20(borrowableAsset).handleTransfer(msg.sender, -sumBorrow);
-    }
-
-    /// @return collat The negative amount of collateral added.
-    /// @return borrow The negative amount of borrow added.
-    function liquidate(uint bucket, address borrower, uint maxCollat) internal returns (int collat, int borrow) {
-        if (maxCollat == 0) return (0, 0);
-        require(bucket < N, "unknown bucket");
-
-        accrueInterests(bucket);
-
-        require(!isHealthy(borrower, bucket), "cannot liquidate a healthy position");
-
-        uint incentive = WAD + alpha.wMul(WAD.wDiv(bucketToLLTV(bucket)) - WAD);
-        uint borrowPrice = IOracle(borrowableOracle).price();
-        uint collatPrice = IOracle(collateralOracle).price();
-        // Safe to cast because it's smaller than collateral[borrower][bucket]
-        collat = -int(maxCollat.min(collateral[borrower][bucket]));
-        borrow = collat.wMul(collatPrice).wDiv(incentive).wDiv(borrowPrice);
-        uint priorBorrowShares = borrowShare[borrower][bucket];
-        uint priorBorrow = priorBorrowShares.wMul(totalBorrow[bucket]).wDiv(totalBorrowShares[bucket]);
-        if (int(priorBorrow) + borrow < 0) {
-            borrow = -int(priorBorrow);
-            collat = borrow.wDiv(collatPrice).wMul(incentive).wMul(borrowPrice);
-        }
-        int shares = borrow.wMul(totalBorrowShares[bucket]).wDiv(totalBorrow[bucket]);
+        uint shares = repaid.wMul(totalBorrowShares[id]).wDiv(totalBorrow[id]);
 
         // Keep this next computation outside of the if-then-else.
-        uint newTotalSupply = (int(totalSupply[bucket]) - int(priorBorrow) - borrow).safeToUint();
+        uint newTotalSupply = totalSupply[id] + repaid - priorBorrow;
 
-        uint newCollateral = uint(int(collateral[borrower][bucket]) + collat);
+        uint newCollateral = collateral[id][borrower] - seized;
         if (newCollateral == 0) {
-            totalBorrow[bucket] -= priorBorrow;
-            totalBorrowShares[bucket] -= priorBorrowShares;
-            borrowShare[borrower][bucket] = 0;
+            totalBorrow[id] -= priorBorrow;
+            totalBorrowShares[id] -= priorBorrowShares;
+            borrowShare[id][borrower] = 0;
             // Realize the bad debt.
-            totalSupply[bucket] = newTotalSupply;
+            totalSupply[id] = newTotalSupply;
         } else {
-            totalBorrow[bucket] = (int(totalBorrow[bucket]) + borrow).safeToUint();
-            totalBorrowShares[bucket] = (int(totalBorrowShares[bucket]) + shares).safeToUint();
-            borrowShare[borrower][bucket] = (int(priorBorrowShares) + shares).safeToUint();
+            totalBorrow[id] -= repaid;
+            totalBorrowShares[id] -= shares;
+            borrowShare[id][borrower] -= shares;
         }
-        collateral[borrower][bucket] = newCollateral;
+        collateral[id][borrower] = newCollateral;
+
+        market.collateralAsset.safeTransfer(msg.sender, seized);
+        market.borrowableAsset.safeTransferFrom(msg.sender, address(this), repaid);
     }
 
     // Interests management.
 
-    function accrueInterests(uint bucket) internal {
-        uint bucketTotalBorrow = totalBorrow[bucket];
-        uint bucketTotalSupply = totalSupply[bucket];
-        if (bucketTotalSupply == 0) return;
-        uint utilization = bucketTotalBorrow.wDiv(bucketTotalSupply);
-        uint borrowRate = irm(utilization);
-        uint accruedInterests = bucketTotalBorrow.wMul(borrowRate).wMul(block.timestamp - lastUpdate[bucket]);
+    function accrueInterests(Id id) private {
+        uint marketTotalSupply = totalSupply[id];
 
-        totalSupply[bucket] = bucketTotalSupply + accruedInterests;
-        totalBorrow[bucket] = bucketTotalBorrow + accruedInterests;
-        lastUpdate[bucket] = block.timestamp;
+        if (marketTotalSupply != 0) {
+            uint marketTotalBorrow = totalBorrow[id];
+            uint utilization = marketTotalBorrow.wDiv(marketTotalSupply);
+            uint borrowRate = irm(utilization);
+            uint accruedInterests = marketTotalBorrow.wMul(borrowRate).wMul(block.timestamp - lastUpdate[id]);
+            totalSupply[id] = marketTotalSupply + accruedInterests;
+            totalBorrow[id] = marketTotalBorrow + accruedInterests;
+        }
+
+        lastUpdate[id] = block.timestamp;
     }
 
     // Health check.
 
-    function isHealthy(address user, uint bucket) public view returns (bool) {
-        if (borrowShare[user][bucket] > 0) {
-            // totalBorrowShares[bucket] > 0 because borrowShare[user][bucket] > 0.
-            uint borrowValue = borrowShare[user][bucket].wMul(totalBorrow[bucket]).wDiv(totalBorrowShares[bucket]).wMul(
-                IOracle(borrowableOracle).price()
+    function isHealthy(Market calldata market, Id id, address user) private view returns (bool) {
+        if (borrowShare[id][user] > 0) {
+            // totalBorrowShares[id] > 0 because borrowShare[id][user] > 0.
+            uint borrowValue = borrowShare[id][user].wMul(totalBorrow[id]).wDiv(totalBorrowShares[id]).wMul(
+                IOracle(market.borrowableOracle).price()
             );
-            uint collateralValue = collateral[user][bucket].wMul(IOracle(collateralOracle).price());
-            return collateralValue.wMul(bucketToLLTV(bucket)) >= borrowValue;
+            uint collateralValue = collateral[id][user].wMul(IOracle(market.collateralOracle).price());
+            return collateralValue.wMul(market.lLTV) >= borrowValue;
         }
         return true;
     }

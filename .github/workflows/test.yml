@@ -1,4 +1,4 @@
-name: test
+name: Foundry CI
 
 on:
   workflow_dispatch:
@@ -7,15 +7,11 @@ on:
       - main
   pull_request:
 
-env:
-  FOUNDRY_PROFILE: ci
-
 jobs:
-  check:
+  test:
     strategy:
       fail-fast: true
 
-    name: Foundry project
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
