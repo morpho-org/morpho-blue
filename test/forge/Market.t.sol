@@ -223,22 +223,39 @@ contract BlueTest is Test {
         assertEq(blue.supplyShare(id, borrower), secondAmount * 1e18 / firstAmount);
     }
 
-    function testModifyDepositUnknownMarket(Info memory infoFuzz) public {
+    function testSupplyUnknownMarket(Info memory infoFuzz) public {
         vm.assume(neq(infoFuzz, info));
         vm.expectRevert("unknown market");
         blue.supply(infoFuzz, 1);
     }
 
-    function testModifyBorrowUnknownMarket(Info memory infoFuzz) public {
+    function testWithdrawUnknownMarket(Info memory infoFuzz) public {
+        vm.assume(neq(infoFuzz, info));
+        vm.expectRevert("unknown market");
+        blue.withdraw(infoFuzz, 1);
+    }
+
+    function testBorrowUnknownMarket(Info memory infoFuzz) public {
         vm.assume(neq(infoFuzz, info));
         vm.expectRevert("unknown market");
         blue.borrow(infoFuzz, 1);
     }
 
-    function testModifyCollateralUnknownMarket(Info memory infoFuzz) public {
+    function testRepayUnknownMarket(Info memory infoFuzz) public {
+        vm.assume(neq(infoFuzz, info));
+        vm.expectRevert("unknown market");
+        blue.repay(infoFuzz, 1);
+    }
+
+    function testSupplyCollateralUnknownMarket(Info memory infoFuzz) public {
         vm.assume(neq(infoFuzz, info));
         vm.expectRevert("unknown market");
         blue.supplyCollateral(infoFuzz, 1);
+    }
+    function testWithdrawCollateralUnknownMarket(Info memory infoFuzz) public {
+        vm.assume(neq(infoFuzz, info));
+        vm.expectRevert("unknown market");
+        blue.withdrawCollateral(infoFuzz, 1);
     }
 
     function testWithdrawEmptyMarket(uint amount) public {
