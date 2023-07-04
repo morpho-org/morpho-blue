@@ -186,21 +186,18 @@ contract Blue {
 
         require(!isHealthy(market, id, borrower), "cannot liquidate a healthy position");
 
+        // The size of the bonus is the proportion alpha of 1 / LLTV - 1
         uint incentive = WAD + alpha.wMul(WAD.wDiv(market.lLTV) - WAD);
-        uint borrowPrice = market.borrowableOracle.price();
-        uint collatPrice = market.collateralOracle.price();
+        uint borrowablePrice = market.borrowableOracle.price();
+        uint collateralPrice = market.collateralOracle.price();
         seized = maxSeized.min(collateral[id][borrower]);
-        repaid = seized.wMul(collatPrice).wDiv(incentive).wDiv(borrowPrice);
+        repaid = seized.wMul(collateralPrice).wDiv(incentive).wDiv(borrowablePrice);
         uint priorBorrowShares = borrowShare[id][borrower];
         uint priorBorrow = priorBorrowShares.wMul(totalBorrow[id]).wDiv(totalBorrowShares[id]);
         if (repaid > priorBorrow) {
             repaid = priorBorrow;
-            seized = repaid.wDiv(collatPrice).wMul(incentive).wMul(borrowPrice);
+            seized = repaid.wDiv(collateralPrice).wMul(incentive).wMul(borrowablePrice);
         }
-        uint shares = repaid.wMul(totalBorrowShares[id]).wDiv(totalBorrow[id]);
-
-        // Keep this next computation outside of the if-then-else.
-        uint newTotalSupply = totalSupply[id] + repaid - priorBorrow;
 
         uint newCollateral = collateral[id][borrower] - seized;
         if (newCollateral == 0) {
@@ -208,11 +205,12 @@ contract Blue {
             totalBorrowShares[id] -= priorBorrowShares;
             borrowShare[id][borrower] = 0;
             // Realize the bad debt.
-            totalSupply[id] = newTotalSupply;
+            totalSupply[id] -= priorBorrow - repaid;
         } else {
+            uint repaidShares = repaid.wMul(totalBorrowShares[id]).wDiv(totalBorrow[id]);
             totalBorrow[id] -= repaid;
-            totalBorrowShares[id] -= shares;
-            borrowShare[id][borrower] -= shares;
+            totalBorrowShares[id] -= repaidShares;
+            borrowShare[id][borrower] -= repaidShares;
         }
         collateral[id][borrower] = newCollateral;
 
