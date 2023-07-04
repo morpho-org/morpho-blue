@@ -42,18 +42,12 @@ describe("Blue", () => {
   beforeEach(async () => {
     signers = await hre.ethers.getSigners();
 
-    const ERC20MockFactory = await hre.ethers.getContractFactory(
-      "ERC20Mock",
-      signers[0]
-    );
+    const ERC20MockFactory = await hre.ethers.getContractFactory("ERC20Mock", signers[0]);
 
     borrowable = await ERC20MockFactory.deploy("DAI", "DAI", 18);
     collateral = await ERC20MockFactory.deploy("Wrapped BTC", "WBTC", 18);
 
-    const OracleMockFactory = await hre.ethers.getContractFactory(
-      "OracleMock",
-      signers[0]
-    );
+    const OracleMockFactory = await hre.ethers.getContractFactory("OracleMock", signers[0]);
 
     borrowableOracle = await OracleMockFactory.deploy();
     collateralOracle = await OracleMockFactory.deploy();
@@ -72,10 +66,7 @@ describe("Blue", () => {
 
     const abiCoder = new utils.AbiCoder();
     const values = Object.values(market);
-    const encodedMarket = abiCoder.encode(
-      ["address", "address", "address", "address", "uint256"],
-      values
-    );
+    const encodedMarket = abiCoder.encode(["address", "address", "address", "address", "uint256"], values);
 
     id = Buffer.from(utils.keccak256(encodedMarket).slice(2), "hex");
 
@@ -86,19 +77,12 @@ describe("Blue", () => {
     for (let i = 1; i < iterations; ++i) {
       console.log(i, "/", iterations);
 
-      const user = new Wallet(
-        hexZeroPad(BigNumber.from(i).toHexString(), 32),
-        hre.ethers.provider
-      );
+      const user = new Wallet(hexZeroPad(BigNumber.from(i).toHexString(), 32), hre.ethers.provider);
       await setBalance(user.address, initBalance);
       await borrowable.setBalance(user.address, initBalance);
-      await borrowable
-        .connect(user)
-        .approve(blue.address, constants.MaxUint256);
+      await borrowable.connect(user).approve(blue.address, constants.MaxUint256);
       await collateral.setBalance(user.address, initBalance);
-      await collateral
-        .connect(user)
-        .approve(blue.address, constants.MaxUint256);
+      await collateral.connect(user).approve(blue.address, constants.MaxUint256);
 
       let amount = BigNumber.WAD.mul(1 + Math.floor(random() * 100));
 

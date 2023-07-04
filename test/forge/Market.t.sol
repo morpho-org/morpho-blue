@@ -58,7 +58,7 @@ contract BlueTest is Test {
         assertLe(blue.totalBorrow(id), blue.totalSupply(id));
     }
 
-    function testDeposit(uint amount) public {
+    function testSupply(uint amount) public {
         amount = bound(amount, 1, 2 ** 64);
 
         borrowableAsset.setBalance(address(this), amount);
@@ -177,7 +177,7 @@ contract BlueTest is Test {
         assertEq(borrowableAsset.balanceOf(address(blue)), amountLent - amountBorrowed + amountRepaid);
     }
 
-    function testDepositCollateral(uint amount) public {
+    function testSupplyCollateral(uint amount) public {
         amount = bound(amount, 1, 2 ** 64);
 
         collateralAsset.setBalance(address(this), amount);
@@ -262,19 +262,19 @@ contract BlueTest is Test {
     function testAmountZero() public {
         vm.expectRevert("amount zero");
         blue.supply(market, 0);
-        
+
         vm.expectRevert("amount zero");
         blue.withdraw(market, 0);
-        
+
         vm.expectRevert("amount zero");
         blue.borrow(market, 0);
-        
+
         vm.expectRevert("amount zero");
         blue.repay(market, 0);
-        
+
         vm.expectRevert("amount zero");
         blue.supplyCollateral(market, 0);
-        
+
         vm.expectRevert("amount zero");
         blue.withdrawCollateral(market, 0);
     }
