@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.0;
 
-import {EIP712_NAME, EIP712_APPROVAL_TYPEHASH} from "src/libraries/Constants.sol";
-import {SignedApproval} from "src/libraries/Types.sol";
-import {Events} from "src/libraries/Events.sol";
-import {InsufficientAllowance} from "src/libraries/Errors.sol";
+import {EIP712_NAME, EIP712_APPROVAL_TYPEHASH} from "./libraries/Constants.sol";
+import {SignedApproval} from "./libraries/Types.sol";
+import {Events} from "./libraries/Events.sol";
+import {InsufficientAllowance} from "./libraries/Errors.sol";
 
 import {ERC712} from "@morpho-utils/ERC712.sol";
 

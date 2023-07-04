@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.0;
 
-import {IRateModel} from "src/interfaces/IRateModel.sol";
+import {IRateModel} from "../interfaces/IRateModel.sol";
 
-import {TrancheId, Tranche, Position, TrancheShares} from "src/libraries/Types.sol";
-import {SharesMath} from "src/libraries/SharesMath.sol";
-import {PositionLib} from "src/libraries/PositionLib.sol";
+import {TrancheId, Tranche, Position, TrancheShares} from "./Types.sol";
+import {SharesMath} from "./SharesMath.sol";
+import {PositionLib} from "./PositionLib.sol";
 import {Math} from "@morpho-utils/math/Math.sol";
 import {WadRayMath} from "@morpho-utils/math/WadRayMath.sol";
 
@@ -15,11 +15,6 @@ library TrancheLib {
     using WadRayMath for uint256;
 
     using PositionLib for Position;
-
-    /// @dev Returns the supply available to be borrowed or withdrawn from the tranche.
-    function liquidity(Tranche memory tranche) internal pure returns (uint256) {
-        return tranche.totalSupply - tranche.totalBorrow;
-    }
 
     /// @dev Returns the amount of supply shares corresponding to the given amount of supply.
     function toSupplyShares(Tranche storage tranche, uint256 assets) internal view returns (uint256) {
@@ -187,5 +182,24 @@ library TrancheLib {
 
         accrued.lastAccrualTimestamp = block.timestamp;
         accrued.lastBorrowRate = borrowRate;
+    }
+}
+
+library TrancheMemLib {
+    using SharesMath for uint256;
+
+    /// @dev Returns the supply available to be borrowed or withdrawn from the tranche.
+    function liquidity(Tranche memory tranche) internal pure returns (uint256) {
+        return tranche.totalSupply - tranche.totalBorrow;
+    }
+
+    /// @dev Returns the amount of supply corresponding to the given amount of shares.
+    function toSupplyAssets(Tranche memory tranche, TrancheShares memory shares) internal pure returns (uint256) {
+        return shares.supply.toAssets(tranche.totalSupply, tranche.totalSupplyShares);
+    }
+
+    /// @dev Returns the amount of supply corresponding to the given amount of shares.
+    function toBorrowAssets(Tranche memory tranche, TrancheShares memory shares) internal pure returns (uint256) {
+        return shares.borrow.toAssets(tranche.totalBorrow, tranche.totalBorrowShares);
     }
 }

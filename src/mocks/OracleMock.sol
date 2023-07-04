@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.0;
 
-import {IOracle} from "src/interfaces/IOracle.sol";
+import {IOracle} from "../interfaces/IOracle.sol";
 
 contract OracleMock is IOracle {
     uint256 internal _price;

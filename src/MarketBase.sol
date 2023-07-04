@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.0;
 
-import {Events} from "src/libraries/Events.sol";
-import {MarketKey, Market} from "src/libraries/Types.sol";
-import {UnauthorizedIrm} from "src/libraries/Errors.sol";
-import {MarketKeyLib} from "src/libraries/MarketKeyLib.sol";
+import {Events} from "./libraries/Events.sol";
+import {MarketKey, Market} from "./libraries/Types.sol";
+import {UnauthorizedIrm} from "./libraries/Errors.sol";
+import {MarketKeyLib} from "./libraries/MarketKeyLib.sol";
 
 import {Ownable2Step} from "@morpho-utils/access/Ownable2Step.sol";
 

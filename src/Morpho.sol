@@ -1,28 +1,29 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.0;
 
-import {IMorpho} from "src/interfaces/IMorpho.sol";
-import {IOracle} from "src/interfaces/IOracle.sol";
-import {IERC3156xFlashLiquidator} from "src/interfaces/IERC3156xFlashLiquidator.sol";
+import {IMorpho} from "./interfaces/IMorpho.sol";
+import {IOracle} from "./interfaces/IOracle.sol";
+import {IERC3156xFlashLiquidator} from "./interfaces/IERC3156xFlashLiquidator.sol";
 
-import {NB_TRANCHES, LIQUIDATION_HEALTH_FACTOR, FLASH_LIQUIDATOR_SUCCESS_HASH} from "src/libraries/Constants.sol";
-import {MarketKey, Market, Tranche, TrancheShares, TrancheId, Position} from "src/libraries/Types.sol";
-import {CannotBorrow, CannotWithdrawCollateral, TooMuchSeized} from "src/libraries/Errors.sol";
-import {Events} from "src/libraries/Events.sol";
-import {MarketLib} from "src/libraries/MarketLib.sol";
-import {TrancheLib} from "src/libraries/TrancheLib.sol";
-import {PositionLib} from "src/libraries/PositionLib.sol";
-import {TrancheIdLib} from "src/libraries/TrancheIdLib.sol";
+import {NB_TRANCHES, LIQUIDATION_HEALTH_FACTOR, FLASH_LIQUIDATOR_SUCCESS_HASH} from "./libraries/Constants.sol";
+import {MarketKey, Market, Tranche, TrancheShares, TrancheId, Position} from "./libraries/Types.sol";
+import {CannotBorrow, CannotWithdrawCollateral, TooMuchSeized} from "./libraries/Errors.sol";
+import {Events} from "./libraries/Events.sol";
+import {MarketLib} from "./libraries/MarketLib.sol";
+import {TrancheLib} from "./libraries/TrancheLib.sol";
+import {PositionLib} from "./libraries/PositionLib.sol";
+import {TrancheIdLib} from "./libraries/TrancheIdLib.sol";
 
 import {WadRayMath} from "@morpho-utils/math/WadRayMath.sol";
 
 import {SafeTransferLib, ERC20} from "@solmate/utils/SafeTransferLib.sol";
 import {Permit2Lib} from "@permit2/libraries/Permit2Lib.sol";
 
-import {MarketBase} from "src/MarketBase.sol";
-import {AllowanceBase} from "src/AllowanceBase.sol";
+import {MarketBase} from "./MarketBase.sol";
+import {AllowanceBase} from "./AllowanceBase.sol";
 import {ERC2330} from "@morpho-utils/ERC2330.sol";
 import {ERC3156xFlashLender} from "@morpho-utils/ERC3156xFlashLender.sol";
+
 // import "hardhat/console.sol";
 
 contract Morpho is IMorpho, MarketBase, AllowanceBase, ERC3156xFlashLender, ERC2330 {

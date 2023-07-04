@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.0;
 
-import {MarketKey} from "src/libraries/Types.sol";
+import {MarketKey} from "../libraries/Types.sol";
 
 /// @dev Interface of the ERC3156x FlashBorrower, inspired by https://eips.ethereum.org/EIPS/eip-3156, modified for specific liquidation purposes.
 interface IERC3156xFlashLiquidator {

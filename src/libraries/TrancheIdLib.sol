@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.0;
 
-import {TrancheId} from "src/libraries/Types.sol";
-import {NB_TRANCHES, LIQUIDATION_BONUS_FACTOR} from "src/libraries/Constants.sol";
+import {TrancheId} from "./Types.sol";
+import {NB_TRANCHES, LIQUIDATION_BONUS_FACTOR} from "./Constants.sol";
 
 import {WadRayMath} from "@morpho-utils/math/WadRayMath.sol";
 

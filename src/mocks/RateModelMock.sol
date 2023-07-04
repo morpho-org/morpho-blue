@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.0;
 
-import {IRateModel} from "src/interfaces/IRateModel.sol";
+import {IRateModel} from "../interfaces/IRateModel.sol";
 
 contract RateModelMock is IRateModel {
     uint256 internal _dBorrowRate;

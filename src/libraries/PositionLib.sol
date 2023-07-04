@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.0;
 
-import {Position, TrancheId, TrancheShares} from "src/libraries/Types.sol";
-import {TrancheIdLib} from "src/libraries/TrancheIdLib.sol";
+import {Position, TrancheId, TrancheShares} from "./Types.sol";
+import {TrancheIdLib} from "./TrancheIdLib.sol";
 
 library PositionLib {
     using TrancheIdLib for TrancheId;

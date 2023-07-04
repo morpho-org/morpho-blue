@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.0;
 
-import {IRateModel} from "src/interfaces/IRateModel.sol";
+import {IRateModel} from "../interfaces/IRateModel.sol";
 
-import {NB_TRANCHES, LIQUIDATION_HEALTH_FACTOR} from "src/libraries/Constants.sol";
-import {Market, Tranche, TrancheShares, TrancheId, Position} from "src/libraries/Types.sol";
-import {NotEnoughLiquidity, UnhealthyHealthFactor, HealthyHealthFactor} from "src/libraries/Errors.sol";
-import {TrancheLib} from "src/libraries/TrancheLib.sol";
-import {TrancheIdLib} from "src/libraries/TrancheIdLib.sol";
-import {PositionLib} from "src/libraries/PositionLib.sol";
+import {NB_TRANCHES, LIQUIDATION_HEALTH_FACTOR} from "./Constants.sol";
+import {Market, Tranche, TrancheShares, TrancheId, Position} from "./Types.sol";
+import {NotEnoughLiquidity, UnhealthyHealthFactor, HealthyHealthFactor} from "./Errors.sol";
+import {TrancheLib, TrancheMemLib} from "./TrancheLib.sol";
+import {TrancheIdLib} from "./TrancheIdLib.sol";
+import {PositionLib} from "./PositionLib.sol";
 
 import {Math} from "@morpho-utils/math/Math.sol";
 import {WadRayMath} from "@morpho-utils/math/WadRayMath.sol";
@@ -18,6 +18,7 @@ library MarketLib {
     using WadRayMath for uint256;
 
     using TrancheLib for Tranche;
+    using TrancheMemLib for Tranche;
     using TrancheIdLib for TrancheId;
     using PositionLib for Position;
 

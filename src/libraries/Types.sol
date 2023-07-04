@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.0;
 
-import {IOracle} from "src/interfaces/IOracle.sol";
-import {IRateModel} from "src/interfaces/IRateModel.sol";
-import {ERC20} from "@solmate/tokens/ERC20.sol";
+import {IOracle} from "../interfaces/IOracle.sol";
+import {IRateModel} from "../interfaces/IRateModel.sol";
 
-import {NB_TRANCHES} from "src/libraries/Constants.sol";
+import {NB_TRANCHES} from "./Constants.sol";
+import {ERC20} from "@solmate/tokens/ERC20.sol";
 
 /// @dev The id uniquely identifying a tranche. Used for type safety.
 type TrancheId is uint256;
