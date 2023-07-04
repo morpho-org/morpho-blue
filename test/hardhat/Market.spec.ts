@@ -8,8 +8,9 @@ import { Blue, OracleMock, ERC20Mock } from "types";
 
 const iterations = 500;
 
-let nbLiquidations = 5;
-let closePositions = false;
+const closePositions = false;
+const nbLiquidations = 5;
+assert(2 * nbLiquidations + 1 < 20, "more liquidations than signers");
 
 let seed = 42;
 
@@ -41,6 +42,8 @@ interface Market {
 
 describe("Blue", () => {
   let signers: SignerWithAddress[];
+  let admin: SignerWithAddress;
+  let liquidator: SignerWithAddress;
 
   let blue: Blue;
   let borrowable: ERC20Mock;
@@ -49,9 +52,6 @@ describe("Blue", () => {
   let collateralOracle: OracleMock;
   let market: Market;
   let id: Buffer;
-
-  let admin: SignerWithAddress;
-  let liquidator: SignerWithAddress;
 
   const initBalance = constants.MaxUint256.div(2);
 
