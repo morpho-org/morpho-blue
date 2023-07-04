@@ -139,6 +139,8 @@ describe("Blue", () => {
       let maxSeize = closePositions ? constants.MaxUint256 : amount.div(2);
 
       market.lLTV = lltv;
+      // We use 2 different users to borrow from a bucket so that liquidations do not close a bucket completely.
+      // Consequently, we should only create the market on a particular LLTV once.
       if (i % 2 == 0) {
         await blue.connect(admin).createMarket(market);
         liquidationData.push({
@@ -181,9 +183,10 @@ describe("Blue", () => {
 
       let collat = await blue.collateral(id, user.address);
       assert(
-        closePositions || collat != BigNumber.from(0),
+        !closePositions || collat == BigNumber.from(0),
         "did not take the whole collateral when closing the position"
       );
+      assert(closePositions || collat != BigNumber.from(0), "unexpectedly closed the position");
     }
   });
 });
