@@ -7,10 +7,10 @@ import hre from "hardhat";
 import { Blue, OracleMock, ERC20Mock } from "types";
 
 const iterations = 500;
-
 const closePositions = false;
 const nbLiquidations = 5;
 assert(2 * nbLiquidations + 1 < 20, "more liquidations than signers");
+const initBalance = constants.MaxUint256.div(2);
 
 let seed = 42;
 
@@ -26,8 +26,8 @@ function random() {
 const abiCoder = new utils.AbiCoder();
 
 function identifier(market: Market) {
-  let values = Object.values(market);
-  let encodedMarket = abiCoder.encode(["address", "address", "address", "address", "uint256"], values);
+  const values = Object.values(market);
+  const encodedMarket = abiCoder.encode(["address", "address", "address", "address", "uint256"], values);
 
   return Buffer.from(utils.keccak256(encodedMarket).slice(2), "hex");
 }
@@ -50,10 +50,9 @@ describe("Blue", () => {
   let collateral: ERC20Mock;
   let borrowableOracle: OracleMock;
   let collateralOracle: OracleMock;
+
   let market: Market;
   let id: Buffer;
-
-  const initBalance = constants.MaxUint256.div(2);
 
   beforeEach(async () => {
     signers = await hre.ethers.getSigners();
@@ -134,9 +133,9 @@ describe("Blue", () => {
       const tranche = Math.floor(1 + i / 2);
       const lltv = BigNumber.WAD.mul(tranche).div(nbLiquidations + 1);
 
-      let amount = BigNumber.WAD.mul(1 + Math.floor(random() * 100));
-      let borrowedAmount = amount.mul(lltv).div(BigNumber.WAD);
-      let maxSeize = closePositions ? constants.MaxUint256 : amount.div(2);
+      const amount = BigNumber.WAD.mul(1 + Math.floor(random() * 100));
+      const borrowedAmount = amount.mul(lltv).div(BigNumber.WAD);
+      const maxSeize = closePositions ? constants.MaxUint256 : amount.div(2);
 
       market.lLTV = lltv;
       // We use 2 different users to borrow from a bucket so that liquidations do not close a bucket completely.
