@@ -90,7 +90,7 @@ contract Blue {
         uint shares = amount.wMul(totalSupplyShares[id]).wDiv(totalSupply[id]);
         supplyShare[id][msg.sender] -= shares;
         totalSupplyShares[id] -= shares;
-        
+
         totalSupply[id] -= amount;
 
         require(totalBorrow[id] <= totalSupply[id], "not enough liquidity");
@@ -170,7 +170,7 @@ contract Blue {
 
     // Interests management.
 
-    function accrueInterests(Id id) internal {
+    function accrueInterests(Id id) private {
         uint marketTotalSupply = totalSupply[id];
 
         if (marketTotalSupply != 0) {
@@ -187,9 +187,9 @@ contract Blue {
 
     // Health check.
 
-    function checkHealth(Info calldata info, Id id, address user) public view {
+    function checkHealth(Info calldata info, Id id, address user) private view {
         if (borrowShare[id][user] > 0) {
-            // totalBorrowShares[id] > 0 because borrowShare[id[user] > 0.
+            // totalBorrowShares[id] > 0 because borrowShare[id][user] > 0.
             uint borrowValue = borrowShare[id][user].wMul(totalBorrow[id]).wDiv(totalBorrowShares[id]).wMul(
                 IOracle(info.borrowableOracle).price()
             );

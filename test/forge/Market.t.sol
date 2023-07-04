@@ -252,6 +252,7 @@ contract BlueTest is Test {
         vm.expectRevert("unknown market");
         blue.supplyCollateral(infoFuzz, 1);
     }
+
     function testWithdrawCollateralUnknownMarket(Info memory infoFuzz) public {
         vm.assume(neq(infoFuzz, info));
         vm.expectRevert("unknown market");
