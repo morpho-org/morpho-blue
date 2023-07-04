@@ -53,6 +53,10 @@ contract BlueTest is Test {
         borrowableAsset.approve(address(blue), type(uint).max);
         collateralAsset.approve(address(blue), type(uint).max);
         vm.stopPrank();
+        vm.startPrank(liquidator);
+        borrowableAsset.approve(address(blue), type(uint).max);
+        collateralAsset.approve(address(blue), type(uint).max);
+        vm.stopPrank();
     }
 
     // To move to a test utils file later.
@@ -244,7 +248,8 @@ contract BlueTest is Test {
         uint amountCollateral = amountLent;
         uint borrowingPower = amountCollateral.wMul(lLTV);
         uint amountBorrowed = borrowingPower.wMul(0.8e18);
-        uint maxCollat = amountCollateral.wMul(lLTV);
+        uint toSeize = amountCollateral.wMul(lLTV);
+        uint incentive = WAD + alpha.wMul(WAD.wDiv(lLTV) - WAD);
 
         borrowableAsset.setBalance(address(this), amountLent);
         collateralAsset.setBalance(borrower, amountCollateral);
@@ -265,18 +270,17 @@ contract BlueTest is Test {
         uint liquidatorNetworthBefore = networth(liquidator);
 
         // Liquidate
-        vm.startPrank(liquidator);
-        borrowableAsset.approve(address(blue), type(uint).max);
-        (uint seized, uint repaid) = blue.liquidate(market, borrower, maxCollat);
-        vm.stopPrank();
+        vm.prank(liquidator);
+        blue.liquidate(market, borrower, toSeize);
 
         uint liquidatorNetworthAfter = networth(liquidator);
 
-        assertGt(liquidatorNetworthAfter, liquidatorNetworthBefore, "liquidator's networth");
-        assertGt(seized, 0, "collateral seized");
-        assertGt(repaid, 0, "borrow repaid");
-        assertApproxEqAbs(borrowBalance(borrower), amountBorrowed - repaid, 100, "collateral balance borrower");
-        assertApproxEqAbs(blue.collateral(id, borrower), amountCollateral - seized, 100, "collateral balance borrower");
+        uint expectedRepaid = toSeize.wMul(collateralOracle.price()).wDiv(incentive).wDiv(borrowableOracle.price());
+        uint expectedNetWorthAfter = liquidatorNetworthBefore + toSeize.wMul(collateralOracle.price())
+            - expectedRepaid.wMul(borrowableOracle.price());
+        assertEq(liquidatorNetworthAfter, expectedNetWorthAfter);
+        assertApproxEqAbs(borrowBalance(borrower), amountBorrowed - expectedRepaid, 100);
+        assertEq(blue.collateral(id, borrower), amountCollateral - toSeize);
     }
 
     function testRealizeBadDebt(uint amountLent) public {
@@ -286,7 +290,8 @@ contract BlueTest is Test {
         uint amountCollateral = amountLent;
         uint borrowingPower = amountCollateral.wMul(lLTV);
         uint amountBorrowed = borrowingPower.wMul(0.8e18);
-        uint maxCollat = type(uint).max;
+        uint toSeize = amountCollateral;
+        uint incentive = WAD + alpha.wMul(WAD.wDiv(market.lLTV) - WAD);
 
         borrowableAsset.setBalance(address(this), amountLent);
         collateralAsset.setBalance(borrower, amountCollateral);
@@ -307,21 +312,20 @@ contract BlueTest is Test {
         uint liquidatorNetworthBefore = networth(liquidator);
 
         // Liquidate
-        vm.startPrank(liquidator);
-        borrowableAsset.approve(address(blue), type(uint).max);
-        (uint seized, uint repaid) = blue.liquidate(market, borrower, maxCollat);
-        vm.stopPrank();
+        vm.prank(liquidator);
+        blue.liquidate(market, borrower, toSeize);
 
         uint liquidatorNetworthAfter = networth(liquidator);
 
-        assertGt(liquidatorNetworthAfter, liquidatorNetworthBefore, "liquidator's networth");
-        assertEq(seized, amountCollateral, "collateral seized");
-        assertGt(repaid, 0, "borrow repaid");
-        assertEq(borrowBalance(borrower), 0, "collateral balance borrower");
-        assertEq(blue.collateral(id, borrower), 0, "collateral balance borrower");
-        uint expectedBadDebt = amountBorrowed - repaid;
-        assertGt(expectedBadDebt, 0, "positive bad debt");
-        assertApproxEqAbs(supplyBalance(address(this)), amountLent - expectedBadDebt, 10, "realized bad debt");
+        uint expectedRepaid = toSeize.wMul(collateralOracle.price()).wDiv(incentive).wDiv(borrowableOracle.price());
+        uint expectedNetWorthAfter = liquidatorNetworthBefore + toSeize.wMul(collateralOracle.price())
+            - expectedRepaid.wMul(borrowableOracle.price());
+        assertEq(liquidatorNetworthAfter, expectedNetWorthAfter);
+        assertEq(borrowBalance(borrower), 0);
+        assertEq(blue.collateral(id, borrower), 0);
+        uint expectedBadDebt = amountBorrowed - expectedRepaid;
+        assertGt(expectedBadDebt, 0);
+        assertApproxEqAbs(supplyBalance(address(this)), amountLent - expectedBadDebt, 10);
     }
 
     function testTwoUsersSupply(uint firstAmount, uint secondAmount) public {
