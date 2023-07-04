@@ -1,18 +1,16 @@
-import { BigNumber, Wallet, constants } from "ethers";
-import hre from "hardhat";
-
 import { hexZeroPad } from "@ethersproject/bytes";
 import { setBalance } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-
-import { Market, OracleMock, ERC20Mock } from "types";
+import { BigNumber, Wallet, constants, utils } from "ethers";
+import hre from "hardhat";
+import { Blue, OracleMock, ERC20Mock } from "types";
 
 const iterations = 500;
 
 let seed = 42;
 
 function next() {
-  seed = seed * 16807 % 2147483647;
+  seed = (seed * 16807) % 2147483647;
   return seed;
 }
 
@@ -20,14 +18,24 @@ function random() {
   return (next() - 1) / 2147483646;
 }
 
-describe("Market", () => {
+interface Market {
+  borrowableAsset: string;
+  collateralAsset: string;
+  borrowableOracle: string;
+  collateralOracle: string;
+  lLTV: BigNumber;
+}
+
+describe("Blue", () => {
   let signers: SignerWithAddress[];
 
+  let blue: Blue;
   let borrowable: ERC20Mock;
   let collateral: ERC20Mock;
   let borrowableOracle: OracleMock;
   let collateralOracle: OracleMock;
   let market: Market;
+  let id: Buffer;
 
   const initBalance = constants.MaxUint256.div(2);
 
@@ -44,46 +52,58 @@ describe("Market", () => {
     borrowableOracle = await OracleMockFactory.deploy();
     collateralOracle = await OracleMockFactory.deploy();
 
-    const MarketFactory = await hre.ethers.getContractFactory("Market", signers[0]);
+    const BlueFactory = await hre.ethers.getContractFactory("Blue", signers[0]);
 
-    market = await MarketFactory.deploy(
-      borrowable.address,
-      collateral.address,
-      borrowableOracle.address,
-      collateralOracle.address
-    );
+    blue = await BlueFactory.deploy();
+
+    market = {
+      borrowableAsset: borrowable.address,
+      collateralAsset: collateral.address,
+      borrowableOracle: borrowableOracle.address,
+      collateralOracle: collateralOracle.address,
+      lLTV: BigNumber.WAD,
+    };
+
+    const abiCoder = new utils.AbiCoder();
+    const values = Object.values(market);
+    const encodedMarket = abiCoder.encode(["address", "address", "address", "address", "uint256"], values);
+
+    id = Buffer.from(utils.keccak256(encodedMarket).slice(2), "hex");
+
+    await blue.connect(signers[0]).createMarket(market);
   });
 
   it("should simulate gas cost", async () => {
-    const n = (await market.getN()).toNumber();
-
     for (let i = 1; i < iterations; ++i) {
       console.log(i, "/", iterations);
 
       const user = new Wallet(hexZeroPad(BigNumber.from(i).toHexString(), 32), hre.ethers.provider);
       await setBalance(user.address, initBalance);
       await borrowable.setBalance(user.address, initBalance);
-      await borrowable.connect(user).approve(market.address, constants.MaxUint256);
+      await borrowable.connect(user).approve(blue.address, constants.MaxUint256);
       await collateral.setBalance(user.address, initBalance);
-      await collateral.connect(user).approve(market.address, constants.MaxUint256);
+      await collateral.connect(user).approve(blue.address, constants.MaxUint256);
 
       let amount = BigNumber.WAD.mul(1 + Math.floor(random() * 100));
-      const bucket = Math.floor(random() * n);
 
       let supplyOnly: boolean = random() < 2 / 3;
       if (supplyOnly) {
-        await market.connect(user).modifyDeposit(amount, bucket);
-        await market.connect(user).modifyDeposit(amount.div(2).mul(-1), bucket);
+        if (amount > BigNumber.from(0)) {
+          await blue.connect(user).supply(market, amount);
+          await blue.connect(user).withdraw(market, amount.div(2));
+        }
       } else {
-        const totalSupply = await market.totalSupply(bucket);
-        const totalBorrow = await market.totalBorrow(bucket);
+        const totalSupply = await blue.totalSupply(id);
+        const totalBorrow = await blue.totalBorrow(id);
         let liq = BigNumber.from(totalSupply).sub(BigNumber.from(totalBorrow));
         amount = BigNumber.min(amount, BigNumber.from(liq).div(2));
 
-        await market.connect(user).modifyCollateral(amount, bucket);
-        await market.connect(user).modifyBorrow(amount.div(2), bucket);
-        await market.connect(user).modifyBorrow(amount.div(4).mul(-1), bucket);
-        await market.connect(user).modifyCollateral(amount.div(8).mul(-1), bucket);
+        if (amount > BigNumber.from(0)) {
+          await blue.connect(user).supplyCollateral(market, amount);
+          await blue.connect(user).borrow(market, amount.div(2));
+          await blue.connect(user).repay(market, amount.div(4));
+          await blue.connect(user).withdrawCollateral(market, amount.div(8));
+        }
       }
     }
   });
