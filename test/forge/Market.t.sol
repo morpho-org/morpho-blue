@@ -259,6 +259,26 @@ contract BlueTest is Test {
         blue.withdrawCollateral(marketFuzz, 1);
     }
 
+    function testAmountZero() public {
+        vm.expectRevert("amount zero");
+        blue.supply(market, 0);
+        
+        vm.expectRevert("amount zero");
+        blue.withdraw(market, 0);
+        
+        vm.expectRevert("amount zero");
+        blue.borrow(market, 0);
+        
+        vm.expectRevert("amount zero");
+        blue.repay(market, 0);
+        
+        vm.expectRevert("amount zero");
+        blue.supplyCollateral(market, 0);
+        
+        vm.expectRevert("amount zero");
+        blue.withdrawCollateral(market, 0);
+    }
+
     function testWithdrawEmptyMarket(uint amount) public {
         vm.assume(amount > 0);
         vm.expectRevert(stdError.divisionError);
