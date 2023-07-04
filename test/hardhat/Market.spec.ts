@@ -18,7 +18,7 @@ function random() {
   return (next() - 1) / 2147483646;
 }
 
-interface Info {
+interface Market {
   borrowableAsset: string;
   collateralAsset: string;
   borrowableOracle: string;
@@ -34,7 +34,7 @@ describe("Blue", () => {
   let collateral: ERC20Mock;
   let borrowableOracle: OracleMock;
   let collateralOracle: OracleMock;
-  let info: Info;
+  let market: Market;
   let id: Buffer;
 
   const initBalance = constants.MaxUint256.div(2);
@@ -62,7 +62,7 @@ describe("Blue", () => {
 
     blue = await BlueFactory.deploy();
 
-    info = {
+    market = {
       borrowableAsset: borrowable.address,
       collateralAsset: collateral.address,
       borrowableOracle: borrowableOracle.address,
@@ -71,12 +71,15 @@ describe("Blue", () => {
     };
 
     const abiCoder = new utils.AbiCoder();
-    const values = Object.values(info);
-    const encodedInfo = abiCoder.encode(['address', 'address', 'address', 'address', 'uint256'], values);
+    const values = Object.values(market);
+    const encodedMarket = abiCoder.encode(
+      ["address", "address", "address", "address", "uint256"],
+      values
+    );
 
-    id = Buffer.from(utils.keccak256(encodedInfo).slice(2), "hex");
+    id = Buffer.from(utils.keccak256(encodedMarket).slice(2), "hex");
 
-    await blue.connect(signers[0]).createMarket(info);
+    await blue.connect(signers[0]).createMarket(market);
   });
 
   it("should simulate gas cost", async () => {
@@ -102,8 +105,8 @@ describe("Blue", () => {
       let supplyOnly: boolean = random() < 2 / 3;
       if (supplyOnly) {
         if (amount > BigNumber.from(0)) {
-          await blue.connect(user).supply(info, amount);
-          await blue.connect(user).withdraw(info, amount.div(2));
+          await blue.connect(user).supply(market, amount);
+          await blue.connect(user).withdraw(market, amount.div(2));
         }
       } else {
         const totalSupply = await blue.totalSupply(id);
@@ -112,10 +115,10 @@ describe("Blue", () => {
         amount = BigNumber.min(amount, BigNumber.from(liq).div(2));
 
         if (amount > BigNumber.from(0)) {
-          await blue.connect(user).supplyCollateral(info, amount);
-          await blue.connect(user).borrow(info, amount.div(2));
-          await blue.connect(user).repay(info, amount.div(4));
-          await blue.connect(user).withdrawCollateral(info, amount.div(8));
+          await blue.connect(user).supplyCollateral(market, amount);
+          await blue.connect(user).borrow(market, amount.div(2));
+          await blue.connect(user).repay(market, amount.div(4));
+          await blue.connect(user).withdrawCollateral(market, amount.div(8));
         }
       }
     }

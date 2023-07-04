@@ -10,8 +10,8 @@ import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 // Market id.
 type Id is bytes32;
 
-// Market info.
-struct Info {
+// Market.
+struct Market {
     IERC20 borrowableAsset;
     IERC20 collateralAsset;
     IOracle borrowableOracle;
@@ -50,8 +50,8 @@ contract Blue {
 
     // Markets management.
 
-    function createMarket(Info calldata info) external {
-        Id id = Id.wrap(keccak256(abi.encode(info)));
+    function createMarket(Market calldata market) external {
+        Id id = Id.wrap(keccak256(abi.encode(market)));
         require(lastUpdate[id] == 0, "market already exists");
 
         accrueInterests(id);
@@ -59,8 +59,8 @@ contract Blue {
 
     // Supply management.
 
-    function supply(Info calldata info, uint amount) external {
-        Id id = Id.wrap(keccak256(abi.encode(info)));
+    function supply(Market calldata market, uint amount) external {
+        Id id = Id.wrap(keccak256(abi.encode(market)));
         require(lastUpdate[id] != 0, "unknown market");
         require(amount > 0, "zero amount");
 
@@ -77,11 +77,11 @@ contract Blue {
 
         totalSupply[id] += amount;
 
-        info.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
+        market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
 
-    function withdraw(Info calldata info, uint amount) external {
-        Id id = Id.wrap(keccak256(abi.encode(info)));
+    function withdraw(Market calldata market, uint amount) external {
+        Id id = Id.wrap(keccak256(abi.encode(market)));
         require(lastUpdate[id] != 0, "unknown market");
         require(amount > 0, "zero amount");
 
@@ -95,13 +95,13 @@ contract Blue {
 
         require(totalBorrow[id] <= totalSupply[id], "not enough liquidity");
 
-        info.borrowableAsset.safeTransfer(msg.sender, amount);
+        market.borrowableAsset.safeTransfer(msg.sender, amount);
     }
 
     // Borrow management.
 
-    function borrow(Info calldata info, uint amount) external {
-        Id id = Id.wrap(keccak256(abi.encode(info)));
+    function borrow(Market calldata market, uint amount) external {
+        Id id = Id.wrap(keccak256(abi.encode(market)));
         require(lastUpdate[id] != 0, "unknown market");
         require(amount > 0, "zero amount");
 
@@ -118,14 +118,14 @@ contract Blue {
 
         totalBorrow[id] += amount;
 
-        checkHealth(info, id, msg.sender);
+        checkHealth(market, id, msg.sender);
         require(totalBorrow[id] <= totalSupply[id], "not enough liquidity");
 
-        info.borrowableAsset.safeTransfer(msg.sender, amount);
+        market.borrowableAsset.safeTransfer(msg.sender, amount);
     }
 
-    function repay(Info calldata info, uint amount) external {
-        Id id = Id.wrap(keccak256(abi.encode(info)));
+    function repay(Market calldata market, uint amount) external {
+        Id id = Id.wrap(keccak256(abi.encode(market)));
         require(lastUpdate[id] != 0, "unknown market");
         require(amount > 0, "zero amount");
 
@@ -137,13 +137,13 @@ contract Blue {
 
         totalBorrow[id] -= amount;
 
-        info.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
+        market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
 
     // Collateral management.
 
-    function supplyCollateral(Info calldata info, uint amount) external {
-        Id id = Id.wrap(keccak256(abi.encode(info)));
+    function supplyCollateral(Market calldata market, uint amount) external {
+        Id id = Id.wrap(keccak256(abi.encode(market)));
         require(lastUpdate[id] != 0, "unknown market");
         require(amount > 0, "zero amount");
 
@@ -151,11 +151,11 @@ contract Blue {
 
         collateral[id][msg.sender] += amount;
 
-        info.collateralAsset.transferFrom(msg.sender, address(this), amount);
+        market.collateralAsset.transferFrom(msg.sender, address(this), amount);
     }
 
-    function withdrawCollateral(Info calldata info, uint amount) external {
-        Id id = Id.wrap(keccak256(abi.encode(info)));
+    function withdrawCollateral(Market calldata market, uint amount) external {
+        Id id = Id.wrap(keccak256(abi.encode(market)));
         require(lastUpdate[id] != 0, "unknown market");
         require(amount > 0, "zero amount");
 
@@ -163,9 +163,9 @@ contract Blue {
 
         collateral[id][msg.sender] -= amount;
 
-        checkHealth(info, id, msg.sender);
+        checkHealth(market, id, msg.sender);
 
-        info.collateralAsset.transfer(msg.sender, amount);
+        market.collateralAsset.transfer(msg.sender, amount);
     }
 
     // Interests management.
@@ -187,14 +187,14 @@ contract Blue {
 
     // Health check.
 
-    function checkHealth(Info calldata info, Id id, address user) private view {
+    function checkHealth(Market calldata market, Id id, address user) private view {
         if (borrowShare[id][user] > 0) {
             // totalBorrowShares[id] > 0 because borrowShare[id][user] > 0.
             uint borrowValue = borrowShare[id][user].wMul(totalBorrow[id]).wDiv(totalBorrowShares[id]).wMul(
-                IOracle(info.borrowableOracle).price()
+                IOracle(market.borrowableOracle).price()
             );
-            uint collateralValue = collateral[id][user].wMul(IOracle(info.collateralOracle).price());
-            require(collateralValue.wMul(info.lLTV) >= borrowValue, "not enough collateral");
+            uint collateralValue = collateral[id][user].wMul(IOracle(market.collateralOracle).price());
+            require(collateralValue.wMul(market.lLTV) >= borrowValue, "not enough collateral");
         }
     }
 }
