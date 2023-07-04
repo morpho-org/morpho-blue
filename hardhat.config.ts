@@ -1,3 +1,8 @@
+import "@nomicfoundation/hardhat-chai-matchers";
+import "@nomicfoundation/hardhat-foundry";
+import "@nomicfoundation/hardhat-network-helpers";
+import "@nomiclabs/hardhat-ethers";
+import "@typechain/hardhat";
 import * as dotenv from "dotenv";
 import "ethers-maths";
 import "hardhat-deal";
@@ -5,12 +10,6 @@ import "hardhat-gas-reporter";
 import "hardhat-tracer";
 import { HardhatUserConfig } from "hardhat/config";
 import "solidity-coverage";
-
-import "@nomicfoundation/hardhat-chai-matchers";
-import "@nomicfoundation/hardhat-foundry";
-import "@nomicfoundation/hardhat-network-helpers";
-import "@nomiclabs/hardhat-ethers";
-import "@typechain/hardhat";
 
 dotenv.config();
 
@@ -26,7 +25,7 @@ const config: HardhatUserConfig = {
   solidity: {
     compilers: [
       {
-        version: "0.8.19",
+        version: "0.8.20",
         settings: {
           optimizer: {
             enabled: true,
