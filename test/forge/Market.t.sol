@@ -61,7 +61,7 @@ contract BlueTest is Test {
 
     // To move to a test utils file later.
 
-    function networth(address user) internal view returns (uint) {
+    function netWorth(address user) internal view returns (uint) {
         uint collateralAssetValue = collateralAsset.balanceOf(user).wMul(collateralOracle.price());
         uint borrowableAssetValue = borrowableAsset.balanceOf(user).wMul(borrowableOracle.price());
         return collateralAssetValue + borrowableAssetValue;
@@ -267,13 +267,13 @@ contract BlueTest is Test {
         // Price change
         borrowableOracle.setPrice(2e18);
 
-        uint liquidatorNetworthBefore = networth(liquidator);
+        uint liquidatorNetworthBefore = netWorth(liquidator);
 
         // Liquidate
         vm.prank(liquidator);
         blue.liquidate(market, borrower, toSeize);
 
-        uint liquidatorNetworthAfter = networth(liquidator);
+        uint liquidatorNetworthAfter = netWorth(liquidator);
 
         uint expectedRepaid = toSeize.wMul(collateralOracle.price()).wDiv(incentive).wDiv(borrowableOracle.price());
         uint expectedNetWorthAfter = liquidatorNetworthBefore + toSeize.wMul(collateralOracle.price())
@@ -309,13 +309,13 @@ contract BlueTest is Test {
         // Price change
         borrowableOracle.setPrice(100e18);
 
-        uint liquidatorNetworthBefore = networth(liquidator);
+        uint liquidatorNetworthBefore = netWorth(liquidator);
 
         // Liquidate
         vm.prank(liquidator);
         blue.liquidate(market, borrower, toSeize);
 
-        uint liquidatorNetworthAfter = networth(liquidator);
+        uint liquidatorNetworthAfter = netWorth(liquidator);
 
         uint expectedRepaid = toSeize.wMul(collateralOracle.price()).wDiv(incentive).wDiv(borrowableOracle.price());
         uint expectedNetWorthAfter = liquidatorNetworthBefore + toSeize.wMul(collateralOracle.price())
@@ -345,40 +345,29 @@ contract BlueTest is Test {
         assertEq(blue.supplyShare(id, borrower), secondAmount * 1e18 / firstAmount, "expected shares second user");
     }
 
-    function testSupplyUnknownMarket(Market memory marketFuzz) public {
+    function testUnknownMarket(Market memory marketFuzz) public {
         vm.assume(neq(marketFuzz, market));
+
         vm.expectRevert("unknown market");
         blue.supply(marketFuzz, 1);
-    }
 
-    function testWithdrawUnknownMarket(Market memory marketFuzz) public {
-        vm.assume(neq(marketFuzz, market));
         vm.expectRevert("unknown market");
         blue.withdraw(marketFuzz, 1);
-    }
 
-    function testBorrowUnknownMarket(Market memory marketFuzz) public {
-        vm.assume(neq(marketFuzz, market));
         vm.expectRevert("unknown market");
         blue.borrow(marketFuzz, 1);
-    }
 
-    function testRepayUnknownMarket(Market memory marketFuzz) public {
-        vm.assume(neq(marketFuzz, market));
         vm.expectRevert("unknown market");
         blue.repay(marketFuzz, 1);
-    }
 
-    function testSupplyCollateralUnknownMarket(Market memory marketFuzz) public {
-        vm.assume(neq(marketFuzz, market));
         vm.expectRevert("unknown market");
         blue.supplyCollateral(marketFuzz, 1);
-    }
 
-    function testWithdrawCollateralUnknownMarket(Market memory marketFuzz) public {
-        vm.assume(neq(marketFuzz, market));
         vm.expectRevert("unknown market");
         blue.withdrawCollateral(marketFuzz, 1);
+
+        vm.expectRevert("unknown market");
+        blue.liquidate(marketFuzz, address(0), 1);
     }
 
     function testAmountZero() public {
@@ -399,21 +388,24 @@ contract BlueTest is Test {
 
         vm.expectRevert("zero amount");
         blue.withdrawCollateral(market, 0);
+
+        vm.expectRevert("zero amount");
+        blue.liquidate(market, address(0), 0);
     }
 
-    function testWithdrawEmptyMarket(uint amount) public {
+    function testEmptyMarketWithdraw(uint amount) public {
         vm.assume(amount > 0);
         vm.expectRevert(stdError.divisionError);
         blue.withdraw(market, amount);
     }
 
-    function testRepayEmptyMarket(uint amount) public {
+    function testEmptyMarketRepay(uint amount) public {
         vm.assume(amount > 0);
         vm.expectRevert(stdError.divisionError);
         blue.repay(market, amount);
     }
 
-    function testWithdrawCollateralEmptyMarket(uint amount) public {
+    function testEmptyMarketWithdrawCollateral(uint amount) public {
         vm.assume(amount > 0);
         vm.expectRevert(stdError.arithmeticError);
         blue.withdrawCollateral(market, amount);
