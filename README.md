@@ -89,12 +89,8 @@ The most illustrative concept is the choice to go for `private` storage variable
 Isolating read & write logic into getters & setters enables higher development quality and security for the reasons mentioned in the point above. So I also isolated layers of code into separate libraries, each one having a single responsibility: handling safe accesses modifications of the underlying storage.
 
 - [MarketLib](src/libraries/MarketLib.sol): responsible for the `Market` struct
-- [TrancheLib](src/libraries/TrancheLib.sol): responsible for the `Tranche` struct
 - [PositionLib](src/libraries/PositionLib.sol): responsible for the `Position` struct
 - [MarketKeyLib](src/libraries/MarketKeyLib.sol): responsible for the `MarketKey` struct
-- [TrancheIdLib](src/libraries/TrancheIdLib.sol): responsible for the `TrancheId` struct
-
-This approach as limits with regard to some gas optimizations: following this good practice, we'd want to include the `isBorrowing` getter into the `PositionLib`, but it'd require reading `Position.tranchesMask` multiple times from storage in each loop.
 
 Note that the same could be achieved with internal contract getters. I only chose library because I believe it is the most intuitive and appropriate way to approximate Object-oriented programming in Solidity.
 

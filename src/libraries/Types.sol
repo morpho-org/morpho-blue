@@ -7,9 +7,6 @@ import {IRateModel} from "../interfaces/IRateModel.sol";
 import {NB_TRANCHES} from "./Constants.sol";
 import {ERC20} from "@solmate/tokens/ERC20.sol";
 
-/// @dev The id uniquely identifying a tranche. Used for type safety.
-type TrancheId is uint256;
-
 /// @dev Holds the configuration defining a market's components.
 struct MarketKey {
     /// @dev The asset that can be deposited and borrowed.
@@ -21,24 +18,22 @@ struct MarketKey {
     /// @dev The contract holding logic responsible for controlling the borrow rate of a tranche.
     /// Supply rate is deducted from the borrow rate and the tranche's utilization.
     IRateModel rateModel;
+    /// @dev The LTV at which a borrower becomes liquidatable on this market.
+    uint256 liquidationLtv;
 }
 
 /// @dev Holds the shares of a position in a tranche.
-struct TrancheShares {
+struct MarketShares {
     uint256 supply;
     uint256 borrow;
 }
 
 struct Position {
-    /// @dev The amount of collateral deposited.
     uint256 collateral;
-    /// @dev A bitmask where bit N represents whether the position borrows from tranche N.
-    uint256 tranchesMask;
-    /// @dev The shares of the position for each tranche.
-    TrancheShares[NB_TRANCHES] shares;
+    MarketShares shares;
 }
 
-struct Tranche {
+struct MarketState {
     /// @dev The total supply. Shared among the tranche's supply shareholders.
     uint256 totalSupply;
     /// @dev The total borrow. Shared among the tranche's borrow shareholders.
@@ -56,9 +51,9 @@ struct Tranche {
 }
 
 struct Market {
-    /// @dev Each tranche of the market.
-    Tranche[NB_TRANCHES] tranches;
-    /// @dev Maps an address to its position in the given market.
+    /// @dev The state of the market.
+    MarketState state; // TODO: could be named accounting?
+    /// @dev Maps an address to its positions in each tranche.
     /// Not stored under `Tranche` to enable Tranche to be manipulated in memory.
     /// Keys could be `bytes32` where the first 12 bytes is a nonce representing a sub-account id and the 20 last bytes are the holder's address.
     /// With appropriate changes:

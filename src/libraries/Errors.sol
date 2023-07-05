@@ -7,9 +7,9 @@ error NotEnoughLiquidity(uint256 liquidity);
 
 error InvalidTranche();
 
-error HealthyHealthFactor(uint256 healthFactor);
+error Healthy(uint256 ltv);
 
-error UnhealthyHealthFactor(uint256 healthFactor);
+error Unhealthy(uint256 ltv);
 
 error AuthorizedLtv(uint256 ltv, uint256 lLtv);
 

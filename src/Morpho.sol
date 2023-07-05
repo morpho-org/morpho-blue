@@ -6,13 +6,12 @@ import {IOracle} from "./interfaces/IOracle.sol";
 import {IERC3156xFlashLiquidator} from "./interfaces/IERC3156xFlashLiquidator.sol";
 
 import {NB_TRANCHES, LIQUIDATION_HEALTH_FACTOR, FLASH_LIQUIDATOR_SUCCESS_HASH} from "./libraries/Constants.sol";
-import {MarketKey, Market, Tranche, TrancheShares, TrancheId, Position} from "./libraries/Types.sol";
-import {CannotBorrow, CannotWithdrawCollateral, TooMuchSeized} from "./libraries/Errors.sol";
+import {MarketKey, Market, MarketState, MarketShares, Position} from "./libraries/Types.sol";
+import {CannotBorrow, CannotWithdrawCollateral, TooMuchSeized, Unhealthy, Healthy} from "./libraries/Errors.sol";
 import {Events} from "./libraries/Events.sol";
 import {MarketLib} from "./libraries/MarketLib.sol";
-import {TrancheLib} from "./libraries/TrancheLib.sol";
-import {PositionLib} from "./libraries/PositionLib.sol";
-import {TrancheIdLib} from "./libraries/TrancheIdLib.sol";
+import {MarketKeyLib} from "./libraries/MarketKeyLib.sol";
+import {MarketStateLib} from "./libraries/MarketStateLib.sol";
 
 import {WadRayMath} from "@morpho-utils/math/WadRayMath.sol";
 
@@ -30,10 +29,8 @@ contract Morpho is IMorpho, MarketBase, AllowanceBase, ERC3156xFlashLender, ERC2
     using WadRayMath for uint256;
 
     using MarketLib for Market;
-
-    using TrancheIdLib for TrancheId;
-    using TrancheLib for Tranche;
-    using PositionLib for Position;
+    using MarketKeyLib for MarketKey;
+    using MarketStateLib for MarketState;
 
     using Permit2Lib for ERC20;
     using SafeTransferLib for ERC20;
@@ -43,32 +40,18 @@ contract Morpho is IMorpho, MarketBase, AllowanceBase, ERC3156xFlashLender, ERC2
     /* EXTERNAL */
 
     /// @notice Returns the given market's tranche based on its id.
-    function trancheAt(MarketKey calldata marketKey, TrancheId trancheId)
-        external
-        view
-        returns (Tranche memory accrued)
-    {
+    function marketAt(MarketKey calldata marketKey) external view returns (MarketState memory accrued) {
         (, Market storage market) = _market(marketKey);
 
-        Tranche storage tranche = market.getTranche(trancheId);
-
-        accrued = tranche.getAccrued(marketKey.rateModel);
+        accrued = market.state.getAccrued(marketKey.rateModel);
     }
 
     /// @notice Returns the given user's position on the given tranche.
     /// Note: does not return balances because it requires virtually accruing interests in the given tranche.
-    function sharesOf(MarketKey calldata marketKey, TrancheId trancheId, address user)
-        external
-        view
-        returns (uint256 collateral, TrancheShares memory shares)
-    {
+    function sharesOf(MarketKey calldata marketKey, address user) external view returns (Position memory position) {
         (, Market storage market) = _market(marketKey);
 
-        collateral = market.getCollateralBalance(user);
-
-        Position storage position = market.getPosition(user);
-
-        shares = position.getTrancheShares(trancheId);
+        position = market.getPosition(user);
     }
 
     function depositCollateral(MarketKey calldata marketKey, uint256 collaterals, address onBehalf) external {
@@ -97,15 +80,13 @@ contract Morpho is IMorpho, MarketBase, AllowanceBase, ERC3156xFlashLender, ERC2
 
         emit Events.CollateralWithdraw(marketId, msg.sender, onBehalf, receiver, collaterals);
 
-        // Accrue interests on all tranches the user is borrowing from to use the most up-to-date health factor.
-        market.accrueAll(marketKey.rateModel, onBehalf);
-        market.checkHealthy(onBehalf, price); // PERF: market.positions[onBehalf].collateral is SLOAD but is already loaded as second return parameter of market.withdrawCollateral
+        _checkHealthy(market, onBehalf, price, marketKey.liquidationLtv); // PERF: market.positions[onBehalf].collateral is SLOAD but is already loaded as second return parameter of market.withdrawCollateral
 
         // Transfer tokens last to prevent ERC777 re-entrancy vulnerability.
         marketKey.collateral.safeTransfer(receiver, collaterals);
     }
 
-    function deposit(MarketKey calldata marketKey, TrancheId trancheId, uint256 assets, address onBehalf)
+    function deposit(MarketKey calldata marketKey, uint256 assets, address onBehalf)
         external
         returns (uint256 shares)
     {
@@ -114,26 +95,23 @@ contract Morpho is IMorpho, MarketBase, AllowanceBase, ERC3156xFlashLender, ERC2
 
         (bytes32 marketId, Market storage market) = _market(marketKey);
 
-        shares = market.deposit(trancheId, marketKey.rateModel, assets, onBehalf);
+        shares = market.deposit(marketKey.rateModel, assets, onBehalf);
 
         emit Events.Deposit(marketId, msg.sender, onBehalf, assets, shares);
     }
 
     // TODO: replace `assets` with `shares` for precise repay (ERC4626-like). Rename `withdraw` to `redeem`.
     // Requires to calculate the assets based on the shares because we still need to transfer tokens before accounting for the repay to avoid re-entrancy vulnerability.
-    function withdraw(
-        MarketKey calldata marketKey,
-        TrancheId trancheId,
-        uint256 assets,
-        address onBehalf,
-        address receiver
-    ) external returns (uint256 shares) {
+    function withdraw(MarketKey calldata marketKey, uint256 assets, address onBehalf, address receiver)
+        external
+        returns (uint256 shares)
+    {
         // Checks whether the sender has enough allowance to withdraw on behalf.
         _spendAllowance(onBehalf, msg.sender, assets);
 
         (bytes32 marketId, Market storage market) = _market(marketKey);
 
-        (assets, shares) = market.withdraw(trancheId, marketKey.rateModel, assets, onBehalf);
+        (assets, shares) = market.withdraw(marketKey.rateModel, assets, onBehalf);
 
         emit Events.Withdraw(marketId, msg.sender, onBehalf, receiver, assets, shares);
 
@@ -141,13 +119,10 @@ contract Morpho is IMorpho, MarketBase, AllowanceBase, ERC3156xFlashLender, ERC2
         marketKey.asset.safeTransfer(receiver, assets);
     }
 
-    function borrow(
-        MarketKey calldata marketKey,
-        TrancheId trancheId,
-        uint256 assets,
-        address onBehalf,
-        address receiver
-    ) external returns (uint256 shares) {
+    function borrow(MarketKey calldata marketKey, uint256 assets, address onBehalf, address receiver)
+        external
+        returns (uint256 shares)
+    {
         // Checks whether the sender has enough allowance to borrow on behalf.
         _spendAllowance(onBehalf, msg.sender, assets);
 
@@ -156,15 +131,13 @@ contract Morpho is IMorpho, MarketBase, AllowanceBase, ERC3156xFlashLender, ERC2
 
         (bytes32 marketId, Market storage market) = _market(marketKey);
 
-        shares = market.borrow(trancheId, marketKey.rateModel, assets, onBehalf);
+        shares = market.borrow(marketKey.rateModel, assets, onBehalf);
 
         emit Events.Borrow(marketId, msg.sender, onBehalf, receiver, assets, shares);
 
-        // Accrue interests on all tranches the user is borrowing from to use the most up-to-date health factor.
-        market.accrueAll(marketKey.rateModel, onBehalf);
-        market.checkHealthy(onBehalf, price);
+        _checkHealthy(market, onBehalf, price, marketKey.liquidationLtv);
 
-        // console.log("borrow", TrancheId.unwrap(trancheId), assets);
+        // console.log("borrow", TrancheId.unwrap(, assets);
 
         // Transfer tokens last to prevent ERC777 re-entrancy vulnerability.
         marketKey.asset.safeTransfer(receiver, assets);
@@ -172,16 +145,13 @@ contract Morpho is IMorpho, MarketBase, AllowanceBase, ERC3156xFlashLender, ERC2
 
     // TODO: replace `assets` with `shares` for precise repay (ERC4626-like).
     // Requires to calculate the assets based on the shares because we still need to transfer tokens before accounting for the repay to avoid re-entrancy vulnerability.
-    function repay(MarketKey calldata marketKey, TrancheId trancheId, uint256 assets, address onBehalf)
-        external
-        returns (uint256 shares)
-    {
+    function repay(MarketKey calldata marketKey, uint256 assets, address onBehalf) external returns (uint256 shares) {
         // Transfer tokens first to prevent ERC777 re-entrancy vulnerability.
         marketKey.asset.transferFrom2(msg.sender, address(this), assets);
 
         (bytes32 marketId, Market storage market) = _market(marketKey);
 
-        (assets, shares,) = market.repay(trancheId, marketKey.rateModel, assets, onBehalf);
+        (assets, shares,) = market.repay(marketKey.rateModel, assets, onBehalf);
 
         emit Events.Repay(marketId, msg.sender, onBehalf, assets, shares);
     }
@@ -200,8 +170,7 @@ contract Morpho is IMorpho, MarketBase, AllowanceBase, ERC3156xFlashLender, ERC2
 
         (bytes32 marketId, Market storage market) = _market(marketKey);
 
-        market.accrueAll(marketKey.rateModel, borrower);
-        market.checkUnhealthy(borrower, price);
+        _checkUnhealthy(market, borrower, price, marketKey.liquidationLtv);
 
         uint256 remainingCollateral;
         (collateral, remainingCollateral) = market.withdrawCollateral(collateral, borrower);
@@ -222,88 +191,44 @@ contract Morpho is IMorpho, MarketBase, AllowanceBase, ERC3156xFlashLender, ERC2
             marketKey.asset.transferFrom2(msg.sender, address(this), debt);
         }
 
-        Position storage position = market.getPosition(borrower);
+        uint256 remainingBorrow;
+        (repaid,, remainingBorrow) = market.repay(marketKey.rateModel, debt, borrower);
 
-        uint256 tranchesMask = position.tranchesMask;
-        // console.log("tranchesMask", tranchesMask);
-
-        uint256 left = debt;
-        uint256 maxSeized;
-        uint256 totalRemainingBorrow;
-        uint256[NB_TRANCHES] memory remainingBorrow;
-        for (uint256 i; i < NB_TRANCHES; ++i) {
-            TrancheId trancheId = TrancheId.wrap(i);
-
-            if (!trancheId.isBorrowing(tranchesMask)) continue;
-
-            Tranche storage tranche = market.getTranche(trancheId); // Tranche is already accrued.
-
-            (uint256 trancheRepaid,, uint256 trancheBorrow) = tranche.repay(position, trancheId, left);
-            remainingBorrow[i] = trancheBorrow;
-            totalRemainingBorrow += trancheBorrow;
-
-            unchecked {
-                // Cannot underflow: trancheRepaid <= left invariant from `tranche.repay`.
-                left -= trancheRepaid;
-            }
-
-            // TODO: reverts if price == 0
-            uint256 trancheSeized = trancheRepaid.wadDiv(price); // TODO: limit seized so LTV goes back to 25% below LLTV?
-            maxSeized += trancheSeized + trancheId.getLiquidationBonus(trancheSeized); // TODO: can overflow if price too low
-
-            // console.log("repaid", TrancheId.unwrap(trancheId), trancheSeized);
-        }
+        // TODO: reverts if price == 0
+        uint256 seized = repaid.wadDiv(price); // TODO: limit seized so LTV goes back to 25% below LLTV?
+        uint256 maxSeized = seized + marketKey.getLiquidationBonus(seized); // TODO: can overflow if price too low
 
         if (maxSeized < collateral) {
             // Liquidator asked for too much collateral in exchange for the debt actually repaid.
             revert TooMuchSeized(maxSeized);
         }
 
-        unchecked {
-            // Cannot underflow: 0 <= left and left was initialized to debt then always decreased.
-            repaid = debt - left;
-        }
-
-        // console.log("liquidated", repaid, collateral);
-
         emit Events.Liquidation(marketId, msg.sender, borrower, address(liquidator), receiver, repaid, collateral);
 
         uint256 collateralValue = remainingCollateral.wadMul(price);
-        if (totalRemainingBorrow <= collateralValue) return (repaid, returnData);
+        if (remainingBorrow <= collateralValue) return (repaid, returnData);
 
         // The borrower's position now holds bad debt: its collateral is not worth enough to cover its debt.
         // This bad debt must be realized now, or future lenders may provide liquidity to allow past lenders to withdraw.
         // TODO: liquidators are not incentivized to realize some bad debt because of gas cost
 
-        for (uint256 i; i < NB_TRANCHES; ++i) {
-            uint256 trancheBorrow = remainingBorrow[i];
+        market.realizeBadDebt(borrower, remainingBorrow);
+    }
 
-            if (trancheBorrow == 0) continue;
+    /* INTERNAL */
 
-            TrancheId borrowTrancheId = TrancheId.wrap(i);
+    function _checkHealthy(Market storage market, address user, uint256 price, uint256 liquidationLtv) internal view {
+        uint256 ltv = market.getLtv(user, price);
 
-            Tranche storage borrowTranche = market.getTranche(borrowTrancheId);
+        if (ltv >= liquidationLtv) revert Unhealthy(ltv);
+    }
 
-            borrowTranche.totalBorrow -= trancheBorrow;
+    function _checkUnhealthy(Market storage market, address user, uint256 price, uint256 liquidationLtv)
+        internal
+        view
+    {
+        uint256 ltv = market.getLtv(user, price);
 
-            TrancheShares storage trancheShares = position.getTrancheShares(borrowTrancheId);
-
-            trancheShares.borrow = 0;
-            position.setBorrowing(borrowTrancheId, false);
-
-            for (uint256 j = i; j < NB_TRANCHES; ++j) {
-                TrancheId supplyTrancheId = TrancheId.wrap(j);
-
-                Tranche storage supplyTranche = market.getTranche(supplyTrancheId);
-                uint256 realized = supplyTranche.realizeBadDebt(trancheBorrow);
-
-                unchecked {
-                    // Cannot underflow: realized <= trancheBorrow invariant from `supplyTranche.realizeBadDebt`.
-                    trancheBorrow -= realized;
-                }
-
-                if (trancheBorrow == 0) break;
-            }
-        }
+        if (ltv < liquidationLtv) revert Healthy(ltv);
     }
 }
