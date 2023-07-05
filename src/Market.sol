@@ -155,7 +155,7 @@ contract Blue {
 
         collateral[id][msg.sender] += amount;
 
-        market.collateralAsset.transferFrom(msg.sender, address(this), amount);
+        market.collateralAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
 
     function withdrawCollateral(Market calldata market, uint amount) external {
@@ -169,7 +169,7 @@ contract Blue {
 
         require(isHealthy(market, id, msg.sender), "not enough collateral");
 
-        market.collateralAsset.transfer(msg.sender, amount);
+        market.collateralAsset.safeTransfer(msg.sender, amount);
     }
 
     // Liquidation.

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.5.0;
 
-interface IERC20 {
-    function transferFrom(address, address, uint) external;
-    function transfer(address, uint) external;
-}
+/// @dev Empty because we only call functions in assembly. It prevents calling
+/// transfer (transferFrom) instead of safeTransfer (safeTransferFrom).
+interface IERC20 {}
