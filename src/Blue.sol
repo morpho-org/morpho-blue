@@ -59,6 +59,8 @@ contract Blue {
     // Storage.
 
     mapping(Id => MarketStorage) internal _marketStorage;
+    address feeRecipient;
+    uint fee;
 
     // Markets management.
 
@@ -265,6 +267,11 @@ contract Blue {
             uint accruedInterests = marketTotalBorrow.wMul(borrowRate).wMul(block.timestamp - m.lastUpdate);
             m.totalSupply = marketTotalSupply + accruedInterests;
             m.totalBorrow = marketTotalBorrow + accruedInterests;
+            if (fee > 0) {
+                uint feeShares = accruedInterests.wMul(fee).wMul(m.totalSupplyShares).wDiv(m.totalSupply);
+                s.position[feeRecipient].supplyShare += feeShares;
+                m.totalSupplyShares += feeShares;
+            }
         }
 
         m.lastUpdate = block.timestamp;
