@@ -191,9 +191,9 @@ contract Blue {
         if (borrowShare[id][user] > 0) {
             // totalBorrowShares[id] > 0 because borrowShare[id][user] > 0.
             uint borrowValue = borrowShare[id][user].wMul(totalBorrow[id]).wDiv(totalBorrowShares[id]).wMul(
-                IOracle(market.borrowableOracle).price()
+                market.borrowableOracle.price()
             );
-            uint collateralValue = collateral[id][user].wMul(IOracle(market.collateralOracle).price());
+            uint collateralValue = collateral[id][user].wMul(market.collateralOracle.price());
             require(collateralValue.wMul(market.lLTV) >= borrowValue, "not enough collateral");
         }
     }
