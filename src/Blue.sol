@@ -23,7 +23,7 @@ struct Market {
     IERC20 collateralAsset;
     IOracle borrowableOracle;
     IOracle collateralOracle;
-    address irm;
+    IIRM irm;
     uint lLTV;
 }
 
@@ -58,14 +58,14 @@ contract Blue is Ownable {
 
     function createMarket(Market calldata market) external {
         Id id = Id.wrap(keccak256(abi.encode(market)));
-        require(irmWhitelist[market.irm], "IRM not whitelisted");
+        require(irmWhitelist[address(market.irm)], "IRM not whitelisted");
         require(lastUpdate[id] == 0, "market already exists");
 
         accrueInterests(id, market.irm);
     }
 
     function whitelistIRM(address irm) external onlyOwner {
-        irmWhitelist[irm] = !irmWhitelist[irm];
+        irmWhitelist[irm] = true;
     }
 
     // Supply management.
@@ -214,13 +214,13 @@ contract Blue is Ownable {
 
     // Interests management.
 
-    function accrueInterests(Id id, address irm) private {
+    function accrueInterests(Id id, IIRM irm) private {
         uint marketTotalSupply = totalSupply[id];
 
         if (marketTotalSupply != 0) {
             uint marketTotalBorrow = totalBorrow[id];
             uint utilization = marketTotalBorrow.wDiv(marketTotalSupply);
-            uint borrowRate = IIRM(irm).rate(utilization);
+            uint borrowRate = irm.rate(utilization);
             uint accruedInterests = marketTotalBorrow.wMul(borrowRate).wMul(block.timestamp - lastUpdate[id]);
             totalSupply[id] = marketTotalSupply + accruedInterests;
             totalBorrow[id] = marketTotalBorrow + accruedInterests;

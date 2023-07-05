@@ -40,7 +40,7 @@ contract BlueTest is Test {
         irm = new IRM();
         blue.whitelistIRM(address(irm));
         market = Market(
-            IERC20(address(borrowableAsset)), IERC20(address(collateralAsset)), borrowableOracle, collateralOracle, address(irm), lLTV
+            IERC20(address(borrowableAsset)), IERC20(address(collateralAsset)), borrowableOracle, collateralOracle, irm, lLTV
         );
         id = Id.wrap(keccak256(abi.encode(market)));
 
