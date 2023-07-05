@@ -62,7 +62,7 @@ contract Blue {
     function supply(Market calldata market, uint amount) external {
         Id id = Id.wrap(keccak256(abi.encode(market)));
         require(lastUpdate[id] != 0, "unknown market");
-        require(amount > 0, "zero amount");
+        require(amount != 0, "zero amount");
 
         accrueInterests(id);
 
@@ -83,7 +83,7 @@ contract Blue {
     function withdraw(Market calldata market, uint amount) external {
         Id id = Id.wrap(keccak256(abi.encode(market)));
         require(lastUpdate[id] != 0, "unknown market");
-        require(amount > 0, "zero amount");
+        require(amount != 0, "zero amount");
 
         accrueInterests(id);
 
@@ -103,7 +103,7 @@ contract Blue {
     function borrow(Market calldata market, uint amount) external {
         Id id = Id.wrap(keccak256(abi.encode(market)));
         require(lastUpdate[id] != 0, "unknown market");
-        require(amount > 0, "zero amount");
+        require(amount != 0, "zero amount");
 
         accrueInterests(id);
 
@@ -127,7 +127,7 @@ contract Blue {
     function repay(Market calldata market, uint amount) external {
         Id id = Id.wrap(keccak256(abi.encode(market)));
         require(lastUpdate[id] != 0, "unknown market");
-        require(amount > 0, "zero amount");
+        require(amount != 0, "zero amount");
 
         accrueInterests(id);
 
@@ -145,7 +145,7 @@ contract Blue {
     function supplyCollateral(Market calldata market, uint amount) external {
         Id id = Id.wrap(keccak256(abi.encode(market)));
         require(lastUpdate[id] != 0, "unknown market");
-        require(amount > 0, "zero amount");
+        require(amount != 0, "zero amount");
 
         accrueInterests(id);
 
@@ -157,7 +157,7 @@ contract Blue {
     function withdrawCollateral(Market calldata market, uint amount) external {
         Id id = Id.wrap(keccak256(abi.encode(market)));
         require(lastUpdate[id] != 0, "unknown market");
-        require(amount > 0, "zero amount");
+        require(amount != 0, "zero amount");
 
         accrueInterests(id);
 
