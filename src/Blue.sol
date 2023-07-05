@@ -65,8 +65,7 @@ contract Blue {
 
     function supply(Market calldata market, uint amount) external {
         Id id = Id.wrap(keccak256(abi.encode(market)));
-        require(lastUpdate[id] != 0, "unknown market");
-        require(amount != 0, "zero amount");
+        checkInputs(id, amount);
 
         accrueInterests(id);
 
@@ -86,8 +85,7 @@ contract Blue {
 
     function withdraw(Market calldata market, uint amount) external {
         Id id = Id.wrap(keccak256(abi.encode(market)));
-        require(lastUpdate[id] != 0, "unknown market");
-        require(amount != 0, "zero amount");
+        checkInputs(id, amount);
 
         accrueInterests(id);
 
@@ -106,8 +104,7 @@ contract Blue {
 
     function borrow(Market calldata market, uint amount) external {
         Id id = Id.wrap(keccak256(abi.encode(market)));
-        require(lastUpdate[id] != 0, "unknown market");
-        require(amount != 0, "zero amount");
+        checkInputs(id, amount);
 
         accrueInterests(id);
 
@@ -130,8 +127,7 @@ contract Blue {
 
     function repay(Market calldata market, uint amount) external {
         Id id = Id.wrap(keccak256(abi.encode(market)));
-        require(lastUpdate[id] != 0, "unknown market");
-        require(amount != 0, "zero amount");
+        checkInputs(id, amount);
 
         accrueInterests(id);
 
@@ -148,8 +144,7 @@ contract Blue {
 
     function supplyCollateral(Market calldata market, uint amount) external {
         Id id = Id.wrap(keccak256(abi.encode(market)));
-        require(lastUpdate[id] != 0, "unknown market");
-        require(amount != 0, "zero amount");
+        checkInputs(id, amount);
 
         accrueInterests(id);
 
@@ -160,8 +155,7 @@ contract Blue {
 
     function withdrawCollateral(Market calldata market, uint amount) external {
         Id id = Id.wrap(keccak256(abi.encode(market)));
-        require(lastUpdate[id] != 0, "unknown market");
-        require(amount != 0, "zero amount");
+        checkInputs(id, amount);
 
         accrueInterests(id);
 
@@ -176,8 +170,7 @@ contract Blue {
 
     function liquidate(Market calldata market, address borrower, uint seized) external {
         Id id = Id.wrap(keccak256(abi.encode(market)));
-        require(lastUpdate[id] != 0, "unknown market");
-        require(seized != 0, "zero amount");
+        checkInputs(id, seized);
 
         accrueInterests(id);
 
@@ -232,5 +225,10 @@ contract Blue {
             : 0;
         uint collateralValue = collateral[id][user].wMul(market.collateralOracle.price());
         return collateralValue.wMul(market.lLTV) >= borrowValue;
+    }
+
+    function checkInputs(Id id, uint amount) private view {
+        require(lastUpdate[id] != 0, "unknown market");
+        require(amount != 0, "zero amount");
     }
 }
