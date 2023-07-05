@@ -177,7 +177,7 @@ contract Blue {
     function liquidate(Market calldata market, address borrower, uint seized) external {
         Id id = Id.wrap(keccak256(abi.encode(market)));
         require(lastUpdate[id] != 0, "unknown market");
-        require(seized > 0, "zero amount");
+        require(seized != 0, "zero amount");
 
         accrueInterests(id);
 
@@ -227,7 +227,7 @@ contract Blue {
     function isHealthy(Market calldata market, Id id, address user) private view returns (bool) {
         uint borrowShares = borrowShare[id][user];
         // totalBorrowShares[id] > 0 when borrowShares > 0.
-        uint borrowValue = borrowShares > 0
+        uint borrowValue = borrowShares != 0
             ? borrowShares.wMul(totalBorrow[id]).wDiv(totalBorrowShares[id]).wMul(market.borrowableOracle.price())
             : 0;
         uint collateralValue = collateral[id][user].wMul(market.collateralOracle.price());
