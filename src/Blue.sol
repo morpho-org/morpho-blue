@@ -151,8 +151,6 @@ contract Blue {
         require(lastUpdate[id] != 0, "unknown market");
         require(amount > 0, "zero amount");
 
-        accrueInterests(id);
-
         collateral[id][msg.sender] += amount;
 
         market.collateralAsset.safeTransferFrom(msg.sender, address(this), amount);
