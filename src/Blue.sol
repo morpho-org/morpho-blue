@@ -70,7 +70,7 @@ contract Blue {
     function supply(Market calldata market, uint amount) external {
         Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
-        require(amount > 0, "zero amount");
+        require(amount != 0, "zero amount");
 
         accrueInterests(id);
 
@@ -91,7 +91,7 @@ contract Blue {
     function withdraw(Market calldata market, uint amount) external {
         Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
-        require(amount > 0, "zero amount");
+        require(amount != 0, "zero amount");
 
         accrueInterests(id);
 
@@ -111,7 +111,7 @@ contract Blue {
     function borrow(Market calldata market, uint amount) external {
         Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
-        require(amount > 0, "zero amount");
+        require(amount != 0, "zero amount");
 
         accrueInterests(id);
 
@@ -135,7 +135,7 @@ contract Blue {
     function repay(Market calldata market, uint amount) external {
         Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
-        require(amount > 0, "zero amount");
+        require(amount != 0, "zero amount");
 
         accrueInterests(id);
 
@@ -153,7 +153,7 @@ contract Blue {
     function supplyCollateral(Market calldata market, uint amount) external {
         Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
-        require(amount > 0, "zero amount");
+        require(amount != 0, "zero amount");
 
         accrueInterests(id);
 
@@ -165,7 +165,7 @@ contract Blue {
     function withdrawCollateral(Market calldata market, uint amount) external {
         Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
-        require(amount > 0, "zero amount");
+        require(amount != 0, "zero amount");
 
         accrueInterests(id);
 
@@ -181,7 +181,7 @@ contract Blue {
     function liquidate(Market calldata market, address borrower, uint seized) external {
         Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
-        require(seized > 0, "zero amount");
+        require(seized != 0, "zero amount");
 
         accrueInterests(id);
 
@@ -231,7 +231,7 @@ contract Blue {
     function isHealthy(Market calldata market, Id id, address user) private view returns (bool) {
         uint borrowShares = borrowShare[id][user];
         // totalBorrowShares[id] > 0 when borrowShares > 0.
-        uint borrowValue = borrowShares > 0
+        uint borrowValue = borrowShares != 0
             ? borrowShares.wMul(totalBorrow[id]).wDiv(totalBorrowShares[id]).wMul(market.borrowableOracle.price())
             : 0;
         uint collateralValue = collateral[id][user].wMul(market.collateralOracle.price());
