@@ -44,4 +44,6 @@ library Events {
     event Approval(address indexed delegator, address indexed manager, uint256 allowance);
 
     event IsWhitelistedSet(address indexed target, bool isWhitelisted);
+
+    event IsLiquidationLtvEnabledSet(uint256 target, bool isEnabled);
 }

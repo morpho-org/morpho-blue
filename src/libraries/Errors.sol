@@ -21,4 +21,6 @@ error InsufficientAllowance(uint256 currentAllowance);
 
 error UnauthorizedIrm();
 
+error UnauthorizedLiquidationLtv();
+
 error TooMuchSeized(uint256 maxSeized);

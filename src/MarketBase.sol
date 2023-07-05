@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import {Events} from "./libraries/Events.sol";
 import {MarketKey, Market} from "./libraries/Types.sol";
-import {UnauthorizedIrm} from "./libraries/Errors.sol";
+import {UnauthorizedIrm, UnauthorizedLiquidationLtv} from "./libraries/Errors.sol";
 import {MarketKeyLib} from "./libraries/MarketKeyLib.sol";
 
 import {Ownable2Step} from "@morpho-utils/access/Ownable2Step.sol";
@@ -17,12 +17,19 @@ abstract contract MarketBase is Ownable2Step {
     /// Naming is kept abstract because it could be used for any other contract-whitelisting feature (addresses uniquely identifying contracts).
     mapping(address => bool) private _isWhitelisted;
 
+    /// @dev Enables or disables specific liquidationLtv. Mapped for constant time check (O(1)). Could be inlined in the contract if immutable.
+    mapping(uint256 liquidationLtv => bool) private _isLiquidationLtvEnabled;
+
     constructor(address initialOwner) Ownable2Step(initialOwner) {}
 
     /* EXTERNAL */
 
     function setIsWhitelisted(address target, bool newIsWhitelisted) external onlyOwner {
         _setIsWhitelisted(target, newIsWhitelisted);
+    }
+
+    function setIsEnabled(uint256 liquidationLtv, bool isEnabled) external onlyOwner {
+        _setIsEnabled(liquidationLtv, isEnabled);
     }
 
     /* PUBLIC */
@@ -37,6 +44,7 @@ abstract contract MarketBase is Ownable2Step {
     /// Note: reverts if the given rate model is not whitelisted by the owner (the DAO).
     function _market(MarketKey calldata marketKey) internal view returns (bytes32 marketId, Market storage market) {
         if (!_isWhitelisted[address(marketKey.rateModel)]) revert UnauthorizedIrm();
+        if (!_isLiquidationLtvEnabled[marketKey.liquidationLtv]) revert UnauthorizedLiquidationLtv();
 
         marketId = marketKey.toId();
 
@@ -47,5 +55,11 @@ abstract contract MarketBase is Ownable2Step {
         _isWhitelisted[target] = newIsWhitelisted;
 
         emit Events.IsWhitelistedSet(target, newIsWhitelisted);
+    }
+
+    function _setIsEnabled(uint256 liquidationLtv, bool isEnabled) internal {
+        _isLiquidationLtvEnabled[liquidationLtv] = isEnabled;
+
+        emit Events.IsLiquidationLtvEnabledSet(liquidationLtv, isEnabled);
     }
 }
