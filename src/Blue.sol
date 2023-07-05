@@ -7,7 +7,7 @@ import {IOracle} from "src/interfaces/IOracle.sol";
 import {MathLib} from "src/libraries/MathLib.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 
-import {Owned} from "src/dependencies/Owned.sol";
+import {Ownable} from "src/Ownable.sol";
 
 uint constant WAD = 1e18;
 
@@ -31,7 +31,7 @@ function irm(uint utilization) pure returns (uint) {
     return utilization / 365 days;
 }
 
-contract Blue is Owned {
+contract Blue is Ownable {
     using MathLib for uint;
     using SafeTransferLib for IERC20;
 
@@ -54,7 +54,7 @@ contract Blue is Owned {
     // Interests last update (used to check if a market has been created).
     mapping(Id => uint) public lastUpdate;
 
-    constructor(address owner) Owned(owner) {}
+    constructor(address owner) Ownable(owner) {}
 
     // Markets management.
 
