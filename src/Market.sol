@@ -9,6 +9,7 @@ import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 
 // Market id.
 type Id is bytes32;
+using {toId} for Id;
 
 // Market.
 struct Market {
@@ -23,6 +24,10 @@ function irm(uint utilization) pure returns (uint) {
     // Divide by the number of seconds in a year.
     // This is a very simple model (to refine later) where x% utilization corresponds to x% APR.
     return utilization / 365 days;
+}
+
+function toId() pure returns (bytes32) {
+    return market.toId();
 }
 
 contract Blue {
@@ -51,7 +56,7 @@ contract Blue {
     // Markets management.
 
     function createMarket(Market calldata market) external {
-        Id id = Id.wrap(keccak256(abi.encode(market)));
+        Id id = market.toId();
         require(lastUpdate[id] == 0, "market already exists");
 
         accrueInterests(id);
@@ -60,7 +65,7 @@ contract Blue {
     // Supply management.
 
     function supply(Market calldata market, uint amount) external {
-        Id id = Id.wrap(keccak256(abi.encode(market)));
+        Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount > 0, "zero amount");
 
@@ -81,7 +86,7 @@ contract Blue {
     }
 
     function withdraw(Market calldata market, uint amount) external {
-        Id id = Id.wrap(keccak256(abi.encode(market)));
+        Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount > 0, "zero amount");
 
@@ -101,7 +106,7 @@ contract Blue {
     // Borrow management.
 
     function borrow(Market calldata market, uint amount) external {
-        Id id = Id.wrap(keccak256(abi.encode(market)));
+        Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount > 0, "zero amount");
 
@@ -125,7 +130,7 @@ contract Blue {
     }
 
     function repay(Market calldata market, uint amount) external {
-        Id id = Id.wrap(keccak256(abi.encode(market)));
+        Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount > 0, "zero amount");
 
@@ -143,7 +148,7 @@ contract Blue {
     // Collateral management.
 
     function supplyCollateral(Market calldata market, uint amount) external {
-        Id id = Id.wrap(keccak256(abi.encode(market)));
+        Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount > 0, "zero amount");
 
@@ -155,7 +160,7 @@ contract Blue {
     }
 
     function withdrawCollateral(Market calldata market, uint amount) external {
-        Id id = Id.wrap(keccak256(abi.encode(market)));
+        Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount > 0, "zero amount");
 
