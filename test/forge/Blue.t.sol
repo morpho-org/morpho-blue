@@ -120,6 +120,20 @@ contract BlueTest is Test {
         blue2.transferOwnership(newOwner);
     }
 
+    function testWhitelistIRMWhenNotOwner(address attacker) public {
+        vm.assume(attacker != blue.owner());
+
+        vm.prank(attacker);
+        vm.expectRevert("not owner");
+        blue.whitelistIRM(address(0xdead));
+    }
+
+    function testWhitelistIRM(address newIRM) public {
+        blue.whitelistIRM(newIRM);
+
+        assertTrue(blue.isIRMWhitelisted(newIRM));
+    }
+
     function testSupply(uint amount) public {
         amount = bound(amount, 1, 2 ** 64);
 
