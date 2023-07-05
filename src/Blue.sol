@@ -13,8 +13,7 @@ uint constant ALPHA = 0.5e18;
 // Market id.
 type Id is bytes32;
 
-// Market.
-struct Market {
+struct MarketParams {
     IERC20 borrowableAsset;
     IERC20 collateralAsset;
     IOracle borrowableOracle;
@@ -22,9 +21,29 @@ struct Market {
     uint lLTV;
 }
 
-using {toId} for Market;
-function toId(Market calldata market) pure returns (Id) {
-    return Id.wrap(keccak256(abi.encode(market)));
+struct Market {
+    uint totalSupply;
+    uint totalBorrow;
+    uint totalSupplyShares;
+    uint totalBorrowShares;
+    uint lastUpdate;
+}
+
+struct MarketStorage {
+    Market market;
+    mapping(address => Position) position;
+}
+
+struct Position {
+    uint supplyShare;
+    uint borrowShare;
+    uint collateral;
+}
+
+using {toId} for MarketParams;
+
+function toId(MarketParams calldata marketParams) pure returns (Id) {
+    return Id.wrap(keccak256(abi.encode(marketParams)));
 }
 
 function irm(uint utilization) pure returns (uint) {
@@ -39,202 +58,230 @@ contract Blue {
 
     // Storage.
 
-    // User' supply balances.
-    mapping(Id => mapping(address => uint)) public supplyShare;
-    // User' borrow balances.
-    mapping(Id => mapping(address => uint)) public borrowShare;
-    // User' collateral balance.
-    mapping(Id => mapping(address => uint)) public collateral;
-    // Market total supply.
-    mapping(Id => uint) public totalSupply;
-    // Market total supply shares.
-    mapping(Id => uint) public totalSupplyShares;
-    // Market total borrow.
-    mapping(Id => uint) public totalBorrow;
-    // Market total borrow shares.
-    mapping(Id => uint) public totalBorrowShares;
-    // Interests last update (used to check if a market has been created).
-    mapping(Id => uint) public lastUpdate;
+    mapping(Id => MarketStorage) internal _marketStorage;
 
     // Markets management.
 
-    function createMarket(Market calldata market) external {
-        Id id = market.toId();
-        require(lastUpdate[id] == 0, "market already exists");
+    function createMarket(MarketParams calldata marketParams) external {
+        Id id = marketParams.toId();
+        require(_marketStorage[id].market.lastUpdate == 0, "market already exists");
 
         accrueInterests(id);
+    }
+
+    // Getters.
+
+    function market(Id id) external view returns (Market memory) {
+        return _marketStorage[id].market;
+    }
+
+    function position(Id id, address user) external view returns (Position memory) {
+        return _marketStorage[id].position[user];
     }
 
     // Supply management.
 
-    function supply(Market calldata market, uint amount) external {
-        Id id = market.toId();
-        require(lastUpdate[id] != 0, "unknown market");
+    function supply(MarketParams calldata marketParams, uint amount) external {
+        Id id = marketParams.toId();
+        MarketStorage storage s = _marketStorage[id];
+        Market storage m = s.market;
+        Position storage p = s.position[msg.sender];
+
+        require(m.lastUpdate != 0, "unknown market");
         require(amount != 0, "zero amount");
 
         accrueInterests(id);
 
-        if (totalSupply[id] == 0) {
-            supplyShare[id][msg.sender] = WAD;
-            totalSupplyShares[id] = WAD;
+        if (m.totalSupply == 0) {
+            p.supplyShare = WAD;
+            m.totalSupplyShares = WAD;
         } else {
-            uint shares = amount.wMul(totalSupplyShares[id]).wDiv(totalSupply[id]);
-            supplyShare[id][msg.sender] += shares;
-            totalSupplyShares[id] += shares;
+            uint shares = amount.wMul(m.totalSupplyShares).wDiv(m.totalSupply);
+            p.supplyShare += shares;
+            m.totalSupplyShares += shares;
         }
 
-        totalSupply[id] += amount;
+        m.totalSupply += amount;
 
-        market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
+        marketParams.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
 
-    function withdraw(Market calldata market, uint amount) external {
-        Id id = market.toId();
-        require(lastUpdate[id] != 0, "unknown market");
+    function withdraw(MarketParams calldata marketParams, uint amount) external {
+        Id id = marketParams.toId();
+        MarketStorage storage s = _marketStorage[id];
+        Market storage m = s.market;
+        Position storage p = s.position[msg.sender];
+
+        require(m.lastUpdate != 0, "unknown market");
         require(amount != 0, "zero amount");
 
         accrueInterests(id);
 
-        uint shares = amount.wMul(totalSupplyShares[id]).wDiv(totalSupply[id]);
-        supplyShare[id][msg.sender] -= shares;
-        totalSupplyShares[id] -= shares;
+        uint shares = amount.wMul(m.totalSupplyShares).wDiv(m.totalSupply);
+        p.supplyShare -= shares;
+        m.totalSupplyShares -= shares;
 
-        totalSupply[id] -= amount;
+        m.totalSupply -= amount;
 
-        require(totalBorrow[id] <= totalSupply[id], "not enough liquidity");
+        require(m.totalBorrow <= m.totalSupply, "not enough liquidity");
 
-        market.borrowableAsset.safeTransfer(msg.sender, amount);
+        marketParams.borrowableAsset.safeTransfer(msg.sender, amount);
     }
 
     // Borrow management.
 
-    function borrow(Market calldata market, uint amount) external {
-        Id id = market.toId();
-        require(lastUpdate[id] != 0, "unknown market");
+    function borrow(MarketParams calldata marketParams, uint amount) external {
+        Id id = marketParams.toId();
+        MarketStorage storage s = _marketStorage[id];
+        Market storage m = s.market;
+        Position storage p = s.position[msg.sender];
+
+        require(m.lastUpdate != 0, "unknown market");
         require(amount != 0, "zero amount");
 
         accrueInterests(id);
 
-        if (totalBorrow[id] == 0) {
-            borrowShare[id][msg.sender] = WAD;
-            totalBorrowShares[id] = WAD;
+        if (m.totalBorrow == 0) {
+            p.borrowShare = WAD;
+            m.totalBorrowShares = WAD;
         } else {
-            uint shares = amount.wMul(totalBorrowShares[id]).wDiv(totalBorrow[id]);
-            borrowShare[id][msg.sender] += shares;
-            totalBorrowShares[id] += shares;
+            uint shares = amount.wMul(m.totalBorrowShares).wDiv(m.totalBorrow);
+            p.borrowShare += shares;
+            m.totalBorrowShares += shares;
         }
 
-        totalBorrow[id] += amount;
+        m.totalBorrow += amount;
 
-        require(isHealthy(market, id, msg.sender), "not enough collateral");
-        require(totalBorrow[id] <= totalSupply[id], "not enough liquidity");
+        require(isHealthy(marketParams, id, msg.sender), "not enough collateral");
+        require(m.totalBorrow <= m.totalSupply, "not enough liquidity");
 
-        market.borrowableAsset.safeTransfer(msg.sender, amount);
+        marketParams.borrowableAsset.safeTransfer(msg.sender, amount);
     }
 
-    function repay(Market calldata market, uint amount) external {
-        Id id = market.toId();
-        require(lastUpdate[id] != 0, "unknown market");
+    function repay(MarketParams calldata marketParams, uint amount) external {
+        Id id = marketParams.toId();
+        MarketStorage storage s = _marketStorage[id];
+        Market storage m = s.market;
+        Position storage p = s.position[msg.sender];
+        require(m.lastUpdate != 0, "unknown market");
         require(amount != 0, "zero amount");
 
         accrueInterests(id);
 
-        uint shares = amount.wMul(totalBorrowShares[id]).wDiv(totalBorrow[id]);
-        borrowShare[id][msg.sender] -= shares;
-        totalBorrowShares[id] -= shares;
+        uint shares = amount.wMul(m.totalBorrowShares).wDiv(m.totalBorrow);
+        p.borrowShare -= shares;
+        m.totalBorrowShares -= shares;
 
-        totalBorrow[id] -= amount;
+        m.totalBorrow -= amount;
 
-        market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
+        marketParams.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
 
     // Collateral management.
 
-    function supplyCollateral(Market calldata market, uint amount) external {
-        Id id = market.toId();
-        require(lastUpdate[id] != 0, "unknown market");
+    function supplyCollateral(MarketParams calldata marketParams, uint amount) external {
+        Id id = marketParams.toId();
+        MarketStorage storage s = _marketStorage[id];
+        Market storage m = s.market;
+        Position storage p = s.position[msg.sender];
+
+        require(m.lastUpdate != 0, "unknown market");
         require(amount != 0, "zero amount");
 
         accrueInterests(id);
 
-        collateral[id][msg.sender] += amount;
+        p.collateral += amount;
 
-        market.collateralAsset.safeTransferFrom(msg.sender, address(this), amount);
+        marketParams.collateralAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
 
-    function withdrawCollateral(Market calldata market, uint amount) external {
-        Id id = market.toId();
-        require(lastUpdate[id] != 0, "unknown market");
+    function withdrawCollateral(MarketParams calldata marketParams, uint amount) external {
+        Id id = marketParams.toId();
+        MarketStorage storage s = _marketStorage[id];
+        Market storage m = s.market;
+        Position storage p = s.position[msg.sender];
+        require(m.lastUpdate != 0, "unknown market");
         require(amount != 0, "zero amount");
 
         accrueInterests(id);
 
-        collateral[id][msg.sender] -= amount;
+        p.collateral -= amount;
 
-        require(isHealthy(market, id, msg.sender), "not enough collateral");
+        require(isHealthy(marketParams, id, msg.sender), "not enough collateral");
 
-        market.collateralAsset.safeTransfer(msg.sender, amount);
+        marketParams.collateralAsset.safeTransfer(msg.sender, amount);
     }
 
     // Liquidation.
 
-    function liquidate(Market calldata market, address borrower, uint seized) external {
-        Id id = market.toId();
-        require(lastUpdate[id] != 0, "unknown market");
+    function liquidate(MarketParams calldata marketParams, address borrower, uint seized) external {
+        Id id = marketParams.toId();
+        MarketStorage storage s = _marketStorage[id];
+        Market storage m = s.market;
+        Position storage p = s.position[borrower];
+
+        require(m.lastUpdate != 0, "unknown market");
         require(seized != 0, "zero amount");
 
         accrueInterests(id);
 
-        require(!isHealthy(market, id, borrower), "cannot liquidate a healthy position");
+        require(!isHealthy(marketParams, id, borrower), "cannot liquidate a healthy position");
 
         // The liquidation incentive is 1 + ALPHA * (1 / LLTV - 1).
-        uint incentive = WAD + ALPHA.wMul(WAD.wDiv(market.lLTV) - WAD);
-        uint repaid = seized.wMul(market.collateralOracle.price()).wDiv(incentive).wDiv(market.borrowableOracle.price());
-        uint repaidShares = repaid.wMul(totalBorrowShares[id]).wDiv(totalBorrow[id]);
+        uint incentive = WAD + ALPHA.wMul(WAD.wDiv(marketParams.lLTV) - WAD);
+        uint repaid = seized.wMul(marketParams.collateralOracle.price()).wDiv(incentive).wDiv(
+            marketParams.borrowableOracle.price()
+        );
+        uint repaidShares = repaid.wMul(m.totalBorrowShares).wDiv(m.totalBorrow);
 
-        borrowShare[id][borrower] -= repaidShares;
-        totalBorrowShares[id] -= repaidShares;
-        totalBorrow[id] -= repaid;
+        p.borrowShare -= repaidShares;
+        m.totalBorrowShares -= repaidShares;
+        m.totalBorrow -= repaid;
 
-        collateral[id][borrower] -= seized;
+        p.collateral -= seized;
 
         // Realize the bad debt if needed.
-        if (collateral[id][borrower] == 0) {
-            totalSupply[id] -= borrowShare[id][borrower].wMul(totalBorrow[id]).wDiv(totalBorrowShares[id]);
-            totalBorrowShares[id] -= borrowShare[id][borrower];
-            borrowShare[id][borrower] = 0;
+        if (p.collateral == 0) {
+            m.totalSupply -= p.borrowShare.wMul(m.totalBorrow).wDiv(m.totalBorrowShares);
+            m.totalBorrowShares -= p.borrowShare;
+            p.borrowShare = 0;
         }
 
-        market.collateralAsset.safeTransfer(msg.sender, seized);
-        market.borrowableAsset.safeTransferFrom(msg.sender, address(this), repaid);
+        marketParams.collateralAsset.safeTransfer(msg.sender, seized);
+        marketParams.borrowableAsset.safeTransferFrom(msg.sender, address(this), repaid);
     }
 
     // Interests management.
 
     function accrueInterests(Id id) private {
-        uint marketTotalSupply = totalSupply[id];
+        MarketStorage storage s = _marketStorage[id];
+        Market storage m = s.market;
+        uint marketTotalSupply = m.totalSupply;
 
         if (marketTotalSupply != 0) {
-            uint marketTotalBorrow = totalBorrow[id];
+            uint marketTotalBorrow = m.totalBorrow;
             uint utilization = marketTotalBorrow.wDiv(marketTotalSupply);
             uint borrowRate = irm(utilization);
-            uint accruedInterests = marketTotalBorrow.wMul(borrowRate).wMul(block.timestamp - lastUpdate[id]);
-            totalSupply[id] = marketTotalSupply + accruedInterests;
-            totalBorrow[id] = marketTotalBorrow + accruedInterests;
+            uint accruedInterests = marketTotalBorrow.wMul(borrowRate).wMul(block.timestamp - m.lastUpdate);
+            m.totalSupply = marketTotalSupply + accruedInterests;
+            m.totalBorrow = marketTotalBorrow + accruedInterests;
         }
 
-        lastUpdate[id] = block.timestamp;
+        m.lastUpdate = block.timestamp;
     }
 
     // Health check.
 
-    function isHealthy(Market calldata market, Id id, address user) private view returns (bool) {
-        uint borrowShares = borrowShare[id][user];
-        // totalBorrowShares[id] > 0 when borrowShares > 0.
+    function isHealthy(MarketParams calldata marketParams, Id id, address user) private view returns (bool) {
+        MarketStorage storage s = _marketStorage[id];
+        Market storage m = s.market;
+        Position storage p = s.position[user];
+        uint borrowShares = p.borrowShare;
+        // m.totalBorrowShares > 0 when borrowShares > 0.
         uint borrowValue = borrowShares != 0
-            ? borrowShares.wMul(totalBorrow[id]).wDiv(totalBorrowShares[id]).wMul(market.borrowableOracle.price())
+            ? borrowShares.wMul(m.totalBorrow).wDiv(m.totalBorrowShares).wMul(marketParams.borrowableOracle.price())
             : 0;
-        uint collateralValue = collateral[id][user].wMul(market.collateralOracle.price());
-        return collateralValue.wMul(market.lLTV) >= borrowValue;
+        uint collateralValue = p.collateral.wMul(marketParams.collateralOracle.price());
+        return collateralValue.wMul(marketParams.lLTV) >= borrowValue;
     }
 }
