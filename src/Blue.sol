@@ -174,45 +174,32 @@ contract Blue {
 
     // Liquidation.
 
-    function liquidate(Market calldata market, address borrower, uint maxSeized)
-        external
-        returns (uint seized, uint repaid)
-    {
+    function liquidate(Market calldata market, address borrower, uint seized) external {
         Id id = Id.wrap(keccak256(abi.encode(market)));
         require(lastUpdate[id] != 0, "unknown market");
-        require(maxSeized > 0, "zero amount");
+        require(seized > 0, "zero amount");
 
         accrueInterests(id);
 
         require(!isHealthy(market, id, borrower), "cannot liquidate a healthy position");
 
-        // The size of the bonus is the proportion alpha of 1 / LLTV - 1
+        // The liquidation incentive is 1 + alpha * (1 / LLTV - 1).
         uint incentive = WAD + alpha.wMul(WAD.wDiv(market.lLTV) - WAD);
-        uint borrowablePrice = market.borrowableOracle.price();
-        uint collateralPrice = market.collateralOracle.price();
-        seized = maxSeized.min(collateral[id][borrower]);
-        repaid = seized.wMul(collateralPrice).wDiv(incentive).wDiv(borrowablePrice);
-        uint priorBorrowShares = borrowShare[id][borrower];
-        uint priorBorrow = priorBorrowShares.wMul(totalBorrow[id]).wDiv(totalBorrowShares[id]);
-        if (repaid > priorBorrow) {
-            repaid = priorBorrow;
-            seized = repaid.wDiv(collateralPrice).wMul(incentive).wMul(borrowablePrice);
-        }
+        uint repaid = seized.wMul(market.collateralOracle.price()).wDiv(incentive).wDiv(market.borrowableOracle.price());
+        uint repaidShares = repaid.wMul(totalBorrowShares[id]).wDiv(totalBorrow[id]);
 
-        uint newCollateral = collateral[id][borrower] - seized;
-        if (newCollateral == 0) {
-            totalBorrow[id] -= priorBorrow;
-            totalBorrowShares[id] -= priorBorrowShares;
+        borrowShare[id][borrower] -= repaidShares;
+        totalBorrowShares[id] -= repaidShares;
+        totalBorrow[id] -= repaid;
+
+        collateral[id][borrower] -= seized;
+
+        // Realize the bad debt if needed.
+        if (collateral[id][borrower] == 0) {
+            totalSupply[id] -= borrowShare[id][borrower].wMul(totalBorrow[id]).wDiv(totalBorrowShares[id]);
+            totalBorrowShares[id] -= borrowShare[id][borrower];
             borrowShare[id][borrower] = 0;
-            // Realize the bad debt.
-            totalSupply[id] -= priorBorrow - repaid;
-        } else {
-            uint repaidShares = repaid.wMul(totalBorrowShares[id]).wDiv(totalBorrow[id]);
-            totalBorrow[id] -= repaid;
-            totalBorrowShares[id] -= repaidShares;
-            borrowShare[id][borrower] -= repaidShares;
         }
-        collateral[id][borrower] = newCollateral;
 
         market.collateralAsset.safeTransfer(msg.sender, seized);
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), repaid);
