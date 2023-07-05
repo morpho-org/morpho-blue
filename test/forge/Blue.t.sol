@@ -131,7 +131,7 @@ contract BlueTest is Test {
     function testWhitelistIRM(address newIRM) public {
         blue.whitelistIRM(newIRM);
 
-        assertTrue(blue.isIRMWhitelisted(newIRM));
+        assertEq(blue.isIRMWhitelisted(newIRM), 1);
     }
 
     function testSupply(uint amount) public {
