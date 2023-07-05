@@ -7,6 +7,10 @@ import {IOracle} from "src/interfaces/IOracle.sol";
 import {MathLib} from "src/libraries/MathLib.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 
+uint constant WAD = 1e18;
+
+uint constant alpha = 0.5e18;
+
 // Market id.
 type Id is bytes32;
 
@@ -67,8 +71,8 @@ contract Blue {
         accrueInterests(id);
 
         if (totalSupply[id] == 0) {
-            supplyShare[id][msg.sender] = 1e18;
-            totalSupplyShares[id] = 1e18;
+            supplyShare[id][msg.sender] = WAD;
+            totalSupplyShares[id] = WAD;
         } else {
             uint shares = amount.wMul(totalSupplyShares[id]).wDiv(totalSupply[id]);
             supplyShare[id][msg.sender] += shares;
@@ -108,8 +112,8 @@ contract Blue {
         accrueInterests(id);
 
         if (totalBorrow[id] == 0) {
-            borrowShare[id][msg.sender] = 1e18;
-            totalBorrowShares[id] = 1e18;
+            borrowShare[id][msg.sender] = WAD;
+            totalBorrowShares[id] = WAD;
         } else {
             uint shares = amount.wMul(totalBorrowShares[id]).wDiv(totalBorrow[id]);
             borrowShare[id][msg.sender] += shares;
@@ -118,7 +122,7 @@ contract Blue {
 
         totalBorrow[id] += amount;
 
-        checkHealth(market, id, msg.sender);
+        require(isHealthy(market, id, msg.sender), "not enough collateral");
         require(totalBorrow[id] <= totalSupply[id], "not enough liquidity");
 
         market.borrowableAsset.safeTransfer(msg.sender, amount);
@@ -151,7 +155,7 @@ contract Blue {
 
         collateral[id][msg.sender] += amount;
 
-        market.collateralAsset.transferFrom(msg.sender, address(this), amount);
+        market.collateralAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
 
     function withdrawCollateral(Market calldata market, uint amount) external {
@@ -163,9 +167,42 @@ contract Blue {
 
         collateral[id][msg.sender] -= amount;
 
-        checkHealth(market, id, msg.sender);
+        require(isHealthy(market, id, msg.sender), "not enough collateral");
 
-        market.collateralAsset.transfer(msg.sender, amount);
+        market.collateralAsset.safeTransfer(msg.sender, amount);
+    }
+
+    // Liquidation.
+
+    function liquidate(Market calldata market, address borrower, uint seized) external {
+        Id id = Id.wrap(keccak256(abi.encode(market)));
+        require(lastUpdate[id] != 0, "unknown market");
+        require(seized > 0, "zero amount");
+
+        accrueInterests(id);
+
+        require(!isHealthy(market, id, borrower), "cannot liquidate a healthy position");
+
+        // The liquidation incentive is 1 + alpha * (1 / LLTV - 1).
+        uint incentive = WAD + alpha.wMul(WAD.wDiv(market.lLTV) - WAD);
+        uint repaid = seized.wMul(market.collateralOracle.price()).wDiv(incentive).wDiv(market.borrowableOracle.price());
+        uint repaidShares = repaid.wMul(totalBorrowShares[id]).wDiv(totalBorrow[id]);
+
+        borrowShare[id][borrower] -= repaidShares;
+        totalBorrowShares[id] -= repaidShares;
+        totalBorrow[id] -= repaid;
+
+        collateral[id][borrower] -= seized;
+
+        // Realize the bad debt if needed.
+        if (collateral[id][borrower] == 0) {
+            totalSupply[id] -= borrowShare[id][borrower].wMul(totalBorrow[id]).wDiv(totalBorrowShares[id]);
+            totalBorrowShares[id] -= borrowShare[id][borrower];
+            borrowShare[id][borrower] = 0;
+        }
+
+        market.collateralAsset.safeTransfer(msg.sender, seized);
+        market.borrowableAsset.safeTransferFrom(msg.sender, address(this), repaid);
     }
 
     // Interests management.
@@ -187,14 +224,13 @@ contract Blue {
 
     // Health check.
 
-    function checkHealth(Market calldata market, Id id, address user) private view {
-        if (borrowShare[id][user] > 0) {
-            // totalBorrowShares[id] > 0 because borrowShare[id][user] > 0.
-            uint borrowValue = borrowShare[id][user].wMul(totalBorrow[id]).wDiv(totalBorrowShares[id]).wMul(
-                IOracle(market.borrowableOracle).price()
-            );
-            uint collateralValue = collateral[id][user].wMul(IOracle(market.collateralOracle).price());
-            require(collateralValue.wMul(market.lLTV) >= borrowValue, "not enough collateral");
-        }
+    function isHealthy(Market calldata market, Id id, address user) private view returns (bool) {
+        uint borrowShares = borrowShare[id][user];
+        // totalBorrowShares[id] > 0 when borrowShares > 0.
+        uint borrowValue = borrowShares > 0
+            ? borrowShares.wMul(totalBorrow[id]).wDiv(totalBorrowShares[id]).wMul(market.borrowableOracle.price())
+            : 0;
+        uint collateralValue = collateral[id][user].wMul(market.collateralOracle.price());
+        return collateralValue.wMul(market.lLTV) >= borrowValue;
     }
 }
