@@ -7,7 +7,7 @@ import {IOracle} from "src/interfaces/IOracle.sol";
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
-import "src/Market.sol";
+import "src/Blue.sol";
 import {ERC20Mock as ERC20} from "src/mocks/ERC20Mock.sol";
 import {OracleMock as Oracle} from "src/mocks/OracleMock.sol";
 
