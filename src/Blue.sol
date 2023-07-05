@@ -23,11 +23,6 @@ struct Market {
     uint lLTV;
 }
 
-using {toId} for Market;
-function toId(Market calldata market) pure returns (Id) {
-    return Id.wrap(keccak256(abi.encode(market)));
-}
-
 function irm(uint utilization) pure returns (uint) {
     // Divide by the number of seconds in a year.
     // This is a very simple model (to refine later) where x% utilization corresponds to x% APR.
@@ -60,7 +55,7 @@ contract Blue {
     // Markets management.
 
     function createMarket(Market calldata market) external {
-        Id id = market.toId();
+        Id id = Id.wrap(keccak256(abi.encode(market)));
         require(lastUpdate[id] == 0, "market already exists");
 
         accrueInterests(id);
@@ -68,10 +63,8 @@ contract Blue {
 
     // Supply management.
 
-    function supply(Market calldata market, uint amount) external {
-        Id id = market.toId();
-        require(lastUpdate[id] != 0, "unknown market");
-        require(amount > 0, "zero amount");
+    function supply(Market calldata market, uint amount) external nonZero(amount) {
+        Id id = toId(market);
 
         accrueInterests(id);
 
@@ -89,10 +82,8 @@ contract Blue {
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
 
-    function withdraw(Market calldata market, uint amount) external {
-        Id id = market.toId();
-        require(lastUpdate[id] != 0, "unknown market");
-        require(amount > 0, "zero amount");
+    function withdraw(Market calldata market, uint amount) external nonZero(amount) {
+        Id id = toId(market);
 
         accrueInterests(id);
 
@@ -109,10 +100,8 @@ contract Blue {
 
     // Borrow management.
 
-    function borrow(Market calldata market, uint amount) external {
-        Id id = market.toId();
-        require(lastUpdate[id] != 0, "unknown market");
-        require(amount > 0, "zero amount");
+    function borrow(Market calldata market, uint amount) external nonZero(amount) {
+        Id id = toId(market);
 
         accrueInterests(id);
 
@@ -133,10 +122,8 @@ contract Blue {
         market.borrowableAsset.safeTransfer(msg.sender, amount);
     }
 
-    function repay(Market calldata market, uint amount) external {
-        Id id = market.toId();
-        require(lastUpdate[id] != 0, "unknown market");
-        require(amount > 0, "zero amount");
+    function repay(Market calldata market, uint amount) external nonZero(amount) {
+        Id id = toId(market);
 
         accrueInterests(id);
 
@@ -151,10 +138,8 @@ contract Blue {
 
     // Collateral management.
 
-    function supplyCollateral(Market calldata market, uint amount) external {
-        Id id = market.toId();
-        require(lastUpdate[id] != 0, "unknown market");
-        require(amount > 0, "zero amount");
+    function supplyCollateral(Market calldata market, uint amount) external nonZero(amount) {
+        Id id = toId(market);
 
         accrueInterests(id);
 
@@ -163,10 +148,8 @@ contract Blue {
         market.collateralAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
 
-    function withdrawCollateral(Market calldata market, uint amount) external {
-        Id id = market.toId();
-        require(lastUpdate[id] != 0, "unknown market");
-        require(amount > 0, "zero amount");
+    function withdrawCollateral(Market calldata market, uint amount) external nonZero(amount) {
+        Id id = toId(market);
 
         accrueInterests(id);
 
@@ -179,10 +162,8 @@ contract Blue {
 
     // Liquidation.
 
-    function liquidate(Market calldata market, address borrower, uint seized) external {
-        Id id = market.toId();
-        require(lastUpdate[id] != 0, "unknown market");
-        require(seized > 0, "zero amount");
+    function liquidate(Market calldata market, address borrower, uint seized) external nonZero(seized) {
+        Id id = toId(market);
 
         accrueInterests(id);
 
@@ -237,5 +218,17 @@ contract Blue {
             : 0;
         uint collateralValue = collateral[id][user].wMul(market.collateralOracle.price());
         return collateralValue.wMul(market.lLTV) >= borrowValue;
+    }
+
+    // Input validation
+
+    modifier nonZero(uint amount) {
+        require(amount > 0, "zero amount");
+        _;
+    }
+
+    function toId(Market calldata market) private view returns (Id id) {
+        id = Id.wrap(keccak256(abi.encode(market)));
+        require(lastUpdate[id] != 0, "unknown market");
     }
 }
