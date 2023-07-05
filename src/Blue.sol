@@ -31,7 +31,7 @@ struct Market {
 
 struct MarketStorage {
     Market market;
-    mapping(address => Position) position;
+    mapping(address user => Position) position;
 }
 
 struct Position {
