@@ -10,6 +10,7 @@ import "forge-std/console.sol";
 import "src/Blue.sol";
 import {ERC20Mock as ERC20} from "src/mocks/ERC20Mock.sol";
 import {OracleMock as Oracle} from "src/mocks/OracleMock.sol";
+import {IRMMock as IRM} from "src/mocks/IRMMock.sol";
 
 contract BlueTest is Test {
     using MathLib for uint;
@@ -23,20 +24,23 @@ contract BlueTest is Test {
     ERC20 private collateralAsset;
     Oracle private borrowableOracle;
     Oracle private collateralOracle;
+    IRM private irm;
     Market public market;
     Id public id;
 
     function setUp() public {
         // Create Blue.
-        blue = new Blue(msg.sender);
+        blue = new Blue(address(this));
 
         // List a market.
         borrowableAsset = new ERC20("borrowable", "B", 18);
         collateralAsset = new ERC20("collateral", "C", 18);
         borrowableOracle = new Oracle();
         collateralOracle = new Oracle();
+        irm = new IRM();
+        blue.whitelistIRM(address(irm));
         market = Market(
-            IERC20(address(borrowableAsset)), IERC20(address(collateralAsset)), borrowableOracle, collateralOracle, lLTV
+            IERC20(address(borrowableAsset)), IERC20(address(collateralAsset)), borrowableOracle, collateralOracle, address(irm), lLTV
         );
         id = Id.wrap(keccak256(abi.encode(market)));
 

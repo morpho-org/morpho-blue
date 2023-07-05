@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity >=0.8.0;
 
+import "forge-std/console.sol";
+
 /// @title Ownable
 /// @author Morpho Labs
 /// @custom:contact security@morpho.xyz

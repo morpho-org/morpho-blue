@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.20;
 
+import {IIRM} from "src/interfaces/IIRM.sol";
 import {IERC20} from "src/interfaces/IERC20.sol";
 import {IOracle} from "src/interfaces/IOracle.sol";
 
@@ -22,13 +23,8 @@ struct Market {
     IERC20 collateralAsset;
     IOracle borrowableOracle;
     IOracle collateralOracle;
+    address irm;
     uint lLTV;
-}
-
-function irm(uint utilization) pure returns (uint) {
-    // Divide by the number of seconds in a year.
-    // This is a very simple model (to refine later) where x% utilization corresponds to x% APR.
-    return utilization / 365 days;
 }
 
 contract Blue is Ownable {
@@ -53,6 +49,8 @@ contract Blue is Ownable {
     mapping(Id => uint) public totalBorrowShares;
     // Interests last update (used to check if a market has been created).
     mapping(Id => uint) public lastUpdate;
+    // IRM whitelist.
+    mapping(address => bool) public whitelistedIRMs;
 
     constructor(address owner) Ownable(owner) {}
 
@@ -60,9 +58,14 @@ contract Blue is Ownable {
 
     function createMarket(Market calldata market) external {
         Id id = Id.wrap(keccak256(abi.encode(market)));
+        require(whitelistedIRMs[market.irm], "IRM not whitelisted");
         require(lastUpdate[id] == 0, "market already exists");
 
-        accrueInterests(id);
+        accrueInterests(id, market.irm);
+    }
+
+    function whitelistIRM(address irm) external onlyOwner {
+        whitelistedIRMs[irm] = !whitelistedIRMs[irm];
     }
 
     // Supply management.
@@ -72,7 +75,7 @@ contract Blue is Ownable {
         require(lastUpdate[id] != 0, "unknown market");
         require(amount > 0, "zero amount");
 
-        accrueInterests(id);
+        accrueInterests(id, market.irm);
 
         if (totalSupply[id] == 0) {
             supplyShare[id][msg.sender] = WAD;
@@ -93,7 +96,7 @@ contract Blue is Ownable {
         require(lastUpdate[id] != 0, "unknown market");
         require(amount > 0, "zero amount");
 
-        accrueInterests(id);
+        accrueInterests(id, market.irm);
 
         uint shares = amount.wMul(totalSupplyShares[id]).wDiv(totalSupply[id]);
         supplyShare[id][msg.sender] -= shares;
@@ -113,7 +116,7 @@ contract Blue is Ownable {
         require(lastUpdate[id] != 0, "unknown market");
         require(amount > 0, "zero amount");
 
-        accrueInterests(id);
+        accrueInterests(id, market.irm);
 
         if (totalBorrow[id] == 0) {
             borrowShare[id][msg.sender] = WAD;
@@ -137,7 +140,7 @@ contract Blue is Ownable {
         require(lastUpdate[id] != 0, "unknown market");
         require(amount > 0, "zero amount");
 
-        accrueInterests(id);
+        accrueInterests(id, market.irm);
 
         uint shares = amount.wMul(totalBorrowShares[id]).wDiv(totalBorrow[id]);
         borrowShare[id][msg.sender] -= shares;
@@ -155,7 +158,7 @@ contract Blue is Ownable {
         require(lastUpdate[id] != 0, "unknown market");
         require(amount > 0, "zero amount");
 
-        accrueInterests(id);
+        accrueInterests(id, market.irm);
 
         collateral[id][msg.sender] += amount;
 
@@ -167,7 +170,7 @@ contract Blue is Ownable {
         require(lastUpdate[id] != 0, "unknown market");
         require(amount > 0, "zero amount");
 
-        accrueInterests(id);
+        accrueInterests(id, market.irm);
 
         collateral[id][msg.sender] -= amount;
 
@@ -183,7 +186,7 @@ contract Blue is Ownable {
         require(lastUpdate[id] != 0, "unknown market");
         require(seized > 0, "zero amount");
 
-        accrueInterests(id);
+        accrueInterests(id, market.irm);
 
         require(!isHealthy(market, id, borrower), "cannot liquidate a healthy position");
 
@@ -211,13 +214,13 @@ contract Blue is Ownable {
 
     // Interests management.
 
-    function accrueInterests(Id id) private {
+    function accrueInterests(Id id, address irm) private {
         uint marketTotalSupply = totalSupply[id];
 
         if (marketTotalSupply != 0) {
             uint marketTotalBorrow = totalBorrow[id];
             uint utilization = marketTotalBorrow.wDiv(marketTotalSupply);
-            uint borrowRate = irm(utilization);
+            uint borrowRate = IIRM(irm).rate(utilization);
             uint accruedInterests = marketTotalBorrow.wMul(borrowRate).wMul(block.timestamp - lastUpdate[id]);
             totalSupply[id] = marketTotalSupply + accruedInterests;
             totalBorrow[id] = marketTotalBorrow + accruedInterests;
