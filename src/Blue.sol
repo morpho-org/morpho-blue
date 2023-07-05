@@ -146,11 +146,13 @@ contract Blue {
 
     // Collateral management.
 
-    /// @dev The interests are not accrued since no health check is required when supplying collateral.
+    /// @dev Don't accrue interests because it's not required and it saves gas.
     function supplyCollateral(Market calldata market, uint amount) external {
         Id id = Id.wrap(keccak256(abi.encode(market)));
         require(lastUpdate[id] != 0, "unknown market");
         require(amount > 0, "zero amount");
+
+        // Don't accrue interests because it's not required and it saves gas.
 
         collateral[id][msg.sender] += amount;
 
