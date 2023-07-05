@@ -64,7 +64,7 @@ contract Blue {
     // Supply management.
 
     function supply(Market calldata market, uint amount) external nonZero(amount) {
-        Id id = toId(market);
+        Id id = toExistingId(market);
 
         accrueInterests(id);
 
@@ -83,7 +83,7 @@ contract Blue {
     }
 
     function withdraw(Market calldata market, uint amount) external nonZero(amount) {
-        Id id = toId(market);
+        Id id = toExistingId(market);
 
         accrueInterests(id);
 
@@ -101,7 +101,7 @@ contract Blue {
     // Borrow management.
 
     function borrow(Market calldata market, uint amount) external nonZero(amount) {
-        Id id = toId(market);
+        Id id = toExistingId(market);
 
         accrueInterests(id);
 
@@ -123,7 +123,7 @@ contract Blue {
     }
 
     function repay(Market calldata market, uint amount) external nonZero(amount) {
-        Id id = toId(market);
+        Id id = toExistingId(market);
 
         accrueInterests(id);
 
@@ -139,7 +139,7 @@ contract Blue {
     // Collateral management.
 
     function supplyCollateral(Market calldata market, uint amount) external nonZero(amount) {
-        Id id = toId(market);
+        Id id = toExistingId(market);
 
         accrueInterests(id);
 
@@ -149,7 +149,7 @@ contract Blue {
     }
 
     function withdrawCollateral(Market calldata market, uint amount) external nonZero(amount) {
-        Id id = toId(market);
+        Id id = toExistingId(market);
 
         accrueInterests(id);
 
@@ -163,7 +163,7 @@ contract Blue {
     // Liquidation.
 
     function liquidate(Market calldata market, address borrower, uint seized) external nonZero(seized) {
-        Id id = toId(market);
+        Id id = toExistingId(market);
 
         accrueInterests(id);
 
@@ -227,7 +227,7 @@ contract Blue {
         _;
     }
 
-    function toId(Market calldata market) private view returns (Id id) {
+    function toExistingId(Market calldata market) private view returns (Id id) {
         id = Id.wrap(keccak256(abi.encode(market)));
         require(lastUpdate[id] != 0, "unknown market");
     }
