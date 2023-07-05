@@ -50,7 +50,7 @@ contract Blue is Ownable {
     // Interests last update (used to check if a market has been created).
     mapping(Id => uint) public lastUpdate;
     // IRM whitelist.
-    mapping(address => bool) public whitelistedIRMs;
+    mapping(address => bool) public irmWhitelist;
 
     constructor(address owner) Ownable(owner) {}
 
@@ -58,14 +58,14 @@ contract Blue is Ownable {
 
     function createMarket(Market calldata market) external {
         Id id = Id.wrap(keccak256(abi.encode(market)));
-        require(whitelistedIRMs[market.irm], "IRM not whitelisted");
+        require(irmWhitelist[market.irm], "IRM not whitelisted");
         require(lastUpdate[id] == 0, "market already exists");
 
         accrueInterests(id, market.irm);
     }
 
     function whitelistIRM(address irm) external onlyOwner {
-        whitelistedIRMs[irm] = !whitelistedIRMs[irm];
+        irmWhitelist[irm] = !irmWhitelist[irm];
     }
 
     // Supply management.
