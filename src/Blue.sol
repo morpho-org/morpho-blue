@@ -23,6 +23,11 @@ struct Market {
     uint lLTV;
 }
 
+using {toId} for Market;
+function toId(Market calldata market) pure returns (Id) {
+    return Id.wrap(keccak256(abi.encode(market)));
+}
+
 function irm(uint utilization) pure returns (uint) {
     // Divide by the number of seconds in a year.
     // This is a very simple model (to refine later) where x% utilization corresponds to x% APR.
@@ -55,7 +60,7 @@ contract Blue {
     // Markets management.
 
     function createMarket(Market calldata market) external {
-        Id id = Id.wrap(keccak256(abi.encode(market)));
+        Id id = market.toId();
         require(lastUpdate[id] == 0, "market already exists");
 
         accrueInterests(id);
@@ -64,7 +69,7 @@ contract Blue {
     // Supply management.
 
     function supply(Market calldata market, uint amount) external {
-        Id id = Id.wrap(keccak256(abi.encode(market)));
+        Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount > 0, "zero amount");
 
@@ -85,7 +90,7 @@ contract Blue {
     }
 
     function withdraw(Market calldata market, uint amount) external {
-        Id id = Id.wrap(keccak256(abi.encode(market)));
+        Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount > 0, "zero amount");
 
@@ -105,7 +110,7 @@ contract Blue {
     // Borrow management.
 
     function borrow(Market calldata market, uint amount) external {
-        Id id = Id.wrap(keccak256(abi.encode(market)));
+        Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount > 0, "zero amount");
 
@@ -129,7 +134,7 @@ contract Blue {
     }
 
     function repay(Market calldata market, uint amount) external {
-        Id id = Id.wrap(keccak256(abi.encode(market)));
+        Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount > 0, "zero amount");
 
@@ -147,7 +152,7 @@ contract Blue {
     // Collateral management.
 
     function supplyCollateral(Market calldata market, uint amount) external {
-        Id id = Id.wrap(keccak256(abi.encode(market)));
+        Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount > 0, "zero amount");
 
@@ -159,7 +164,7 @@ contract Blue {
     }
 
     function withdrawCollateral(Market calldata market, uint amount) external {
-        Id id = Id.wrap(keccak256(abi.encode(market)));
+        Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount > 0, "zero amount");
 
@@ -175,7 +180,7 @@ contract Blue {
     // Liquidation.
 
     function liquidate(Market calldata market, address borrower, uint seized) external {
-        Id id = Id.wrap(keccak256(abi.encode(market)));
+        Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(seized > 0, "zero amount");
 
