@@ -23,15 +23,15 @@ struct Market {
     uint lLTV;
 }
 
+using {toId} for Market;
+function toId(Market calldata market) pure returns (Id) {
+    return Id.wrap(keccak256(abi.encode(market)));
+}
+
 function irm(uint utilization) pure returns (uint) {
     // Divide by the number of seconds in a year.
     // This is a very simple model (to refine later) where x% utilization corresponds to x% APR.
     return utilization / 365 days;
-}
-
-using {toId} for Market;
-function toId(Market calldata market) pure returns (Id) {
-    return Id.wrap(keccak256(abi.encode(market)));
 }
 
 contract Blue {
@@ -180,7 +180,7 @@ contract Blue {
     // Liquidation.
 
     function liquidate(Market calldata market, address borrower, uint seized) external {
-        Id id = Id.wrap(keccak256(abi.encode(market)));
+        Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(seized > 0, "zero amount");
 
