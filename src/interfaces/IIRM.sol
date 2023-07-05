@@ -2,5 +2,5 @@
 pragma solidity >=0.5.0;
 
 interface IIRM {
-	function rate(uint utilization) external pure returns (uint);
+	function rate() external returns (uint);
 }

@@ -37,13 +37,14 @@ contract BlueTest is Test {
         collateralAsset = new ERC20("collateral", "C", 18);
         borrowableOracle = new Oracle();
         collateralOracle = new Oracle();
-        irm = new IRM();
-        blue.whitelistIRM(address(irm));
+        irm = new IRM(blue);
         market = Market(
             IERC20(address(borrowableAsset)), IERC20(address(collateralAsset)), borrowableOracle, collateralOracle, irm, lLTV
         );
+        blue.whitelistIRM(address(irm));
         id = Id.wrap(keccak256(abi.encode(market)));
 
+        irm.setId(id);
         blue.createMarket(market);
 
         // We set the price of the borrowable asset to zero so that borrowers
