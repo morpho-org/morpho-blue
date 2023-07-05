@@ -40,7 +40,7 @@ contract Morpho is IMorpho, MarketBase, AllowanceBase, ERC3156xFlashLender, ERC2
     /* EXTERNAL */
 
     /// @notice Returns the given market's tranche based on its id.
-    function marketAt(MarketKey calldata marketKey) external view returns (MarketState memory accrued) {
+    function stateAt(MarketKey calldata marketKey) external view returns (MarketState memory accrued) {
         (, Market storage market) = _market(marketKey);
 
         accrued = market.state.getAccrued(marketKey);
@@ -48,7 +48,7 @@ contract Morpho is IMorpho, MarketBase, AllowanceBase, ERC3156xFlashLender, ERC2
 
     /// @notice Returns the given user's position on the given tranche.
     /// Note: does not return balances because it requires virtually accruing interests in the given tranche.
-    function sharesOf(MarketKey calldata marketKey, address user) external view returns (Position memory position) {
+    function positionOf(MarketKey calldata marketKey, address user) external view returns (Position memory position) {
         (, Market storage market) = _market(marketKey);
 
         position = market.getPosition(user);

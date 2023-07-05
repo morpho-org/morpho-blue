@@ -6,9 +6,9 @@ import {IERC3156xFlashLiquidator} from "./IERC3156xFlashLiquidator.sol";
 import {MarketKey, MarketState, MarketShares, Position} from "../libraries/Types.sol";
 
 interface IMorpho {
-    function marketAt(MarketKey calldata marketKey) external view returns (MarketState memory state);
+    function stateAt(MarketKey calldata marketKey) external view returns (MarketState memory state);
 
-    function sharesOf(MarketKey calldata marketKey, address user) external view returns (Position memory position);
+    function positionOf(MarketKey calldata marketKey, address user) external view returns (Position memory position);
 
     function depositCollateral(MarketKey calldata marketKey, uint256 assets, address onBehalf) external;
 
