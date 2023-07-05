@@ -29,15 +29,15 @@ struct Market {
     uint lastUpdate;
 }
 
-struct MarketStorage {
-    Market market;
-    mapping(address user => Position) position;
-}
-
 struct Position {
     uint supplyShare;
     uint borrowShare;
     uint collateral;
+}
+
+struct MarketStorage {
+    Market market;
+    mapping(address user => Position) position;
 }
 
 using {toId} for MarketParams;
