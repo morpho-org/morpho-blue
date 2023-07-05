@@ -8,8 +8,7 @@ import {MathLib} from "src/libraries/MathLib.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 
 uint constant WAD = 1e18;
-
-uint constant alpha = 0.5e18;
+uint constant ALPHA = 0.5e18;
 
 // Market id.
 type Id is bytes32;
@@ -183,8 +182,8 @@ contract Blue {
 
         require(!isHealthy(market, id, borrower), "cannot liquidate a healthy position");
 
-        // The liquidation incentive is 1 + alpha * (1 / LLTV - 1).
-        uint incentive = WAD + alpha.wMul(WAD.wDiv(market.lLTV) - WAD);
+        // The liquidation incentive is 1 + ALPHA * (1 / LLTV - 1).
+        uint incentive = WAD + ALPHA.wMul(WAD.wDiv(market.lLTV) - WAD);
         uint repaid = seized.wMul(market.collateralOracle.price()).wDiv(incentive).wDiv(market.borrowableOracle.price());
         uint repaidShares = repaid.wMul(totalBorrowShares[id]).wDiv(totalBorrow[id]);
 
