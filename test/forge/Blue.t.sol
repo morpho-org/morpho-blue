@@ -28,7 +28,7 @@ contract BlueTest is Test {
 
     function setUp() public {
         // Create Blue.
-        blue = new Blue();
+        blue = new Blue(msg.sender);
 
         // List a market.
         borrowableAsset = new ERC20("borrowable", "B", 18);
