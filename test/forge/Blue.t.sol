@@ -153,9 +153,13 @@ contract BlueTest is Test {
 
         blue.withdraw(market, amountWithdrawn);
 
-        assertApproxEqAbs(blue.supplyShare(id, address(this)), (amountLent - amountWithdrawn) * 1e18 / amountLent, 1e3, "supply share");
+        assertApproxEqAbs(
+            blue.supplyShare(id, address(this)), (amountLent - amountWithdrawn) * 1e18 / amountLent, 1e3, "supply share"
+        );
         assertEq(borrowableAsset.balanceOf(address(this)), amountWithdrawn, "this balance");
-        assertEq(borrowableAsset.balanceOf(address(blue)), amountLent - amountBorrowed - amountWithdrawn, "blue balance");
+        assertEq(
+            borrowableAsset.balanceOf(address(blue)), amountLent - amountBorrowed - amountWithdrawn, "blue balance"
+        );
     }
 
     function testCollateralRequirements(
@@ -205,7 +209,9 @@ contract BlueTest is Test {
         blue.repay(market, amountRepaid);
         vm.stopPrank();
 
-        assertApproxEqAbs(blue.borrowShare(id, borrower), (amountBorrowed - amountRepaid) * 1e18 / amountBorrowed, 1e3, "borrow share");
+        assertApproxEqAbs(
+            blue.borrowShare(id, borrower), (amountBorrowed - amountRepaid) * 1e18 / amountBorrowed, 1e3, "borrow share"
+        );
         assertEq(borrowableAsset.balanceOf(borrower), amountBorrowed - amountRepaid, "borrower balance");
         assertEq(borrowableAsset.balanceOf(address(blue)), amountLent - amountBorrowed + amountRepaid, "blue balance");
     }
@@ -249,7 +255,7 @@ contract BlueTest is Test {
         uint borrowingPower = amountCollateral.wMul(lLTV);
         uint amountBorrowed = borrowingPower.wMul(0.8e18);
         uint toSeize = amountCollateral.wMul(lLTV);
-        uint incentive = WAD + alpha.wMul(WAD.wDiv(lLTV) - WAD);
+        uint incentive = WAD + ALPHA.wMul(WAD.wDiv(lLTV) - WAD);
 
         borrowableAsset.setBalance(address(this), amountLent);
         collateralAsset.setBalance(borrower, amountCollateral);
@@ -291,7 +297,7 @@ contract BlueTest is Test {
         uint borrowingPower = amountCollateral.wMul(lLTV);
         uint amountBorrowed = borrowingPower.wMul(0.8e18);
         uint toSeize = amountCollateral;
-        uint incentive = WAD + alpha.wMul(WAD.wDiv(market.lLTV) - WAD);
+        uint incentive = WAD + ALPHA.wMul(WAD.wDiv(market.lLTV) - WAD);
 
         borrowableAsset.setBalance(address(this), amountLent);
         collateralAsset.setBalance(borrower, amountCollateral);
