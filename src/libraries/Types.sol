@@ -45,9 +45,6 @@ struct MarketState {
     /// @dev The latest timestamp at which the tranche was accrued.
     /// Used to calculate interests accrued since the last interaction with the tranche.
     uint256 lastAccrualTimestamp;
-    /// @dev The rate at which borrow interests accrued last time the tranche was accrued.
-    /// Used to calculate interests accrued since the last interaction with the tranche.
-    uint256 lastBorrowRate;
 }
 
 struct Market {

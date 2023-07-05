@@ -43,7 +43,7 @@ contract Morpho is IMorpho, MarketBase, AllowanceBase, ERC3156xFlashLender, ERC2
     function marketAt(MarketKey calldata marketKey) external view returns (MarketState memory accrued) {
         (, Market storage market) = _market(marketKey);
 
-        accrued = market.state.getAccrued(marketKey.rateModel);
+        accrued = market.state.getAccrued(marketKey);
     }
 
     /// @notice Returns the given user's position on the given tranche.
@@ -95,7 +95,7 @@ contract Morpho is IMorpho, MarketBase, AllowanceBase, ERC3156xFlashLender, ERC2
 
         (bytes32 marketId, Market storage market) = _market(marketKey);
 
-        shares = market.deposit(marketKey.rateModel, assets, onBehalf);
+        shares = market.deposit(marketKey, assets, onBehalf);
 
         emit Events.Deposit(marketId, msg.sender, onBehalf, assets, shares);
     }
@@ -111,7 +111,7 @@ contract Morpho is IMorpho, MarketBase, AllowanceBase, ERC3156xFlashLender, ERC2
 
         (bytes32 marketId, Market storage market) = _market(marketKey);
 
-        (assets, shares) = market.withdraw(marketKey.rateModel, assets, onBehalf);
+        (assets, shares) = market.withdraw(marketKey, assets, onBehalf);
 
         emit Events.Withdraw(marketId, msg.sender, onBehalf, receiver, assets, shares);
 
@@ -131,7 +131,7 @@ contract Morpho is IMorpho, MarketBase, AllowanceBase, ERC3156xFlashLender, ERC2
 
         (bytes32 marketId, Market storage market) = _market(marketKey);
 
-        shares = market.borrow(marketKey.rateModel, assets, onBehalf);
+        shares = market.borrow(marketKey, assets, onBehalf);
 
         emit Events.Borrow(marketId, msg.sender, onBehalf, receiver, assets, shares);
 
@@ -151,7 +151,7 @@ contract Morpho is IMorpho, MarketBase, AllowanceBase, ERC3156xFlashLender, ERC2
 
         (bytes32 marketId, Market storage market) = _market(marketKey);
 
-        (assets, shares,) = market.repay(marketKey.rateModel, assets, onBehalf);
+        (assets, shares,) = market.repay(marketKey, assets, onBehalf);
 
         emit Events.Repay(marketId, msg.sender, onBehalf, assets, shares);
     }
@@ -192,7 +192,7 @@ contract Morpho is IMorpho, MarketBase, AllowanceBase, ERC3156xFlashLender, ERC2
         }
 
         uint256 remainingBorrow;
-        (repaid,, remainingBorrow) = market.repay(marketKey.rateModel, debt, borrower);
+        (repaid,, remainingBorrow) = market.repay(marketKey, debt, borrower);
 
         // TODO: reverts if price == 0
         uint256 seized = repaid.wadDiv(price); // TODO: limit seized so LTV goes back to 25% below LLTV?

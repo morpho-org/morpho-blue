@@ -3,14 +3,14 @@ pragma solidity ^0.8.0;
 
 import {IRateModel} from "../interfaces/IRateModel.sol";
 
+import {MarketKey, MarketState} from "../libraries/Types.sol";
+
 contract RateModelMock is IRateModel {
-    uint256 internal _dBorrowRate;
-
-    function dBorrowRate(uint256) external view returns (uint256) {
-        return _dBorrowRate;
-    }
-
-    function setDBorrowRate(uint256 newDBorrowRate) external {
-        _dBorrowRate = newDBorrowRate;
+    function accrue(MarketKey calldata marketKey, MarketState calldata state, uint256 dTimestamp)
+        external
+        view
+        returns (uint256)
+    {
+        return 0;
     }
 }

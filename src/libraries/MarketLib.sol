@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import {IRateModel} from "../interfaces/IRateModel.sol";
 
 import {NB_TRANCHES, LIQUIDATION_HEALTH_FACTOR} from "./Constants.sol";
-import {Market, MarketState, MarketShares, Position} from "./Types.sol";
+import {Market, MarketKey, MarketState, MarketShares, Position} from "./Types.sol";
 import {NotEnoughLiquidity} from "./Errors.sol";
 import {MarketStateLib, MarketStateMemLib} from "./MarketStateLib.sol";
 
@@ -63,11 +63,11 @@ library MarketLib {
     }
 
     /// @dev Accounts for the deposit of assets to the given user's deposit in the given tranche, accruing interests since the last time the tranche was interacted with.
-    function deposit(Market storage market, IRateModel rateModel, uint256 assets, address user)
+    function deposit(Market storage market, MarketKey calldata marketKey, uint256 assets, address user)
         internal
         returns (uint256 shares)
     {
-        market.state.accrue(rateModel);
+        market.state.accrue(marketKey);
 
         shares = market.state.deposit(assets);
 
@@ -77,7 +77,7 @@ library MarketLib {
     }
 
     /// @dev Accounts for the withdrawal of assets from the given user's deposit in the given tranche, accruing interests since the last time the tranche was interacted with.
-    function withdraw(Market storage market, IRateModel rateModel, uint256 assets, address user)
+    function withdraw(Market storage market, MarketKey calldata marketKey, uint256 assets, address user)
         internal
         returns (uint256, uint256)
     {
@@ -87,7 +87,7 @@ library MarketLib {
         uint256 remainingShares = marketShares.supply;
         if (remainingShares == 0) return (0, 0);
 
-        MarketState memory accruedState = market.state.accrue(rateModel);
+        MarketState memory accruedState = market.state.accrue(marketKey);
 
         uint256 liquidity = accruedState.liquidity();
         if (liquidity < assets) revert NotEnoughLiquidity(liquidity);
@@ -101,11 +101,11 @@ library MarketLib {
     }
 
     /// @dev Accounts for the borrow of assets from the given user's debt in the given tranche, accruing interests since the last time the tranche was interacted with.
-    function borrow(Market storage market, IRateModel rateModel, uint256 assets, address user)
+    function borrow(Market storage market, MarketKey calldata marketKey, uint256 assets, address user)
         internal
         returns (uint256 shares)
     {
-        MarketState memory accruedState = market.state.accrue(rateModel);
+        MarketState memory accruedState = market.state.accrue(marketKey);
 
         uint256 liquidity = accruedState.liquidity();
         if (liquidity < assets) revert NotEnoughLiquidity(liquidity);
@@ -118,11 +118,11 @@ library MarketLib {
     }
 
     /// @dev Accounts for the repay of assets to the given user's debt in the given tranche, accruing interests since the last time the tranche was interacted with.
-    function repay(Market storage market, IRateModel rateModel, uint256 assets, address user)
+    function repay(Market storage market, MarketKey calldata marketKey, uint256 assets, address user)
         internal
         returns (uint256, uint256, uint256)
     {
-        market.state.accrue(rateModel);
+        market.state.accrue(marketKey);
 
         Position storage position = getPosition(market, user);
 

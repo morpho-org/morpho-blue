@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import {IRateModel} from "../interfaces/IRateModel.sol";
 
-import {MarketState, MarketShares} from "./Types.sol";
+import {MarketKey, MarketState, MarketShares} from "./Types.sol";
 import {SharesMath} from "./SharesMath.sol";
 import {Math} from "@morpho-utils/math/Math.sol";
 import {WadRayMath} from "@morpho-utils/math/WadRayMath.sol";
@@ -140,18 +140,20 @@ library MarketStateLib {
     }
 
     /// @dev Accrues interests to the state.
-    function accrue(MarketState storage state, IRateModel rateModel) internal returns (MarketState memory accrued) {
-        accrued = getAccrued(state, rateModel);
+    function accrue(MarketState storage state, MarketKey calldata marketKey)
+        internal
+        returns (MarketState memory accrued)
+    {
+        accrued = getAccrued(state, marketKey);
 
         state.totalSupply = accrued.totalSupply;
         state.totalBorrow = accrued.totalBorrow;
 
         state.lastAccrualTimestamp = accrued.lastAccrualTimestamp;
-        state.lastBorrowRate = accrued.lastBorrowRate;
     }
 
     /// @dev Virtually accrues interests to the state.
-    function getAccrued(MarketState storage state, IRateModel rateModel)
+    function getAccrued(MarketState storage state, MarketKey calldata marketKey)
         internal
         view
         returns (MarketState memory accrued)
@@ -164,21 +166,12 @@ library MarketStateLib {
         uint256 dTimestamp = block.timestamp - lastAccrualTimestamp;
         if (dTimestamp == 0) return accrued;
 
-        uint256 totalSupply = accrued.totalSupply;
-        uint256 totalBorrow = accrued.totalBorrow;
+        uint256 accrual = marketKey.rateModel.accrue(marketKey, accrued, dTimestamp);
 
-        uint256 utilization = totalSupply > 0 ? totalBorrow.wadDiv(totalSupply) : 0;
-
-        uint256 dBorrowRate = rateModel.dBorrowRate(utilization);
-
-        uint256 borrowRate = state.lastBorrowRate + dBorrowRate * dTimestamp;
-        uint256 supplyRate = borrowRate.wadMul(utilization);
-
-        accrued.totalSupply += totalSupply.rayMul(supplyRate * dTimestamp);
-        accrued.totalBorrow += totalBorrow.rayMul(borrowRate * dTimestamp);
+        accrued.totalSupply += accrual;
+        accrued.totalBorrow += accrual;
 
         accrued.lastAccrualTimestamp = block.timestamp;
-        accrued.lastBorrowRate = borrowRate;
     }
 }
 
