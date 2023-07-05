@@ -41,11 +41,11 @@ contract Blue {
     // Storage.
 
     // User' supply balances.
-    mapping(Id => mapping(address => uint)) public supplyShare;
+    mapping(Id => mapping(address user => uint share)) public supplyShare;
     // User' borrow balances.
-    mapping(Id => mapping(address => uint)) public borrowShare;
+    mapping(Id => mapping(address user => uint share)) public borrowShare;
     // User' collateral balance.
-    mapping(Id => mapping(address => uint)) public collateral;
+    mapping(Id => mapping(address user => uint balance)) public collateral;
     // Market total supply.
     mapping(Id => uint) public totalSupply;
     // Market total supply shares.
@@ -55,7 +55,7 @@ contract Blue {
     // Market total borrow shares.
     mapping(Id => uint) public totalBorrowShares;
     // Interests last update (used to check if a market has been created).
-    mapping(Id => uint) public lastUpdate;
+    mapping(Id => uint timestamp) public lastUpdate;
 
     // Markets management.
 
