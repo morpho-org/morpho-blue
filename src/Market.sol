@@ -9,7 +9,6 @@ import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 
 // Market id.
 type Id is bytes32;
-using {toId} for Id;
 
 // Market.
 struct Market {
@@ -26,8 +25,9 @@ function irm(uint utilization) pure returns (uint) {
     return utilization / 365 days;
 }
 
-function toId() pure returns (bytes32) {
-    return market.toId();
+using {toId} for Market;
+function toId(Market calldata market) pure returns (Id) {
+    return Id.wrap(keccak256(abi.encode(market)));
 }
 
 contract Blue {
