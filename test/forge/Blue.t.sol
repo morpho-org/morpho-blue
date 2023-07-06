@@ -51,7 +51,7 @@ contract BlueTest is Test {
         id = Id.wrap(keccak256(abi.encode(market)));
 
         vm.startPrank(OWNER);
-        blue.enableIrm(address(irm));
+        blue.enableIrm(irm);
         blue.createMarket(market);
         vm.stopPrank();
 
@@ -128,15 +128,15 @@ contract BlueTest is Test {
         blue2.transferOwnership(newOwner);
     }
 
-    function testEnableIrmWhenNotOwner(address attacker) public {
+    function testEnableIrmWhenNotOwner(address attacker, IIrm newIrm) public {
         vm.assume(attacker != blue.owner());
 
         vm.prank(attacker);
         vm.expectRevert("not owner");
-        blue.enableIrm(OWNER);
+        blue.enableIrm(newIrm);
     }
 
-    function testEnableIrm(address newIrm) public {
+    function testEnableIrm(IIrm newIrm) public {
         vm.prank(OWNER);
         blue.enableIrm(newIrm);
 
@@ -145,7 +145,7 @@ contract BlueTest is Test {
 
     function testCreateMarketWithEnabledIrm(Market memory marketFuzz) public {
         vm.startPrank(OWNER);
-        blue.enableIrm(address(marketFuzz.irm));
+        blue.enableIrm(marketFuzz.irm);
         blue.createMarket(marketFuzz);
         vm.stopPrank();
     }
@@ -419,7 +419,7 @@ contract BlueTest is Test {
     }
 
     function testUnknownMarket(Market memory marketFuzz) public {
-        vm.assume(notSameMarkets(marketFuzz, market));
+        vm.assume(neq(marketFuzz, market));
 
         vm.expectRevert("unknown market");
         blue.supply(marketFuzz, 1);
@@ -480,7 +480,7 @@ contract BlueTest is Test {
     }
 }
 
-function notSameMarkets(Market memory a, Market memory b) pure returns (bool) {
+function neq(Market memory a, Market memory b) pure returns (bool) {
     return a.borrowableAsset != b.borrowableAsset || a.collateralAsset != b.collateralAsset
         || a.borrowableOracle != b.borrowableOracle || a.collateralOracle != b.collateralOracle || a.lLTV != b.lLTV
         || a.irm != b.irm;

@@ -50,7 +50,7 @@ contract Blue {
     // Interests last update (used to check if a market has been created).
     mapping(Id => uint) public lastUpdate;
     // Enabled IRMs.
-    mapping(address => bool) public isIrmEnabled;
+    mapping(IIrm => bool) public isIrmEnabled;
 
     // Constructor.
 
@@ -71,7 +71,7 @@ contract Blue {
         owner = newOwner;
     }
 
-    function enableIrm(address irm) external onlyOwner {
+    function enableIrm(IIrm irm) external onlyOwner {
         isIrmEnabled[irm] = true;
     }
 
@@ -79,7 +79,7 @@ contract Blue {
 
     function createMarket(Market calldata market) external {
         Id id = Id.wrap(keccak256(abi.encode(market)));
-        require(isIrmEnabled[address(market.irm)], "IRM not enabled");
+        require(isIrmEnabled[market.irm], "IRM not enabled");
         require(lastUpdate[id] == 0, "market already exists");
 
         accrueInterests(market, id);
