@@ -143,20 +143,19 @@ contract BlueTest is Test {
         assertTrue(blue.isIrmEnabled(newIrm));
     }
 
-    function testCreateMarketNotEnabledIrm(
-        IERC20 newBorrowableAsset,
-        IERC20 newCollateralAsset,
-        IOracle newBorrowableOracle,
-        IOracle newCollateralOracle,
-        IIrm newIrm,
-        uint newlLTV
-    ) public {
-        market =
-            Market(newBorrowableAsset, newCollateralAsset, newBorrowableOracle, newCollateralOracle, newIrm, newlLTV);
+    function testCreateMarketWithEnabledIrm(Market memory marketFuzz) public {
+        vm.startPrank(OWNER);
+        blue.enableIrm(address(marketFuzz.irm));
+        blue.createMarket(marketFuzz);
+        vm.stopPrank();
+    }
+
+    function testCreateMarketWithNotEnabledIrm(Market memory marketFuzz) public {
+        vm.assume(marketFuzz.irm != irm);
 
         vm.prank(OWNER);
         vm.expectRevert("IRM not enabled");
-        blue.createMarket(market);
+        blue.createMarket(marketFuzz);
     }
 
     function testSupply(uint amount) public {
@@ -420,7 +419,7 @@ contract BlueTest is Test {
     }
 
     function testUnknownMarket(Market memory marketFuzz) public {
-        vm.assume(neq(marketFuzz, market));
+        vm.assume(notSameMarkets(marketFuzz, market));
 
         vm.expectRevert("unknown market");
         blue.supply(marketFuzz, 1);
@@ -481,7 +480,8 @@ contract BlueTest is Test {
     }
 }
 
-function neq(Market memory a, Market memory b) pure returns (bool) {
+function notSameMarkets(Market memory a, Market memory b) pure returns (bool) {
     return a.borrowableAsset != b.borrowableAsset || a.collateralAsset != b.collateralAsset
-        || a.borrowableOracle != b.borrowableOracle || a.collateralOracle != b.collateralOracle || a.lLTV != b.lLTV;
+        || a.borrowableOracle != b.borrowableOracle || a.collateralOracle != b.collateralOracle || a.lLTV != b.lLTV
+        || a.irm != b.irm;
 }
