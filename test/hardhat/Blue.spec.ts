@@ -138,7 +138,7 @@ describe("Blue", () => {
       const maxSeize = closePositions ? constants.MaxUint256 : amount.div(2);
 
       market.lLTV = lLTV;
-      // We use 2 different users to borrow from a bucket so that liquidations do not close a bucket completely.
+      // We use 2 different users to borrow from a market so that liquidations do not put the borrow storage back to 0 on that market.
       // Consequently, we should only create the market on a particular LLTV once.
       if (i % 2 == 0) {
         await blue.connect(admin).createMarket(market);
