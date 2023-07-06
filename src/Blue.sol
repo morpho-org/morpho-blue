@@ -150,12 +150,13 @@ contract Blue {
 
     // Collateral management.
 
+    /// @dev Don't accrue interests because it's not required and it saves gas.
     function supplyCollateral(Market calldata market, uint amount) external {
         Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
 
-        accrueInterests(id);
+        // Don't accrue interests because it's not required and it saves gas.
 
         collateral[id][msg.sender] += amount;
 
