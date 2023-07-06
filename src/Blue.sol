@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.20;
 
-import {IIRM} from "src/interfaces/IIRM.sol";
+import {IIrm} from "src/interfaces/IIrm.sol";
 import {IERC20} from "src/interfaces/IERC20.sol";
 import {IOracle} from "src/interfaces/IOracle.sol";
 
@@ -21,7 +21,7 @@ struct Market {
     IERC20 collateralAsset;
     IOracle borrowableOracle;
     IOracle collateralOracle;
-    IIRM irm;
+    IIrm irm;
     uint lLTV;
 }
 

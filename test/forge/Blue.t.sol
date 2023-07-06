@@ -10,7 +10,7 @@ import "forge-std/console.sol";
 import "src/Blue.sol";
 import {ERC20Mock as ERC20} from "src/mocks/ERC20Mock.sol";
 import {OracleMock as Oracle} from "src/mocks/OracleMock.sol";
-import {IRMMock as IRM} from "src/mocks/IRMMock.sol";
+import {IrmMock as Irm} from "src/mocks/IrmMock.sol";
 
 contract BlueTest is Test {
     using MathLib for uint;
@@ -25,7 +25,7 @@ contract BlueTest is Test {
     ERC20 private collateralAsset;
     Oracle private borrowableOracle;
     Oracle private collateralOracle;
-    IRM private irm;
+    Irm private irm;
     Market public market;
     Id public id;
 
@@ -39,7 +39,7 @@ contract BlueTest is Test {
         borrowableOracle = new Oracle();
         collateralOracle = new Oracle();
 
-        irm = new IRM(blue);
+        irm = new Irm(blue);
         market = Market(
             IERC20(address(borrowableAsset)),
             IERC20(address(collateralAsset)),
@@ -148,7 +148,7 @@ contract BlueTest is Test {
         IERC20 newCollateralAsset,
         IOracle newBorrowableOracle,
         IOracle newCollateralOracle,
-        IIRM newIrm,
+        IIrm newIrm,
         uint newlLTV
     ) public {
         market =
