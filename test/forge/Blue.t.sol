@@ -46,7 +46,7 @@ contract BlueTest is Test {
         id = Id.wrap(keccak256(abi.encode(market)));
 
         vm.startPrank(OWNER);
-        blue.whitelistIRM(address(irm));
+        blue.enableIrm(address(irm));
         blue.createMarket(market);
         vm.stopPrank();
 
@@ -123,19 +123,19 @@ contract BlueTest is Test {
         blue2.transferOwnership(newOwner);
     }
 
-    function testWhitelistIRMWhenNotOwner(address attacker) public {
+    function testEnableIrmWhenNotOwner(address attacker) public {
         vm.assume(attacker != blue.owner());
 
         vm.prank(attacker);
         vm.expectRevert("not owner");
-        blue.whitelistIRM(OWNER);
+        blue.enableIrm(OWNER);
     }
 
-    function testWhitelistIRM(address newIRM) public {
+    function testEnableIrm(address newIRM) public {
         vm.prank(OWNER);
-        blue.whitelistIRM(newIRM);
+        blue.enableIrm(newIRM);
 
-        assertTrue(blue.isIRMWhitelisted(newIRM));
+        assertTrue(blue.isIrmEnabled(newIRM));
     }
 
     function testSupply(uint amount) public {
