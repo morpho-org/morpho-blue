@@ -28,7 +28,7 @@ contract BlueTest is Test {
 
     function setUp() public {
         // Create Blue.
-        blue = new Blue();
+        blue = new Blue(msg.sender);
 
         // List a market.
         borrowableAsset = new ERC20("borrowable", "B", 18);
@@ -90,6 +90,30 @@ contract BlueTest is Test {
     }
 
     // Tests
+
+    function testOwner(address owner) public {
+        Blue blue2 = new Blue(owner);
+
+        assertEq(blue2.owner(), owner, "owner");
+    }
+
+    function testTransferOwnership(address oldOwner, address newOwner) public {
+        Blue blue2 = new Blue(oldOwner);
+
+        vm.prank(oldOwner);
+        blue2.transferOwnership(newOwner);
+        assertEq(blue2.owner(), newOwner, "owner");
+    }
+
+    function testTransferOwnershipWhenNotOwner(address attacker, address newOwner) public {
+        vm.assume(attacker != address(0xdead));
+
+        Blue blue2 = new Blue(address(0xdead));
+
+        vm.prank(attacker);
+        vm.expectRevert("not owner");
+        blue2.transferOwnership(newOwner);
+    }
 
     function testSupply(uint amount) public {
         amount = bound(amount, 1, 2 ** 64);
