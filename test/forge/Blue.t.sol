@@ -14,6 +14,7 @@ import {OracleMock as Oracle} from "src/mocks/OracleMock.sol";
 contract BlueTest is Test {
     using MathLib for uint;
 
+    address private constant owner = address(0xdeed);
     address private constant borrower = address(1234);
     address private constant liquidator = address(5678);
     uint private constant lLTV = 0.8 ether;
@@ -28,7 +29,7 @@ contract BlueTest is Test {
 
     function setUp() public {
         // Create Blue.
-        blue = new Blue();
+        blue = new Blue(owner);
 
         // List a market.
         borrowableAsset = new ERC20("borrowable", "B", 18);
@@ -91,10 +92,10 @@ contract BlueTest is Test {
 
     // Tests
 
-    function testOwner(address owner) public {
-        Blue blue2 = new Blue(owner);
+    function testOwner(address newOwner) public {
+        Blue blue2 = new Blue(newOwner);
 
-        assertEq(blue2.owner(), owner, "owner");
+        assertEq(blue2.owner(), newOwner, "owner");
     }
 
     function testTransferOwnership(address oldOwner, address newOwner) public {

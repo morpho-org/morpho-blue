@@ -67,7 +67,7 @@ contract Blue {
     // Only owner functions.
 
     function transferOwnership(address newOwner) external {
-        require(msg.sender == owner);
+        require(msg.sender == owner, "not owner");
         owner = newOwner;
     }
 
