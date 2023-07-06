@@ -8,8 +8,6 @@ import {IOracle} from "src/interfaces/IOracle.sol";
 import {MathLib} from "src/libraries/MathLib.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 
-import {Ownable} from "src/Ownable.sol";
-
 uint constant WAD = 1e18;
 
 uint constant alpha = 0.5e18;
@@ -27,12 +25,14 @@ struct Market {
     uint lLTV;
 }
 
-contract Blue is Ownable {
+contract Blue {
     using MathLib for uint;
     using SafeTransferLib for IERC20;
 
     // Storage.
 
+    // Owner.
+    address public owner;
     // User' supply balances.
     mapping(Id => mapping(address => uint)) public supplyShare;
     // User' borrow balances.
@@ -52,7 +52,28 @@ contract Blue is Ownable {
     // Enabled IRMs.
     mapping(address => bool) public isIrmEnabled;
 
-    constructor(address owner) Ownable(owner) {}
+    // Constructor.
+
+    constructor(address newOwner) {
+        owner = newOwner;
+    }
+
+    // Modifiers.
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "not owner");
+        _;
+    }
+
+    // Only owner functions.
+
+    function transferOwnership(address newOwner) external onlyOwner {
+        owner = newOwner;
+    }
+
+    function enableIrm(address irm) external onlyOwner {
+        isIrmEnabled[irm] = true;
+    }
 
     // Markets management.
 
@@ -206,12 +227,6 @@ contract Blue is Ownable {
 
         market.collateralAsset.safeTransfer(msg.sender, seized);
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), repaid);
-    }
-
-    // Admin functions.
-
-    function enableIrm(address irm) external onlyOwner {
-        isIrmEnabled[irm] = true;
     }
 
     // Interests management.
