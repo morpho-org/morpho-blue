@@ -61,7 +61,7 @@ contract Blue is Ownable {
         require(isIrmEnabled[address(market.irm)], "IRM not enabled");
         require(lastUpdate[id] == 0, "market already exists");
 
-        accrueInterests(id, market.irm);
+        accrueInterests(market, id);
     }
 
     // Supply management.
@@ -71,7 +71,7 @@ contract Blue is Ownable {
         require(lastUpdate[id] != 0, "unknown market");
         require(amount > 0, "zero amount");
 
-        accrueInterests(id, market.irm);
+        accrueInterests(market, id);
 
         if (totalSupply[id] == 0) {
             supplyShare[id][msg.sender] = WAD;
@@ -92,7 +92,7 @@ contract Blue is Ownable {
         require(lastUpdate[id] != 0, "unknown market");
         require(amount > 0, "zero amount");
 
-        accrueInterests(id, market.irm);
+        accrueInterests(market, id);
 
         uint shares = amount.wMul(totalSupplyShares[id]).wDiv(totalSupply[id]);
         supplyShare[id][msg.sender] -= shares;
@@ -112,7 +112,7 @@ contract Blue is Ownable {
         require(lastUpdate[id] != 0, "unknown market");
         require(amount > 0, "zero amount");
 
-        accrueInterests(id, market.irm);
+        accrueInterests(market, id);
 
         if (totalBorrow[id] == 0) {
             borrowShare[id][msg.sender] = WAD;
@@ -136,7 +136,7 @@ contract Blue is Ownable {
         require(lastUpdate[id] != 0, "unknown market");
         require(amount > 0, "zero amount");
 
-        accrueInterests(id, market.irm);
+        accrueInterests(market, id);
 
         uint shares = amount.wMul(totalBorrowShares[id]).wDiv(totalBorrow[id]);
         borrowShare[id][msg.sender] -= shares;
@@ -154,7 +154,7 @@ contract Blue is Ownable {
         require(lastUpdate[id] != 0, "unknown market");
         require(amount > 0, "zero amount");
 
-        accrueInterests(id, market.irm);
+        accrueInterests(market, id);
 
         collateral[id][msg.sender] += amount;
 
@@ -166,7 +166,7 @@ contract Blue is Ownable {
         require(lastUpdate[id] != 0, "unknown market");
         require(amount > 0, "zero amount");
 
-        accrueInterests(id, market.irm);
+        accrueInterests(market, id);
 
         collateral[id][msg.sender] -= amount;
 
@@ -182,7 +182,7 @@ contract Blue is Ownable {
         require(lastUpdate[id] != 0, "unknown market");
         require(seized > 0, "zero amount");
 
-        accrueInterests(id, market.irm);
+        accrueInterests(market, id);
 
         require(!isHealthy(market, id, borrower), "cannot liquidate a healthy position");
 
@@ -216,12 +216,13 @@ contract Blue is Ownable {
 
     // Interests management.
 
-    function accrueInterests(Id id, IIRM irm) private {
+    function accrueInterests(Market calldata market, Id id) private {
         uint marketTotalSupply = totalSupply[id];
 
         if (marketTotalSupply != 0) {
             uint marketTotalBorrow = totalBorrow[id];
-            uint accruedInterests = marketTotalBorrow.wMul(irm.borrowRate(id)).wMul(block.timestamp - lastUpdate[id]);
+            uint accruedInterests =
+                marketTotalBorrow.wMul(market.irm.borrowRate(market)).wMul(block.timestamp - lastUpdate[id]);
             totalSupply[id] = marketTotalSupply + accruedInterests;
             totalBorrow[id] = marketTotalBorrow + accruedInterests;
         }

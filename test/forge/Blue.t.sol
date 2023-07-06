@@ -151,7 +151,8 @@ contract BlueTest is Test {
         IIRM newIrm,
         uint newlLTV
     ) public {
-        market = Market(newBorrowableAsset, newCollateralAsset, newBorrowableOracle, newCollateralOracle, newIrm, newlLTV);
+        market =
+            Market(newBorrowableAsset, newCollateralAsset, newBorrowableOracle, newCollateralOracle, newIrm, newlLTV);
 
         vm.prank(OWNER);
         vm.expectRevert("IRM not enabled");
