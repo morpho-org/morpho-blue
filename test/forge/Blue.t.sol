@@ -168,12 +168,20 @@ contract BlueTest is Test {
     }
 
     function testEnablelLTV(uint newlLTV) public {
-        vm.assume(newlLTV < WAD);
+        newlLTV = bound(newlLTV, 0, WAD - 1);
 
         vm.prank(OWNER);
         blue.enablelLTV(newlLTV);
 
         assertTrue(blue.islLTVEnabled(newlLTV));
+    }
+
+    function testEnablelLTVShouldFailWhenlLTVTooHigh(uint newlLTV) public {
+        newlLTV = bound(newlLTV, WAD, type(uint256).max);
+
+        vm.prank(OWNER);
+        vm.expectRevert("lLTV too high");
+        blue.enablelLTV(newlLTV);
     }
 
     function testCreateMarketNotEnabledlLTV(
