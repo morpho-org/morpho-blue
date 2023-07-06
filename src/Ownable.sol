@@ -21,15 +21,11 @@ abstract contract Ownable {
 
     constructor(address newOwner) {
         owner = newOwner;
-
-        emit OwnershipTransferred(address(0), newOwner);
     }
 
     /* PUBLIC */
 
     function transferOwnership(address newOwner) public virtual onlyOwner {
         owner = newOwner;
-
-        emit OwnershipTransferred(msg.sender, newOwner);
     }
 }
