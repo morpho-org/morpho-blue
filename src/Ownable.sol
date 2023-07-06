@@ -1,22 +1,18 @@
-// SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity >=0.8.0;
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity 0.8.20;
 
 /// @title Ownable
 /// @author Morpho Labs
 /// @custom:contact security@morpho.xyz
 /// @dev Greatly inspired by Solmate and OZ implementations.
 abstract contract Ownable {
-    /* EVENTS */
-
-    event OwnershipTransferred(address indexed oldOwner, address indexed newOwner);
-
     /* STORAGE */
 
     address public owner;
 
     /* MODIFIERS */
 
-    modifier onlyOwner() virtual {
+    modifier onlyOwner() {
         require(msg.sender == owner, "not owner");
         _;
     }
@@ -25,15 +21,11 @@ abstract contract Ownable {
 
     constructor(address newOwner) {
         owner = newOwner;
-
-        emit OwnershipTransferred(address(0), newOwner);
     }
 
     /* PUBLIC */
 
-    function transferOwnership(address newOwner) public virtual onlyOwner {
+    function transferOwnership(address newOwner) external onlyOwner {
         owner = newOwner;
-
-        emit OwnershipTransferred(msg.sender, newOwner);
     }
 }

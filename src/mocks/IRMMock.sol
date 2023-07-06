@@ -8,7 +8,7 @@ import {MathLib} from "src/libraries/MathLib.sol";
 
 import "src/Blue.sol";
 
-contract IRMMock is IIRM {
+contract IrmMock is IIrm {
     using MathLib for uint;
 
     Blue public immutable blue;

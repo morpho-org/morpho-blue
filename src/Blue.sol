@@ -1,18 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.20;
 
-import {IIRM} from "src/interfaces/IIRM.sol";
+import {IIrm} from "src/interfaces/IIrm.sol";
 import {IERC20} from "src/interfaces/IERC20.sol";
 import {IOracle} from "src/interfaces/IOracle.sol";
 
 import {MathLib} from "src/libraries/MathLib.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 
-import {Ownable} from "src/Ownable.sol";
-
 uint constant WAD = 1e18;
-
-uint constant alpha = 0.5e18;
+uint constant ALPHA = 0.5e18;
 
 // Market id.
 type Id is bytes32;
@@ -23,16 +20,24 @@ struct Market {
     IERC20 collateralAsset;
     IOracle borrowableOracle;
     IOracle collateralOracle;
-    IIRM irm;
+    IIrm irm;
     uint lltv;
 }
 
-contract Blue is Ownable {
+using {toId} for Market;
+
+function toId(Market calldata market) pure returns (Id) {
+    return Id.wrap(keccak256(abi.encode(market)));
+}
+
+contract Blue {
     using MathLib for uint;
     using SafeTransferLib for IERC20;
 
     // Storage.
 
+    // Owner.
+    address public owner;
     // User' supply balances.
     mapping(Id => mapping(address => uint)) public supplyShare;
     // User' borrow balances.
@@ -50,18 +55,44 @@ contract Blue is Ownable {
     // Interests last update (used to check if a market has been created).
     mapping(Id => uint) public lastUpdate;
     // Enabled IRMs.
-    mapping(address => bool) public isIrmEnabled;
-    // Enabled lLTVs.
+    mapping(IIrm => bool) public isIrmEnabled;
+    // Enabled LLTVs.
     mapping(uint => bool) public isLltvEnabled;
 
-    constructor(address owner) Ownable(owner) {}
+    // Constructor.
+
+    constructor(address newOwner) {
+        owner = newOwner;
+    }
+
+    // Modifiers.
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "not owner");
+        _;
+    }
+
+    // Only owner functions.
+
+    function transferOwnership(address newOwner) external onlyOwner {
+        owner = newOwner;
+    }
+
+    function enableIrm(IIrm irm) external onlyOwner {
+        isIrmEnabled[irm] = true;
+    }
+
+    function enableLltv(uint lltv) external onlyOwner {
+        require(lltv < WAD, "LLTV too high");
+        isLltvEnabled[lltv] = true;
+    }
 
     // Markets management.
 
     function createMarket(Market calldata market) external {
-        Id id = Id.wrap(keccak256(abi.encode(market)));
-        require(isIrmEnabled[address(market.irm)], "IRM not enabled");
-        require(isLltvEnabled[market.lltv], "lltv not enabled");
+        Id id = market.toId();
+        require(isIrmEnabled[market.irm], "IRM not enabled");
+        require(isLltvEnabled[market.lltv], "LLTV not enabled");
         require(lastUpdate[id] == 0, "market already exists");
 
         accrueInterests(market, id);
@@ -70,9 +101,9 @@ contract Blue is Ownable {
     // Supply management.
 
     function supply(Market calldata market, uint amount) external {
-        Id id = Id.wrap(keccak256(abi.encode(market)));
+        Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
-        require(amount > 0, "zero amount");
+        require(amount != 0, "zero amount");
 
         accrueInterests(market, id);
 
@@ -91,9 +122,9 @@ contract Blue is Ownable {
     }
 
     function withdraw(Market calldata market, uint amount) external {
-        Id id = Id.wrap(keccak256(abi.encode(market)));
+        Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
-        require(amount > 0, "zero amount");
+        require(amount != 0, "zero amount");
 
         accrueInterests(market, id);
 
@@ -111,9 +142,9 @@ contract Blue is Ownable {
     // Borrow management.
 
     function borrow(Market calldata market, uint amount) external {
-        Id id = Id.wrap(keccak256(abi.encode(market)));
+        Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
-        require(amount > 0, "zero amount");
+        require(amount != 0, "zero amount");
 
         accrueInterests(market, id);
 
@@ -135,9 +166,9 @@ contract Blue is Ownable {
     }
 
     function repay(Market calldata market, uint amount) external {
-        Id id = Id.wrap(keccak256(abi.encode(market)));
+        Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
-        require(amount > 0, "zero amount");
+        require(amount != 0, "zero amount");
 
         accrueInterests(market, id);
 
@@ -152,12 +183,13 @@ contract Blue is Ownable {
 
     // Collateral management.
 
+    /// @dev Don't accrue interests because it's not required and it saves gas.
     function supplyCollateral(Market calldata market, uint amount) external {
-        Id id = Id.wrap(keccak256(abi.encode(market)));
+        Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
-        require(amount > 0, "zero amount");
+        require(amount != 0, "zero amount");
 
-        accrueInterests(market, id);
+        // Don't accrue interests because it's not required and it saves gas.
 
         collateral[id][msg.sender] += amount;
 
@@ -165,9 +197,9 @@ contract Blue is Ownable {
     }
 
     function withdrawCollateral(Market calldata market, uint amount) external {
-        Id id = Id.wrap(keccak256(abi.encode(market)));
+        Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
-        require(amount > 0, "zero amount");
+        require(amount != 0, "zero amount");
 
         accrueInterests(market, id);
 
@@ -181,16 +213,16 @@ contract Blue is Ownable {
     // Liquidation.
 
     function liquidate(Market calldata market, address borrower, uint seized) external {
-        Id id = Id.wrap(keccak256(abi.encode(market)));
+        Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
-        require(seized > 0, "zero amount");
+        require(seized != 0, "zero amount");
 
         accrueInterests(market, id);
 
         require(!isHealthy(market, id, borrower), "cannot liquidate a healthy position");
 
-        // The liquidation incentive is 1 + alpha * (1 / LLTV - 1).
-        uint incentive = WAD + alpha.wMul(WAD.wDiv(market.lltv) - WAD);
+        // The liquidation incentive is 1 + ALPHA * (1 / LLTV - 1).
+        uint incentive = WAD + ALPHA.wMul(WAD.wDiv(market.lltv) - WAD);
         uint repaid = seized.wMul(market.collateralOracle.price()).wDiv(incentive).wDiv(market.borrowableOracle.price());
         uint repaidShares = repaid.wMul(totalBorrowShares[id]).wDiv(totalBorrow[id]);
 
@@ -209,17 +241,6 @@ contract Blue is Ownable {
 
         market.collateralAsset.safeTransfer(msg.sender, seized);
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), repaid);
-    }
-
-    // Admin functions.
-
-    function enableIrm(address irm) external onlyOwner {
-        isIrmEnabled[irm] = true;
-    }
-
-    function enableLltv(uint lltv) external onlyOwner {
-        require(lltv < WAD, "LLTV too high");
-        isLltvEnabled[lltv] = true;
     }
 
     // Interests management.
@@ -242,10 +263,10 @@ contract Blue is Ownable {
 
     function isHealthy(Market calldata market, Id id, address user) private view returns (bool) {
         uint borrowShares = borrowShare[id][user];
+        if (borrowShares == 0) return true;
         // totalBorrowShares[id] > 0 when borrowShares > 0.
-        uint borrowValue = borrowShares > 0
-            ? borrowShares.wMul(totalBorrow[id]).wDiv(totalBorrowShares[id]).wMul(market.borrowableOracle.price())
-            : 0;
+        uint borrowValue =
+            borrowShares.wMul(totalBorrow[id]).wDiv(totalBorrowShares[id]).wMul(market.borrowableOracle.price());
         uint collateralValue = collateral[id][user].wMul(market.collateralOracle.price());
         return collateralValue.wMul(market.lltv) >= borrowValue;
     }

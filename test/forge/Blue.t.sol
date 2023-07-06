@@ -10,7 +10,7 @@ import "forge-std/console.sol";
 import "src/Blue.sol";
 import {ERC20Mock as ERC20} from "src/mocks/ERC20Mock.sol";
 import {OracleMock as Oracle} from "src/mocks/OracleMock.sol";
-import {IRMMock as IRM} from "src/mocks/IRMMock.sol";
+import {IrmMock as Irm} from "src/mocks/IrmMock.sol";
 
 contract BlueTest is Test {
     using MathLib for uint;
@@ -25,7 +25,7 @@ contract BlueTest is Test {
     ERC20 private collateralAsset;
     Oracle private borrowableOracle;
     Oracle private collateralOracle;
-    IRM private irm;
+    Irm private irm;
     Market public market;
     Id public id;
 
@@ -39,7 +39,7 @@ contract BlueTest is Test {
         borrowableOracle = new Oracle();
         collateralOracle = new Oracle();
 
-        irm = new IRM(blue);
+        irm = new Irm(blue);
         market = Market(
             IERC20(address(borrowableAsset)),
             IERC20(address(collateralAsset)),
@@ -51,7 +51,7 @@ contract BlueTest is Test {
         id = Id.wrap(keccak256(abi.encode(market)));
 
         vm.startPrank(OWNER);
-        blue.enableIrm(address(irm));
+        blue.enableIrm(irm);
         blue.enableLltv(lltv);
         blue.createMarket(market);
         vm.stopPrank();
@@ -129,42 +129,44 @@ contract BlueTest is Test {
         blue2.transferOwnership(newOwner);
     }
 
-    function testEnableIrmWhenNotOwner(address attacker) public {
+    function testEnableIrmWhenNotOwner(address attacker, IIrm newIrm) public {
         vm.assume(attacker != blue.owner());
 
         vm.prank(attacker);
         vm.expectRevert("not owner");
-        blue.enableIrm(OWNER);
+        blue.enableIrm(newIrm);
     }
 
-    function testEnableIrm(address newIrm) public {
+    function testEnableIrm(IIrm newIrm) public {
         vm.prank(OWNER);
         blue.enableIrm(newIrm);
 
         assertTrue(blue.isIrmEnabled(newIrm));
     }
 
-    function testCreateMarketNotEnabledIrm(
-        IERC20 newBorrowableAsset,
-        IERC20 newCollateralAsset,
-        IOracle newBorrowableOracle,
-        IOracle newCollateralOracle,
-        IIRM newIrm
-    ) public {
-        market =
-            Market(newBorrowableAsset, newCollateralAsset, newBorrowableOracle, newCollateralOracle, newIrm, lltv);
+    function testCreateMarketWithEnabledIrm(Market memory marketFuzz) public {
+        marketFuzz.lltv = lltv;
+
+        vm.startPrank(OWNER);
+        blue.enableIrm(marketFuzz.irm);
+        blue.createMarket(marketFuzz);
+        vm.stopPrank();
+    }
+
+    function testCreateMarketWithNotEnabledIrm(Market memory marketFuzz) public {
+        vm.assume(marketFuzz.irm != irm);
 
         vm.prank(OWNER);
         vm.expectRevert("IRM not enabled");
-        blue.createMarket(market);
+        blue.createMarket(marketFuzz);
     }
 
-    function testEnablelLTVWhenNotOwner(address attacker) public {
+    function testEnableLltvWhenNotOwner(address attacker, uint newLltv) public {
         vm.assume(attacker != blue.owner());
 
         vm.prank(attacker);
         vm.expectRevert("not owner");
-        blue.enableIrm(OWNER);
+        blue.enableLltv(newLltv);
     }
 
     function testEnableLltv(uint newLltv) public {
@@ -177,7 +179,7 @@ contract BlueTest is Test {
     }
 
     function testEnableLltvShouldFailWhenlLtvTooHigh(uint newLltv) public {
-        newLltv = bound(newLltv, WAD, type(uint256).max);
+        newLltv = bound(newLltv, WAD, type(uint).max);
 
         vm.prank(OWNER);
         vm.expectRevert("LLTV too high");
@@ -191,11 +193,10 @@ contract BlueTest is Test {
         IOracle newCollateralOracle,
         uint newLltv
     ) public {
-        market =
-            Market(newBorrowableAsset, newCollateralAsset, newBorrowableOracle, newCollateralOracle, irm, newLltv);
+        market = Market(newBorrowableAsset, newCollateralAsset, newBorrowableOracle, newCollateralOracle, irm, newLltv);
 
         vm.prank(OWNER);
-        vm.expectRevert("lltv not enabled");
+        vm.expectRevert("LLTV not enabled");
         blue.createMarket(market);
     }
 
@@ -363,7 +364,7 @@ contract BlueTest is Test {
         uint borrowingPower = amountCollateral.wMul(lltv);
         uint amountBorrowed = borrowingPower.wMul(0.8e18);
         uint toSeize = amountCollateral.wMul(lltv);
-        uint incentive = WAD + alpha.wMul(WAD.wDiv(lltv) - WAD);
+        uint incentive = WAD + ALPHA.wMul(WAD.wDiv(lltv) - WAD);
 
         borrowableAsset.setBalance(address(this), amountLent);
         collateralAsset.setBalance(borrower, amountCollateral);
@@ -405,7 +406,7 @@ contract BlueTest is Test {
         uint borrowingPower = amountCollateral.wMul(lltv);
         uint amountBorrowed = borrowingPower.wMul(0.8e18);
         uint toSeize = amountCollateral;
-        uint incentive = WAD + alpha.wMul(WAD.wDiv(market.lltv) - WAD);
+        uint incentive = WAD + ALPHA.wMul(WAD.wDiv(market.lltv) - WAD);
 
         borrowableAsset.setBalance(address(this), amountLent);
         collateralAsset.setBalance(borrower, amountCollateral);
@@ -523,5 +524,6 @@ contract BlueTest is Test {
 
 function neq(Market memory a, Market memory b) pure returns (bool) {
     return a.borrowableAsset != b.borrowableAsset || a.collateralAsset != b.collateralAsset
-        || a.borrowableOracle != b.borrowableOracle || a.collateralOracle != b.collateralOracle || a.lltv != b.lltv;
+        || a.borrowableOracle != b.borrowableOracle || a.collateralOracle != b.collateralOracle || a.lltv != b.lltv
+        || a.irm != b.irm;
 }
