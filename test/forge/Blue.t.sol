@@ -103,6 +103,10 @@ contract BlueTest is Test {
         assertLe(blue.totalBorrow(id), blue.totalSupply(id), "liquidity");
     }
 
+    function invariantLltvEnabled() public {
+        assertTrue(blue.isLltvEnabled(lltv));
+    }
+
     // Tests
 
     function testOwner(address newOwner) public {
@@ -162,7 +166,7 @@ contract BlueTest is Test {
     }
 
     function testEnableLltvWhenNotOwner(address attacker, uint newLltv) public {
-        vm.assume(attacker != blue.owner());
+        vm.assume(attacker != OWNER);
 
         vm.prank(attacker);
         vm.expectRevert("not owner");
@@ -178,7 +182,7 @@ contract BlueTest is Test {
         assertTrue(blue.isLltvEnabled(newLltv));
     }
 
-    function testEnableLltvShouldFailWhenlLtvTooHigh(uint newLltv) public {
+    function testEnableLltvShouldFailWhenLltvTooHigh(uint newLltv) public {
         newLltv = bound(newLltv, WAD, type(uint).max);
 
         vm.prank(OWNER);
@@ -186,18 +190,13 @@ contract BlueTest is Test {
         blue.enableLltv(newLltv);
     }
 
-    function testCreateMarketNotEnabledLltv(
-        IERC20 newBorrowableAsset,
-        IERC20 newCollateralAsset,
-        IOracle newBorrowableOracle,
-        IOracle newCollateralOracle,
-        uint newLltv
-    ) public {
-        market = Market(newBorrowableAsset, newCollateralAsset, newBorrowableOracle, newCollateralOracle, irm, newLltv);
+    function testCreateMarketWithNotEnabledLltv(Market memory marketFuzz) public {
+        vm.assume(marketFuzz.lltv != lltv);
+        marketFuzz.irm = irm;
 
         vm.prank(OWNER);
         vm.expectRevert("LLTV not enabled");
-        blue.createMarket(market);
+        blue.createMarket(marketFuzz);
     }
 
     function testSupply(uint amount) public {
