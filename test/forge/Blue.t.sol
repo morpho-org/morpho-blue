@@ -135,7 +135,7 @@ contract BlueTest is Test {
         vm.prank(OWNER);
         blue.whitelistIRM(newIRM);
 
-        assertEq(blue.isIRMWhitelisted(newIRM), 1);
+        assertTrue(blue.isIRMWhitelisted(newIRM));
     }
 
     function testSupply(uint amount) public {
