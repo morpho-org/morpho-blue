@@ -1,7 +1,7 @@
 import { hexZeroPad } from "@ethersproject/bytes";
 import { setBalance } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import assert from "assert";
+import { expect } from "chai";
 import { BigNumber, Wallet, constants, utils } from "ethers";
 import hre from "hardhat";
 import { Blue, OracleMock, ERC20Mock } from "types";
@@ -9,7 +9,7 @@ import { Blue, OracleMock, ERC20Mock } from "types";
 const iterations = 500;
 const closePositions = false;
 const nbLiquidations = 5;
-assert(2 * nbLiquidations + 1 < 20, "more liquidations than signers");
+expect(2 * nbLiquidations + 1 < 20, "more liquidations than signers");
 const initBalance = constants.MaxUint256.div(2);
 
 let seed = 42;
@@ -89,7 +89,7 @@ describe("Blue", () => {
     await blue.connect(admin).createMarket(market);
   });
 
-  it("should simulate gas cost", async () => {
+  it("should simulate gas cost [main]", async () => {
     for (let i = 1; i < iterations; ++i) {
       console.log(i, "/", iterations);
 
@@ -124,26 +124,26 @@ describe("Blue", () => {
     }
   });
 
-  it("should simulate liquidations gas cost", async () => {
+  it("should simulate gas cost [liquidations]", async () => {
     let liquidationData = [];
 
     // Create accounts close to liquidation
     for (let i = 0; i < 2 * nbLiquidations; ++i) {
       const user = signers[i];
       const tranche = Math.floor(1 + i / 2);
-      const lltv = BigNumber.WAD.mul(tranche).div(nbLiquidations + 1);
+      const lLTV = BigNumber.WAD.mul(tranche).div(nbLiquidations + 1);
 
       const amount = BigNumber.WAD.mul(1 + Math.floor(random() * 100));
-      const borrowedAmount = amount.mul(lltv).div(BigNumber.WAD);
+      const borrowedAmount = amount.mul(lLTV).div(BigNumber.WAD);
       const maxSeize = closePositions ? constants.MaxUint256 : amount.div(2);
 
-      market.lLTV = lltv;
+      market.lLTV = lLTV;
       // We use 2 different users to borrow from a bucket so that liquidations do not close a bucket completely.
       // Consequently, we should only create the market on a particular LLTV once.
       if (i % 2 == 0) {
         await blue.connect(admin).createMarket(market);
         liquidationData.push({
-          lltv: lltv,
+          lLTV: lLTV,
           borrower: user.address,
           maxSeize: maxSeize,
         });
@@ -168,24 +168,24 @@ describe("Blue", () => {
     await borrowable.setBalance(liquidator.address, initBalance);
     for (let i = 0; i < liquidationData.length; i++) {
       let data = liquidationData[i];
-      market.lLTV = data.lltv;
+      market.lLTV = data.lLTV;
       await blue.connect(liquidator).liquidate(market, data.borrower, data.maxSeize);
     }
 
     for (let i = 0; i < 2 * nbLiquidations; i++) {
       const user = signers[i];
       const tranche = Math.floor(1 + i / 2);
-      const lltv = BigNumber.WAD.mul(tranche).div(nbLiquidations + 1);
+      const lLTV = BigNumber.WAD.mul(tranche).div(nbLiquidations + 1);
 
-      market.lLTV = lltv;
+      market.lLTV = lLTV;
       id = identifier(market);
 
       let collat = await blue.collateral(id, user.address);
-      assert(
+      expect(
         !closePositions || collat == BigNumber.from(0),
         "did not take the whole collateral when closing the position"
       );
-      assert(closePositions || collat != BigNumber.from(0), "unexpectedly closed the position");
+      expect(closePositions || collat != BigNumber.from(0), "unexpectedly closed the position");
     }
   });
 });
