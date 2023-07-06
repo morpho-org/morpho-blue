@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity >=0.8.0;
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity 0.8.20;
 
 /// @title Ownable
 /// @author Morpho Labs
@@ -12,7 +12,7 @@ abstract contract Ownable {
 
     /* MODIFIERS */
 
-    modifier onlyOwner() virtual {
+    modifier onlyOwner() {
         require(msg.sender == owner, "not owner");
         _;
     }
@@ -25,7 +25,7 @@ abstract contract Ownable {
 
     /* PUBLIC */
 
-    function transferOwnership(address newOwner) public virtual onlyOwner {
+    function transferOwnership(address newOwner) external onlyOwner {
         owner = newOwner;
     }
 }
