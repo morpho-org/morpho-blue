@@ -64,10 +64,6 @@ contract Blue is Ownable {
         accrueInterests(id, market.irm);
     }
 
-    function whitelistIRM(address irm) external onlyOwner {
-        isIRMWhitelisted[irm] = 1;
-    }
-
     // Supply management.
 
     function supply(Market calldata market, uint amount) external {
@@ -210,6 +206,12 @@ contract Blue is Ownable {
 
         market.collateralAsset.safeTransfer(msg.sender, seized);
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), repaid);
+    }
+
+    // Admin functions.
+
+    function whitelistIRM(address irm) external onlyOwner {
+        isIRMWhitelisted[irm] = 1;
     }
 
     // Interests management.
