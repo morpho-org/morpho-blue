@@ -27,7 +27,7 @@
     "@types/node": "^20.2.5",
     "chai": "^4.3.7",
     "dotenv": "^16.1.3",
-    "hardhat": "^2.14.1",
+    "hardhat": "2.15",
     "hardhat-deal": "^1.3.0",
     "hardhat-gas-reporter": "^1.0.9",
     "hardhat-tracer": "2.3.2",
