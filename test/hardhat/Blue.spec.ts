@@ -54,7 +54,7 @@ describe("Blue", () => {
 
     const BlueFactory = await hre.ethers.getContractFactory("Blue", signers[0]);
 
-    blue = await BlueFactory.deploy();
+    blue = await BlueFactory.deploy(signers[0].address);
 
     marketParams = {
       borrowableAsset: borrowable.address,
@@ -93,8 +93,8 @@ describe("Blue", () => {
           await blue.connect(user).withdraw(marketParams, amount.div(2));
         }
       } else {
-        const totalSupply = (await blue.market(id)).totalSupply;
-        const totalBorrow = (await blue.market(id)).totalBorrow;
+        const totalSupply = (await blue.getMarket(id)).totalSupply;
+        const totalBorrow = (await blue.getMarket(id)).totalBorrow;
         let liq = BigNumber.from(totalSupply).sub(BigNumber.from(totalBorrow));
         amount = BigNumber.min(amount, BigNumber.from(liq).div(2));
 

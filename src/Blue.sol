@@ -59,6 +59,26 @@ contract Blue {
     // Storage.
 
     mapping(Id => MarketStorage) internal _marketStorage;
+    address public owner;
+
+    // Constructor.
+
+    constructor(address newOwner) {
+        owner = newOwner;
+    }
+
+    // Modifiers.
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "not owner");
+        _;
+    }
+
+    // Only owner functions.
+
+    function transferOwnership(address newOwner) external onlyOwner {
+        owner = newOwner;
+    }
 
     // Markets management.
 
@@ -71,11 +91,11 @@ contract Blue {
 
     // Getters.
 
-    function market(Id id) external view returns (Market memory) {
+    function getMarket(Id id) external view returns (Market memory) {
         return _marketStorage[id].market;
     }
 
-    function position(Id id, address user) external view returns (Position memory) {
+    function getPosition(Id id, address user) external view returns (Position memory) {
         return _marketStorage[id].position[user];
     }
 
@@ -179,6 +199,7 @@ contract Blue {
 
     // Collateral management.
 
+    /// @dev Don't accrue interests because it's not required and it saves gas.
     function supplyCollateral(MarketParams calldata marketParams, uint amount) external {
         Id id = marketParams.toId();
         MarketStorage storage s = _marketStorage[id];
@@ -188,7 +209,7 @@ contract Blue {
         require(m.lastUpdate != 0, "unknown market");
         require(amount != 0, "zero amount");
 
-        accrueInterests(id);
+        // Don't accrue interests because it's not required and it saves gas.
 
         p.collateral += amount;
 
@@ -277,10 +298,10 @@ contract Blue {
         Market storage m = s.market;
         Position storage p = s.position[user];
         uint borrowShares = p.borrowShare;
-        // m.totalBorrowShares > 0 when borrowShares > 0.
-        uint borrowValue = borrowShares != 0
-            ? borrowShares.wMul(m.totalBorrow).wDiv(m.totalBorrowShares).wMul(marketParams.borrowableOracle.price())
-            : 0;
+        if (borrowShares == 0) return true;
+        // totalBorrowShares > 0 when borrowShares > 0.
+        uint borrowValue =
+            borrowShares.wMul(m.totalBorrow).wDiv(m.totalBorrowShares).wMul(marketParams.borrowableOracle.price());
         uint collateralValue = p.collateral.wMul(marketParams.collateralOracle.price());
         return collateralValue.wMul(marketParams.lLTV) >= borrowValue;
     }
