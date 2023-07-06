@@ -41,7 +41,12 @@ contract BlueTest is Test {
 
         irm = new IRM(blue);
         market = Market(
-            IERC20(address(borrowableAsset)), IERC20(address(collateralAsset)), borrowableOracle, collateralOracle, irm, lLTV
+            IERC20(address(borrowableAsset)),
+            IERC20(address(collateralAsset)),
+            borrowableOracle,
+            collateralOracle,
+            irm,
+            lLTV
         );
         id = Id.wrap(keccak256(abi.encode(market)));
 
@@ -131,11 +136,26 @@ contract BlueTest is Test {
         blue.enableIrm(OWNER);
     }
 
-    function testEnableIrm(address newIRM) public {
+    function testEnableIrm(address newIrm) public {
         vm.prank(OWNER);
-        blue.enableIrm(newIRM);
+        blue.enableIrm(newIrm);
 
-        assertTrue(blue.isIrmEnabled(newIRM));
+        assertTrue(blue.isIrmEnabled(newIrm));
+    }
+
+    function testCreateMarketNotEnabledIrm(
+        IERC20 newBorrowableAsset,
+        IERC20 newCollateralAsset,
+        IOracle newBorrowableOracle,
+        IOracle newCollateralOracle,
+        IIRM newIrm,
+        uint newlLTV
+    ) public {
+        market = Market(newBorrowableAsset, newCollateralAsset, newBorrowableOracle, newCollateralOracle, newIrm, newlLTV);
+
+        vm.prank(OWNER);
+        vm.expectRevert("IRM not enabled");
+        blue.createMarket(market);
     }
 
     function testSupply(uint amount) public {
@@ -200,9 +220,13 @@ contract BlueTest is Test {
 
         blue.withdraw(market, amountWithdrawn);
 
-        assertApproxEqAbs(blue.supplyShare(id, address(this)), (amountLent - amountWithdrawn) * 1e18 / amountLent, 1e3, "supply share");
+        assertApproxEqAbs(
+            blue.supplyShare(id, address(this)), (amountLent - amountWithdrawn) * 1e18 / amountLent, 1e3, "supply share"
+        );
         assertEq(borrowableAsset.balanceOf(address(this)), amountWithdrawn, "this balance");
-        assertEq(borrowableAsset.balanceOf(address(blue)), amountLent - amountBorrowed - amountWithdrawn, "blue balance");
+        assertEq(
+            borrowableAsset.balanceOf(address(blue)), amountLent - amountBorrowed - amountWithdrawn, "blue balance"
+        );
     }
 
     function testCollateralRequirements(
@@ -252,7 +276,9 @@ contract BlueTest is Test {
         blue.repay(market, amountRepaid);
         vm.stopPrank();
 
-        assertApproxEqAbs(blue.borrowShare(id, borrower), (amountBorrowed - amountRepaid) * 1e18 / amountBorrowed, 1e3, "borrow share");
+        assertApproxEqAbs(
+            blue.borrowShare(id, borrower), (amountBorrowed - amountRepaid) * 1e18 / amountBorrowed, 1e3, "borrow share"
+        );
         assertEq(borrowableAsset.balanceOf(borrower), amountBorrowed - amountRepaid, "borrower balance");
         assertEq(borrowableAsset.balanceOf(address(blue)), amountLent - amountBorrowed + amountRepaid, "blue balance");
     }

@@ -9,19 +9,19 @@ import {MathLib} from "src/libraries/MathLib.sol";
 import "src/Blue.sol";
 
 contract IRMMock is IIRM {
-	using MathLib for uint;
+    using MathLib for uint;
 
-	Blue public immutable blue;
+    Blue public immutable blue;
 
-	constructor (Blue blueInstance) {
-		blue = Blue(blueInstance);
-	}
+    constructor(Blue blueInstance) {
+        blue = Blue(blueInstance);
+    }
 
-	function borrowRate(Id id) external view returns (uint) {
-		uint utilization = blue.totalBorrow(id).wDiv(blue.totalSupply(id));
+    function borrowRate(Id id) external view returns (uint) {
+        uint utilization = blue.totalBorrow(id).wDiv(blue.totalSupply(id));
 
-		// Divide by the number of seconds in a year.
-		// This is a very simple model (to refine later) where x% utilization corresponds to x% APR.
-		return utilization / 365 days;
-	}
+        // Divide by the number of seconds in a year.
+        // This is a very simple model (to refine later) where x% utilization corresponds to x% APR.
+        return utilization / 365 days;
+    }
 }
