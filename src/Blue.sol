@@ -7,6 +7,9 @@ import {IOracle} from "src/interfaces/IOracle.sol";
 import {MathLib} from "src/libraries/MathLib.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 
+import {ERC2771Forwarder} from "src/extensions/ERC2771Forwarder.sol";
+import {ERC2771Context} from "src/extensions/ERC2771Context.sol";
+
 uint constant WAD = 1e18;
 uint constant ALPHA = 0.5e18;
 
@@ -52,13 +55,17 @@ function irm(uint utilization) pure returns (uint) {
     return utilization / 365 days;
 }
 
-contract Blue {
+contract Blue is ERC2771Context, ERC2771Forwarder {
     using MathLib for uint;
     using SafeTransferLib for IERC20;
 
     // Storage.
 
     mapping(Id => MarketStorage) internal _marketStorage;
+
+    // Constructor.
+
+    constructor() ERC2771Forwarder("Blue") {}
 
     // Markets management.
 
@@ -85,7 +92,7 @@ contract Blue {
         Id id = marketParams.toId();
         MarketStorage storage s = _marketStorage[id];
         Market storage m = s.market;
-        Position storage p = s.position[msg.sender];
+        Position storage p = s.position[_msgSender()];
 
         require(m.lastUpdate != 0, "unknown market");
         require(amount != 0, "zero amount");
@@ -103,14 +110,14 @@ contract Blue {
 
         m.totalSupply += amount;
 
-        marketParams.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
+        marketParams.borrowableAsset.safeTransferFrom(_msgSender(), address(this), amount);
     }
 
     function withdraw(MarketParams calldata marketParams, uint amount) external {
         Id id = marketParams.toId();
         MarketStorage storage s = _marketStorage[id];
         Market storage m = s.market;
-        Position storage p = s.position[msg.sender];
+        Position storage p = s.position[_msgSender()];
 
         require(m.lastUpdate != 0, "unknown market");
         require(amount != 0, "zero amount");
@@ -125,7 +132,7 @@ contract Blue {
 
         require(m.totalBorrow <= m.totalSupply, "not enough liquidity");
 
-        marketParams.borrowableAsset.safeTransfer(msg.sender, amount);
+        marketParams.borrowableAsset.safeTransfer(_msgSender(), amount);
     }
 
     // Borrow management.
@@ -134,7 +141,7 @@ contract Blue {
         Id id = marketParams.toId();
         MarketStorage storage s = _marketStorage[id];
         Market storage m = s.market;
-        Position storage p = s.position[msg.sender];
+        Position storage p = s.position[_msgSender()];
 
         require(m.lastUpdate != 0, "unknown market");
         require(amount != 0, "zero amount");
@@ -152,17 +159,17 @@ contract Blue {
 
         m.totalBorrow += amount;
 
-        require(isHealthy(marketParams, id, msg.sender), "not enough collateral");
+        require(isHealthy(marketParams, id, _msgSender()), "not enough collateral");
         require(m.totalBorrow <= m.totalSupply, "not enough liquidity");
 
-        marketParams.borrowableAsset.safeTransfer(msg.sender, amount);
+        marketParams.borrowableAsset.safeTransfer(_msgSender(), amount);
     }
 
     function repay(MarketParams calldata marketParams, uint amount) external {
         Id id = marketParams.toId();
         MarketStorage storage s = _marketStorage[id];
         Market storage m = s.market;
-        Position storage p = s.position[msg.sender];
+        Position storage p = s.position[_msgSender()];
         require(m.lastUpdate != 0, "unknown market");
         require(amount != 0, "zero amount");
 
@@ -174,7 +181,7 @@ contract Blue {
 
         m.totalBorrow -= amount;
 
-        marketParams.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
+        marketParams.borrowableAsset.safeTransferFrom(_msgSender(), address(this), amount);
     }
 
     // Collateral management.
@@ -183,7 +190,7 @@ contract Blue {
         Id id = marketParams.toId();
         MarketStorage storage s = _marketStorage[id];
         Market storage m = s.market;
-        Position storage p = s.position[msg.sender];
+        Position storage p = s.position[_msgSender()];
 
         require(m.lastUpdate != 0, "unknown market");
         require(amount != 0, "zero amount");
@@ -192,14 +199,14 @@ contract Blue {
 
         p.collateral += amount;
 
-        marketParams.collateralAsset.safeTransferFrom(msg.sender, address(this), amount);
+        marketParams.collateralAsset.safeTransferFrom(_msgSender(), address(this), amount);
     }
 
     function withdrawCollateral(MarketParams calldata marketParams, uint amount) external {
         Id id = marketParams.toId();
         MarketStorage storage s = _marketStorage[id];
         Market storage m = s.market;
-        Position storage p = s.position[msg.sender];
+        Position storage p = s.position[_msgSender()];
         require(m.lastUpdate != 0, "unknown market");
         require(amount != 0, "zero amount");
 
@@ -207,9 +214,9 @@ contract Blue {
 
         p.collateral -= amount;
 
-        require(isHealthy(marketParams, id, msg.sender), "not enough collateral");
+        require(isHealthy(marketParams, id, _msgSender()), "not enough collateral");
 
-        marketParams.collateralAsset.safeTransfer(msg.sender, amount);
+        marketParams.collateralAsset.safeTransfer(_msgSender(), amount);
     }
 
     // Liquidation.
@@ -247,8 +254,8 @@ contract Blue {
             p.borrowShare = 0;
         }
 
-        marketParams.collateralAsset.safeTransfer(msg.sender, seized);
-        marketParams.borrowableAsset.safeTransferFrom(msg.sender, address(this), repaid);
+        marketParams.collateralAsset.safeTransfer(_msgSender(), seized);
+        marketParams.borrowableAsset.safeTransferFrom(_msgSender(), address(this), repaid);
     }
 
     // Interests management.
