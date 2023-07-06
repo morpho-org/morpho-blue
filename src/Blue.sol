@@ -219,7 +219,7 @@ contract Blue is Ownable {
 
         if (marketTotalSupply != 0) {
             uint marketTotalBorrow = totalBorrow[id];
-            uint accruedInterests = marketTotalBorrow.wMul(irm.rate()).wMul(block.timestamp - lastUpdate[id]);
+            uint accruedInterests = marketTotalBorrow.wMul(irm.borrowRate(id)).wMul(block.timestamp - lastUpdate[id]);
             totalSupply[id] = marketTotalSupply + accruedInterests;
             totalBorrow[id] = marketTotalBorrow + accruedInterests;
         }

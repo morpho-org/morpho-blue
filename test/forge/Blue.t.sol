@@ -18,6 +18,7 @@ contract BlueTest is Test {
     address private constant borrower = address(1234);
     address private constant liquidator = address(5678);
     uint private constant lLTV = 0.8 ether;
+    address private constant OWNER = address(0xdead);
 
     Blue private blue;
     ERC20 private borrowableAsset;
@@ -30,22 +31,24 @@ contract BlueTest is Test {
 
     function setUp() public {
         // Create Blue.
-        blue = new Blue(address(this));
+        blue = new Blue(OWNER);
 
         // List a market.
         borrowableAsset = new ERC20("borrowable", "B", 18);
         collateralAsset = new ERC20("collateral", "C", 18);
         borrowableOracle = new Oracle();
         collateralOracle = new Oracle();
+
         irm = new IRM(blue);
         market = Market(
             IERC20(address(borrowableAsset)), IERC20(address(collateralAsset)), borrowableOracle, collateralOracle, irm, lLTV
         );
-        blue.whitelistIRM(address(irm));
         id = Id.wrap(keccak256(abi.encode(market)));
 
-        irm.setId(id);
+        vm.startPrank(OWNER);
+        blue.whitelistIRM(address(irm));
         blue.createMarket(market);
+        vm.stopPrank();
 
         // We set the price of the borrowable asset to zero so that borrowers
         // don't need to deposit any collateral.
@@ -96,10 +99,10 @@ contract BlueTest is Test {
 
     // Tests
 
-    function testOwner(address owner) public {
-        Blue blue2 = new Blue(owner);
+    function testOwner(address newOwner) public {
+        Blue blue2 = new Blue(newOwner);
 
-        assertEq(blue2.owner(), owner, "owner");
+        assertEq(blue2.owner(), newOwner, "owner");
     }
 
     function testTransferOwnership(address oldOwner, address newOwner) public {
@@ -111,9 +114,9 @@ contract BlueTest is Test {
     }
 
     function testTransferOwnershipWhenNotOwner(address attacker, address newOwner) public {
-        vm.assume(attacker != address(0xdead));
+        vm.assume(attacker != OWNER);
 
-        Blue blue2 = new Blue(address(0xdead));
+        Blue blue2 = new Blue(OWNER);
 
         vm.prank(attacker);
         vm.expectRevert("not owner");
@@ -125,10 +128,11 @@ contract BlueTest is Test {
 
         vm.prank(attacker);
         vm.expectRevert("not owner");
-        blue.whitelistIRM(address(0xdead));
+        blue.whitelistIRM(OWNER);
     }
 
     function testWhitelistIRM(address newIRM) public {
+        vm.prank(OWNER);
         blue.whitelistIRM(newIRM);
 
         assertEq(blue.isIRMWhitelisted(newIRM), 1);

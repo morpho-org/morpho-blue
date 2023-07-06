@@ -11,19 +11,14 @@ import "src/Blue.sol";
 contract IRMMock is IIRM {
 	using MathLib for uint;
 
-	Blue public blue;
-	Id public marketId;
+	Blue public immutable blue;
 
 	constructor (Blue blueInstance) {
 		blue = Blue(blueInstance);
 	}
 
-	function setId(Id id) external {
-		marketId = id;
-	}
-
-	function rate() external view returns (uint) {
-		uint utilization = blue.totalBorrow(marketId).wDiv(blue.totalSupply(marketId));
+	function borrowRate(Id id) external view returns (uint) {
+		uint utilization = blue.totalBorrow(id).wDiv(blue.totalSupply(id));
 
 		// Divide by the number of seconds in a year.
 		// This is a very simple model (to refine later) where x% utilization corresponds to x% APR.
