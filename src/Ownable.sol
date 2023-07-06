@@ -6,10 +6,6 @@ pragma solidity >=0.8.0;
 /// @custom:contact security@morpho.xyz
 /// @dev Greatly inspired by Solmate and OZ implementations.
 abstract contract Ownable {
-    /* EVENTS */
-
-    event OwnershipTransferred(address indexed oldOwner, address indexed newOwner);
-
     /* STORAGE */
 
     address public owner;
