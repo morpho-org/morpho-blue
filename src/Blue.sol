@@ -39,6 +39,8 @@ contract Blue {
 
     // Storage.
 
+    // Owner.
+    address public owner;
     // User' supply balances.
     mapping(Id => mapping(address => uint)) public supplyShare;
     // User' borrow balances.
@@ -55,6 +57,19 @@ contract Blue {
     mapping(Id => uint) public totalBorrowShares;
     // Interests last update (used to check if a market has been created).
     mapping(Id => uint) public lastUpdate;
+
+    // Constructor.
+
+    constructor(address newOwner) {
+        owner = newOwner;
+    }
+    
+    // Only owner functions.
+
+    function transferOwnership(address newOwner) external {
+        require(msg.sender == owner);
+        owner = newOwner;
+    }
 
     // Markets management.
 
