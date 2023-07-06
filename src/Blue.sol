@@ -9,8 +9,7 @@ import {MathLib} from "src/libraries/MathLib.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 
 uint constant WAD = 1e18;
-
-uint constant alpha = 0.5e18;
+uint constant ALPHA = 0.5e18;
 
 // Market id.
 type Id is bytes32;
@@ -23,6 +22,12 @@ struct Market {
     IOracle collateralOracle;
     IIrm irm;
     uint lLTV;
+}
+
+using {toId} for Market;
+
+function toId(Market calldata market) pure returns (Id) {
+    return Id.wrap(keccak256(abi.encode(market)));
 }
 
 contract Blue {
@@ -78,7 +83,7 @@ contract Blue {
     // Markets management.
 
     function createMarket(Market calldata market) external {
-        Id id = Id.wrap(keccak256(abi.encode(market)));
+        Id id = market.toId();
         require(isIrmEnabled[market.irm], "IRM not enabled");
         require(lastUpdate[id] == 0, "market already exists");
 
@@ -88,9 +93,9 @@ contract Blue {
     // Supply management.
 
     function supply(Market calldata market, uint amount) external {
-        Id id = Id.wrap(keccak256(abi.encode(market)));
+        Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
-        require(amount > 0, "zero amount");
+        require(amount != 0, "zero amount");
 
         accrueInterests(market, id);
 
@@ -109,9 +114,9 @@ contract Blue {
     }
 
     function withdraw(Market calldata market, uint amount) external {
-        Id id = Id.wrap(keccak256(abi.encode(market)));
+        Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
-        require(amount > 0, "zero amount");
+        require(amount != 0, "zero amount");
 
         accrueInterests(market, id);
 
@@ -129,9 +134,9 @@ contract Blue {
     // Borrow management.
 
     function borrow(Market calldata market, uint amount) external {
-        Id id = Id.wrap(keccak256(abi.encode(market)));
+        Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
-        require(amount > 0, "zero amount");
+        require(amount != 0, "zero amount");
 
         accrueInterests(market, id);
 
@@ -153,9 +158,9 @@ contract Blue {
     }
 
     function repay(Market calldata market, uint amount) external {
-        Id id = Id.wrap(keccak256(abi.encode(market)));
+        Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
-        require(amount > 0, "zero amount");
+        require(amount != 0, "zero amount");
 
         accrueInterests(market, id);
 
@@ -170,12 +175,13 @@ contract Blue {
 
     // Collateral management.
 
+    /// @dev Don't accrue interests because it's not required and it saves gas.
     function supplyCollateral(Market calldata market, uint amount) external {
-        Id id = Id.wrap(keccak256(abi.encode(market)));
+        Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
-        require(amount > 0, "zero amount");
+        require(amount != 0, "zero amount");
 
-        accrueInterests(market, id);
+        // Don't accrue interests because it's not required and it saves gas.
 
         collateral[id][msg.sender] += amount;
 
@@ -183,9 +189,9 @@ contract Blue {
     }
 
     function withdrawCollateral(Market calldata market, uint amount) external {
-        Id id = Id.wrap(keccak256(abi.encode(market)));
+        Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
-        require(amount > 0, "zero amount");
+        require(amount != 0, "zero amount");
 
         accrueInterests(market, id);
 
@@ -199,16 +205,16 @@ contract Blue {
     // Liquidation.
 
     function liquidate(Market calldata market, address borrower, uint seized) external {
-        Id id = Id.wrap(keccak256(abi.encode(market)));
+        Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
-        require(seized > 0, "zero amount");
+        require(seized != 0, "zero amount");
 
         accrueInterests(market, id);
 
         require(!isHealthy(market, id, borrower), "cannot liquidate a healthy position");
 
-        // The liquidation incentive is 1 + alpha * (1 / LLTV - 1).
-        uint incentive = WAD + alpha.wMul(WAD.wDiv(market.lLTV) - WAD);
+        // The liquidation incentive is 1 + ALPHA * (1 / LLTV - 1).
+        uint incentive = WAD + ALPHA.wMul(WAD.wDiv(market.lLTV) - WAD);
         uint repaid = seized.wMul(market.collateralOracle.price()).wDiv(incentive).wDiv(market.borrowableOracle.price());
         uint repaidShares = repaid.wMul(totalBorrowShares[id]).wDiv(totalBorrow[id]);
 
@@ -249,10 +255,10 @@ contract Blue {
 
     function isHealthy(Market calldata market, Id id, address user) private view returns (bool) {
         uint borrowShares = borrowShare[id][user];
+        if (borrowShares == 0) return true;
         // totalBorrowShares[id] > 0 when borrowShares > 0.
-        uint borrowValue = borrowShares > 0
-            ? borrowShares.wMul(totalBorrow[id]).wDiv(totalBorrowShares[id]).wMul(market.borrowableOracle.price())
-            : 0;
+        uint borrowValue =
+            borrowShares.wMul(totalBorrow[id]).wDiv(totalBorrowShares[id]).wMul(market.borrowableOracle.price());
         uint collateralValue = collateral[id][user].wMul(market.collateralOracle.price());
         return collateralValue.wMul(market.lLTV) >= borrowValue;
     }

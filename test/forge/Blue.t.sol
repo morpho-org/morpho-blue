@@ -322,7 +322,7 @@ contract BlueTest is Test {
         uint borrowingPower = amountCollateral.wMul(lLTV);
         uint amountBorrowed = borrowingPower.wMul(0.8e18);
         uint toSeize = amountCollateral.wMul(lLTV);
-        uint incentive = WAD + alpha.wMul(WAD.wDiv(lLTV) - WAD);
+        uint incentive = WAD + ALPHA.wMul(WAD.wDiv(lLTV) - WAD);
 
         borrowableAsset.setBalance(address(this), amountLent);
         collateralAsset.setBalance(borrower, amountCollateral);
@@ -364,7 +364,7 @@ contract BlueTest is Test {
         uint borrowingPower = amountCollateral.wMul(lLTV);
         uint amountBorrowed = borrowingPower.wMul(0.8e18);
         uint toSeize = amountCollateral;
-        uint incentive = WAD + alpha.wMul(WAD.wDiv(market.lLTV) - WAD);
+        uint incentive = WAD + ALPHA.wMul(WAD.wDiv(market.lLTV) - WAD);
 
         borrowableAsset.setBalance(address(this), amountLent);
         collateralAsset.setBalance(borrower, amountCollateral);
