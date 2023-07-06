@@ -52,6 +52,7 @@ contract BlueTest is Test {
 
         vm.startPrank(OWNER);
         blue.enableIrm(address(irm));
+        blue.enablelLTV(lLTV);
         blue.createMarket(market);
         vm.stopPrank();
 
@@ -148,14 +149,45 @@ contract BlueTest is Test {
         IERC20 newCollateralAsset,
         IOracle newBorrowableOracle,
         IOracle newCollateralOracle,
-        IIRM newIrm,
-        uint newlLTV
+        IIRM newIrm
     ) public {
         market =
-            Market(newBorrowableAsset, newCollateralAsset, newBorrowableOracle, newCollateralOracle, newIrm, newlLTV);
+            Market(newBorrowableAsset, newCollateralAsset, newBorrowableOracle, newCollateralOracle, newIrm, lLTV);
 
         vm.prank(OWNER);
         vm.expectRevert("IRM not enabled");
+        blue.createMarket(market);
+    }
+
+    function testEnablelLTVWhenNotOwner(address attacker) public {
+        vm.assume(attacker != blue.owner());
+
+        vm.prank(attacker);
+        vm.expectRevert("not owner");
+        blue.enableIrm(OWNER);
+    }
+
+    function testEnablelLTV(uint newlLTV) public {
+        vm.assume(newlLTV < WAD);
+
+        vm.prank(OWNER);
+        blue.enablelLTV(newlLTV);
+
+        assertTrue(blue.islLTVEnabled(newlLTV));
+    }
+
+    function testCreateMarketNotEnabledlLTV(
+        IERC20 newBorrowableAsset,
+        IERC20 newCollateralAsset,
+        IOracle newBorrowableOracle,
+        IOracle newCollateralOracle,
+        uint newlLTV
+    ) public {
+        market =
+            Market(newBorrowableAsset, newCollateralAsset, newBorrowableOracle, newCollateralOracle, irm, newlLTV);
+
+        vm.prank(OWNER);
+        vm.expectRevert("lLTV not enabled");
         blue.createMarket(market);
     }
 

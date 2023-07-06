@@ -51,6 +51,8 @@ contract Blue is Ownable {
     mapping(Id => uint) public lastUpdate;
     // Enabled IRMs.
     mapping(address => bool) public isIrmEnabled;
+    // Enabled lLTVs.
+    mapping(uint => bool) public islLTVEnabled;
 
     constructor(address owner) Ownable(owner) {}
 
@@ -59,6 +61,7 @@ contract Blue is Ownable {
     function createMarket(Market calldata market) external {
         Id id = Id.wrap(keccak256(abi.encode(market)));
         require(isIrmEnabled[address(market.irm)], "IRM not enabled");
+        require(islLTVEnabled[market.lLTV], "lLTV not enabled");
         require(lastUpdate[id] == 0, "market already exists");
 
         accrueInterests(market, id);
@@ -212,6 +215,11 @@ contract Blue is Ownable {
 
     function enableIrm(address irm) external onlyOwner {
         isIrmEnabled[irm] = true;
+    }
+
+    function enablelLTV(uint lLTV) external onlyOwner {
+        require(lLTV < WAD, "lLTV too high");
+        islLTVEnabled[lLTV] = true;
     }
 
     // Interests management.
