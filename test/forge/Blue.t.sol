@@ -28,7 +28,7 @@ contract BlueTest is Test {
 
     function setUp() public {
         // Create Blue.
-        blue = new Blue();
+        blue = new Blue(msg.sender);
 
         // List a market.
         borrowableAsset = new ERC20("borrowable", "B", 18);
@@ -68,28 +68,52 @@ contract BlueTest is Test {
     }
 
     function supplyBalance(address user) internal view returns (uint) {
-        uint supplyShares = blue.position(id, user).supplyShare;
+        uint supplyShares = blue.getPosition(id, user).supplyShare;
         if (supplyShares == 0) return 0;
-        uint totalShares = blue.market(id).totalSupplyShares;
-        uint totalSupply = blue.market(id).totalSupply;
+        uint totalShares = blue.getMarket(id).totalSupplyShares;
+        uint totalSupply = blue.getMarket(id).totalSupply;
         return supplyShares.wMul(totalSupply).wDiv(totalShares);
     }
 
     function borrowBalance(address user) internal view returns (uint) {
-        uint borrowerShares = blue.position(id, user).borrowShare;
+        uint borrowerShares = blue.getPosition(id, user).borrowShare;
         if (borrowerShares == 0) return 0;
-        uint totalShares = blue.market(id).totalBorrowShares;
-        uint totalBorrow = blue.market(id).totalBorrow;
+        uint totalShares = blue.getMarket(id).totalBorrowShares;
+        uint totalBorrow = blue.getMarket(id).totalBorrow;
         return borrowerShares.wMul(totalBorrow).wDiv(totalShares);
     }
 
     // Invariants
 
     function invariantLiquidity() public {
-        assertLe(blue.market(id).totalBorrow, blue.market(id).totalSupply, "liquidity");
+        assertLe(blue.getMarket(id).totalBorrow, blue.getMarket(id).totalSupply, "liquidity");
     }
 
     // Tests
+
+    function testOwner(address owner) public {
+        Blue blue2 = new Blue(owner);
+
+        assertEq(blue2.owner(), owner, "owner");
+    }
+
+    function testTransferOwnership(address oldOwner, address newOwner) public {
+        Blue blue2 = new Blue(oldOwner);
+
+        vm.prank(oldOwner);
+        blue2.transferOwnership(newOwner);
+        assertEq(blue2.owner(), newOwner, "owner");
+    }
+
+    function testTransferOwnershipWhenNotOwner(address attacker, address newOwner) public {
+        vm.assume(attacker != address(0xdead));
+
+        Blue blue2 = new Blue(address(0xdead));
+
+        vm.prank(attacker);
+        vm.expectRevert("not owner");
+        blue2.transferOwnership(newOwner);
+    }
 
     function testSupply(uint amount) public {
         amount = bound(amount, 1, 2 ** 64);
@@ -97,7 +121,7 @@ contract BlueTest is Test {
         borrowableAsset.setBalance(address(this), amount);
         blue.supply(marketParams, amount);
 
-        assertEq(blue.position(id, address(this)).supplyShare, 1e18, "supply share");
+        assertEq(blue.getPosition(id, address(this)).supplyShare, 1e18, "supply share");
         assertEq(borrowableAsset.balanceOf(address(this)), 0, "lender balance");
         assertEq(borrowableAsset.balanceOf(address(blue)), amount, "blue balance");
     }
@@ -124,7 +148,7 @@ contract BlueTest is Test {
         vm.prank(borrower);
         blue.borrow(marketParams, amountBorrowed);
 
-        assertEq(blue.position(id, borrower).borrowShare, 1e18, "borrow share");
+        assertEq(blue.getPosition(id, borrower).borrowShare, 1e18, "borrow share");
         assertEq(borrowableAsset.balanceOf(borrower), amountBorrowed, "borrower balance");
         assertEq(borrowableAsset.balanceOf(address(blue)), amountLent - amountBorrowed, "blue balance");
     }
@@ -154,7 +178,7 @@ contract BlueTest is Test {
         blue.withdraw(marketParams, amountWithdrawn);
 
         assertApproxEqAbs(
-            blue.position(id, address(this)).supplyShare,
+            blue.getPosition(id, address(this)).supplyShare,
             (amountLent - amountWithdrawn) * 1e18 / amountLent,
             1e3,
             "supply share"
@@ -213,7 +237,7 @@ contract BlueTest is Test {
         vm.stopPrank();
 
         assertApproxEqAbs(
-            blue.position(id, borrower).borrowShare,
+            blue.getPosition(id, borrower).borrowShare,
             (amountBorrowed - amountRepaid) * 1e18 / amountBorrowed,
             1e3,
             "borrow share"
@@ -228,7 +252,7 @@ contract BlueTest is Test {
         collateralAsset.setBalance(address(this), amount);
         blue.supplyCollateral(marketParams, amount);
 
-        assertEq(blue.position(id, address(this)).collateral, amount, "collateral");
+        assertEq(blue.getPosition(id, address(this)).collateral, amount, "collateral");
         assertEq(collateralAsset.balanceOf(address(this)), 0, "this balance");
         assertEq(collateralAsset.balanceOf(address(blue)), amount, "blue balance");
     }
@@ -248,7 +272,7 @@ contract BlueTest is Test {
 
         blue.withdrawCollateral(marketParams, amountWithdrawn);
 
-        assertEq(blue.position(id, address(this)).collateral, amountDeposited - amountWithdrawn, "this collateral");
+        assertEq(blue.getPosition(id, address(this)).collateral, amountDeposited - amountWithdrawn, "this collateral");
         assertEq(collateralAsset.balanceOf(address(this)), amountWithdrawn, "this balance");
         assertEq(collateralAsset.balanceOf(address(blue)), amountDeposited - amountWithdrawn, "blue balance");
     }
@@ -292,7 +316,7 @@ contract BlueTest is Test {
             - expectedRepaid.wMul(borrowableOracle.price());
         assertEq(liquidatorNetWorthAfter, expectedNetWorthAfter, "liquidator net worth");
         assertApproxEqAbs(borrowBalance(borrower), amountBorrowed - expectedRepaid, 100, "borrower balance");
-        assertEq(blue.position(id, borrower).collateral, amountCollateral - toSeize, "borrower collateral");
+        assertEq(blue.getPosition(id, borrower).collateral, amountCollateral - toSeize, "borrower collateral");
     }
 
     function testRealizeBadDebt(uint amountLent) public {
@@ -334,7 +358,7 @@ contract BlueTest is Test {
             - expectedRepaid.wMul(borrowableOracle.price());
         assertEq(liquidatorNetWorthAfter, expectedNetWorthAfter, "liquidator net worth");
         assertEq(borrowBalance(borrower), 0, "borrower balance");
-        assertEq(blue.position(id, borrower).collateral, 0, "borrower collateral");
+        assertEq(blue.getPosition(id, borrower).collateral, 0, "borrower collateral");
         uint expectedBadDebt = amountBorrowed - expectedRepaid;
         assertGt(expectedBadDebt, 0, "bad debt");
         assertApproxEqAbs(supplyBalance(address(this)), amountLent - expectedBadDebt, 10, "lender supply balance");
@@ -352,10 +376,10 @@ contract BlueTest is Test {
         blue.supply(marketParams, secondAmount);
 
         assertApproxEqAbs(supplyBalance(address(this)), firstAmount, 100, "same balance first user");
-        assertEq(blue.position(id, address(this)).supplyShare, 1e18, "expected shares first user");
+        assertEq(blue.getPosition(id, address(this)).supplyShare, 1e18, "expected shares first user");
         assertApproxEqAbs(supplyBalance(borrower), secondAmount, 100, "same balance second user");
         assertEq(
-            blue.position(id, borrower).supplyShare, secondAmount * 1e18 / firstAmount, "expected shares second user"
+            blue.getPosition(id, borrower).supplyShare, secondAmount * 1e18 / firstAmount, "expected shares second user"
         );
     }
 
