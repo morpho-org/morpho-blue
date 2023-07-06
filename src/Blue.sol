@@ -24,7 +24,7 @@ struct Market {
     IOracle borrowableOracle;
     IOracle collateralOracle;
     IIRM irm;
-    uint lLTV;
+    uint lltv;
 }
 
 contract Blue is Ownable {
@@ -52,7 +52,7 @@ contract Blue is Ownable {
     // Enabled IRMs.
     mapping(address => bool) public isIrmEnabled;
     // Enabled lLTVs.
-    mapping(uint => bool) public islLTVEnabled;
+    mapping(uint => bool) public isLltvEnabled;
 
     constructor(address owner) Ownable(owner) {}
 
@@ -61,7 +61,7 @@ contract Blue is Ownable {
     function createMarket(Market calldata market) external {
         Id id = Id.wrap(keccak256(abi.encode(market)));
         require(isIrmEnabled[address(market.irm)], "IRM not enabled");
-        require(islLTVEnabled[market.lLTV], "lLTV not enabled");
+        require(isLltvEnabled[market.lltv], "lltv not enabled");
         require(lastUpdate[id] == 0, "market already exists");
 
         accrueInterests(market, id);
@@ -190,7 +190,7 @@ contract Blue is Ownable {
         require(!isHealthy(market, id, borrower), "cannot liquidate a healthy position");
 
         // The liquidation incentive is 1 + alpha * (1 / LLTV - 1).
-        uint incentive = WAD + alpha.wMul(WAD.wDiv(market.lLTV) - WAD);
+        uint incentive = WAD + alpha.wMul(WAD.wDiv(market.lltv) - WAD);
         uint repaid = seized.wMul(market.collateralOracle.price()).wDiv(incentive).wDiv(market.borrowableOracle.price());
         uint repaidShares = repaid.wMul(totalBorrowShares[id]).wDiv(totalBorrow[id]);
 
@@ -217,9 +217,9 @@ contract Blue is Ownable {
         isIrmEnabled[irm] = true;
     }
 
-    function enablelLTV(uint lLTV) external onlyOwner {
-        require(lLTV < WAD, "lLTV too high");
-        islLTVEnabled[lLTV] = true;
+    function enableLltv(uint lltv) external onlyOwner {
+        require(lltv < WAD, "LLTV too high");
+        isLltvEnabled[lltv] = true;
     }
 
     // Interests management.
@@ -247,6 +247,6 @@ contract Blue is Ownable {
             ? borrowShares.wMul(totalBorrow[id]).wDiv(totalBorrowShares[id]).wMul(market.borrowableOracle.price())
             : 0;
         uint collateralValue = collateral[id][user].wMul(market.collateralOracle.price());
-        return collateralValue.wMul(market.lLTV) >= borrowValue;
+        return collateralValue.wMul(market.lltv) >= borrowValue;
     }
 }

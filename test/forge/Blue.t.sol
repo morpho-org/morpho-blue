@@ -17,7 +17,7 @@ contract BlueTest is Test {
 
     address private constant borrower = address(1234);
     address private constant liquidator = address(5678);
-    uint private constant lLTV = 0.8 ether;
+    uint private constant lltv = 0.8 ether;
     address private constant OWNER = address(0xdead);
 
     Blue private blue;
@@ -46,13 +46,13 @@ contract BlueTest is Test {
             borrowableOracle,
             collateralOracle,
             irm,
-            lLTV
+            lltv
         );
         id = Id.wrap(keccak256(abi.encode(market)));
 
         vm.startPrank(OWNER);
         blue.enableIrm(address(irm));
-        blue.enablelLTV(lLTV);
+        blue.enableLltv(lltv);
         blue.createMarket(market);
         vm.stopPrank();
 
@@ -152,7 +152,7 @@ contract BlueTest is Test {
         IIRM newIrm
     ) public {
         market =
-            Market(newBorrowableAsset, newCollateralAsset, newBorrowableOracle, newCollateralOracle, newIrm, lLTV);
+            Market(newBorrowableAsset, newCollateralAsset, newBorrowableOracle, newCollateralOracle, newIrm, lltv);
 
         vm.prank(OWNER);
         vm.expectRevert("IRM not enabled");
@@ -167,35 +167,35 @@ contract BlueTest is Test {
         blue.enableIrm(OWNER);
     }
 
-    function testEnablelLTV(uint newlLTV) public {
-        newlLTV = bound(newlLTV, 0, WAD - 1);
+    function testEnableLltv(uint newLltv) public {
+        newLltv = bound(newLltv, 0, WAD - 1);
 
         vm.prank(OWNER);
-        blue.enablelLTV(newlLTV);
+        blue.enableLltv(newLltv);
 
-        assertTrue(blue.islLTVEnabled(newlLTV));
+        assertTrue(blue.isLltvEnabled(newLltv));
     }
 
-    function testEnablelLTVShouldFailWhenlLTVTooHigh(uint newlLTV) public {
-        newlLTV = bound(newlLTV, WAD, type(uint256).max);
+    function testEnableLltvShouldFailWhenlLtvTooHigh(uint newLltv) public {
+        newLltv = bound(newLltv, WAD, type(uint256).max);
 
         vm.prank(OWNER);
-        vm.expectRevert("lLTV too high");
-        blue.enablelLTV(newlLTV);
+        vm.expectRevert("LLTV too high");
+        blue.enableLltv(newLltv);
     }
 
-    function testCreateMarketNotEnabledlLTV(
+    function testCreateMarketNotEnabledLltv(
         IERC20 newBorrowableAsset,
         IERC20 newCollateralAsset,
         IOracle newBorrowableOracle,
         IOracle newCollateralOracle,
-        uint newlLTV
+        uint newLltv
     ) public {
         market =
-            Market(newBorrowableAsset, newCollateralAsset, newBorrowableOracle, newCollateralOracle, irm, newlLTV);
+            Market(newBorrowableAsset, newCollateralAsset, newBorrowableOracle, newCollateralOracle, irm, newLltv);
 
         vm.prank(OWNER);
-        vm.expectRevert("lLTV not enabled");
+        vm.expectRevert("lltv not enabled");
         blue.createMarket(market);
     }
 
@@ -294,7 +294,7 @@ contract BlueTest is Test {
 
         uint collateralValue = amountCollateral.wMul(priceCollateral);
         uint borrowValue = amountBorrowed.wMul(priceBorrowable);
-        if (borrowValue == 0 || (collateralValue > 0 && borrowValue <= collateralValue.wMul(lLTV))) {
+        if (borrowValue == 0 || (collateralValue > 0 && borrowValue <= collateralValue.wMul(lltv))) {
             vm.prank(borrower);
             blue.borrow(market, amountBorrowed);
         } else {
@@ -360,10 +360,10 @@ contract BlueTest is Test {
         amountLent = bound(amountLent, 1000, 2 ** 64);
 
         uint amountCollateral = amountLent;
-        uint borrowingPower = amountCollateral.wMul(lLTV);
+        uint borrowingPower = amountCollateral.wMul(lltv);
         uint amountBorrowed = borrowingPower.wMul(0.8e18);
-        uint toSeize = amountCollateral.wMul(lLTV);
-        uint incentive = WAD + alpha.wMul(WAD.wDiv(lLTV) - WAD);
+        uint toSeize = amountCollateral.wMul(lltv);
+        uint incentive = WAD + alpha.wMul(WAD.wDiv(lltv) - WAD);
 
         borrowableAsset.setBalance(address(this), amountLent);
         collateralAsset.setBalance(borrower, amountCollateral);
@@ -402,10 +402,10 @@ contract BlueTest is Test {
         amountLent = bound(amountLent, 1000, 2 ** 64);
 
         uint amountCollateral = amountLent;
-        uint borrowingPower = amountCollateral.wMul(lLTV);
+        uint borrowingPower = amountCollateral.wMul(lltv);
         uint amountBorrowed = borrowingPower.wMul(0.8e18);
         uint toSeize = amountCollateral;
-        uint incentive = WAD + alpha.wMul(WAD.wDiv(market.lLTV) - WAD);
+        uint incentive = WAD + alpha.wMul(WAD.wDiv(market.lltv) - WAD);
 
         borrowableAsset.setBalance(address(this), amountLent);
         collateralAsset.setBalance(borrower, amountCollateral);
@@ -523,5 +523,5 @@ contract BlueTest is Test {
 
 function neq(Market memory a, Market memory b) pure returns (bool) {
     return a.borrowableAsset != b.borrowableAsset || a.collateralAsset != b.collateralAsset
-        || a.borrowableOracle != b.borrowableOracle || a.collateralOracle != b.collateralOracle || a.lLTV != b.lLTV;
+        || a.borrowableOracle != b.borrowableOracle || a.collateralOracle != b.collateralOracle || a.lltv != b.lltv;
 }
