@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.20;
 
+import {IIrm} from "src/interfaces/IIrm.sol";
 import {IERC20} from "src/interfaces/IERC20.sol";
 import {IOracle} from "src/interfaces/IOracle.sol";
 
@@ -18,6 +19,7 @@ struct MarketParams {
     IERC20 collateralAsset;
     IOracle borrowableOracle;
     IOracle collateralOracle;
+    IIrm irm;
     uint lLTV;
 }
 
@@ -46,12 +48,6 @@ function toId(MarketParams calldata marketParams) pure returns (Id) {
     return Id.wrap(keccak256(abi.encode(marketParams)));
 }
 
-function irm(uint utilization) pure returns (uint) {
-    // Divide by the number of seconds in a year.
-    // This is a very simple model (to refine later) where x% utilization corresponds to x% APR.
-    return utilization / 365 days;
-}
-
 contract Blue {
     using MathLib for uint;
     using SafeTransferLib for IERC20;
@@ -59,6 +55,8 @@ contract Blue {
     // Storage.
 
     mapping(Id => MarketStorage) internal _marketStorage;
+
+    mapping(IIrm => bool) public isIrmEnabled;
     address public owner;
 
     // Constructor.
@@ -80,13 +78,19 @@ contract Blue {
         owner = newOwner;
     }
 
+    function enableIrm(IIrm irm) external onlyOwner {
+        isIrmEnabled[irm] = true;
+    }
+
     // Markets management.
 
     function createMarket(MarketParams calldata marketParams) external {
         Id id = marketParams.toId();
-        require(_marketStorage[id].market.lastUpdate == 0, "market already exists");
+        Market storage m = _marketStorage[id].market;
+        require(m.lastUpdate == 0, "market already exists");
+        require(isIrmEnabled[marketParams.irm], "IRM not enabled");
 
-        accrueInterests(id);
+        accrueInterests(marketParams, id);
     }
 
     // Getters.
@@ -110,7 +114,7 @@ contract Blue {
         require(m.lastUpdate != 0, "unknown market");
         require(amount != 0, "zero amount");
 
-        accrueInterests(id);
+        accrueInterests(marketParams, id);
 
         if (m.totalSupply == 0) {
             p.supplyShare = WAD;
@@ -135,7 +139,7 @@ contract Blue {
         require(m.lastUpdate != 0, "unknown market");
         require(amount != 0, "zero amount");
 
-        accrueInterests(id);
+        accrueInterests(marketParams, id);
 
         uint shares = amount.wMul(m.totalSupplyShares).wDiv(m.totalSupply);
         p.supplyShare -= shares;
@@ -159,7 +163,7 @@ contract Blue {
         require(m.lastUpdate != 0, "unknown market");
         require(amount != 0, "zero amount");
 
-        accrueInterests(id);
+        accrueInterests(marketParams, id);
 
         if (m.totalBorrow == 0) {
             p.borrowShare = WAD;
@@ -186,7 +190,7 @@ contract Blue {
         require(m.lastUpdate != 0, "unknown market");
         require(amount != 0, "zero amount");
 
-        accrueInterests(id);
+        accrueInterests(marketParams, id);
 
         uint shares = amount.wMul(m.totalBorrowShares).wDiv(m.totalBorrow);
         p.borrowShare -= shares;
@@ -224,7 +228,7 @@ contract Blue {
         require(m.lastUpdate != 0, "unknown market");
         require(amount != 0, "zero amount");
 
-        accrueInterests(id);
+        accrueInterests(marketParams, id);
 
         p.collateral -= amount;
 
@@ -244,7 +248,7 @@ contract Blue {
         require(m.lastUpdate != 0, "unknown market");
         require(seized != 0, "zero amount");
 
-        accrueInterests(id);
+        accrueInterests(marketParams, id);
 
         require(!isHealthy(marketParams, id, borrower), "cannot liquidate a healthy position");
 
@@ -274,15 +278,14 @@ contract Blue {
 
     // Interests management.
 
-    function accrueInterests(Id id) private {
+    function accrueInterests(MarketParams calldata marketParams, Id id) private {
         MarketStorage storage s = _marketStorage[id];
         Market storage m = s.market;
         uint marketTotalSupply = m.totalSupply;
 
         if (marketTotalSupply != 0) {
             uint marketTotalBorrow = m.totalBorrow;
-            uint utilization = marketTotalBorrow.wDiv(marketTotalSupply);
-            uint borrowRate = irm(utilization);
+            uint borrowRate = marketParams.irm.borrowRate(marketParams);
             uint accruedInterests = marketTotalBorrow.wMul(borrowRate).wMul(block.timestamp - m.lastUpdate);
             m.totalSupply = marketTotalSupply + accruedInterests;
             m.totalBorrow = marketTotalBorrow + accruedInterests;

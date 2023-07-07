@@ -3,7 +3,7 @@ import { setBalance } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber, Wallet, constants, utils } from "ethers";
 import hre from "hardhat";
-import { Blue, OracleMock, ERC20Mock } from "types";
+import { Blue, OracleMock, ERC20Mock, IrmMock } from "types";
 
 const iterations = 500;
 
@@ -23,6 +23,7 @@ interface MarketParams {
   collateralAsset: string;
   borrowableOracle: string;
   collateralOracle: string;
+  irm: string;
   lLTV: BigNumber;
 }
 
@@ -34,6 +35,7 @@ describe("Blue", () => {
   let collateral: ERC20Mock;
   let borrowableOracle: OracleMock;
   let collateralOracle: OracleMock;
+  let irm: IrmMock;
   let marketParams: MarketParams;
   let id: Buffer;
 
@@ -56,20 +58,26 @@ describe("Blue", () => {
 
     blue = await BlueFactory.deploy(signers[0].address);
 
+    const IrmMockFactory = await hre.ethers.getContractFactory("IrmMock", signers[0]);
+
+    irm = await IrmMockFactory.deploy(blue.address);
+
     marketParams = {
       borrowableAsset: borrowable.address,
       collateralAsset: collateral.address,
       borrowableOracle: borrowableOracle.address,
       collateralOracle: collateralOracle.address,
+      irm: irm.address,
       lLTV: BigNumber.WAD,
     };
 
     const abiCoder = new utils.AbiCoder();
     const values = Object.values(marketParams);
-    const encodedMarket = abiCoder.encode(["address", "address", "address", "address", "uint256"], values);
+    const encodedMarket = abiCoder.encode(["address", "address", "address", "address", "address", "uint256"], values);
 
     id = Buffer.from(utils.keccak256(encodedMarket).slice(2), "hex");
 
+    await blue.connect(signers[0]).enableIrm(irm.address);
     await blue.connect(signers[0]).createMarket(marketParams);
   });
 
