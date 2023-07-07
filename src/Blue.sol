@@ -289,7 +289,8 @@ contract Blue {
             m.totalSupply = marketTotalSupply + accruedInterests;
             m.totalBorrow = marketTotalBorrow + accruedInterests;
             if (feeWadPct != 0) {
-                uint feeShares = accruedInterests.wMul(feeWadPct).wMul(m.totalSupplyShares).wDiv(m.totalSupply);
+                uint fee = accruedInterests.wMul(feeWadPct);
+                uint feeShares = fee.wMul(m.totalSupplyShares).wDiv(m.totalSupply - fee);
                 s.position[feeRecipient].supplyShare += feeShares;
                 m.totalSupplyShares += feeShares;
             }
