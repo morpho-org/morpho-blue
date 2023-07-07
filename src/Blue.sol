@@ -82,14 +82,18 @@ contract Blue {
         owner = newOwner;
     }
 
+    function setFee(MarketParams calldata marketParams, uint fee) external onlyOwner {
+        require(fee <= WAD, "fee must be <= 1");
+        _marketStorage[marketParams.toId()].market.fee = fee;
+    }
+
     // Markets management.
 
-    function createMarket(MarketParams calldata marketParams, uint fee) external {
+    function createMarket(MarketParams calldata marketParams) external {
         Id id = marketParams.toId();
         MarketStorage storage s = _marketStorage[id];
         Market storage m = s.market;
         require(m.lastUpdate == 0, "market already exists");
-        m.fee = fee;
 
         accrueInterests(id);
     }

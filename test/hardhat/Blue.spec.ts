@@ -70,7 +70,7 @@ describe("Blue", () => {
 
     id = Buffer.from(utils.keccak256(encodedMarket).slice(2), "hex");
 
-    await blue.connect(signers[0]).createMarket(marketParams, 0);
+    await blue.connect(signers[0]).createMarket(marketParams);
   });
 
   it("should simulate gas cost", async () => {
