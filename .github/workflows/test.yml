@@ -20,5 +20,9 @@ jobs:
         uses: foundry-rs/foundry-toolchain@v1
 
       - name: Run Forge tests
-        run: FOUNDRY_FUZZ_RUNS=100000 FOUNDRY_FUZZ_MAX_TEST_REJECTS=500000 FOUNDRY_INVARIANT_RUNS=1000 FOUNDRY_INVARIANT_DEPTH=100 forge test -vvv
-        id: test
+        run: forge test -vvv
+        env:
+          FOUNDRY_FUZZ_RUNS: 100000 
+          FOUNDRY_FUZZ_MAX_TEST_REJECTS: 500000 
+          FOUNDRY_INVARIANT_RUNS: 1000 
+          FOUNDRY_INVARIANT_DEPTH: 100
