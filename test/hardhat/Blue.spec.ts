@@ -8,8 +8,8 @@ import { Blue, OracleMock, ERC20Mock } from "types";
 
 const iterations = 500;
 const closePositions = false;
-const nbLiquidations = 5;
-expect(2 * nbLiquidations + 1 < 20, "more liquidations than signers");
+const nbLiquidations = 50;
+// The liquidations gas test expects that 2*nbLiquidations + 1 is strictly less than the number of signers.
 const initBalance = constants.MaxUint256.div(2);
 
 let seed = 42;
@@ -184,8 +184,8 @@ describe("Blue", () => {
       expect(
         !closePositions || collat == BigNumber.from(0),
         "did not take the whole collateral when closing the position"
-      );
-      expect(closePositions || collat != BigNumber.from(0), "unexpectedly closed the position");
+      ).true;
+      expect(closePositions || collat != BigNumber.from(0), "unexpectedly closed the position").true;
     }
   });
 });
