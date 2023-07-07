@@ -24,7 +24,7 @@ interface Market {
   borrowableOracle: string;
   collateralOracle: string;
   irm: string;
-  lLTV: BigNumber;
+  LLTV: BigNumber;
 }
 
 describe("Blue", () => {
@@ -68,7 +68,7 @@ describe("Blue", () => {
       borrowableOracle: borrowableOracle.address,
       collateralOracle: collateralOracle.address,
       irm: irm.address,
-      lLTV: BigNumber.WAD,
+      LLTV: BigNumber.WAD,
     };
 
     const abiCoder = new utils.AbiCoder();
