@@ -87,7 +87,7 @@ contract Blue {
         require(isIrmEnabled[market.irm], "IRM not enabled");
         require(lastUpdate[id] == 0, "market already exists");
 
-        accrueInterests(market, id);
+        accrueInterests(market);
     }
 
     // Supply management.
@@ -97,7 +97,7 @@ contract Blue {
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
 
-        accrueInterests(market, id);
+        accrueInterests(market);
 
         if (totalSupply[id] == 0) {
             supplyShare[id][msg.sender] = WAD;
@@ -118,7 +118,7 @@ contract Blue {
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
 
-        accrueInterests(market, id);
+        accrueInterests(market);
 
         uint shares = amount.wMul(totalSupplyShares[id]).wDiv(totalSupply[id]);
         supplyShare[id][msg.sender] -= shares;
@@ -138,7 +138,7 @@ contract Blue {
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
 
-        accrueInterests(market, id);
+        accrueInterests(market);
 
         if (totalBorrow[id] == 0) {
             borrowShare[id][msg.sender] = WAD;
@@ -162,7 +162,7 @@ contract Blue {
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
 
-        accrueInterests(market, id);
+        accrueInterests(market);
 
         uint shares = amount.wMul(totalBorrowShares[id]).wDiv(totalBorrow[id]);
         borrowShare[id][msg.sender] -= shares;
@@ -193,7 +193,7 @@ contract Blue {
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
 
-        accrueInterests(market, id);
+        accrueInterests(market);
 
         collateral[id][msg.sender] -= amount;
 
@@ -209,7 +209,7 @@ contract Blue {
         require(lastUpdate[id] != 0, "unknown market");
         require(seized != 0, "zero amount");
 
-        accrueInterests(market, id);
+        accrueInterests(market);
 
         require(!isHealthy(market, id, borrower), "cannot liquidate a healthy position");
 
@@ -237,7 +237,8 @@ contract Blue {
 
     // Interests management.
 
-    function accrueInterests(Market calldata market, Id id) private {
+    function accrueInterests(Market calldata market) private {
+        Id id = market.toId();
         uint marketTotalSupply = totalSupply[id];
 
         if (marketTotalSupply != 0) {
