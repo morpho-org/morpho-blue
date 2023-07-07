@@ -27,6 +27,7 @@ struct Market {
     uint totalSupplyShares;
     uint totalBorrowShares;
     uint lastUpdate;
+    uint fee; // in WAD
 }
 
 struct Position {
@@ -60,7 +61,6 @@ contract Blue {
 
     mapping(Id => MarketStorage) internal _marketStorage;
     address public feeRecipient;
-    uint public feePct; // in WAD
     address public owner;
 
     // Constructor.
@@ -84,9 +84,12 @@ contract Blue {
 
     // Markets management.
 
-    function createMarket(MarketParams calldata marketParams) external {
+    function createMarket(MarketParams calldata marketParams, uint fee) external {
         Id id = marketParams.toId();
-        require(_marketStorage[id].market.lastUpdate == 0, "market already exists");
+        MarketStorage storage s = _marketStorage[id];
+        Market storage m = s.market;
+        require(m.lastUpdate == 0, "market already exists");
+        m.fee = fee;
 
         accrueInterests(id);
     }
@@ -288,8 +291,8 @@ contract Blue {
             uint accruedInterests = marketTotalBorrow.wMul(borrowRate).wMul(block.timestamp - m.lastUpdate);
             m.totalSupply = marketTotalSupply + accruedInterests;
             m.totalBorrow = marketTotalBorrow + accruedInterests;
-            if (feePct != 0) {
-                uint fee = accruedInterests.wMul(feePct);
+            if (m.fee != 0) {
+                uint fee = accruedInterests.wMul(m.fee);
                 uint feeShares = fee.wMul(m.totalSupplyShares).wDiv(m.totalSupply - fee);
                 s.position[feeRecipient].supplyShare += feeShares;
                 m.totalSupplyShares += feeShares;

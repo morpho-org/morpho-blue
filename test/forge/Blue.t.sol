@@ -40,7 +40,7 @@ contract BlueTest is Test {
         );
         id = Id.wrap(keccak256(abi.encode(marketParams)));
 
-        blue.createMarket(marketParams);
+        blue.createMarket(marketParams, 0);
 
         // We set the price of the borrowable asset to zero so that borrowers
         // don't need to deposit any collateral.
