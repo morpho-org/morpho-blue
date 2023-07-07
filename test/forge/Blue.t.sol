@@ -364,7 +364,7 @@ contract BlueTest is Test {
         uint borrowingPower = amountCollateral.wMul(LLTV);
         uint amountBorrowed = borrowingPower.wMul(0.8e18);
         uint toSeize = amountCollateral;
-        uint incentive = WAD + ALPHA.wMul(WAD.wDiv(market.LLTV) - WAD);
+        uint incentive = WAD + ALPHA.wMul(WAD.wDiv(market.lLTV) - WAD);
 
         borrowableAsset.setBalance(address(this), amountLent);
         collateralAsset.setBalance(BORROWER, amountCollateral);
@@ -482,6 +482,6 @@ contract BlueTest is Test {
 
 function neq(Market memory a, Market memory b) pure returns (bool) {
     return a.borrowableAsset != b.borrowableAsset || a.collateralAsset != b.collateralAsset
-        || a.borrowableOracle != b.borrowableOracle || a.collateralOracle != b.collateralOracle || a.LLTV != b.LLTV
+        || a.borrowableOracle != b.borrowableOracle || a.collateralOracle != b.collateralOracle || a.lLTV != b.lLTV
         || a.irm != b.irm;
 }
