@@ -87,12 +87,13 @@ describe("Blue", () => {
       borrowableOracle: borrowableOracle.address,
       collateralOracle: collateralOracle.address,
       irm: irm.address,
-      lltv: BigNumber.WAD,
+      lltv: BigNumber.WAD.div(2),
     };
 
     id = identifier(market);
 
-    await blue.connect(admin).enableIrm(irm.address);
+    await blue.connect(admin).enableLltv(market.lltv);
+    await blue.connect(admin).enableIrm(market.irm);
     await blue.connect(admin).createMarket(market);
   });
 
@@ -148,6 +149,8 @@ describe("Blue", () => {
       // We use 2 different users to borrow from a market so that liquidations do not put the borrow storage back to 0 on that market.
       // Consequently, we should only create the market on a particular lltv once.
       if (i % 2 == 0) {
+        await blue.connect(admin).enableLltv(market.lltv);
+        await blue.connect(admin).enableIrm(market.irm);
         await blue.connect(admin).createMarket(market);
         liquidationData.push({
           lltv: lltv,
