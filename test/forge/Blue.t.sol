@@ -15,9 +15,9 @@ import {IrmMock as Irm} from "src/mocks/IrmMock.sol";
 contract BlueTest is Test {
     using MathLib for uint;
 
-    address private constant borrower = address(1234);
-    address private constant liquidator = address(5678);
-    uint private constant lltv = 0.8 ether;
+    address private constant BORROWER = address(1234);
+    address private constant LIQUIDATOR = address(5678);
+    uint private constant LLTV = 0.8 ether;
     address private constant OWNER = address(0xdead);
 
     Blue private blue;
@@ -46,13 +46,13 @@ contract BlueTest is Test {
             borrowableOracle,
             collateralOracle,
             irm,
-            lltv
+            LLTV
         );
         id = Id.wrap(keccak256(abi.encode(market)));
 
         vm.startPrank(OWNER);
         blue.enableIrm(irm);
-        blue.enableLltv(lltv);
+        blue.enableLltv(LLTV);
         blue.createMarket(market);
         vm.stopPrank();
 
@@ -63,11 +63,11 @@ contract BlueTest is Test {
 
         borrowableAsset.approve(address(blue), type(uint).max);
         collateralAsset.approve(address(blue), type(uint).max);
-        vm.startPrank(borrower);
+        vm.startPrank(BORROWER);
         borrowableAsset.approve(address(blue), type(uint).max);
         collateralAsset.approve(address(blue), type(uint).max);
         vm.stopPrank();
-        vm.startPrank(liquidator);
+        vm.startPrank(LIQUIDATOR);
         borrowableAsset.approve(address(blue), type(uint).max);
         collateralAsset.approve(address(blue), type(uint).max);
         vm.stopPrank();
@@ -104,7 +104,7 @@ contract BlueTest is Test {
     }
 
     function invariantLltvEnabled() public {
-        assertTrue(blue.isLltvEnabled(lltv));
+        assertTrue(blue.isLltvEnabled(LLTV));
     }
 
     // Tests
@@ -149,7 +149,7 @@ contract BlueTest is Test {
     }
 
     function testCreateMarketWithEnabledIrm(Market memory marketFuzz) public {
-        marketFuzz.lltv = lltv;
+        marketFuzz.lltv = LLTV;
 
         vm.startPrank(OWNER);
         blue.enableIrm(marketFuzz.irm);
@@ -191,7 +191,7 @@ contract BlueTest is Test {
     }
 
     function testCreateMarketWithNotEnabledLltv(Market memory marketFuzz) public {
-        vm.assume(marketFuzz.lltv != lltv);
+        vm.assume(marketFuzz.lltv != LLTV);
         marketFuzz.irm = irm;
 
         vm.prank(OWNER);
@@ -223,17 +223,17 @@ contract BlueTest is Test {
         }
 
         if (amountBorrowed > amountLent) {
-            vm.prank(borrower);
+            vm.prank(BORROWER);
             vm.expectRevert("not enough liquidity");
             blue.borrow(market, amountBorrowed);
             return;
         }
 
-        vm.prank(borrower);
+        vm.prank(BORROWER);
         blue.borrow(market, amountBorrowed);
 
-        assertEq(blue.borrowShare(id, borrower), 1e18, "borrow share");
-        assertEq(borrowableAsset.balanceOf(borrower), amountBorrowed, "borrower balance");
+        assertEq(blue.borrowShare(id, BORROWER), 1e18, "borrow share");
+        assertEq(borrowableAsset.balanceOf(BORROWER), amountBorrowed, "BORROWER balance");
         assertEq(borrowableAsset.balanceOf(address(blue)), amountLent - amountBorrowed, "blue balance");
     }
 
@@ -246,7 +246,7 @@ contract BlueTest is Test {
         borrowableAsset.setBalance(address(this), amountLent);
         blue.supply(market, amountLent);
 
-        vm.prank(borrower);
+        vm.prank(BORROWER);
         blue.borrow(market, amountBorrowed);
 
         if (amountWithdrawn > amountLent - amountBorrowed) {
@@ -285,20 +285,20 @@ contract BlueTest is Test {
         collateralOracle.setPrice(priceCollateral);
 
         borrowableAsset.setBalance(address(this), amountBorrowed);
-        collateralAsset.setBalance(borrower, amountCollateral);
+        collateralAsset.setBalance(BORROWER, amountCollateral);
 
         blue.supply(market, amountBorrowed);
 
-        vm.prank(borrower);
+        vm.prank(BORROWER);
         blue.supplyCollateral(market, amountCollateral);
 
         uint collateralValue = amountCollateral.wMul(priceCollateral);
         uint borrowValue = amountBorrowed.wMul(priceBorrowable);
-        if (borrowValue == 0 || (collateralValue > 0 && borrowValue <= collateralValue.wMul(lltv))) {
-            vm.prank(borrower);
+        if (borrowValue == 0 || (collateralValue > 0 && borrowValue <= collateralValue.wMul(LLTV))) {
+            vm.prank(BORROWER);
             blue.borrow(market, amountBorrowed);
         } else {
-            vm.prank(borrower);
+            vm.prank(BORROWER);
             vm.expectRevert("not enough collateral");
             blue.borrow(market, amountBorrowed);
         }
@@ -312,15 +312,15 @@ contract BlueTest is Test {
         borrowableAsset.setBalance(address(this), amountLent);
         blue.supply(market, amountLent);
 
-        vm.startPrank(borrower);
+        vm.startPrank(BORROWER);
         blue.borrow(market, amountBorrowed);
         blue.repay(market, amountRepaid);
         vm.stopPrank();
 
         assertApproxEqAbs(
-            blue.borrowShare(id, borrower), (amountBorrowed - amountRepaid) * 1e18 / amountBorrowed, 1e3, "borrow share"
+            blue.borrowShare(id, BORROWER), (amountBorrowed - amountRepaid) * 1e18 / amountBorrowed, 1e3, "borrow share"
         );
-        assertEq(borrowableAsset.balanceOf(borrower), amountBorrowed - amountRepaid, "borrower balance");
+        assertEq(borrowableAsset.balanceOf(BORROWER), amountBorrowed - amountRepaid, "BORROWER balance");
         assertEq(borrowableAsset.balanceOf(address(blue)), amountLent - amountBorrowed + amountRepaid, "blue balance");
     }
 
@@ -360,20 +360,20 @@ contract BlueTest is Test {
         amountLent = bound(amountLent, 1000, 2 ** 64);
 
         uint amountCollateral = amountLent;
-        uint borrowingPower = amountCollateral.wMul(lltv);
+        uint borrowingPower = amountCollateral.wMul(LLTV);
         uint amountBorrowed = borrowingPower.wMul(0.8e18);
-        uint toSeize = amountCollateral.wMul(lltv);
-        uint incentive = WAD + ALPHA.wMul(WAD.wDiv(lltv) - WAD);
+        uint toSeize = amountCollateral.wMul(LLTV);
+        uint incentive = WAD + ALPHA.wMul(WAD.wDiv(LLTV) - WAD);
 
         borrowableAsset.setBalance(address(this), amountLent);
-        collateralAsset.setBalance(borrower, amountCollateral);
-        borrowableAsset.setBalance(liquidator, amountBorrowed);
+        collateralAsset.setBalance(BORROWER, amountCollateral);
+        borrowableAsset.setBalance(LIQUIDATOR, amountBorrowed);
 
         // Supply
         blue.supply(market, amountLent);
 
         // Borrow
-        vm.startPrank(borrower);
+        vm.startPrank(BORROWER);
         blue.supplyCollateral(market, amountCollateral);
         blue.borrow(market, amountBorrowed);
         vm.stopPrank();
@@ -381,20 +381,20 @@ contract BlueTest is Test {
         // Price change
         borrowableOracle.setPrice(2e18);
 
-        uint liquidatorNetWorthBefore = netWorth(liquidator);
+        uint liquidatorNetWorthBefore = netWorth(LIQUIDATOR);
 
         // Liquidate
-        vm.prank(liquidator);
-        blue.liquidate(market, borrower, toSeize);
+        vm.prank(LIQUIDATOR);
+        blue.liquidate(market, BORROWER, toSeize);
 
-        uint liquidatorNetWorthAfter = netWorth(liquidator);
+        uint liquidatorNetWorthAfter = netWorth(LIQUIDATOR);
 
         uint expectedRepaid = toSeize.wMul(collateralOracle.price()).wDiv(incentive).wDiv(borrowableOracle.price());
         uint expectedNetWorthAfter = liquidatorNetWorthBefore + toSeize.wMul(collateralOracle.price())
             - expectedRepaid.wMul(borrowableOracle.price());
-        assertEq(liquidatorNetWorthAfter, expectedNetWorthAfter, "liquidator net worth");
-        assertApproxEqAbs(borrowBalance(borrower), amountBorrowed - expectedRepaid, 100, "borrower balance");
-        assertEq(blue.collateral(id, borrower), amountCollateral - toSeize, "borrower collateral");
+        assertEq(liquidatorNetWorthAfter, expectedNetWorthAfter, "LIQUIDATOR net worth");
+        assertApproxEqAbs(borrowBalance(BORROWER), amountBorrowed - expectedRepaid, 100, "BORROWER balance");
+        assertEq(blue.collateral(id, BORROWER), amountCollateral - toSeize, "BORROWER collateral");
     }
 
     function testRealizeBadDebt(uint amountLent) public {
@@ -402,20 +402,20 @@ contract BlueTest is Test {
         amountLent = bound(amountLent, 1000, 2 ** 64);
 
         uint amountCollateral = amountLent;
-        uint borrowingPower = amountCollateral.wMul(lltv);
+        uint borrowingPower = amountCollateral.wMul(LLTV);
         uint amountBorrowed = borrowingPower.wMul(0.8e18);
         uint toSeize = amountCollateral;
         uint incentive = WAD + ALPHA.wMul(WAD.wDiv(market.lltv) - WAD);
 
         borrowableAsset.setBalance(address(this), amountLent);
-        collateralAsset.setBalance(borrower, amountCollateral);
-        borrowableAsset.setBalance(liquidator, amountBorrowed);
+        collateralAsset.setBalance(BORROWER, amountCollateral);
+        borrowableAsset.setBalance(LIQUIDATOR, amountBorrowed);
 
         // Supply
         blue.supply(market, amountLent);
 
         // Borrow
-        vm.startPrank(borrower);
+        vm.startPrank(BORROWER);
         blue.supplyCollateral(market, amountCollateral);
         blue.borrow(market, amountBorrowed);
         vm.stopPrank();
@@ -423,20 +423,20 @@ contract BlueTest is Test {
         // Price change
         borrowableOracle.setPrice(100e18);
 
-        uint liquidatorNetWorthBefore = netWorth(liquidator);
+        uint liquidatorNetWorthBefore = netWorth(LIQUIDATOR);
 
         // Liquidate
-        vm.prank(liquidator);
-        blue.liquidate(market, borrower, toSeize);
+        vm.prank(LIQUIDATOR);
+        blue.liquidate(market, BORROWER, toSeize);
 
-        uint liquidatorNetWorthAfter = netWorth(liquidator);
+        uint liquidatorNetWorthAfter = netWorth(LIQUIDATOR);
 
         uint expectedRepaid = toSeize.wMul(collateralOracle.price()).wDiv(incentive).wDiv(borrowableOracle.price());
         uint expectedNetWorthAfter = liquidatorNetWorthBefore + toSeize.wMul(collateralOracle.price())
             - expectedRepaid.wMul(borrowableOracle.price());
-        assertEq(liquidatorNetWorthAfter, expectedNetWorthAfter, "liquidator net worth");
-        assertEq(borrowBalance(borrower), 0, "borrower balance");
-        assertEq(blue.collateral(id, borrower), 0, "borrower collateral");
+        assertEq(liquidatorNetWorthAfter, expectedNetWorthAfter, "LIQUIDATOR net worth");
+        assertEq(borrowBalance(BORROWER), 0, "BORROWER balance");
+        assertEq(blue.collateral(id, BORROWER), 0, "BORROWER collateral");
         uint expectedBadDebt = amountBorrowed - expectedRepaid;
         assertGt(expectedBadDebt, 0, "bad debt");
         assertApproxEqAbs(supplyBalance(address(this)), amountLent - expectedBadDebt, 10, "lender supply balance");
@@ -449,14 +449,14 @@ contract BlueTest is Test {
         borrowableAsset.setBalance(address(this), firstAmount);
         blue.supply(market, firstAmount);
 
-        borrowableAsset.setBalance(borrower, secondAmount);
-        vm.prank(borrower);
+        borrowableAsset.setBalance(BORROWER, secondAmount);
+        vm.prank(BORROWER);
         blue.supply(market, secondAmount);
 
         assertApproxEqAbs(supplyBalance(address(this)), firstAmount, 100, "same balance first user");
         assertEq(blue.supplyShare(id, address(this)), 1e18, "expected shares first user");
-        assertApproxEqAbs(supplyBalance(borrower), secondAmount, 100, "same balance second user");
-        assertEq(blue.supplyShare(id, borrower), secondAmount * 1e18 / firstAmount, "expected shares second user");
+        assertApproxEqAbs(supplyBalance(BORROWER), secondAmount, 100, "same balance second user");
+        assertEq(blue.supplyShare(id, BORROWER), secondAmount * 1e18 / firstAmount, "expected shares second user");
     }
 
     function testUnknownMarket(Market memory marketFuzz) public {

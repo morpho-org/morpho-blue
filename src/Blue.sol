@@ -250,8 +250,8 @@ contract Blue {
 
         if (marketTotalSupply != 0) {
             uint marketTotalBorrow = totalBorrow[id];
-            uint accruedInterests =
-                marketTotalBorrow.wMul(market.irm.borrowRate(market)).wMul(block.timestamp - lastUpdate[id]);
+            uint borrowRate = market.irm.borrowRate(market);
+            uint accruedInterests = marketTotalBorrow.wMul(borrowRate).wMul(block.timestamp - lastUpdate[id]);
             totalSupply[id] = marketTotalSupply + accruedInterests;
             totalBorrow[id] = marketTotalBorrow + accruedInterests;
         }
