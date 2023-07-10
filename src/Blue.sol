@@ -21,7 +21,7 @@ struct Market {
     IOracle borrowableOracle;
     IOracle collateralOracle;
     IIrm irm;
-    uint lLTV;
+    uint lltv;
 }
 
 using {toId} for Market;
@@ -56,6 +56,8 @@ contract Blue {
     mapping(Id => uint) public lastUpdate;
     // Enabled IRMs.
     mapping(IIrm => bool) public isIrmEnabled;
+    // Enabled LLTVs.
+    mapping(uint => bool) public isLltvEnabled;
 
     // Constructor.
 
@@ -80,11 +82,17 @@ contract Blue {
         isIrmEnabled[irm] = true;
     }
 
+    function enableLltv(uint lltv) external onlyOwner {
+        require(lltv < WAD, "LLTV too high");
+        isLltvEnabled[lltv] = true;
+    }
+
     // Markets management.
 
     function createMarket(Market calldata market) external {
         Id id = market.toId();
         require(isIrmEnabled[market.irm], "IRM not enabled");
+        require(isLltvEnabled[market.lltv], "LLTV not enabled");
         require(lastUpdate[id] == 0, "market already exists");
 
         accrueInterests(market, id);
@@ -214,7 +222,7 @@ contract Blue {
         require(!isHealthy(market, id, borrower), "cannot liquidate a healthy position");
 
         // The liquidation incentive is 1 + ALPHA * (1 / LLTV - 1).
-        uint incentive = WAD + ALPHA.wMul(WAD.wDiv(market.lLTV) - WAD);
+        uint incentive = WAD + ALPHA.wMul(WAD.wDiv(market.lltv) - WAD);
         uint repaid = seized.wMul(market.collateralOracle.price()).wDiv(incentive).wDiv(market.borrowableOracle.price());
         uint repaidShares = repaid.wMul(totalBorrowShares[id]).wDiv(totalBorrow[id]);
 
@@ -260,6 +268,6 @@ contract Blue {
         uint borrowValue =
             borrowShares.wMul(totalBorrow[id]).wDiv(totalBorrowShares[id]).wMul(market.borrowableOracle.price());
         uint collateralValue = collateral[id][user].wMul(market.collateralOracle.price());
-        return collateralValue.wMul(market.lLTV) >= borrowValue;
+        return collateralValue.wMul(market.lltv) >= borrowValue;
     }
 }
