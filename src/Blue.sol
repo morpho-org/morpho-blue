@@ -92,6 +92,7 @@ contract Blue {
     }
 
     function setFee(Market calldata market, uint256 newFee) external onlyOwner {
+        require(lastUpdate[market.toId()] != 0, "unknown market");
         require(newFee <= WAD, "fee must be <= 1");
         fee[market.toId()] = newFee;
     }
