@@ -241,6 +241,7 @@ contract Blue {
         uint marketTotalBorrow = totalBorrow[id];
 
         if (marketTotalBorrow != 0) {
+            // The total supply is non-zero when the total borrow is non-zero.
             uint marketTotalSupply = totalSupply[id];
             uint borrowRate = market.irm.borrowRate(market);
             uint accruedInterests = marketTotalBorrow.wMul(borrowRate).wMul(block.timestamp - lastUpdate[id]);
