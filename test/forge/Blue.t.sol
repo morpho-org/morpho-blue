@@ -394,7 +394,7 @@ contract BlueTest is Test {
         uint256 liquidatorNetWorthAfter = netWorth(LIQUIDATOR);
 
         uint256 expectedRepaid =
-            toSeize.wadMulDown(collateralOracle.price()).wadDivDown(incentive).wadDivDown(borrowableOracle.price());
+            toSeize.wadMulUp(collateralOracle.price()).wadDivUp(incentive).wadDivUp(borrowableOracle.price());
         uint256 expectedNetWorthAfter = liquidatorNetWorthBefore + toSeize.wadMulDown(collateralOracle.price())
             - expectedRepaid.wadMulDown(borrowableOracle.price());
         assertEq(liquidatorNetWorthAfter, expectedNetWorthAfter, "LIQUIDATOR net worth");
@@ -437,7 +437,7 @@ contract BlueTest is Test {
         uint256 liquidatorNetWorthAfter = netWorth(LIQUIDATOR);
 
         uint256 expectedRepaid =
-            toSeize.wadMulDown(collateralOracle.price()).wadDivDown(incentive).wadDivDown(borrowableOracle.price());
+            toSeize.wadMulUp(collateralOracle.price()).wadDivUp(incentive).wadDivUp(borrowableOracle.price());
         uint256 expectedNetWorthAfter = liquidatorNetWorthBefore + toSeize.wadMulDown(collateralOracle.price())
             - expectedRepaid.wadMulDown(borrowableOracle.price());
         assertEq(liquidatorNetWorthAfter, expectedNetWorthAfter, "LIQUIDATOR net worth");
