@@ -54,6 +54,7 @@ contract BlueTest is Test {
 
         vm.startPrank(OWNER);
         blue.enableIrm(irm);
+        blue.enableLltv(LLTV);
         blue.createMarket(market);
         vm.stopPrank();
 
@@ -104,6 +105,10 @@ contract BlueTest is Test {
         assertLe(blue.totalBorrow(id), blue.totalSupply(id), "liquidity");
     }
 
+    function invariantLltvEnabled() public {
+        assertTrue(blue.isLltvEnabled(LLTV));
+    }
+
     // Tests
 
     function testOwner(address newOwner) public {
@@ -146,6 +151,8 @@ contract BlueTest is Test {
     }
 
     function testCreateMarketWithEnabledIrm(Market memory marketFuzz) public {
+        marketFuzz.lltv = LLTV;
+
         vm.startPrank(OWNER);
         blue.enableIrm(marketFuzz.irm);
         blue.createMarket(marketFuzz);
@@ -157,6 +164,40 @@ contract BlueTest is Test {
 
         vm.prank(OWNER);
         vm.expectRevert("IRM not enabled");
+        blue.createMarket(marketFuzz);
+    }
+
+    function testEnableLltvWhenNotOwner(address attacker, uint newLltv) public {
+        vm.assume(attacker != OWNER);
+
+        vm.prank(attacker);
+        vm.expectRevert("not owner");
+        blue.enableLltv(newLltv);
+    }
+
+    function testEnableLltv(uint newLltv) public {
+        newLltv = bound(newLltv, 0, WAD - 1);
+
+        vm.prank(OWNER);
+        blue.enableLltv(newLltv);
+
+        assertTrue(blue.isLltvEnabled(newLltv));
+    }
+
+    function testEnableLltvShouldFailWhenLltvTooHigh(uint newLltv) public {
+        newLltv = bound(newLltv, WAD, type(uint).max);
+
+        vm.prank(OWNER);
+        vm.expectRevert("LLTV too high");
+        blue.enableLltv(newLltv);
+    }
+
+    function testCreateMarketWithNotEnabledLltv(Market memory marketFuzz) public {
+        vm.assume(marketFuzz.lltv != LLTV);
+        marketFuzz.irm = irm;
+
+        vm.prank(OWNER);
+        vm.expectRevert("LLTV not enabled");
         blue.createMarket(marketFuzz);
     }
 
@@ -367,7 +408,7 @@ contract BlueTest is Test {
         uint borrowingPower = amountCollateral.wadMulDown(LLTV);
         uint amountBorrowed = borrowingPower.wadMulDown(0.8e18);
         uint toSeize = amountCollateral;
-        uint incentive = WAD + ALPHA.wadMulDown(WAD.wadDivDown(market.lLTV) - WAD);
+        uint incentive = WAD + ALPHA.wadMulDown(WAD.wadDivDown(market.lltv) - WAD);
 
         borrowableAsset.setBalance(address(this), amountLent);
         collateralAsset.setBalance(BORROWER, amountCollateral);
@@ -486,6 +527,6 @@ contract BlueTest is Test {
 
 function neq(Market memory a, Market memory b) pure returns (bool) {
     return a.borrowableAsset != b.borrowableAsset || a.collateralAsset != b.collateralAsset
-        || a.borrowableOracle != b.borrowableOracle || a.collateralOracle != b.collateralOracle || a.lLTV != b.lLTV
+        || a.borrowableOracle != b.borrowableOracle || a.collateralOracle != b.collateralOracle || a.lltv != b.lltv
         || a.irm != b.irm;
 }
