@@ -8,8 +8,8 @@ import {IOracle} from "src/interfaces/IOracle.sol";
 import {MathLib} from "src/libraries/MathLib.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 
-uint constant WAD = 1e18;
-uint constant ALPHA = 0.5e18;
+uint256 constant WAD = 1e18;
+uint256 constant ALPHA = 0.5e18;
 
 // Market id.
 type Id is bytes32;
@@ -20,21 +20,21 @@ struct MarketParams {
     IOracle borrowableOracle;
     IOracle collateralOracle;
     IIrm irm;
-    uint lLTV;
+    uint256 lltv;
 }
 
 struct Market {
-    uint totalSupply;
-    uint totalBorrow;
-    uint totalSupplyShares;
-    uint totalBorrowShares;
-    uint lastUpdate;
+    uint256 totalSupply;
+    uint256 totalBorrow;
+    uint256 totalSupplyShares;
+    uint256 totalBorrowShares;
+    uint256 lastUpdate;
 }
 
 struct Position {
-    uint supplyShare;
-    uint borrowShare;
-    uint collateral;
+    uint256 supplyShare;
+    uint256 borrowShare;
+    uint256 collateral;
 }
 
 struct MarketStorage {
@@ -49,7 +49,7 @@ function toId(MarketParams calldata marketParams) pure returns (Id) {
 }
 
 contract Blue {
-    using MathLib for uint;
+    using MathLib for uint256;
     using SafeTransferLib for IERC20;
 
     // Storage.
@@ -57,6 +57,7 @@ contract Blue {
     mapping(Id => MarketStorage) internal _marketStorage;
 
     mapping(IIrm => bool) public isIrmEnabled;
+    mapping(uint256 => bool) public isLltvEnabled;
     address public owner;
 
     // Constructor.
@@ -82,13 +83,19 @@ contract Blue {
         isIrmEnabled[irm] = true;
     }
 
+    function enableLltv(uint256 lltv) external onlyOwner {
+        require(lltv < WAD, "LLTV too high");
+        isLltvEnabled[lltv] = true;
+    }
+
     // Markets management.
 
     function createMarket(MarketParams calldata marketParams) external {
         Id id = marketParams.toId();
         Market storage m = _marketStorage[id].market;
-        require(m.lastUpdate == 0, "market already exists");
         require(isIrmEnabled[marketParams.irm], "IRM not enabled");
+        require(isLltvEnabled[marketParams.lltv], "LLTV not enabled");
+        require(m.lastUpdate == 0, "market already exists");
 
         accrueInterests(marketParams, id);
     }
@@ -105,7 +112,7 @@ contract Blue {
 
     // Supply management.
 
-    function supply(MarketParams calldata marketParams, uint amount) external {
+    function supply(MarketParams calldata marketParams, uint256 amount) external {
         Id id = marketParams.toId();
         MarketStorage storage s = _marketStorage[id];
         Market storage m = s.market;
@@ -120,7 +127,7 @@ contract Blue {
             p.supplyShare = WAD;
             m.totalSupplyShares = WAD;
         } else {
-            uint shares = amount.wMul(m.totalSupplyShares).wDiv(m.totalSupply);
+            uint256 shares = amount.wMul(m.totalSupplyShares).wDiv(m.totalSupply);
             p.supplyShare += shares;
             m.totalSupplyShares += shares;
         }
@@ -130,7 +137,7 @@ contract Blue {
         marketParams.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
 
-    function withdraw(MarketParams calldata marketParams, uint amount) external {
+    function withdraw(MarketParams calldata marketParams, uint256 amount) external {
         Id id = marketParams.toId();
         MarketStorage storage s = _marketStorage[id];
         Market storage m = s.market;
@@ -141,7 +148,7 @@ contract Blue {
 
         accrueInterests(marketParams, id);
 
-        uint shares = amount.wMul(m.totalSupplyShares).wDiv(m.totalSupply);
+        uint256 shares = amount.wMul(m.totalSupplyShares).wDiv(m.totalSupply);
         p.supplyShare -= shares;
         m.totalSupplyShares -= shares;
 
@@ -154,7 +161,7 @@ contract Blue {
 
     // Borrow management.
 
-    function borrow(MarketParams calldata marketParams, uint amount) external {
+    function borrow(MarketParams calldata marketParams, uint256 amount) external {
         Id id = marketParams.toId();
         MarketStorage storage s = _marketStorage[id];
         Market storage m = s.market;
@@ -169,7 +176,7 @@ contract Blue {
             p.borrowShare = WAD;
             m.totalBorrowShares = WAD;
         } else {
-            uint shares = amount.wMul(m.totalBorrowShares).wDiv(m.totalBorrow);
+            uint256 shares = amount.wMul(m.totalBorrowShares).wDiv(m.totalBorrow);
             p.borrowShare += shares;
             m.totalBorrowShares += shares;
         }
@@ -182,7 +189,7 @@ contract Blue {
         marketParams.borrowableAsset.safeTransfer(msg.sender, amount);
     }
 
-    function repay(MarketParams calldata marketParams, uint amount) external {
+    function repay(MarketParams calldata marketParams, uint256 amount) external {
         Id id = marketParams.toId();
         MarketStorage storage s = _marketStorage[id];
         Market storage m = s.market;
@@ -192,7 +199,7 @@ contract Blue {
 
         accrueInterests(marketParams, id);
 
-        uint shares = amount.wMul(m.totalBorrowShares).wDiv(m.totalBorrow);
+        uint256 shares = amount.wMul(m.totalBorrowShares).wDiv(m.totalBorrow);
         p.borrowShare -= shares;
         m.totalBorrowShares -= shares;
 
@@ -204,7 +211,7 @@ contract Blue {
     // Collateral management.
 
     /// @dev Don't accrue interests because it's not required and it saves gas.
-    function supplyCollateral(MarketParams calldata marketParams, uint amount) external {
+    function supplyCollateral(MarketParams calldata marketParams, uint256 amount) external {
         Id id = marketParams.toId();
         MarketStorage storage s = _marketStorage[id];
         Market storage m = s.market;
@@ -220,7 +227,7 @@ contract Blue {
         marketParams.collateralAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
 
-    function withdrawCollateral(MarketParams calldata marketParams, uint amount) external {
+    function withdrawCollateral(MarketParams calldata marketParams, uint256 amount) external {
         Id id = marketParams.toId();
         MarketStorage storage s = _marketStorage[id];
         Market storage m = s.market;
@@ -239,7 +246,7 @@ contract Blue {
 
     // Liquidation.
 
-    function liquidate(MarketParams calldata marketParams, address borrower, uint seized) external {
+    function liquidate(MarketParams calldata marketParams, address borrower, uint256 seized) external {
         Id id = marketParams.toId();
         MarketStorage storage s = _marketStorage[id];
         Market storage m = s.market;
@@ -253,11 +260,11 @@ contract Blue {
         require(!isHealthy(marketParams, id, borrower), "cannot liquidate a healthy position");
 
         // The liquidation incentive is 1 + ALPHA * (1 / LLTV - 1).
-        uint incentive = WAD + ALPHA.wMul(WAD.wDiv(marketParams.lLTV) - WAD);
-        uint repaid = seized.wMul(marketParams.collateralOracle.price()).wDiv(incentive).wDiv(
+        uint256 incentive = WAD + ALPHA.wMul(WAD.wDiv(marketParams.lltv) - WAD);
+        uint256 repaid = seized.wMul(marketParams.collateralOracle.price()).wDiv(incentive).wDiv(
             marketParams.borrowableOracle.price()
         );
-        uint repaidShares = repaid.wMul(m.totalBorrowShares).wDiv(m.totalBorrow);
+        uint256 repaidShares = repaid.wMul(m.totalBorrowShares).wDiv(m.totalBorrow);
 
         p.borrowShare -= repaidShares;
         m.totalBorrowShares -= repaidShares;
@@ -281,12 +288,12 @@ contract Blue {
     function accrueInterests(MarketParams calldata marketParams, Id id) private {
         MarketStorage storage s = _marketStorage[id];
         Market storage m = s.market;
-        uint marketTotalSupply = m.totalSupply;
+        uint256 marketTotalSupply = m.totalSupply;
 
         if (marketTotalSupply != 0) {
-            uint marketTotalBorrow = m.totalBorrow;
-            uint borrowRate = marketParams.irm.borrowRate(marketParams);
-            uint accruedInterests = marketTotalBorrow.wMul(borrowRate).wMul(block.timestamp - m.lastUpdate);
+            uint256 marketTotalBorrow = m.totalBorrow;
+            uint256 borrowRate = marketParams.irm.borrowRate(marketParams);
+            uint256 accruedInterests = marketTotalBorrow.wMul(borrowRate).wMul(block.timestamp - m.lastUpdate);
             m.totalSupply = marketTotalSupply + accruedInterests;
             m.totalBorrow = marketTotalBorrow + accruedInterests;
         }
@@ -300,12 +307,12 @@ contract Blue {
         MarketStorage storage s = _marketStorage[id];
         Market storage m = s.market;
         Position storage p = s.position[user];
-        uint borrowShares = p.borrowShare;
+        uint256 borrowShares = p.borrowShare;
         if (borrowShares == 0) return true;
         // totalBorrowShares > 0 when borrowShares > 0.
-        uint borrowValue =
+        uint256 borrowValue =
             borrowShares.wMul(m.totalBorrow).wDiv(m.totalBorrowShares).wMul(marketParams.borrowableOracle.price());
-        uint collateralValue = p.collateral.wMul(marketParams.collateralOracle.price());
-        return collateralValue.wMul(marketParams.lLTV) >= borrowValue;
+        uint256 collateralValue = p.collateral.wMul(marketParams.collateralOracle.price());
+        return collateralValue.wMul(marketParams.lltv) >= borrowValue;
     }
 }
