@@ -1,7 +1,4 @@
 [profile.default]
 via-ir = true
 
-[fmt]
-int_types = "short"
-
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
