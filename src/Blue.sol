@@ -238,10 +238,10 @@ contract Blue {
     // Interests management.
 
     function accrueInterests(Market calldata market, Id id) private {
-        uint marketTotalSupply = totalSupply[id];
+        uint marketTotalBorrow = totalBorrow[id];
 
-        if (marketTotalSupply != 0) {
-            uint marketTotalBorrow = totalBorrow[id];
+        if (marketTotalBorrow != 0) {
+            uint marketTotalSupply = totalSupply[id];
             uint borrowRate = market.irm.borrowRate(market);
             uint accruedInterests = marketTotalBorrow.wMul(borrowRate).wMul(block.timestamp - lastUpdate[id]);
             totalSupply[id] = marketTotalSupply + accruedInterests;
