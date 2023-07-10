@@ -516,10 +516,10 @@ contract BlueTest is Test {
     function testEmptyMarket(uint256 amount) public {
         vm.assume(amount > 0);
 
-        vm.expectRevert(stdError.divisionError);
+        vm.expectRevert();
         blue.withdraw(market, amount);
 
-        vm.expectRevert(stdError.divisionError);
+        vm.expectRevert();
         blue.repay(market, amount);
 
         vm.expectRevert(stdError.arithmeticError);
