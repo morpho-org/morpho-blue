@@ -38,6 +38,8 @@ contract Blue {
 
     // Owner.
     address public owner;
+    // Fee recipient.
+    address public feeRecipient;
     // User' supply balances.
     mapping(Id => mapping(address => uint256)) public supplyShare;
     // User' borrow balances.
@@ -54,6 +56,8 @@ contract Blue {
     mapping(Id => uint256) public totalBorrowShares;
     // Interests last update (used to check if a market has been created).
     mapping(Id => uint256) public lastUpdate;
+    // Fee.
+    mapping(Id => uint256) public fee;
     // Enabled IRMs.
     mapping(IIrm => bool) public isIrmEnabled;
     // Enabled LLTVs.
@@ -85,6 +89,15 @@ contract Blue {
     function enableLltv(uint256 lltv) external onlyOwner {
         require(lltv < WAD, "LLTV too high");
         isLltvEnabled[lltv] = true;
+    }
+
+    function setFee(Market calldata market, uint256 newFee) external onlyOwner {
+        require(newFee <= WAD, "fee must be <= 1");
+        fee[market.toId()] = newFee;
+    }
+
+    function setFeeRecipient(address recipient) external onlyOwner {
+        feeRecipient = recipient;
     }
 
     // Markets management.
@@ -256,6 +269,13 @@ contract Blue {
             uint256 accruedInterests = marketTotalBorrow.wMul(borrowRate).wMul(block.timestamp - lastUpdate[id]);
             totalBorrow[id] = marketTotalBorrow + accruedInterests;
             totalSupply[id] += accruedInterests;
+            if (fee[id] != 0) {
+                uint256 feeAmount = accruedInterests.wMul(fee[id]);
+                // The fee amount is subtracted from the total supply in this calculation to compensate for the fact that total supply is already updated.
+                uint256 feeShares = feeAmount.wMul(totalSupplyShares[id]).wDiv(totalSupply[id] - feeAmount);
+                supplyShare[id][feeRecipient] += feeShares;
+                totalSupplyShares[id] += feeShares;
+            }
         }
 
         lastUpdate[id] = block.timestamp;
