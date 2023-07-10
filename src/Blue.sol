@@ -128,7 +128,7 @@ contract Blue {
 
         accrueInterests(market, id);
 
-        uint shares = amount.wadDivDown(totalSupply[id]).wadMulDown(totalSupplyShares[id]); // TODO: what if totalSupply[id] == 0?
+        uint shares = amount.wadDivUp(totalSupply[id]).wadMulUp(totalSupplyShares[id]);
         supplyShare[id][msg.sender] -= shares;
         totalSupplyShares[id] -= shares;
 
@@ -236,7 +236,7 @@ contract Blue {
 
         // Realize the bad debt if needed.
         if (collateral[id][borrower] == 0) {
-            totalSupply[id] -= borrowShare[id][borrower].wadDivDown(totalBorrowShares[id]).wadMulDown(totalBorrow[id]);
+            totalSupply[id] -= borrowShare[id][borrower].wadDivUp(totalBorrowShares[id]).wadMulUp(totalBorrow[id]);
             totalBorrowShares[id] -= borrowShare[id][borrower];
             borrowShare[id][borrower] = 0;
         }
