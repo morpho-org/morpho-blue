@@ -5,6 +5,7 @@ import {IIrm} from "src/interfaces/IIrm.sol";
 import {IERC20} from "src/interfaces/IERC20.sol";
 import {IOracle} from "src/interfaces/IOracle.sol";
 
+import {SharesMath} from "./libraries/SharesMath.sol";
 import {WadRayMath} from "morpho-utils/math/WadRayMath.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 
@@ -31,6 +32,7 @@ function toId(Market calldata market) pure returns (Id) {
 }
 
 contract Blue {
+    using SharesMath for uint;
     using WadRayMath for uint;
     using SafeTransferLib for IERC20;
 
@@ -99,14 +101,9 @@ contract Blue {
 
         accrueInterests(market, id);
 
-        if (totalSupply[id] == 0) {
-            supplyShare[id][msg.sender] = WAD;
-            totalSupplyShares[id] = WAD;
-        } else {
-            uint shares = amount.wadDivDown(totalSupply[id]).wadMulDown(totalSupplyShares[id]);
-            supplyShare[id][msg.sender] += shares;
-            totalSupplyShares[id] += shares;
-        }
+        uint shares = amount.toSharesDown(totalSupply[id], totalSupplyShares[id]);
+        supplyShare[id][msg.sender] += shares;
+        totalSupplyShares[id] += shares;
 
         totalSupply[id] += amount;
 
@@ -120,7 +117,7 @@ contract Blue {
 
         accrueInterests(market, id);
 
-        uint shares = amount.wadDivDown(totalSupply[id]).wadMulDown(totalSupplyShares[id]); // TODO: what if totalSupply[id] == 0?
+        uint shares = amount.toSharesDown(totalSupply[id], totalSupplyShares[id]);
         supplyShare[id][msg.sender] -= shares;
         totalSupplyShares[id] -= shares;
 
@@ -144,7 +141,7 @@ contract Blue {
             borrowShare[id][msg.sender] = WAD;
             totalBorrowShares[id] = WAD;
         } else {
-            uint shares = amount.wadDivUp(totalBorrow[id]).wadMulUp(totalBorrowShares[id]);
+            uint shares = amount.toSharesUp(totalBorrow[id], totalBorrowShares[id]);
             borrowShare[id][msg.sender] += shares;
             totalBorrowShares[id] += shares;
         }
@@ -164,7 +161,7 @@ contract Blue {
 
         accrueInterests(market, id);
 
-        uint shares = amount.wadDivDown(totalBorrow[id]).wadMulDown(totalBorrowShares[id]); // TODO: totalBorrow[id] > 0 because ???
+        uint shares = amount.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
         borrowShare[id][msg.sender] -= shares;
         totalBorrowShares[id] -= shares;
 
@@ -218,7 +215,7 @@ contract Blue {
         uint repaid = seized.wadMulUp(market.collateralOracle.price()).wadDivUp(incentive).wadDivUp(
             market.borrowableOracle.price()
         );
-        uint repaidShares = repaid.wadDivDown(totalBorrow[id]).wadMulDown(totalBorrowShares[id]);
+        uint repaidShares = repaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
 
         borrowShare[id][borrower] -= repaidShares;
         totalBorrowShares[id] -= repaidShares;
@@ -228,7 +225,7 @@ contract Blue {
 
         // Realize the bad debt if needed.
         if (collateral[id][borrower] == 0) {
-            totalSupply[id] -= borrowShare[id][borrower].wadDivDown(totalBorrowShares[id]).wadMulDown(totalBorrow[id]);
+            totalSupply[id] -= borrowShare[id][borrower].toAssetsDown(totalBorrow[id], totalBorrowShares[id]);
             totalBorrowShares[id] -= borrowShare[id][borrower];
             borrowShare[id][borrower] = 0;
         }
@@ -260,9 +257,8 @@ contract Blue {
         if (borrowShares == 0) return true;
 
         // totalBorrowShares[id] > 0 when borrowShares > 0.
-        uint borrowValue = borrowShares.wadDivUp(totalBorrowShares[id]).wadMulUp(totalBorrow[id]).wadMulUp(
-            market.borrowableOracle.price()
-        );
+        uint borrowValue =
+            borrowShares.toAssetsUp(totalBorrow[id], totalBorrowShares[id]).wadMulUp(market.borrowableOracle.price());
         uint collateralValue = collateral[id][user].wadMulDown(market.collateralOracle.price());
         return collateralValue.wadMulDown(market.lLTV) >= borrowValue;
     }
