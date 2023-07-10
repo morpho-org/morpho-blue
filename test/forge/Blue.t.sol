@@ -190,6 +190,91 @@ contract BlueTest is Test {
         blue.enableLltv(newLltv);
     }
 
+    function testSetFee(uint256 fee) public {
+        fee = bound(fee, 0, WAD);
+
+        vm.prank(OWNER);
+        blue.setFee(market, fee);
+
+        assertEq(blue.fee(id), fee);
+    }
+
+    function testSetFeeShouldRevertIfTooHigh(uint256 fee) public {
+        fee = bound(fee, WAD + 1, type(uint256).max);
+
+        vm.prank(OWNER);
+        vm.expectRevert("fee must be <= 1");
+        blue.setFee(market, fee);
+    }
+
+    function testSetFeeShouldRevertIfMarketNotCreated(Market memory marketFuzz, uint256 fee) public {
+        vm.assume(neq(marketFuzz, market));
+        fee = bound(fee, 0, WAD);
+
+        vm.prank(OWNER);
+        vm.expectRevert("unknown market");
+        blue.setFee(marketFuzz, fee);
+    }
+
+    function setFeeShouldRevertIfNotOwner(uint256 fee, address caller) public {
+        vm.assume(caller != OWNER);
+        fee = bound(fee, 0, WAD);
+
+        vm.expectRevert("not owner");
+        blue.setFee(market, fee);
+    }
+
+    function testSetFeeRecipient(address recipient) public {
+        vm.prank(OWNER);
+        blue.setFeeRecipient(recipient);
+
+        assertEq(blue.feeRecipient(), recipient);
+    }
+
+    function testSetFeeRecipientShouldRevertIfNotOwner(address caller, address recipient) public {
+        vm.assume(caller != OWNER);
+
+        vm.expectRevert("not owner");
+        vm.prank(caller);
+        blue.setFeeRecipient(recipient);
+    }
+
+    function testFeeAccrues(
+        uint256 amountLent,
+        uint256 amountBorrowed,
+        uint256 fee,
+        uint256 timeElapsed,
+        address recipient
+    ) public {
+        amountLent = bound(amountLent, 1, 2 ** 64);
+        amountBorrowed = bound(amountBorrowed, 1, amountLent);
+        timeElapsed = bound(timeElapsed, 1, 365 days);
+        fee = bound(fee, 0, 1e18);
+        vm.assume(recipient != address(this) && recipient != BORROWER && recipient != address(0));
+
+        vm.startPrank(OWNER);
+        blue.setFee(market, fee);
+        blue.setFeeRecipient(recipient);
+        vm.stopPrank();
+
+        borrowableAsset.setBalance(address(this), amountLent);
+        blue.supply(market, amountLent);
+
+        vm.prank(BORROWER);
+        blue.borrow(market, amountBorrowed);
+
+        uint256 totalSupplyBefore = blue.totalSupply(id);
+        vm.warp(block.timestamp + timeElapsed);
+        uint256 totalSupplyAfter = blue.totalSupply(id);
+
+        uint256 accrued = totalSupplyAfter - totalSupplyBefore;
+        uint256 expectedFee = accrued.wMul(fee);
+        uint256 expectedFeeShares =
+            expectedFee.wMul(blue.totalSupplyShares(id)).wDiv(blue.totalSupply(id) - expectedFee);
+
+        assertEq(blue.supplyShare(id, recipient), expectedFeeShares);
+    }
+
     function testCreateMarketWithNotEnabledLltv(Market memory marketFuzz) public {
         vm.assume(marketFuzz.lltv != LLTV);
         marketFuzz.irm = irm;
