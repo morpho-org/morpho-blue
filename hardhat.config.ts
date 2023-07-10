@@ -20,6 +20,9 @@ const config: HardhatUserConfig = {
       chainId: 1,
       gasPrice: 0,
       initialBaseFeePerGas: 0,
+      accounts: {
+        count: 102,
+      },
     },
   },
   solidity: {

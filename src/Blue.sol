@@ -9,8 +9,8 @@ import {SharesMath} from "./libraries/SharesMath.sol";
 import {WadRayMath} from "morpho-utils/math/WadRayMath.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 
-uint constant WAD = 1e18;
-uint constant ALPHA = 0.5e18;
+uint256 constant WAD = 1e18;
+uint256 constant ALPHA = 0.5e18;
 
 // Market id.
 type Id is bytes32;
@@ -22,7 +22,7 @@ struct Market {
     IOracle borrowableOracle;
     IOracle collateralOracle;
     IIrm irm;
-    uint lltv;
+    uint256 lltv;
 }
 
 using {toId} for Market;
@@ -32,8 +32,8 @@ function toId(Market calldata market) pure returns (Id) {
 }
 
 contract Blue {
-    using SharesMath for uint;
-    using WadRayMath for uint;
+    using SharesMath for uint256;
+    using WadRayMath for uint256;
     using SafeTransferLib for IERC20;
 
     // Storage.
@@ -41,25 +41,25 @@ contract Blue {
     // Owner.
     address public owner;
     // User' supply balances.
-    mapping(Id => mapping(address => uint)) public supplyShare;
+    mapping(Id => mapping(address => uint256)) public supplyShare;
     // User' borrow balances.
-    mapping(Id => mapping(address => uint)) public borrowShare;
+    mapping(Id => mapping(address => uint256)) public borrowShare;
     // User' collateral balance.
-    mapping(Id => mapping(address => uint)) public collateral;
+    mapping(Id => mapping(address => uint256)) public collateral;
     // Market total supply.
-    mapping(Id => uint) public totalSupply;
+    mapping(Id => uint256) public totalSupply;
     // Market total supply shares.
-    mapping(Id => uint) public totalSupplyShares;
+    mapping(Id => uint256) public totalSupplyShares;
     // Market total borrow.
-    mapping(Id => uint) public totalBorrow;
+    mapping(Id => uint256) public totalBorrow;
     // Market total borrow shares.
-    mapping(Id => uint) public totalBorrowShares;
+    mapping(Id => uint256) public totalBorrowShares;
     // Interests last update (used to check if a market has been created).
-    mapping(Id => uint) public lastUpdate;
+    mapping(Id => uint256) public lastUpdate;
     // Enabled IRMs.
     mapping(IIrm => bool) public isIrmEnabled;
     // Enabled LLTVs.
-    mapping(uint => bool) public isLltvEnabled;
+    mapping(uint256 => bool) public isLltvEnabled;
 
     // Constructor.
 
@@ -84,7 +84,7 @@ contract Blue {
         isIrmEnabled[irm] = true;
     }
 
-    function enableLltv(uint lltv) external onlyOwner {
+    function enableLltv(uint256 lltv) external onlyOwner {
         require(lltv < WAD, "LLTV too high");
         isLltvEnabled[lltv] = true;
     }
@@ -102,14 +102,14 @@ contract Blue {
 
     // Supply management.
 
-    function supply(Market calldata market, uint amount) external {
+    function supply(Market calldata market, uint256 amount) external {
         Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
 
         accrueInterests(market, id);
 
-        uint shares = amount.toSharesDown(totalSupply[id], totalSupplyShares[id]);
+        uint256 shares = amount.toSharesDown(totalSupply[id], totalSupplyShares[id]);
         supplyShare[id][msg.sender] += shares;
         totalSupplyShares[id] += shares;
 
@@ -118,14 +118,14 @@ contract Blue {
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
 
-    function withdraw(Market calldata market, uint amount) external {
+    function withdraw(Market calldata market, uint256 amount) external {
         Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
 
         accrueInterests(market, id);
 
-        uint shares = amount.toSharesDown(totalSupply[id], totalSupplyShares[id]);
+        uint256 shares = amount.toSharesUp(totalSupply[id], totalSupplyShares[id]);
         supplyShare[id][msg.sender] -= shares;
         totalSupplyShares[id] -= shares;
 
@@ -138,21 +138,16 @@ contract Blue {
 
     // Borrow management.
 
-    function borrow(Market calldata market, uint amount) external {
+    function borrow(Market calldata market, uint256 amount) external {
         Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
 
         accrueInterests(market, id);
 
-        if (totalBorrow[id] == 0) {
-            borrowShare[id][msg.sender] = WAD;
-            totalBorrowShares[id] = WAD;
-        } else {
-            uint shares = amount.toSharesUp(totalBorrow[id], totalBorrowShares[id]);
-            borrowShare[id][msg.sender] += shares;
-            totalBorrowShares[id] += shares;
-        }
+        uint256 shares = amount.toSharesUp(totalBorrow[id], totalBorrowShares[id]);
+        borrowShare[id][msg.sender] += shares;
+        totalBorrowShares[id] += shares;
 
         totalBorrow[id] += amount;
 
@@ -162,14 +157,14 @@ contract Blue {
         market.borrowableAsset.safeTransfer(msg.sender, amount);
     }
 
-    function repay(Market calldata market, uint amount) external {
+    function repay(Market calldata market, uint256 amount) external {
         Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
 
         accrueInterests(market, id);
 
-        uint shares = amount.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
+        uint256 shares = amount.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
         borrowShare[id][msg.sender] -= shares;
         totalBorrowShares[id] -= shares;
 
@@ -181,7 +176,7 @@ contract Blue {
     // Collateral management.
 
     /// @dev Don't accrue interests because it's not required and it saves gas.
-    function supplyCollateral(Market calldata market, uint amount) external {
+    function supplyCollateral(Market calldata market, uint256 amount) external {
         Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
@@ -193,7 +188,7 @@ contract Blue {
         market.collateralAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
 
-    function withdrawCollateral(Market calldata market, uint amount) external {
+    function withdrawCollateral(Market calldata market, uint256 amount) external {
         Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
@@ -209,7 +204,7 @@ contract Blue {
 
     // Liquidation.
 
-    function liquidate(Market calldata market, address borrower, uint seized) external {
+    function liquidate(Market calldata market, address borrower, uint256 seized) external {
         Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(seized != 0, "zero amount");
@@ -219,11 +214,11 @@ contract Blue {
         require(!isHealthy(market, id, borrower), "cannot liquidate a healthy position");
 
         // The liquidation incentive is 1 + ALPHA * (1 / LLTV - 1).
-        uint incentive = WAD + ALPHA.wadMulDown(WAD.wadDivDown(market.lltv) - WAD);
-        uint repaid = seized.wadMulUp(market.collateralOracle.price()).wadDivUp(incentive).wadDivUp(
+        uint256 incentive = WAD + ALPHA.wadMulDown(WAD.wadDivDown(market.lltv) - WAD);
+        uint256 repaid = seized.wadMulUp(market.collateralOracle.price()).wadDivUp(incentive).wadDivUp(
             market.borrowableOracle.price()
         );
-        uint repaidShares = repaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
+        uint256 repaidShares = repaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
 
         borrowShare[id][borrower] -= repaidShares;
         totalBorrowShares[id] -= repaidShares;
@@ -233,7 +228,7 @@ contract Blue {
 
         // Realize the bad debt if needed.
         if (collateral[id][borrower] == 0) {
-            totalSupply[id] -= borrowShare[id][borrower].toAssetsDown(totalBorrow[id], totalBorrowShares[id]);
+            totalSupply[id] -= borrowShare[id][borrower].toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
             totalBorrowShares[id] -= borrowShare[id][borrower];
             borrowShare[id][borrower] = 0;
         }
@@ -245,12 +240,12 @@ contract Blue {
     // Interests management.
 
     function accrueInterests(Market calldata market, Id id) private {
-        uint marketTotalSupply = totalSupply[id];
+        uint256 marketTotalSupply = totalSupply[id];
 
         if (marketTotalSupply != 0) {
-            uint marketTotalBorrow = totalBorrow[id];
-            uint borrowRate = market.irm.borrowRate(market);
-            uint accruedInterests = marketTotalBorrow.wadMulDown(borrowRate * (block.timestamp - lastUpdate[id]));
+            uint256 marketTotalBorrow = totalBorrow[id];
+            uint256 borrowRate = market.irm.borrowRate(market);
+            uint256 accruedInterests = marketTotalBorrow.wadMulDown(borrowRate * (block.timestamp - lastUpdate[id]));
             totalSupply[id] = marketTotalSupply + accruedInterests;
             totalBorrow[id] = marketTotalBorrow + accruedInterests;
         }
@@ -261,13 +256,13 @@ contract Blue {
     // Health check.
 
     function isHealthy(Market calldata market, Id id, address user) private view returns (bool) {
-        uint borrowShares = borrowShare[id][user];
+        uint256 borrowShares = borrowShare[id][user];
         if (borrowShares == 0) return true;
 
         // totalBorrowShares[id] > 0 when borrowShares > 0.
-        uint borrowValue =
+        uint256 borrowValue =
             borrowShares.toAssetsUp(totalBorrow[id], totalBorrowShares[id]).wadMulUp(market.borrowableOracle.price());
-        uint collateralValue = collateral[id][user].wadMulDown(market.collateralOracle.price());
+        uint256 collateralValue = collateral[id][user].wadMulDown(market.collateralOracle.price());
         return collateralValue.wadMulDown(market.lltv) >= borrowValue;
     }
 }
