@@ -63,7 +63,7 @@ contract Blue {
 
     // Immutables.
 
-    bytes32 immutable domainSeparator;
+    bytes32 public immutable domainSeparator;
 
     // Storage.
 
