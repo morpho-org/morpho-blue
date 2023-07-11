@@ -120,7 +120,7 @@ contract Blue {
 
         totalSupply[id] += amount;
 
-        market.borrowableAsset.safeTransferFrom(onBehalf, address(this), amount);
+        market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
 
     function withdraw(Market calldata market, uint256 amount, address onBehalf) external {
@@ -182,7 +182,7 @@ contract Blue {
 
         totalBorrow[id] -= amount;
 
-        market.borrowableAsset.safeTransferFrom(onBehalf, address(this), amount);
+        market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
 
     // Collateral management.
@@ -197,7 +197,7 @@ contract Blue {
 
         collateral[id][onBehalf] += amount;
 
-        market.collateralAsset.safeTransferFrom(onBehalf, address(this), amount);
+        market.collateralAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
 
     function withdrawCollateral(Market calldata market, uint256 amount, address onBehalf) external {
