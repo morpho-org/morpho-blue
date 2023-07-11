@@ -440,6 +440,7 @@ contract BlueTest is Test {
         uint256 expectedBadDebt = amountBorrowed - expectedRepaid;
         assertGt(expectedBadDebt, 0, "bad debt");
         assertApproxEqAbs(supplyBalance(address(this)), amountLent - expectedBadDebt, 10, "lender supply balance");
+        assertApproxEqAbs(blue.totalBorrow(id), 0, 10, "total borrow");
     }
 
     function testTwoUsersSupply(uint256 firstAmount, uint256 secondAmount) public {
