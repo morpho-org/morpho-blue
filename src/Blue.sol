@@ -235,9 +235,7 @@ contract Blue {
 
         // Realize the bad debt if needed.
         if (collateral[id][borrower] == 0) {
-            uint256 badDebt = borrowShare[id][borrower].wMul(totalBorrow[id]).wDiv(totalBorrowShares[id]);
-            totalSupply[id] -= badDebt;
-            totalBorrow[id] -= badDebt;
+            totalSupply[id] -= borrowShare[id][borrower].wMul(totalBorrow[id]).wDiv(totalBorrowShares[id]);
             totalBorrowShares[id] -= borrowShare[id][borrower];
             borrowShare[id][borrower] = 0;
         }
