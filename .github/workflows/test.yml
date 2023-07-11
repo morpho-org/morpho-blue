@@ -1,21 +1,15 @@
-name: test
+name: Foundry CI
 
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
   pull_request:
 
-env:
-  FOUNDRY_PROFILE: ci
-
 jobs:
-  check:
+  test:
     strategy:
       fail-fast: true
 
-    name: Foundry project
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -24,16 +18,11 @@ jobs:
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: nightly
-
-      - name: Run Forge build
-        run: |
-          forge --version
-          forge build --sizes
-        id: build
 
       - name: Run Forge tests
-        run: |
-          forge test -vvv
-        id: test
+        run: forge test -vvv
+        env:
+          FOUNDRY_FUZZ_RUNS: 100000 
+          FOUNDRY_FUZZ_MAX_TEST_REJECTS: 500000 
+          FOUNDRY_INVARIANT_RUNS: 1000 
+          FOUNDRY_INVARIANT_DEPTH: 100
