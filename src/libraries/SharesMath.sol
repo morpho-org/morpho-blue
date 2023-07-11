@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
 
 /// @notice Shares management library.
-/// @dev This implementation mitigates share price manipulations, using OpenZeppelin's virtual shares: https://docs.openzeppelin.com/contracts/4.x/erc4626#inflation-attack.
+/// @dev This implementation mitigates share price manipulations, using OpenZeppelin's method of virtual shares: https://docs.openzeppelin.com/contracts/4.x/erc4626#inflation-attack.
 library SharesMath {
     using FixedPointMathLib for uint256;
 
