@@ -97,7 +97,7 @@ contract Blue {
         require(isLltvEnabled[market.lltv], "LLTV not enabled");
         require(lastUpdate[id] == 0, "market already exists");
 
-        accrueInterests(market, id);
+        _accrueInterests(market, id);
     }
 
     // Supply management.
@@ -107,7 +107,7 @@ contract Blue {
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
 
-        accrueInterests(market, id);
+        _accrueInterests(market, id);
 
         uint256 shares = amount.toSharesDown(totalSupply[id], totalSupplyShares[id]);
         supplyShare[id][msg.sender] += shares;
@@ -123,7 +123,7 @@ contract Blue {
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
 
-        accrueInterests(market, id);
+        _accrueInterests(market, id);
 
         uint256 shares = amount.toSharesUp(totalSupply[id], totalSupplyShares[id]);
         supplyShare[id][msg.sender] -= shares;
@@ -143,7 +143,7 @@ contract Blue {
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
 
-        accrueInterests(market, id);
+        _accrueInterests(market, id);
 
         uint256 shares = amount.toSharesUp(totalBorrow[id], totalBorrowShares[id]);
         borrowShare[id][msg.sender] += shares;
@@ -151,7 +151,10 @@ contract Blue {
 
         totalBorrow[id] += amount;
 
-        require(isHealthy(market, id, msg.sender), "not enough collateral");
+        uint256 collateralPrice = market.collateralOracle.price();
+        uint256 borrowablePrice = market.borrowableOracle.price();
+
+        require(_isHealthy(id, msg.sender, market.lltv, collateralPrice, borrowablePrice), "not enough collateral");
         require(totalBorrow[id] <= totalSupply[id], "not enough liquidity");
 
         market.borrowableAsset.safeTransfer(msg.sender, amount);
@@ -162,7 +165,7 @@ contract Blue {
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
 
-        accrueInterests(market, id);
+        _accrueInterests(market, id);
 
         uint256 shares = amount.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
         borrowShare[id][msg.sender] -= shares;
@@ -193,11 +196,14 @@ contract Blue {
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
 
-        accrueInterests(market, id);
+        _accrueInterests(market, id);
 
         collateral[id][msg.sender] -= amount;
 
-        require(isHealthy(market, id, msg.sender), "not enough collateral");
+        uint256 collateralPrice = market.collateralOracle.price();
+        uint256 borrowablePrice = market.borrowableOracle.price();
+
+        require(_isHealthy(id, msg.sender, market.lltv, collateralPrice, borrowablePrice), "not enough collateral");
 
         market.collateralAsset.safeTransfer(msg.sender, amount);
     }
@@ -209,15 +215,19 @@ contract Blue {
         require(lastUpdate[id] != 0, "unknown market");
         require(seized != 0, "zero amount");
 
-        accrueInterests(market, id);
+        _accrueInterests(market, id);
 
-        require(!isHealthy(market, id, borrower), "cannot liquidate a healthy position");
+        uint256 collateralPrice = market.collateralOracle.price();
+        uint256 borrowablePrice = market.borrowableOracle.price();
+
+        require(
+            !_isHealthy(id, borrower, market.lltv, collateralPrice, borrowablePrice),
+            "cannot liquidate a healthy position"
+        );
 
         // The liquidation incentive is 1 + ALPHA * (1 / LLTV - 1).
         uint256 incentive = WAD + ALPHA.mulWadDown(WAD.divWadDown(market.lltv) - WAD);
-        uint256 repaid = seized.mulWadUp(market.collateralOracle.price()).divWadUp(incentive).divWadUp(
-            market.borrowableOracle.price()
-        );
+        uint256 repaid = seized.mulWadUp(collateralPrice).divWadUp(incentive).divWadUp(borrowablePrice);
         uint256 repaidShares = repaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
 
         borrowShare[id][borrower] -= repaidShares;
@@ -239,7 +249,7 @@ contract Blue {
 
     // Interests management.
 
-    function accrueInterests(Market calldata market, Id id) private {
+    function _accrueInterests(Market calldata market, Id id) private {
         uint256 marketTotalBorrow = totalBorrow[id];
 
         if (marketTotalBorrow != 0) {
@@ -254,14 +264,17 @@ contract Blue {
 
     // Health check.
 
-    function isHealthy(Market calldata market, Id id, address user) private view returns (bool) {
+    function _isHealthy(Id id, address user, uint256 lltv, uint256 collateralPrice, uint256 borrowablePrice)
+        private
+        view
+        returns (bool)
+    {
         uint256 borrowShares = borrowShare[id][user];
         if (borrowShares == 0) return true;
 
         // totalBorrowShares[id] > 0 when borrowShares > 0.
-        uint256 borrowValue =
-            borrowShares.toAssetsUp(totalBorrow[id], totalBorrowShares[id]).mulWadUp(market.borrowableOracle.price());
-        uint256 collateralValue = collateral[id][user].mulWadDown(market.collateralOracle.price());
-        return collateralValue.mulWadDown(market.lltv) >= borrowValue;
+        uint256 borrowValue = borrowShares.toAssetsUp(totalBorrow[id], totalBorrowShares[id]).mulWadUp(borrowablePrice);
+        uint256 collateralValue = collateral[id][user].mulWadDown(collateralPrice);
+        return collateralValue.mulWadDown(lltv) >= borrowValue;
     }
 }
