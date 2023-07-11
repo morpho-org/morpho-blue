@@ -91,7 +91,7 @@ contract Blue {
     mapping(uint256 => bool) public isLltvEnabled;
     // User's managers.
     mapping(address => mapping(address => bool)) public approval;
-    // User's nonces.
+    // User's nonces. Used to prevent replay attacks with EIP-712 signatures.
     mapping(address => uint256) public userNonce;
 
     // Constructor.
@@ -311,7 +311,7 @@ contract Blue {
         bytes32 digest = keccak256(abi.encodePacked(EIP712_MSG_PREFIX, domainSeparator, structHash));
         address signatory = ecrecover(digest, signature.v, signature.r, signature.s);
 
-        require((signatory != address(0) && delegator == signatory), "invalid signatory");
+        require(signatory != address(0) && delegator == signatory, "invalid signatory");
         require(block.timestamp < deadline, "signature expired");
 
         require(nonce == userNonce[signatory]++, "invalid nonce");
