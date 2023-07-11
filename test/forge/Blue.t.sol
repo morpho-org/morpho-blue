@@ -519,6 +519,42 @@ contract BlueTest is Test {
         vm.expectRevert(stdError.arithmeticError);
         blue.withdrawCollateral(market, amount, address(this));
     }
+
+    function testSetApproval(address manager, bool isAllowed) public {
+        blue.setApproval(manager, isAllowed);
+        assertEq(blue.approval(address(this), manager), isAllowed);
+    }
+
+    function testNotApproved(address attacker) public {
+        vm.startPrank(attacker);
+
+        vm.expectRevert("not approved");
+        blue.withdraw(market, 1, address(this));
+        vm.expectRevert("not approved");
+        blue.withdrawCollateral(market, 1, address(this));
+        vm.expectRevert("not approved");
+        blue.borrow(market, 1, address(this));
+
+        vm.stopPrank();
+    }
+
+    function testApproved(address manager) public {
+        borrowableAsset.setBalance(address(this), 100 ether);
+        collateralAsset.setBalance(address(this), 100 ether);
+
+        blue.supply(market, 100 ether);
+        blue.supplyCollateral(market, 100 ether);
+
+        blue.setApproval(manager, true);
+
+        vm.startPrank(manager);
+
+        blue.withdraw(market, 1 ether, address(this));
+        blue.withdrawCollateral(market, 1 ether, address(this));
+        blue.borrow(market, 1 ether, address(this));
+
+        vm.stopPrank();
+    }
 }
 
 function neq(Market memory a, Market memory b) pure returns (bool) {
