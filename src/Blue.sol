@@ -228,7 +228,9 @@ contract Blue {
 
         // Realize the bad debt if needed.
         if (collateral[id][borrower] == 0) {
-            totalSupply[id] -= borrowShare[id][borrower].toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
+            uint256 badDebt = borrowShare[id][borrower].toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
+            totalSupply[id] -= badDebt;
+            totalBorrow[id] -= badDebt;
             totalBorrowShares[id] -= borrowShare[id][borrower];
             borrowShare[id][borrower] = 0;
         }
