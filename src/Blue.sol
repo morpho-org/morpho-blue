@@ -102,7 +102,7 @@ contract Blue {
 
     // Supply management.
 
-    function supply(Market calldata market, uint256 amount) external {
+    function supply(Market calldata market, uint256 amount, address onBehalf) external {
         Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
@@ -110,17 +110,17 @@ contract Blue {
         accrueInterests(market, id);
 
         if (totalSupply[id] == 0) {
-            supplyShare[id][msg.sender] = WAD;
+            supplyShare[id][onBehalf] = WAD;
             totalSupplyShares[id] = WAD;
         } else {
             uint256 shares = amount.wMul(totalSupplyShares[id]).wDiv(totalSupply[id]);
-            supplyShare[id][msg.sender] += shares;
+            supplyShare[id][onBehalf] += shares;
             totalSupplyShares[id] += shares;
         }
 
         totalSupply[id] += amount;
 
-        market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
+        market.borrowableAsset.safeTransferFrom(onBehalf, address(this), amount);
     }
 
     function withdraw(Market calldata market, uint256 amount, address onBehalf) external {
@@ -169,7 +169,7 @@ contract Blue {
         market.borrowableAsset.safeTransfer(msg.sender, amount);
     }
 
-    function repay(Market calldata market, uint256 amount) external {
+    function repay(Market calldata market, uint256 amount, address onBehalf) external {
         Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
@@ -177,27 +177,27 @@ contract Blue {
         accrueInterests(market, id);
 
         uint256 shares = amount.wMul(totalBorrowShares[id]).wDiv(totalBorrow[id]);
-        borrowShare[id][msg.sender] -= shares;
+        borrowShare[id][onBehalf] -= shares;
         totalBorrowShares[id] -= shares;
 
         totalBorrow[id] -= amount;
 
-        market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
+        market.borrowableAsset.safeTransferFrom(onBehalf, address(this), amount);
     }
 
     // Collateral management.
 
     /// @dev Don't accrue interests because it's not required and it saves gas.
-    function supplyCollateral(Market calldata market, uint256 amount) external {
+    function supplyCollateral(Market calldata market, uint256 amount, address onBehalf) external {
         Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
 
         // Don't accrue interests because it's not required and it saves gas.
 
-        collateral[id][msg.sender] += amount;
+        collateral[id][onBehalf] += amount;
 
-        market.collateralAsset.safeTransferFrom(msg.sender, address(this), amount);
+        market.collateralAsset.safeTransferFrom(onBehalf, address(this), amount);
     }
 
     function withdrawCollateral(Market calldata market, uint256 amount, address onBehalf) external {
