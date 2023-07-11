@@ -526,6 +526,8 @@ contract BlueTest is Test {
     }
 
     function testNotApproved(address attacker) public {
+        vm.assume(attacker != address(this));
+
         vm.startPrank(attacker);
 
         vm.expectRevert("not approved");
