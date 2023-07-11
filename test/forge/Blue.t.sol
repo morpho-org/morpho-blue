@@ -4,8 +4,6 @@ pragma solidity 0.8.20;
 import {IERC20} from "src/interfaces/IERC20.sol";
 import {IOracle} from "src/interfaces/IOracle.sol";
 
-import {WadRayMath} from "morpho-utils/math/WadRayMath.sol";
-
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
@@ -15,7 +13,7 @@ import {OracleMock as Oracle} from "src/mocks/OracleMock.sol";
 import {IrmMock as Irm} from "src/mocks/IrmMock.sol";
 
 contract BlueTest is Test {
-    using WadRayMath for uint256;
+    using FixedPointMathLib for uint256;
 
     address private constant BORROWER = address(1234);
     address private constant LIQUIDATOR = address(5678);
@@ -78,8 +76,8 @@ contract BlueTest is Test {
     // To move to a test utils file later.
 
     function netWorth(address user) internal view returns (uint256) {
-        uint256 collateralAssetValue = collateralAsset.balanceOf(user).wadMulDown(collateralOracle.price());
-        uint256 borrowableAssetValue = borrowableAsset.balanceOf(user).wadMulDown(borrowableOracle.price());
+        uint256 collateralAssetValue = collateralAsset.balanceOf(user).mulWadDown(collateralOracle.price());
+        uint256 borrowableAssetValue = borrowableAsset.balanceOf(user).mulWadDown(borrowableOracle.price());
         return collateralAssetValue + borrowableAssetValue;
     }
 
@@ -89,7 +87,7 @@ contract BlueTest is Test {
 
         uint256 totalShares = blue.totalSupplyShares(id);
         uint256 totalSupply = blue.totalSupply(id);
-        return supplyShares.wadMulDown(totalSupply).wadDivDown(totalShares);
+        return supplyShares.divWadDown(totalShares).mulWadDown(totalSupply);
     }
 
     function borrowBalance(address user) internal view returns (uint256) {
@@ -98,7 +96,7 @@ contract BlueTest is Test {
 
         uint256 totalShares = blue.totalBorrowShares(id);
         uint256 totalBorrow = blue.totalBorrow(id);
-        return borrowerShares.wadMulUp(totalBorrow).wadDivUp(totalShares);
+        return borrowerShares.divWadUp(totalShares).mulWadUp(totalBorrow);
     }
 
     // Invariants
@@ -209,7 +207,7 @@ contract BlueTest is Test {
         borrowableAsset.setBalance(address(this), amount);
         blue.supply(market, amount);
 
-        assertEq(blue.supplyShare(id, address(this)), 1e18, "supply share");
+        assertEq(blue.supplyShare(id, address(this)), amount * SharesMath.VIRTUAL_SHARES, "supply share");
         assertEq(borrowableAsset.balanceOf(address(this)), 0, "lender balance");
         assertEq(borrowableAsset.balanceOf(address(blue)), amount, "blue balance");
     }
@@ -236,7 +234,7 @@ contract BlueTest is Test {
         vm.prank(BORROWER);
         blue.borrow(market, amountBorrowed);
 
-        assertEq(blue.borrowShare(id, BORROWER), 1e18, "borrow share");
+        assertEq(blue.borrowShare(id, BORROWER), amountBorrowed * SharesMath.VIRTUAL_SHARES, "borrow share");
         assertEq(borrowableAsset.balanceOf(BORROWER), amountBorrowed, "BORROWER balance");
         assertEq(borrowableAsset.balanceOf(address(blue)), amountLent - amountBorrowed, "blue balance");
     }
@@ -266,7 +264,10 @@ contract BlueTest is Test {
         blue.withdraw(market, amountWithdrawn);
 
         assertApproxEqAbs(
-            blue.supplyShare(id, address(this)), (amountLent - amountWithdrawn) * 1e18 / amountLent, 1e3, "supply share"
+            blue.supplyShare(id, address(this)),
+            (amountLent - amountWithdrawn) * SharesMath.VIRTUAL_SHARES,
+            100,
+            "supply share"
         );
         assertEq(borrowableAsset.balanceOf(address(this)), amountWithdrawn, "this balance");
         assertEq(
@@ -296,9 +297,9 @@ contract BlueTest is Test {
         vm.prank(BORROWER);
         blue.supplyCollateral(market, amountCollateral);
 
-        uint256 collateralValue = amountCollateral.wadMulDown(priceCollateral);
-        uint256 borrowValue = amountBorrowed.wadMulUp(priceBorrowable);
-        if (borrowValue == 0 || (collateralValue > 0 && borrowValue <= collateralValue.wadMulDown(LLTV))) {
+        uint256 collateralValue = amountCollateral.mulWadDown(priceCollateral);
+        uint256 borrowValue = amountBorrowed.mulWadUp(priceBorrowable);
+        if (borrowValue == 0 || (collateralValue > 0 && borrowValue <= collateralValue.mulWadDown(LLTV))) {
             vm.prank(BORROWER);
             blue.borrow(market, amountBorrowed);
         } else {
@@ -322,7 +323,10 @@ contract BlueTest is Test {
         vm.stopPrank();
 
         assertApproxEqAbs(
-            blue.borrowShare(id, BORROWER), (amountBorrowed - amountRepaid) * 1e18 / amountBorrowed, 1e3, "borrow share"
+            blue.borrowShare(id, BORROWER),
+            (amountBorrowed - amountRepaid) * SharesMath.VIRTUAL_SHARES,
+            100,
+            "borrow share"
         );
         assertEq(borrowableAsset.balanceOf(BORROWER), amountBorrowed - amountRepaid, "BORROWER balance");
         assertEq(borrowableAsset.balanceOf(address(blue)), amountLent - amountBorrowed + amountRepaid, "blue balance");
@@ -364,10 +368,10 @@ contract BlueTest is Test {
         amountLent = bound(amountLent, 1000, 2 ** 64);
 
         uint256 amountCollateral = amountLent;
-        uint256 borrowingPower = amountCollateral.wadMulDown(LLTV);
-        uint256 amountBorrowed = borrowingPower.wadMulDown(0.8e18);
-        uint256 toSeize = amountCollateral.wadMulDown(LLTV);
-        uint256 incentive = WAD + ALPHA.wadMulDown(WAD.wadDivDown(LLTV) - WAD);
+        uint256 borrowingPower = amountCollateral.mulWadDown(LLTV);
+        uint256 amountBorrowed = borrowingPower.mulWadDown(0.8e18);
+        uint256 toSeize = amountCollateral.mulWadDown(LLTV);
+        uint256 incentive = WAD + ALPHA.mulWadDown(WAD.divWadDown(LLTV) - WAD);
 
         borrowableAsset.setBalance(address(this), amountLent);
         collateralAsset.setBalance(BORROWER, amountCollateral);
@@ -394,9 +398,9 @@ contract BlueTest is Test {
         uint256 liquidatorNetWorthAfter = netWorth(LIQUIDATOR);
 
         uint256 expectedRepaid =
-            toSeize.wadMulUp(collateralOracle.price()).wadDivUp(incentive).wadDivUp(borrowableOracle.price());
-        uint256 expectedNetWorthAfter = liquidatorNetWorthBefore + toSeize.wadMulDown(collateralOracle.price())
-            - expectedRepaid.wadMulDown(borrowableOracle.price());
+            toSeize.mulWadUp(collateralOracle.price()).divWadUp(incentive).divWadUp(borrowableOracle.price());
+        uint256 expectedNetWorthAfter = liquidatorNetWorthBefore + toSeize.mulWadDown(collateralOracle.price())
+            - expectedRepaid.mulWadDown(borrowableOracle.price());
         assertEq(liquidatorNetWorthAfter, expectedNetWorthAfter, "LIQUIDATOR net worth");
         assertApproxEqAbs(borrowBalance(BORROWER), amountBorrowed - expectedRepaid, 100, "BORROWER balance");
         assertEq(blue.collateral(id, BORROWER), amountCollateral - toSeize, "BORROWER collateral");
@@ -407,10 +411,10 @@ contract BlueTest is Test {
         amountLent = bound(amountLent, 1000, 2 ** 64);
 
         uint256 amountCollateral = amountLent;
-        uint256 borrowingPower = amountCollateral.wadMulDown(LLTV);
-        uint256 amountBorrowed = borrowingPower.wadMulDown(0.8e18);
+        uint256 borrowingPower = amountCollateral.mulWadDown(LLTV);
+        uint256 amountBorrowed = borrowingPower.mulWadDown(0.8e18);
         uint256 toSeize = amountCollateral;
-        uint256 incentive = WAD + ALPHA.wadMulDown(WAD.wadDivDown(market.lltv) - WAD);
+        uint256 incentive = WAD + ALPHA.mulWadDown(WAD.divWadDown(market.lltv) - WAD);
 
         borrowableAsset.setBalance(address(this), amountLent);
         collateralAsset.setBalance(BORROWER, amountCollateral);
@@ -437,9 +441,9 @@ contract BlueTest is Test {
         uint256 liquidatorNetWorthAfter = netWorth(LIQUIDATOR);
 
         uint256 expectedRepaid =
-            toSeize.wadMulUp(collateralOracle.price()).wadDivUp(incentive).wadDivUp(borrowableOracle.price());
-        uint256 expectedNetWorthAfter = liquidatorNetWorthBefore + toSeize.wadMulDown(collateralOracle.price())
-            - expectedRepaid.wadMulDown(borrowableOracle.price());
+            toSeize.mulWadUp(collateralOracle.price()).divWadUp(incentive).divWadUp(borrowableOracle.price());
+        uint256 expectedNetWorthAfter = liquidatorNetWorthBefore + toSeize.mulWadDown(collateralOracle.price())
+            - expectedRepaid.mulWadDown(borrowableOracle.price());
         assertEq(liquidatorNetWorthAfter, expectedNetWorthAfter, "LIQUIDATOR net worth");
         assertEq(borrowBalance(BORROWER), 0, "BORROWER balance");
         assertEq(blue.collateral(id, BORROWER), 0, "BORROWER collateral");
@@ -460,9 +464,13 @@ contract BlueTest is Test {
         blue.supply(market, secondAmount);
 
         assertApproxEqAbs(supplyBalance(address(this)), firstAmount, 100, "same balance first user");
-        assertEq(blue.supplyShare(id, address(this)), 1e18, "expected shares first user");
+        assertEq(
+            blue.supplyShare(id, address(this)), firstAmount * SharesMath.VIRTUAL_SHARES, "expected shares first user"
+        );
         assertApproxEqAbs(supplyBalance(BORROWER), secondAmount, 100, "same balance second user");
-        assertEq(blue.supplyShare(id, BORROWER), secondAmount * 1e18 / firstAmount, "expected shares second user");
+        assertApproxEqAbs(
+            blue.supplyShare(id, BORROWER), secondAmount * SharesMath.VIRTUAL_SHARES, 100, "expected shares second user"
+        );
     }
 
     function testUnknownMarket(Market memory marketFuzz) public {
@@ -514,12 +522,12 @@ contract BlueTest is Test {
     }
 
     function testEmptyMarket(uint256 amount) public {
-        vm.assume(amount > 0);
+        amount = bound(amount, 1, type(uint256).max / SharesMath.VIRTUAL_SHARES);
 
-        vm.expectRevert();
+        vm.expectRevert(stdError.arithmeticError);
         blue.withdraw(market, amount);
 
-        vm.expectRevert();
+        vm.expectRevert(stdError.arithmeticError);
         blue.repay(market, amount);
 
         vm.expectRevert(stdError.arithmeticError);
