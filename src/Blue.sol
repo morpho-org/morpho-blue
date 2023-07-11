@@ -286,20 +286,20 @@ contract Blue {
 
     function _accountRepay(Id id, uint256 amount, address borrower)
         private
-        returns (uint256 newShares, uint256 newTotalBorrow, uint256 newTotalBorrowShares)
+        returns (uint256 userShares, uint256 marketTotalBorrow, uint256 marketTotalBorrowShares)
     {
-        newShares = borrowShare[id][borrower];
-        newTotalBorrow = totalBorrow[id];
-        newTotalBorrowShares = totalBorrowShares[id];
+        userShares = borrowShare[id][borrower];
+        marketTotalBorrow = totalBorrow[id];
+        marketTotalBorrowShares = totalBorrowShares[id];
 
-        uint256 shares = amount.toSharesDown(newTotalBorrow, newTotalBorrowShares);
+        uint256 shares = amount.toSharesDown(marketTotalBorrow, marketTotalBorrowShares);
 
-        newShares -= shares;
-        newTotalBorrow -= shares;
-        newTotalBorrowShares -= shares;
+        userShares -= shares;
+        marketTotalBorrow -= shares;
+        marketTotalBorrowShares -= shares;
 
-        borrowShare[id][borrower] = newShares;
-        totalBorrowShares[id] = newTotalBorrowShares;
-        totalBorrow[id] = newTotalBorrow;
+        borrowShare[id][borrower] = userShares;
+        totalBorrowShares[id] = marketTotalBorrowShares;
+        totalBorrow[id] = marketTotalBorrow;
     }
 }
