@@ -207,7 +207,7 @@ contract BlueTest is Test {
         borrowableAsset.setBalance(address(this), amount);
         blue.supply(market, amount);
 
-        assertEq(blue.supplyShare(id, address(this)), amount, "supply share");
+        assertEq(blue.supplyShare(id, address(this)), amount * SharesMath.VIRTUAL_SHARES, "supply share");
         assertEq(borrowableAsset.balanceOf(address(this)), 0, "lender balance");
         assertEq(borrowableAsset.balanceOf(address(blue)), amount, "blue balance");
     }
@@ -234,7 +234,7 @@ contract BlueTest is Test {
         vm.prank(BORROWER);
         blue.borrow(market, amountBorrowed);
 
-        assertEq(blue.borrowShare(id, BORROWER), amountBorrowed, "borrow share");
+        assertEq(blue.borrowShare(id, BORROWER), amountBorrowed * SharesMath.VIRTUAL_SHARES, "borrow share");
         assertEq(borrowableAsset.balanceOf(BORROWER), amountBorrowed, "BORROWER balance");
         assertEq(borrowableAsset.balanceOf(address(blue)), amountLent - amountBorrowed, "blue balance");
     }
@@ -263,7 +263,12 @@ contract BlueTest is Test {
 
         blue.withdraw(market, amountWithdrawn);
 
-        assertApproxEqAbs(blue.supplyShare(id, address(this)), amountLent - amountWithdrawn, 100, "supply share");
+        assertApproxEqAbs(
+            blue.supplyShare(id, address(this)),
+            (amountLent - amountWithdrawn) * SharesMath.VIRTUAL_SHARES,
+            100,
+            "supply share"
+        );
         assertEq(borrowableAsset.balanceOf(address(this)), amountWithdrawn, "this balance");
         assertEq(
             borrowableAsset.balanceOf(address(blue)), amountLent - amountBorrowed - amountWithdrawn, "blue balance"
@@ -317,7 +322,12 @@ contract BlueTest is Test {
         blue.repay(market, amountRepaid);
         vm.stopPrank();
 
-        assertApproxEqAbs(blue.borrowShare(id, BORROWER), amountBorrowed - amountRepaid, 100, "borrow share");
+        assertApproxEqAbs(
+            blue.borrowShare(id, BORROWER),
+            (amountBorrowed - amountRepaid) * SharesMath.VIRTUAL_SHARES,
+            100,
+            "borrow share"
+        );
         assertEq(borrowableAsset.balanceOf(BORROWER), amountBorrowed - amountRepaid, "BORROWER balance");
         assertEq(borrowableAsset.balanceOf(address(blue)), amountLent - amountBorrowed + amountRepaid, "blue balance");
     }
@@ -454,9 +464,13 @@ contract BlueTest is Test {
         blue.supply(market, secondAmount);
 
         assertApproxEqAbs(supplyBalance(address(this)), firstAmount, 100, "same balance first user");
-        assertEq(blue.supplyShare(id, address(this)), firstAmount, "expected shares first user");
+        assertEq(
+            blue.supplyShare(id, address(this)), firstAmount * SharesMath.VIRTUAL_SHARES, "expected shares first user"
+        );
         assertApproxEqAbs(supplyBalance(BORROWER), secondAmount, 100, "same balance second user");
-        assertApproxEqAbs(blue.supplyShare(id, BORROWER), secondAmount, 100, "expected shares second user");
+        assertApproxEqAbs(
+            blue.supplyShare(id, BORROWER), secondAmount * SharesMath.VIRTUAL_SHARES, 100, "expected shares second user"
+        );
     }
 
     function testUnknownMarket(Market memory marketFuzz) public {
@@ -508,7 +522,7 @@ contract BlueTest is Test {
     }
 
     function testEmptyMarket(uint256 amount) public {
-        vm.assume(amount > 0);
+        amount = bound(amount, 1, type(uint256).max / SharesMath.VIRTUAL_SHARES);
 
         vm.expectRevert(stdError.arithmeticError);
         blue.withdraw(market, amount);

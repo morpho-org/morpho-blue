@@ -8,7 +8,7 @@ import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
 library SharesMath {
     using FixedPointMathLib for uint256;
 
-    uint256 internal constant VIRTUAL_SHARES = 10 ** 0;
+    uint256 internal constant VIRTUAL_SHARES = 1e18;
 
     /// @dev Calculates the value of the given assets quoted in shares, rounding down.
     /// Note: provided that assets <= totalAssets, this function satisfies the invariant: shares <= totalShares.
