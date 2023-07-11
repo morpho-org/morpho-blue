@@ -295,8 +295,8 @@ contract Blue {
         uint256 shares = amount.toSharesDown(marketTotalBorrow, marketTotalBorrowShares);
 
         userShares -= shares;
-        marketTotalBorrow -= shares;
         marketTotalBorrowShares -= shares;
+        marketTotalBorrow -= amount;
 
         borrowShare[id][borrower] = userShares;
         totalBorrowShares[id] = marketTotalBorrowShares;

@@ -70,7 +70,6 @@ describe("Blue", () => {
     borrowableOracle = await OracleMockFactory.deploy();
     collateralOracle = await OracleMockFactory.deploy();
 
-    await borrowableOracle.connect(admin).setPrice(BigNumber.WAD);
     await collateralOracle.connect(admin).setPrice(BigNumber.WAD);
 
     const BlueFactory = await hre.ethers.getContractFactory("Blue", admin);
