@@ -210,6 +210,18 @@ contract BlueTest is Test {
         assertEq(borrowableAsset.balanceOf(address(blue)), amount, "blue balance");
     }
 
+    function testSupplyOnBehalf(uint256 amount, address onBehalf) public {
+        vm.assume(onBehalf != address(this));
+        amount = bound(amount, 1, 2 ** 64);
+
+        borrowableAsset.setBalance(address(this), amount);
+        blue.supply(market, amount, onBehalf);
+
+        assertEq(blue.supplyShare(id, onBehalf), 1e18, "supply share");
+        assertEq(borrowableAsset.balanceOf(onBehalf), 0, "lender balance");
+        assertEq(borrowableAsset.balanceOf(address(blue)), amount, "blue balance");
+    }
+
     function testBorrow(uint256 amountLent, uint256 amountBorrowed) public {
         amountLent = bound(amountLent, 1, 2 ** 64);
         amountBorrowed = bound(amountBorrowed, 1, 2 ** 64);
@@ -324,6 +336,29 @@ contract BlueTest is Test {
         assertEq(borrowableAsset.balanceOf(address(blue)), amountLent - amountBorrowed + amountRepaid, "blue balance");
     }
 
+    function testRepayOnBehalf(uint256 amountLent, uint256 amountBorrowed, uint256 amountRepaid, address onBehalf)
+        public
+    {
+        vm.assume(onBehalf != address(this));
+        amountLent = bound(amountLent, 1, 2 ** 64);
+        amountBorrowed = bound(amountBorrowed, 1, amountLent);
+        amountRepaid = bound(amountRepaid, 1, amountBorrowed);
+
+        borrowableAsset.setBalance(address(this), amountLent + amountRepaid);
+        blue.supply(market, amountLent, address(this));
+
+        vm.prank(onBehalf);
+        blue.borrow(market, amountBorrowed, onBehalf);
+
+        blue.repay(market, amountRepaid, onBehalf);
+
+        assertApproxEqAbs(
+            blue.borrowShare(id, onBehalf), (amountBorrowed - amountRepaid) * 1e18 / amountBorrowed, 1e3, "borrow share"
+        );
+        assertEq(borrowableAsset.balanceOf(onBehalf), amountBorrowed, "onBehalf balance");
+        assertEq(borrowableAsset.balanceOf(address(blue)), amountLent - amountBorrowed + amountRepaid, "blue balance");
+    }
+
     function testSupplyCollateral(uint256 amount) public {
         amount = bound(amount, 1, 2 ** 64);
 
@@ -332,6 +367,18 @@ contract BlueTest is Test {
 
         assertEq(blue.collateral(id, address(this)), amount, "collateral");
         assertEq(collateralAsset.balanceOf(address(this)), 0, "this balance");
+        assertEq(collateralAsset.balanceOf(address(blue)), amount, "blue balance");
+    }
+
+    function testSupplyCollateral(uint256 amount, address onBehalf) public {
+        vm.assume(onBehalf != address(this));
+        amount = bound(amount, 1, 2 ** 64);
+
+        collateralAsset.setBalance(address(this), amount);
+        blue.supplyCollateral(market, amount, onBehalf);
+
+        assertEq(blue.collateral(id, onBehalf), amount, "collateral");
+        assertEq(collateralAsset.balanceOf(onBehalf), 0, "this balance");
         assertEq(collateralAsset.balanceOf(address(blue)), amount, "blue balance");
     }
 
