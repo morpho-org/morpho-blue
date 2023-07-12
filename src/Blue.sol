@@ -5,9 +5,12 @@ import {IIrm} from "src/interfaces/IIrm.sol";
 import {IERC20} from "src/interfaces/IERC20.sol";
 import {IOracle} from "src/interfaces/IOracle.sol";
 
+import {Events} from "./libraries/Events.sol";
 import {SharesMath} from "./libraries/SharesMath.sol";
 import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
+
+import {Owned} from "solmate/auth/Owned.sol";
 
 uint256 constant WAD = 1e18;
 uint256 constant ALPHA = 0.5e18;
@@ -58,7 +61,7 @@ function toId(Market calldata market) pure returns (Id) {
     return Id.wrap(keccak256(abi.encode(market)));
 }
 
-contract Blue {
+contract Blue is Owned {
     using SharesMath for uint256;
     using FixedPointMathLib for uint256;
     using SafeTransferLib for IERC20;
@@ -69,8 +72,6 @@ contract Blue {
 
     // Storage.
 
-    // Owner.
-    address public owner;
     // User' supply balances.
     mapping(Id => mapping(address => uint256)) public supplyShare;
     // User' borrow balances.
@@ -98,9 +99,7 @@ contract Blue {
 
     // Constructor.
 
-    constructor(address newOwner) {
-        owner = newOwner;
-
+    constructor(address newOwner) Owned(newOwner) {
         domainSeparator = keccak256(
             abi.encode(
                 EIP712_DOMAIN_TYPEHASH,
@@ -112,26 +111,19 @@ contract Blue {
         );
     }
 
-    // Modifiers.
-
-    modifier onlyOwner() {
-        require(msg.sender == owner, "not owner");
-        _;
-    }
-
     // Only owner functions.
-
-    function transferOwnership(address newOwner) external onlyOwner {
-        owner = newOwner;
-    }
 
     function enableIrm(IIrm irm) external onlyOwner {
         isIrmEnabled[irm] = true;
+
+        emit Events.IrmEnabled(address(irm));
     }
 
     function enableLltv(uint256 lltv) external onlyOwner {
         require(lltv < WAD, "LLTV too high");
         isLltvEnabled[lltv] = true;
+
+        emit Events.LltvEnabled(lltv);
     }
 
     // Markets management.
@@ -160,6 +152,8 @@ contract Blue {
 
         totalSupply[id] += amount;
 
+        emit Events.Supply(Id.unwrap(id), msg.sender, onBehalf, amount, shares);
+
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
 
@@ -176,6 +170,8 @@ contract Blue {
         totalSupplyShares[id] -= shares;
 
         totalSupply[id] -= amount;
+
+        emit Events.Withdraw(Id.unwrap(id), msg.sender, onBehalf, amount, shares);
 
         require(totalBorrow[id] <= totalSupply[id], "not enough liquidity");
 
@@ -198,6 +194,8 @@ contract Blue {
 
         totalBorrow[id] += amount;
 
+        emit Events.Borrow(Id.unwrap(id), msg.sender, onBehalf, amount, shares);
+
         require(isHealthy(market, id, onBehalf), "not enough collateral");
         require(totalBorrow[id] <= totalSupply[id], "not enough liquidity");
 
@@ -217,6 +215,8 @@ contract Blue {
 
         totalBorrow[id] -= amount;
 
+        emit Events.Repay(Id.unwrap(id), msg.sender, onBehalf, amount, shares);
+
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
 
@@ -232,6 +232,8 @@ contract Blue {
 
         collateral[id][onBehalf] += amount;
 
+        emit Events.CollateralSupply(Id.unwrap(id), msg.sender, onBehalf, amount);
+
         market.collateralAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
 
@@ -244,6 +246,8 @@ contract Blue {
         accrueInterests(market, id);
 
         collateral[id][onBehalf] -= amount;
+
+        emit Events.CollateralWithdraw(Id.unwrap(id), msg.sender, onBehalf, amount);
 
         require(isHealthy(market, id, onBehalf), "not enough collateral");
 
@@ -274,13 +278,18 @@ contract Blue {
 
         collateral[id][borrower] -= seized;
 
+        emit Events.Liquidation(Id.unwrap(id), msg.sender, borrower, repaid, repaidShares, seized);
+
         // Realize the bad debt if needed.
         if (collateral[id][borrower] == 0) {
-            uint256 badDebt = borrowShare[id][borrower].toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
+            uint256 badDebtShares = borrowShare[id][borrower];
+            uint256 badDebt = badDebtShares.toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
             totalSupply[id] -= badDebt;
             totalBorrow[id] -= badDebt;
-            totalBorrowShares[id] -= borrowShare[id][borrower];
+            totalBorrowShares[id] -= badDebtShares;
             borrowShare[id][borrower] = 0;
+
+            emit Events.BadDebtRealized(Id.unwrap(id), borrower, badDebt, badDebtShares);
         }
 
         market.collateralAsset.safeTransfer(msg.sender, seized);
@@ -320,6 +329,8 @@ contract Blue {
 
     function _setApproval(address delegator, address manager, bool isAllowed) internal {
         approval[delegator][manager] = isAllowed;
+
+        emit Events.Approval(msg.sender, delegator, manager, isAllowed);
     }
 
     function _isSenderApprovedFor(address user) internal view returns (bool) {
@@ -331,14 +342,17 @@ contract Blue {
     function accrueInterests(Market calldata market, Id id) private {
         uint256 marketTotalBorrow = totalBorrow[id];
 
+        uint256 accruedInterests;
         if (marketTotalBorrow != 0) {
             uint256 borrowRate = market.irm.borrowRate(market);
-            uint256 accruedInterests = marketTotalBorrow.mulWadDown(borrowRate * (block.timestamp - lastUpdate[id]));
+            accruedInterests = marketTotalBorrow.mulWadDown(borrowRate * (block.timestamp - lastUpdate[id]));
             totalBorrow[id] = marketTotalBorrow + accruedInterests;
             totalSupply[id] += accruedInterests;
         }
 
         lastUpdate[id] = block.timestamp;
+
+        emit Events.InterestsAccrued(Id.unwrap(id), accruedInterests);
     }
 
     // Health check.

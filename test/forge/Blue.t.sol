@@ -131,7 +131,7 @@ contract BlueTest is Test {
         Blue blue2 = new Blue(OWNER);
 
         vm.prank(attacker);
-        vm.expectRevert("not owner");
+        vm.expectRevert("UNAUTHORIZED");
         blue2.transferOwnership(newOwner);
     }
 
@@ -139,7 +139,7 @@ contract BlueTest is Test {
         vm.assume(attacker != blue.owner());
 
         vm.prank(attacker);
-        vm.expectRevert("not owner");
+        vm.expectRevert("UNAUTHORIZED");
         blue.enableIrm(newIrm);
     }
 
@@ -171,7 +171,7 @@ contract BlueTest is Test {
         vm.assume(attacker != OWNER);
 
         vm.prank(attacker);
-        vm.expectRevert("not owner");
+        vm.expectRevert("UNAUTHORIZED");
         blue.enableLltv(newLltv);
     }
 
