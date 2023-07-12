@@ -12,6 +12,26 @@ import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 uint256 constant WAD = 1e18;
 uint256 constant ALPHA = 0.5e18;
 
+/// @dev The prefix used for EIP-712 signature.
+string constant EIP712_MSG_PREFIX = "\x19\x01";
+
+/// @dev The name used for EIP-712 signature.
+string constant EIP712_NAME = "Blue";
+
+/// @dev The version used for EIP-712 signature.
+string constant EIP712_VERSION = "0";
+
+/// @dev The domain typehash used for the EIP-712 signature.
+bytes32 constant EIP712_DOMAIN_TYPEHASH =
+    keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
+
+/// @dev The typehash for approveManagerWithSig Authorization used for the EIP-712 signature.
+bytes32 constant EIP712_AUTHORIZATION_TYPEHASH =
+    keccak256("Authorization(address delegator,address manager,bool isAllowed,uint256 nonce,uint256 deadline)");
+
+/// @dev The highest valid value for s in an ECDSA signature pair (0 < s < secp256k1n ÷ 2 + 1).
+uint256 constant MAX_VALID_ECDSA_S = 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0;
+
 // Market id.
 type Id is bytes32;
 
@@ -25,6 +45,13 @@ struct Market {
     uint256 lltv;
 }
 
+/// @notice Contains the `v`, `r` and `s` parameters of an ECDSA signature.
+struct Signature {
+    uint8 v;
+    bytes32 r;
+    bytes32 s;
+}
+
 using {toId} for Market;
 
 function toId(Market calldata market) pure returns (Id) {
@@ -35,6 +62,10 @@ contract Blue {
     using SharesMath for uint256;
     using FixedPointMathLib for uint256;
     using SafeTransferLib for IERC20;
+
+    // Immutables.
+
+    bytes32 public immutable domainSeparator;
 
     // Storage.
 
@@ -60,11 +91,25 @@ contract Blue {
     mapping(IIrm => bool) public isIrmEnabled;
     // Enabled LLTVs.
     mapping(uint256 => bool) public isLltvEnabled;
+    // User's managers.
+    mapping(address => mapping(address => bool)) public approval;
+    // User's nonces. Used to prevent replay attacks with EIP-712 signatures.
+    mapping(address => uint256) public userNonce;
 
     // Constructor.
 
     constructor(address newOwner) {
         owner = newOwner;
+
+        domainSeparator = keccak256(
+            abi.encode(
+                EIP712_DOMAIN_TYPEHASH,
+                keccak256(bytes(EIP712_NAME)),
+                keccak256(bytes(EIP712_VERSION)),
+                block.chainid,
+                address(this)
+            )
+        );
     }
 
     // Modifiers.
@@ -118,15 +163,16 @@ contract Blue {
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
 
-    function withdraw(Market calldata market, uint256 amount) external {
+    function withdraw(Market calldata market, uint256 amount, address onBehalf) external {
         Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
+        require(_isSenderApprovedFor(onBehalf), "not approved");
 
         accrueInterests(market, id);
 
         uint256 shares = amount.toSharesUp(totalSupply[id], totalSupplyShares[id]);
-        supplyShare[id][msg.sender] -= shares;
+        supplyShare[id][onBehalf] -= shares;
         totalSupplyShares[id] -= shares;
 
         totalSupply[id] -= amount;
@@ -138,20 +184,21 @@ contract Blue {
 
     // Borrow management.
 
-    function borrow(Market calldata market, uint256 amount) external {
+    function borrow(Market calldata market, uint256 amount, address onBehalf) external {
         Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
+        require(_isSenderApprovedFor(onBehalf), "not approved");
 
         accrueInterests(market, id);
 
         uint256 shares = amount.toSharesUp(totalBorrow[id], totalBorrowShares[id]);
-        borrowShare[id][msg.sender] += shares;
+        borrowShare[id][onBehalf] += shares;
         totalBorrowShares[id] += shares;
 
         totalBorrow[id] += amount;
 
-        require(isHealthy(market, id, msg.sender), "not enough collateral");
+        require(isHealthy(market, id, onBehalf), "not enough collateral");
         require(totalBorrow[id] <= totalSupply[id], "not enough liquidity");
 
         market.borrowableAsset.safeTransfer(msg.sender, amount);
@@ -188,16 +235,17 @@ contract Blue {
         market.collateralAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
 
-    function withdrawCollateral(Market calldata market, uint256 amount) external {
+    function withdrawCollateral(Market calldata market, uint256 amount, address onBehalf) external {
         Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
+        require(_isSenderApprovedFor(onBehalf), "not approved");
 
         accrueInterests(market, id);
 
-        collateral[id][msg.sender] -= amount;
+        collateral[id][onBehalf] -= amount;
 
-        require(isHealthy(market, id, msg.sender), "not enough collateral");
+        require(isHealthy(market, id, onBehalf), "not enough collateral");
 
         market.collateralAsset.safeTransfer(msg.sender, amount);
     }
@@ -237,6 +285,45 @@ contract Blue {
 
         market.collateralAsset.safeTransfer(msg.sender, seized);
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), repaid);
+    }
+
+    // Position management.
+
+    function setApproval(
+        address delegator,
+        address manager,
+        bool isAllowed,
+        uint256 nonce,
+        uint256 deadline,
+        Signature calldata signature
+    ) external {
+        require(uint256(signature.s) <= MAX_VALID_ECDSA_S, "invalid s");
+        // v ∈ {27, 28} (source: https://ethereum.github.io/yellowpaper/paper.pdf #308)
+        require(signature.v == 27 || signature.v == 28, "invalid v");
+
+        bytes32 structHash =
+            keccak256(abi.encode(EIP712_AUTHORIZATION_TYPEHASH, delegator, manager, isAllowed, nonce, deadline));
+        bytes32 digest = keccak256(abi.encodePacked(EIP712_MSG_PREFIX, domainSeparator, structHash));
+        address signatory = ecrecover(digest, signature.v, signature.r, signature.s);
+
+        require(signatory != address(0) && delegator == signatory, "invalid signatory");
+        require(block.timestamp < deadline, "signature expired");
+
+        require(nonce == userNonce[signatory]++, "invalid nonce");
+
+        _setApproval(signatory, manager, isAllowed);
+    }
+
+    function setApproval(address manager, bool isAllowed) external {
+        _setApproval(msg.sender, manager, isAllowed);
+    }
+
+    function _setApproval(address delegator, address manager, bool isAllowed) internal {
+        approval[delegator][manager] = isAllowed;
+    }
+
+    function _isSenderApprovedFor(address user) internal view returns (bool) {
+        return msg.sender == user || approval[user][msg.sender];
     }
 
     // Interests management.
