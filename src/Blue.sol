@@ -121,6 +121,9 @@ contract Blue {
     function withdraw(Market calldata market, uint256 amount) external {
         Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
+        if (amount == type(uint256).max) {
+            amount = supplyShare[id][msg.sender].toAssetsDown(totalSupply[id], totalSupplyShares[id]);
+        }
         require(amount != 0, "zero amount");
 
         accrueInterests(market, id);
@@ -160,6 +163,9 @@ contract Blue {
     function repay(Market calldata market, uint256 amount) external {
         Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
+        if (amount == type(uint256).max) {
+            amount = borrowShare[id][msg.sender].toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
+        }
         require(amount != 0, "zero amount");
 
         accrueInterests(market, id);
@@ -191,6 +197,7 @@ contract Blue {
     function withdrawCollateral(Market calldata market, uint256 amount) external {
         Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
+        if (amount == type(uint256).max) amount = collateral[id][msg.sender];
         require(amount != 0, "zero amount");
 
         accrueInterests(market, id);
