@@ -17,12 +17,9 @@ string constant EIP712_MSG_PREFIX = "\x19\x01";
 /// @dev The name used for EIP-712 signature.
 string constant EIP712_NAME = "Blue";
 
-/// @dev The version used for EIP-712 signature.
-string constant EIP712_VERSION = "0";
-
 /// @dev The domain typehash used for the EIP-712 signature.
 bytes32 constant EIP712_DOMAIN_TYPEHASH =
-    keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
+    keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
 
 /// @dev The typehash for approveManagerWithSig Authorization used for the EIP-712 signature.
 bytes32 constant EIP712_AUTHORIZATION_TYPEHASH =
@@ -99,15 +96,8 @@ contract Blue {
     constructor(address newOwner) {
         owner = newOwner;
 
-        domainSeparator = keccak256(
-            abi.encode(
-                EIP712_DOMAIN_TYPEHASH,
-                keccak256(bytes(EIP712_NAME)),
-                keccak256(bytes(EIP712_VERSION)),
-                block.chainid,
-                address(this)
-            )
-        );
+        domainSeparator =
+            keccak256(abi.encode(EIP712_DOMAIN_TYPEHASH, keccak256(bytes(EIP712_NAME)), block.chainid, address(this)));
     }
 
     // Modifiers.
