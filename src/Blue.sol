@@ -147,7 +147,7 @@ contract Blue {
 
     // Supply management.
 
-    function supply(Market calldata market, uint256 amount) external {
+    function supply(Market calldata market, uint256 amount, address onBehalf) external {
         Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
@@ -155,7 +155,7 @@ contract Blue {
         accrueInterests(market, id);
 
         uint256 shares = amount.toSharesDown(totalSupply[id], totalSupplyShares[id]);
-        supplyShare[id][msg.sender] += shares;
+        supplyShare[id][onBehalf] += shares;
         totalSupplyShares[id] += shares;
 
         totalSupply[id] += amount;
@@ -204,7 +204,7 @@ contract Blue {
         market.borrowableAsset.safeTransfer(msg.sender, amount);
     }
 
-    function repay(Market calldata market, uint256 amount) external {
+    function repay(Market calldata market, uint256 amount, address onBehalf) external {
         Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
@@ -212,7 +212,7 @@ contract Blue {
         accrueInterests(market, id);
 
         uint256 shares = amount.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
-        borrowShare[id][msg.sender] -= shares;
+        borrowShare[id][onBehalf] -= shares;
         totalBorrowShares[id] -= shares;
 
         totalBorrow[id] -= amount;
@@ -223,14 +223,14 @@ contract Blue {
     // Collateral management.
 
     /// @dev Don't accrue interests because it's not required and it saves gas.
-    function supplyCollateral(Market calldata market, uint256 amount) external {
+    function supplyCollateral(Market calldata market, uint256 amount, address onBehalf) external {
         Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
 
         // Don't accrue interests because it's not required and it saves gas.
 
-        collateral[id][msg.sender] += amount;
+        collateral[id][onBehalf] += amount;
 
         market.collateralAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
