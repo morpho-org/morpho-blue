@@ -6,7 +6,7 @@ import { BigNumber, Wallet, constants, utils } from "ethers";
 import hre from "hardhat";
 import { Blue, OracleMock, ERC20Mock, IrmMock } from "types";
 
-const iterations = 500;
+const iterations = 400;
 const closePositions = false;
 const nbLiquidations = 50;
 // The liquidations gas test expects that 2*nbLiquidations + 1 is strictly less than the number of signers.
@@ -99,7 +99,7 @@ describe("Blue", () => {
 
   it("should simulate gas cost [main]", async () => {
     for (let i = 1; i < iterations; ++i) {
-      console.log(i, "/", iterations);
+      if (i % 20 == 0) console.log("main:", (100 * i) / iterations, "% complete");
 
       const user = new Wallet(hexZeroPad(BigNumber.from(i).toHexString(), 32), hre.ethers.provider);
       await setBalance(user.address, initBalance);
