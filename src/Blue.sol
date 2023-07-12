@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.20;
 
+import {IBlueCallback} from "src/interfaces/IBlueCallback.sol";
 import {IIrm} from "src/interfaces/IIrm.sol";
 import {IERC20} from "src/interfaces/IERC20.sol";
 import {IOracle} from "src/interfaces/IOracle.sol";
@@ -100,7 +101,7 @@ contract Blue {
 
     // Supply management.
 
-    function supply(Market calldata market, uint256 amount) external {
+    function supply(Market calldata market, uint256 amount, bytes calldata data) external {
         Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
@@ -117,6 +118,8 @@ contract Blue {
         }
 
         totalSupply[id] += amount;
+
+        if (data.length > 0) IBlueCallback(msg.sender).blueCallback(IBlueCallback.BlueAction.SUPPLY, amount, data);
 
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
@@ -165,7 +168,7 @@ contract Blue {
         market.borrowableAsset.safeTransfer(msg.sender, amount);
     }
 
-    function repay(Market calldata market, uint256 amount) external {
+    function repay(Market calldata market, uint256 amount, bytes calldata data) external {
         Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
@@ -178,13 +181,15 @@ contract Blue {
 
         totalBorrow[id] -= amount;
 
+        if (data.length > 0) IBlueCallback(msg.sender).blueCallback(IBlueCallback.BlueAction.REPAY, amount, data);
+
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
 
     // Collateral management.
 
     /// @dev Don't accrue interests because it's not required and it saves gas.
-    function supplyCollateral(Market calldata market, uint256 amount) external {
+    function supplyCollateral(Market calldata market, uint256 amount, bytes calldata data) external {
         Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
@@ -192,6 +197,10 @@ contract Blue {
         // Don't accrue interests because it's not required and it saves gas.
 
         collateral[id][msg.sender] += amount;
+
+        if (data.length > 0) {
+            IBlueCallback(msg.sender).blueCallback(IBlueCallback.BlueAction.SUPPLY_COLLATERAL, amount, data);
+        }
 
         market.collateralAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
@@ -212,7 +221,7 @@ contract Blue {
 
     // Liquidation.
 
-    function liquidate(Market calldata market, address borrower, uint256 seized) external {
+    function liquidate(Market calldata market, address borrower, uint256 seized, bytes calldata data) external {
         Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(seized != 0, "zero amount");
@@ -243,6 +252,9 @@ contract Blue {
         }
 
         market.collateralAsset.safeTransfer(msg.sender, seized);
+
+        if (data.length > 0) IBlueCallback(msg.sender).blueCallback(IBlueCallback.BlueAction.LIQUIDATE, repaid, data);
+
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), repaid);
     }
 
