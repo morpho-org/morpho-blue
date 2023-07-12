@@ -216,7 +216,7 @@ contract BlueTest is Test {
         blue.setFee(marketFuzz, fee);
     }
 
-    function setFeeShouldRevertIfNotOwner(uint256 fee, address caller) public {
+    function setSetFeeShouldRevertIfNotOwner(uint256 fee, address caller) public {
         vm.assume(caller != OWNER);
         fee = bound(fee, 0, WAD);
 
