@@ -6,15 +6,7 @@ import {IERC20} from "src/interfaces/IERC20.sol";
 import {IOracle} from "src/interfaces/IOracle.sol";
 
 import {MathLib} from "src/libraries/MathLib.sol";
-import {
-    WAD,
-    ALPHA,
-    EIP712_MSG_PREFIX,
-    EIP712_NAME,
-    EIP712_DOMAIN_TYPEHASH,
-    EIP712_AUTHORIZATION_TYPEHASH,
-    MAX_VALID_ECDSA_S
-} from "src/libraries/Constants.sol";
+import {Constants} from "src/libraries/Constants.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 
 // Market id.
@@ -85,8 +77,11 @@ contract Blue {
     constructor(address newOwner) {
         owner = newOwner;
 
-        domainSeparator =
-            keccak256(abi.encode(EIP712_DOMAIN_TYPEHASH, keccak256(bytes(EIP712_NAME)), block.chainid, address(this)));
+        domainSeparator = keccak256(
+            abi.encode(
+                Constants.EIP712_DOMAIN_TYPEHASH, keccak256(bytes(Constants.EIP712_NAME)), block.chainid, address(this)
+            )
+        );
     }
 
     // Modifiers.
@@ -107,7 +102,7 @@ contract Blue {
     }
 
     function enableLltv(uint256 lltv) external onlyOwner {
-        require(lltv < WAD, "LLTV too high");
+        require(lltv < Constants.WAD, "LLTV too high");
         isLltvEnabled[lltv] = true;
     }
 
@@ -132,8 +127,8 @@ contract Blue {
         accrueInterests(market, id);
 
         if (totalSupply[id] == 0) {
-            supplyShare[id][msg.sender] = WAD;
-            totalSupplyShares[id] = WAD;
+            supplyShare[id][msg.sender] = Constants.WAD;
+            totalSupplyShares[id] = Constants.WAD;
         } else {
             uint256 shares = amount.wMul(totalSupplyShares[id]).wDiv(totalSupply[id]);
             supplyShare[id][msg.sender] += shares;
@@ -175,8 +170,8 @@ contract Blue {
         accrueInterests(market, id);
 
         if (totalBorrow[id] == 0) {
-            borrowShare[id][onBehalf] = WAD;
-            totalBorrowShares[id] = WAD;
+            borrowShare[id][onBehalf] = Constants.WAD;
+            totalBorrowShares[id] = Constants.WAD;
         } else {
             uint256 shares = amount.wMul(totalBorrowShares[id]).wDiv(totalBorrow[id]);
             borrowShare[id][onBehalf] += shares;
@@ -249,7 +244,7 @@ contract Blue {
         require(!isHealthy(market, id, borrower), "cannot liquidate a healthy position");
 
         // The liquidation incentive is 1 + ALPHA * (1 / LLTV - 1).
-        uint256 incentive = WAD + ALPHA.wMul(WAD.wDiv(market.lltv) - WAD);
+        uint256 incentive = Constants.WAD + Constants.ALPHA.wMul(Constants.WAD.wDiv(market.lltv) - Constants.WAD);
         uint256 repaid =
             seized.wMul(market.collateralOracle.price()).wDiv(incentive).wDiv(market.borrowableOracle.price());
         uint256 repaidShares = repaid.wMul(totalBorrowShares[id]).wDiv(totalBorrow[id]);
@@ -281,13 +276,14 @@ contract Blue {
         uint256 deadline,
         Signature calldata signature
     ) external {
-        require(uint256(signature.s) <= MAX_VALID_ECDSA_S, "invalid s");
+        require(uint256(signature.s) <= Constants.MAX_VALID_ECDSA_S, "invalid s");
         // v ∈ {27, 28} (source: https://ethereum.github.io/yellowpaper/paper.pdf #308)
         require(signature.v == 27 || signature.v == 28, "invalid v");
 
-        bytes32 structHash =
-            keccak256(abi.encode(EIP712_AUTHORIZATION_TYPEHASH, delegator, manager, isAllowed, nonce, deadline));
-        bytes32 digest = keccak256(abi.encodePacked(EIP712_MSG_PREFIX, domainSeparator, structHash));
+        bytes32 structHash = keccak256(
+            abi.encode(Constants.EIP712_AUTHORIZATION_TYPEHASH, delegator, manager, isAllowed, nonce, deadline)
+        );
+        bytes32 digest = keccak256(abi.encodePacked(Constants.EIP712_MSG_PREFIX, domainSeparator, structHash));
         address signatory = ecrecover(digest, signature.v, signature.r, signature.s);
 
         require(signatory != address(0) && delegator == signatory, "invalid signatory");

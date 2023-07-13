@@ -4,6 +4,8 @@ pragma solidity 0.8.20;
 import {IERC20} from "src/interfaces/IERC20.sol";
 import {IOracle} from "src/interfaces/IOracle.sol";
 
+import {Constants} from "src/libraries/Constants.sol";
+
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
@@ -174,7 +176,7 @@ contract BlueTest is Test {
     }
 
     function testEnableLltv(uint256 newLltv) public {
-        newLltv = bound(newLltv, 0, WAD - 1);
+        newLltv = bound(newLltv, 0, Constants.WAD - 1);
 
         vm.prank(OWNER);
         blue.enableLltv(newLltv);
@@ -183,7 +185,7 @@ contract BlueTest is Test {
     }
 
     function testEnableLltvShouldFailWhenLltvTooHigh(uint256 newLltv) public {
-        newLltv = bound(newLltv, WAD, type(uint256).max);
+        newLltv = bound(newLltv, Constants.WAD, type(uint256).max);
 
         vm.prank(OWNER);
         vm.expectRevert("LLTV too high");
@@ -363,7 +365,7 @@ contract BlueTest is Test {
         uint256 borrowingPower = amountCollateral.wMul(LLTV);
         uint256 amountBorrowed = borrowingPower.wMul(0.8e18);
         uint256 toSeize = amountCollateral.wMul(LLTV);
-        uint256 incentive = WAD + ALPHA.wMul(WAD.wDiv(LLTV) - WAD);
+        uint256 incentive = Constants.WAD + Constants.ALPHA.wMul(Constants.WAD.wDiv(LLTV) - Constants.WAD);
 
         borrowableAsset.setBalance(address(this), amountLent);
         collateralAsset.setBalance(BORROWER, amountCollateral);
@@ -405,7 +407,7 @@ contract BlueTest is Test {
         uint256 borrowingPower = amountCollateral.wMul(LLTV);
         uint256 amountBorrowed = borrowingPower.wMul(0.8e18);
         uint256 toSeize = amountCollateral;
-        uint256 incentive = WAD + ALPHA.wMul(WAD.wDiv(market.lltv) - WAD);
+        uint256 incentive = Constants.WAD + Constants.ALPHA.wMul(Constants.WAD.wDiv(market.lltv) - Constants.WAD);
 
         borrowableAsset.setBalance(address(this), amountLent);
         collateralAsset.setBalance(BORROWER, amountCollateral);
