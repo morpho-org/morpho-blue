@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.20;
 
-import {IERC20} from "src/interfaces/IERC20.sol";
-import {IOracle} from "src/interfaces/IOracle.sol";
-
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
@@ -129,7 +126,7 @@ contract BlueTest is Test {
         Blue blue2 = new Blue(OWNER);
 
         vm.prank(attacker);
-        vm.expectRevert("not owner");
+        vm.expectRevert(bytes(Errors.NOT_OWNER));
         blue2.transferOwnership(newOwner);
     }
 
@@ -137,7 +134,7 @@ contract BlueTest is Test {
         vm.assume(attacker != blue.owner());
 
         vm.prank(attacker);
-        vm.expectRevert("not owner");
+        vm.expectRevert(bytes(Errors.NOT_OWNER));
         blue.enableIrm(newIrm);
     }
 
@@ -161,7 +158,7 @@ contract BlueTest is Test {
         vm.assume(marketFuzz.irm != irm);
 
         vm.prank(OWNER);
-        vm.expectRevert("IRM not enabled");
+        vm.expectRevert(bytes(Errors.IRM_DISABLED));
         blue.createMarket(marketFuzz);
     }
 
@@ -169,7 +166,7 @@ contract BlueTest is Test {
         vm.assume(attacker != OWNER);
 
         vm.prank(attacker);
-        vm.expectRevert("not owner");
+        vm.expectRevert(bytes(Errors.NOT_OWNER));
         blue.enableLltv(newLltv);
     }
 
@@ -186,7 +183,7 @@ contract BlueTest is Test {
         newLltv = bound(newLltv, WAD, type(uint256).max);
 
         vm.prank(OWNER);
-        vm.expectRevert("LLTV too high");
+        vm.expectRevert(bytes(Errors.LLTV_TOO_HIGH));
         blue.enableLltv(newLltv);
     }
 
@@ -195,7 +192,7 @@ contract BlueTest is Test {
         marketFuzz.irm = irm;
 
         vm.prank(OWNER);
-        vm.expectRevert("LLTV not enabled");
+        vm.expectRevert(bytes(Errors.LLTV_DISABLED));
         blue.createMarket(marketFuzz);
     }
 
@@ -224,7 +221,7 @@ contract BlueTest is Test {
 
         if (amountBorrowed > amountLent) {
             vm.prank(BORROWER);
-            vm.expectRevert("not enough liquidity");
+            vm.expectRevert(bytes(Errors.INSUFFICIENT_LIQUIDITY));
             blue.borrow(market, amountBorrowed);
             return;
         }
@@ -253,7 +250,7 @@ contract BlueTest is Test {
             if (amountWithdrawn > amountLent) {
                 vm.expectRevert();
             } else {
-                vm.expectRevert("not enough liquidity");
+                vm.expectRevert(bytes(Errors.INSUFFICIENT_LIQUIDITY));
             }
             blue.withdraw(market, amountWithdrawn);
             return;
@@ -299,7 +296,7 @@ contract BlueTest is Test {
             blue.borrow(market, amountBorrowed);
         } else {
             vm.prank(BORROWER);
-            vm.expectRevert("not enough collateral");
+            vm.expectRevert(bytes(Errors.INSUFFICIENT_COLLATERAL));
             blue.borrow(market, amountBorrowed);
         }
     }
