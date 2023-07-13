@@ -199,19 +199,7 @@ contract BlueTest is Test {
         blue.createMarket(marketFuzz);
     }
 
-    function testSupply(uint256 amount) public {
-        amount = bound(amount, 1, 2 ** 64);
-
-        borrowableAsset.setBalance(address(this), amount);
-        blue.supply(market, amount, address(this));
-
-        assertEq(blue.supplyShare(id, address(this)), 1e18, "supply share");
-        assertEq(borrowableAsset.balanceOf(address(this)), 0, "lender balance");
-        assertEq(borrowableAsset.balanceOf(address(blue)), amount, "blue balance");
-    }
-
     function testSupplyOnBehalf(uint256 amount, address onBehalf) public {
-        vm.assume(onBehalf != address(this));
         amount = bound(amount, 1, 2 ** 64);
 
         borrowableAsset.setBalance(address(this), amount);
@@ -359,26 +347,14 @@ contract BlueTest is Test {
         assertEq(borrowableAsset.balanceOf(address(blue)), amountLent - amountBorrowed + amountRepaid, "blue balance");
     }
 
-    function testSupplyCollateral(uint256 amount) public {
-        amount = bound(amount, 1, 2 ** 64);
-
-        collateralAsset.setBalance(address(this), amount);
-        blue.supplyCollateral(market, amount, address(this));
-
-        assertEq(blue.collateral(id, address(this)), amount, "collateral");
-        assertEq(collateralAsset.balanceOf(address(this)), 0, "this balance");
-        assertEq(collateralAsset.balanceOf(address(blue)), amount, "blue balance");
-    }
-
-    function testSupplyCollateral(uint256 amount, address onBehalf) public {
-        vm.assume(onBehalf != address(this));
+    function testSupplyCollateralOnBehalf(uint256 amount, address onBehalf) public {
         amount = bound(amount, 1, 2 ** 64);
 
         collateralAsset.setBalance(address(this), amount);
         blue.supplyCollateral(market, amount, onBehalf);
 
         assertEq(blue.collateral(id, onBehalf), amount, "collateral");
-        assertEq(collateralAsset.balanceOf(onBehalf), 0, "this balance");
+        assertEq(collateralAsset.balanceOf(onBehalf), 0, "onBehalf balance");
         assertEq(collateralAsset.balanceOf(address(blue)), amount, "blue balance");
     }
 
