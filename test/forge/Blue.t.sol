@@ -200,6 +200,7 @@ contract BlueTest is Test {
     }
 
     function testSupplyOnBehalf(uint256 amount, address onBehalf) public {
+        vm.assume(onBehalf != address(blue));
         amount = bound(amount, 1, 2 ** 64);
 
         borrowableAsset.setBalance(address(this), amount);
@@ -327,6 +328,7 @@ contract BlueTest is Test {
     function testRepayOnBehalf(uint256 amountLent, uint256 amountBorrowed, uint256 amountRepaid, address onBehalf)
         public
     {
+        vm.assume(onBehalf != address(blue));
         vm.assume(onBehalf != address(this));
         amountLent = bound(amountLent, 1, 2 ** 64);
         amountBorrowed = bound(amountBorrowed, 1, amountLent);
@@ -348,6 +350,7 @@ contract BlueTest is Test {
     }
 
     function testSupplyCollateralOnBehalf(uint256 amount, address onBehalf) public {
+        vm.assume(onBehalf != address(blue));
         amount = bound(amount, 1, 2 ** 64);
 
         collateralAsset.setBalance(address(this), amount);
