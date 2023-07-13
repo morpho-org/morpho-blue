@@ -522,7 +522,7 @@ contract BlueTest is Test {
 
     function testSetApproval(address manager, bool isAllowed) public {
         blue.setApproval(manager, isAllowed);
-        assertEq(blue.approval(address(this), manager), isAllowed);
+        assertEq(blue.isApproved(address(this), manager), isAllowed);
     }
 
     function testNotApproved(address attacker) public {

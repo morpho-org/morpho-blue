@@ -59,7 +59,7 @@ contract Blue {
     // Enabled LLTVs.
     mapping(uint256 => bool) public isLltvEnabled;
     // User's managers.
-    mapping(address => mapping(address => bool)) public approval;
+    mapping(address => mapping(address => bool)) public isApproved;
 
     // Constructor.
 
@@ -127,7 +127,7 @@ contract Blue {
         Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
-        require(isSenderApprovedFor(onBehalf), "not approved");
+        require(isSenderOrIsApproved(onBehalf), "not approved");
 
         accrueInterests(market, id);
 
@@ -148,7 +148,7 @@ contract Blue {
         Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
-        require(isSenderApprovedFor(onBehalf), "not approved");
+        require(isSenderOrIsApproved(onBehalf), "not approved");
 
         accrueInterests(market, id);
 
@@ -204,7 +204,7 @@ contract Blue {
         Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
-        require(isSenderApprovedFor(onBehalf), "not approved");
+        require(isSenderOrIsApproved(onBehalf), "not approved");
 
         accrueInterests(market, id);
 
@@ -252,11 +252,11 @@ contract Blue {
     // Position management.
 
     function setApproval(address manager, bool isAllowed) external {
-        approval[msg.sender][manager] = isAllowed;
+        isApproved[msg.sender][manager] = isAllowed;
     }
 
-    function isSenderApprovedFor(address user) internal view returns (bool) {
-        return msg.sender == user || approval[user][msg.sender];
+    function isSenderOrIsApproved(address user) internal view returns (bool) {
+        return msg.sender == user || isApproved[user][msg.sender];
     }
 
     // Interests management.
