@@ -567,8 +567,8 @@ contract BlueTest is Test {
         borrowableAsset.setBalance(address(this), 100 ether);
         collateralAsset.setBalance(address(this), 100 ether);
 
-        blue.supply(market, 100 ether);
-        blue.supplyCollateral(market, 100 ether);
+        blue.supply(market, 100 ether, address(this));
+        blue.supplyCollateral(market, 100 ether, address(this));
 
         blue.setApproval(manager, true);
 
