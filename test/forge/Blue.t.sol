@@ -4,8 +4,6 @@ pragma solidity 0.8.20;
 import {IERC20} from "src/interfaces/IERC20.sol";
 import {IOracle} from "src/interfaces/IOracle.sol";
 
-import {Constants} from "src/libraries/Constants.sol";
-
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
