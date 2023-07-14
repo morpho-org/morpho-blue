@@ -239,18 +239,12 @@ contract BlueTest is Test {
         blue.setFeeRecipient(recipient);
     }
 
-    function testFeeAccrues(
-        uint256 amountLent,
-        uint256 amountBorrowed,
-        uint256 fee,
-        uint256 timeElapsed,
-        address recipient
-    ) public {
+    function testFeeAccrues(uint256 amountLent, uint256 amountBorrowed, uint256 fee, uint256 timeElapsed) public {
         amountLent = bound(amountLent, 1, 2 ** 64);
         amountBorrowed = bound(amountBorrowed, 1, amountLent);
         timeElapsed = bound(timeElapsed, 1, 365 days);
         fee = bound(fee, 0, 1e18);
-        vm.assume(recipient != address(this) && recipient != BORROWER && recipient != address(0));
+        address recipient = OWNER;
 
         vm.startPrank(OWNER);
         blue.setFee(market, fee);
