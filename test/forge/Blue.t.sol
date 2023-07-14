@@ -263,14 +263,16 @@ contract BlueTest is Test {
         vm.prank(BORROWER);
         blue.borrow(market, amountBorrowed);
 
+        uint256 totalSupplyBefore = blue.totalSupply(id);
+
         // Trigger an accrue.
+        vm.warp(block.timestamp + timeElapsed);
         collateralAsset.setBalance(address(this), 1);
         blue.supplyCollateral(market, 1);
         blue.withdrawCollateral(market, 1);
-
-        uint256 totalSupplyBefore = blue.totalSupply(id);
-        vm.warp(block.timestamp + timeElapsed);
         uint256 totalSupplyAfter = blue.totalSupply(id);
+
+        vm.assume(totalSupplyAfter > totalSupplyBefore);
 
         uint256 accrued = totalSupplyAfter - totalSupplyBefore;
         uint256 expectedFee = accrued.wMul(fee);
