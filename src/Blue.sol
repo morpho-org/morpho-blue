@@ -87,7 +87,7 @@ contract Blue {
     // Enabled LLTVs.
     mapping(uint256 => bool) public isLltvEnabled;
     // User's managers.
-    mapping(address => mapping(address => bool)) public approval;
+    mapping(address => mapping(address => bool)) public isApproved;
     // User's nonces. Used to prevent replay attacks with EIP-712 signatures.
     mapping(address => uint256) public userNonce;
 
@@ -135,7 +135,7 @@ contract Blue {
 
     // Supply management.
 
-    function supply(Market calldata market, uint256 amount) external {
+    function supply(Market calldata market, uint256 amount, address onBehalf) external {
         Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
@@ -143,11 +143,11 @@ contract Blue {
         accrueInterests(market, id);
 
         if (totalSupply[id] == 0) {
-            supplyShare[id][msg.sender] = WAD;
+            supplyShare[id][onBehalf] = WAD;
             totalSupplyShares[id] = WAD;
         } else {
             uint256 shares = amount.wMul(totalSupplyShares[id]).wDiv(totalSupply[id]);
-            supplyShare[id][msg.sender] += shares;
+            supplyShare[id][onBehalf] += shares;
             totalSupplyShares[id] += shares;
         }
 
@@ -160,7 +160,7 @@ contract Blue {
         Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
-        require(_isSenderApprovedFor(onBehalf), "not approved");
+        require(_isSenderOrIsApproved(onBehalf), "not approved");
 
         accrueInterests(market, id);
 
@@ -181,7 +181,7 @@ contract Blue {
         Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
-        require(_isSenderApprovedFor(onBehalf), "not approved");
+        require(_isSenderOrIsApproved(onBehalf), "not approved");
 
         accrueInterests(market, id);
 
@@ -202,7 +202,7 @@ contract Blue {
         market.borrowableAsset.safeTransfer(msg.sender, amount);
     }
 
-    function repay(Market calldata market, uint256 amount) external {
+    function repay(Market calldata market, uint256 amount, address onBehalf) external {
         Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
@@ -210,7 +210,7 @@ contract Blue {
         accrueInterests(market, id);
 
         uint256 shares = amount.wMul(totalBorrowShares[id]).wDiv(totalBorrow[id]);
-        borrowShare[id][msg.sender] -= shares;
+        borrowShare[id][onBehalf] -= shares;
         totalBorrowShares[id] -= shares;
 
         totalBorrow[id] -= amount;
@@ -221,14 +221,14 @@ contract Blue {
     // Collateral management.
 
     /// @dev Don't accrue interests because it's not required and it saves gas.
-    function supplyCollateral(Market calldata market, uint256 amount) external {
+    function supplyCollateral(Market calldata market, uint256 amount, address onBehalf) external {
         Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
 
         // Don't accrue interests because it's not required and it saves gas.
 
-        collateral[id][msg.sender] += amount;
+        collateral[id][onBehalf] += amount;
 
         market.collateralAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
@@ -237,7 +237,7 @@ contract Blue {
         Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
-        require(_isSenderApprovedFor(onBehalf), "not approved");
+        require(_isSenderOrIsApproved(onBehalf), "not approved");
 
         accrueInterests(market, id);
 
@@ -303,7 +303,6 @@ contract Blue {
 
         require(signatory != address(0) && delegator == signatory, "invalid signatory");
         require(block.timestamp < deadline, "signature expired");
-
         require(nonce == userNonce[signatory]++, "invalid nonce");
 
         _setApproval(signatory, manager, isAllowed);
@@ -314,11 +313,11 @@ contract Blue {
     }
 
     function _setApproval(address delegator, address manager, bool isAllowed) internal {
-        approval[delegator][manager] = isAllowed;
+        isApproved[delegator][manager] = isAllowed;
     }
 
-    function _isSenderApprovedFor(address user) internal view returns (bool) {
-        return msg.sender == user || approval[user][msg.sender];
+    function _isSenderOrIsApproved(address user) internal view returns (bool) {
+        return msg.sender == user || isApproved[user][msg.sender];
     }
 
     // Interests management.
