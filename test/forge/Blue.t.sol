@@ -564,6 +564,19 @@ contract BlueTest is Test {
         vm.expectRevert("zero amount");
         blue.liquidate(market, address(0), 0);
     }
+
+    function testEmptyMarket(uint256 amount) public {
+        amount = bound(amount, 1, type(uint256).max / SharesMath.VIRTUAL_SHARES);
+
+        vm.expectRevert(stdError.arithmeticError);
+        blue.withdraw(market, amount);
+
+        vm.expectRevert(stdError.arithmeticError);
+        blue.repay(market, amount);
+
+        vm.expectRevert(stdError.arithmeticError);
+        blue.withdrawCollateral(market, amount);
+    }
 }
 
 function neq(Market memory a, Market memory b) pure returns (bool) {
