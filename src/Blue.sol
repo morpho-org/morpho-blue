@@ -253,23 +253,13 @@ contract Blue {
 
         if (marketTotalBorrow != 0) {
             uint256 accruedInterests = marketTotalBorrow.wMul(
-                taylorSeriesExpansion(market.irm.borrowRate(market), block.timestamp - lastUpdate[id])
+                market.irm.borrowRate(market).taylorSeriesExpansion(block.timestamp - lastUpdate[id])
             );
             totalBorrow[id] = marketTotalBorrow + accruedInterests;
             totalSupply[id] += accruedInterests;
         }
 
         lastUpdate[id] = block.timestamp;
-    }
-
-    /// @dev A three term taylor series expansion to accrue interest rates.
-    function taylorSeriesExpansion(uint256 rate, uint256 timeElapsed) internal pure returns (uint256) {
-        uint256 firstTerm = timeElapsed.wMul(rate);
-        uint256 secondTerm = (timeElapsed * timeElapsed.zeroFloorSub(1)).wMul(rate).wMul(rate) / 2;
-        uint256 thirdTerm = (timeElapsed * timeElapsed.zeroFloorSub(1) * timeElapsed.zeroFloorSub(2)).wMul(rate).wMul(
-            rate
-        ).wMul(rate) / 6;
-        return WAD + firstTerm + secondTerm + thirdTerm;
     }
 
     // Health check.
