@@ -29,8 +29,6 @@ library MathLib {
         uint256 firstTerm = x * n;
         uint256 secondTerm = x * x * n * zeroFloorSub(n, 1) / WAD;
         uint256 thirdTerm = x * x * x * n * zeroFloorSub(n, 1) * zeroFloorSub(n, 2) / (WAD * WAD);
-        // uint256 secondTerm = wMul(firstTerm, x * zeroFloorSub(n, 1));
-        // uint256 thirdTerm = wMul(secondTerm, x * zeroFloorSub(n, 2));
         return firstTerm + secondTerm / 2 + thirdTerm / 6;
     }
 }
