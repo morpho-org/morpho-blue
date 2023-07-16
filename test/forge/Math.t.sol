@@ -17,7 +17,6 @@ contract MathTest is Test {
         // Assume rate is less than a ~500% annual interest rate.
         vm.assume(rate < (MathLib.WAD / 20_000_000) && timeElapsed < 365 days);
         uint256 result = rate.wTaylorSeriesExpansion(timeElapsed) + MathLib.WAD;
-        // Add 1000 since rpow can round down
         uint256 toCompare = wPow(MathLib.WAD + rate, timeElapsed);
         // Should be le the true compounded rate.
         assertLe(result, toCompare, "1");
