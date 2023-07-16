@@ -23,11 +23,14 @@ library MathLib {
         z = x > y ? x - y : 0;
     }
 
-    /// @dev A three term taylor series expansion to accrue interest rates.
-    function taylorSeriesExpansion(uint256 rate, uint256 timeElapsed) internal pure returns (uint256) {
-        uint256 firstTerm = wMul(timeElapsed, rate);
-        uint256 secondTerm = wMul(firstTerm, wMul(zeroFloorSub(timeElapsed, 1), rate));
-        uint256 thirdTerm = wMul(secondTerm, wMul(zeroFloorSub(timeElapsed, 2), rate));
+    /// @dev A three term taylor series expansion to approximate a compound interest rate.
+    /// With an assumption of a < 500% annual interest rate over 365 days, the error is less than 8%.
+    function wTaylorSeriesExpansion(uint256 x, uint256 n) internal pure returns (uint256) {
+        uint256 firstTerm = x * n;
+        uint256 secondTerm = x * x * n * zeroFloorSub(n, 1) / WAD;
+        uint256 thirdTerm = x * x * x * n * zeroFloorSub(n, 1) * zeroFloorSub(n, 2) / (WAD * WAD);
+        // uint256 secondTerm = wMul(firstTerm, x * zeroFloorSub(n, 1));
+        // uint256 thirdTerm = wMul(secondTerm, x * zeroFloorSub(n, 2));
         return firstTerm + secondTerm / 2 + thirdTerm / 6;
     }
 }

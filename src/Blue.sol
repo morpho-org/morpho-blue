@@ -253,7 +253,7 @@ contract Blue {
 
         if (marketTotalBorrow != 0) {
             uint256 accruedInterests = marketTotalBorrow.wMul(
-                market.irm.borrowRate(market).taylorSeriesExpansion(block.timestamp - lastUpdate[id])
+                market.irm.borrowRate(market).wTaylorSeriesExpansion(block.timestamp - lastUpdate[id])
             );
             totalBorrow[id] = marketTotalBorrow + accruedInterests;
             totalSupply[id] += accruedInterests;
