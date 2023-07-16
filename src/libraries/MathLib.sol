@@ -28,6 +28,6 @@ library MathLib {
         uint256 firstTerm = wMul(timeElapsed, rate);
         uint256 secondTerm = wMul(firstTerm, wMul(zeroFloorSub(timeElapsed, 1), rate));
         uint256 thirdTerm = wMul(secondTerm, wMul(zeroFloorSub(timeElapsed, 2), rate));
-        return WAD + firstTerm + secondTerm / 2 + thirdTerm / 6;
+        return firstTerm + secondTerm / 2 + thirdTerm / 6;
     }
 }
