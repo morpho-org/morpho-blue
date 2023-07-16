@@ -3,35 +3,18 @@ pragma solidity 0.8.20;
 
 import {IIrm} from "src/interfaces/IIrm.sol";
 import {IERC20} from "src/interfaces/IERC20.sol";
-import {IOracle} from "src/interfaces/IOracle.sol";
 
+import {Market} from "src/libraries/Types.sol";
 import {MathLib} from "src/libraries/MathLib.sol";
+import {Id, MarketIdLib} from "src/libraries/MarketIdLib.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 
 uint256 constant WAD = 1e18;
 uint256 constant ALPHA = 0.5e18;
 
-// Market id.
-type Id is bytes32;
-
-// Market.
-struct Market {
-    IERC20 borrowableAsset;
-    IERC20 collateralAsset;
-    IOracle borrowableOracle;
-    IOracle collateralOracle;
-    IIrm irm;
-    uint256 lltv;
-}
-
-using {toId} for Market;
-
-function toId(Market calldata market) pure returns (Id) {
-    return Id.wrap(keccak256(abi.encode(market)));
-}
-
 contract Blue {
     using MathLib for uint256;
+    using MarketIdLib for Market;
     using SafeTransferLib for IERC20;
 
     // Storage.
