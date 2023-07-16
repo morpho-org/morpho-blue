@@ -18,4 +18,8 @@ library MathLib {
     function wDiv(uint256 x, uint256 y) internal pure returns (uint256 z) {
         z = (x * WAD) / y;
     }
+
+    function zeroFloorSub(uint256 x, uint256 y) internal pure returns (uint256 z) {
+        z = x > y ? x - y : 0;
+    }
 }
