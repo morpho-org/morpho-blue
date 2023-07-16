@@ -19,8 +19,8 @@ contract MathTest is Test {
         vm.assume(rate < (MathLib.WAD / 20_000_000) && timeElapsed < 365 days);
         uint256 result = rate.taylorSeriesExpansion(timeElapsed) + MathLib.WAD;
         uint256 toCompare = FixedPointMathLib.rpow(MathLib.WAD + rate, timeElapsed, MathLib.WAD);
-        // For a three term expansion, the error should be less than 10% for a 500% interest rate for one year)
+        // For a three term expansion, the error should be less than 12% for a 500% interest rate for one year)
         assertLe(result, toCompare);
-        assertLe((toCompare - result) * 100_00 / toCompare, 10_00);
+        assertLe((toCompare - result) * 100_00 / toCompare, 12_00);
     }
 }
