@@ -5,7 +5,6 @@ import {IIrm} from "src/interfaces/IIrm.sol";
 import {IERC20} from "src/interfaces/IERC20.sol";
 import {IOracle} from "src/interfaces/IOracle.sol";
 
-// Market.
 struct Market {
     IERC20 borrowableAsset;
     IERC20 collateralAsset;

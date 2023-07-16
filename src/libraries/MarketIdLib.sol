@@ -3,7 +3,6 @@ pragma solidity ^0.8.0;
 
 import {Market} from "src/libraries/Types.sol";
 
-// Market id.
 type Id is bytes32;
 
 library MarketIdLib {
