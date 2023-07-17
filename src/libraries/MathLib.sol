@@ -25,7 +25,7 @@ library MathLib {
 
     /// @dev A three term taylor series expansion to approximate a compound interest rate: (1 + x)^n - 1.
     /// With an assumption of a < 500% annual interest rate over 365 days, the error is less than 8%.
-    function wTaylorSeriesExpansion(uint256 x, uint256 n) internal pure returns (uint256) {
+    function wTaylorCompounded(uint256 x, uint256 n) internal pure returns (uint256) {
         uint256 firstTerm = x * n;
         uint256 secondTerm = x * x * n * zeroFloorSub(n, 1) / WAD;
         uint256 thirdTerm = x * x * x * n * zeroFloorSub(n, 1) * zeroFloorSub(n, 2) / (WAD * WAD);

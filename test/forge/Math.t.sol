@@ -16,7 +16,7 @@ contract MathTest is Test {
     function testTaylorSeriesExpansion(uint256 rate, uint256 timeElapsed) public {
         // Assume rate is less than a ~500% annual interest rate.
         vm.assume(rate < (MathLib.WAD / 20_000_000) && timeElapsed < 365 days);
-        uint256 result = rate.wTaylorSeriesExpansion(timeElapsed) + MathLib.WAD;
+        uint256 result = rate.wTaylorCompounded(timeElapsed) + MathLib.WAD;
         uint256 toCompare = wPow(MathLib.WAD + rate, timeElapsed);
         // Should be le the true compounded rate.
         assertLe(result, toCompare, "1");
