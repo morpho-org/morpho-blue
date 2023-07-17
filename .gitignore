@@ -16,6 +16,9 @@ docs/
 # Node modules
 /node_modules
 
+# Certora
+.certora**
+
 # Hardhat
 /types
 /cache_hardhat
