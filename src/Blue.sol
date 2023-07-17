@@ -264,19 +264,22 @@ contract Blue {
 
     // Interests management.
 
-    function accrueInterests(Market calldata market, Id id) private {
+    function accrueInterests(Market calldata market, Id id)
+        public
+        returns (uint256 accruedInterests, uint256 feeShares)
+    {
         uint256 marketTotalBorrow = totalBorrow[id];
 
         if (marketTotalBorrow != 0) {
             uint256 borrowRate = market.irm.borrowRate(market);
-            uint256 accruedInterests = marketTotalBorrow.wMul(borrowRate).wMul(block.timestamp - lastUpdate[id]);
+            accruedInterests = marketTotalBorrow.wMul(borrowRate).wMul(block.timestamp - lastUpdate[id]);
             totalBorrow[id] = marketTotalBorrow + accruedInterests;
             totalSupply[id] += accruedInterests;
 
             if (fee[id] != 0) {
                 uint256 feeAmount = accruedInterests.wMul(fee[id]);
                 // The fee amount is subtracted from the total supply in this calculation to compensate for the fact that total supply is already updated.
-                uint256 feeShares = feeAmount.wMul(totalSupplyShares[id]).wDiv(totalSupply[id] - feeAmount);
+                feeShares = feeAmount.wMul(totalSupplyShares[id]).wDiv(totalSupply[id] - feeAmount);
                 supplyShare[id][feeRecipient] += feeShares;
                 totalSupplyShares[id] += feeShares;
             }
