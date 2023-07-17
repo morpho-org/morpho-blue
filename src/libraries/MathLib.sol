@@ -29,6 +29,7 @@ library MathLib {
         uint256 firstTerm = x * n;
         uint256 secondTerm = x * x * n * zeroFloorSub(n, 1) / WAD;
         uint256 thirdTerm = x * x * x * n * zeroFloorSub(n, 1) * zeroFloorSub(n, 2) / (WAD * WAD);
+        // This is missing a WAD because we are only looking to get interest accrued.
         return firstTerm + secondTerm / 2 + thirdTerm / 6;
     }
 }
