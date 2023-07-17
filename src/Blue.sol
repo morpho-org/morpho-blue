@@ -11,6 +11,11 @@ import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 uint256 constant WAD = 1e18;
 uint256 constant ALPHA = 0.5e18;
 
+enum Check {
+    Healthy,
+    NotHealthy
+}
+
 // Market id.
 type Id is bytes32;
 
@@ -159,7 +164,7 @@ contract Blue {
 
         totalBorrow[id] += amount;
 
-        require(isHealthy(market, id, msg.sender), "not enough collateral");
+        oraclePositionCheck(market, id, msg.sender, Check.Healthy);
         require(totalBorrow[id] <= totalSupply[id], "not enough liquidity");
 
         market.borrowableAsset.safeTransfer(msg.sender, amount);
@@ -205,7 +210,7 @@ contract Blue {
 
         collateral[id][msg.sender] -= amount;
 
-        require(isHealthy(market, id, msg.sender), "not enough collateral");
+        oraclePositionCheck(market, id, msg.sender, Check.Healthy);
 
         market.collateralAsset.safeTransfer(msg.sender, amount);
     }
@@ -219,12 +224,11 @@ contract Blue {
 
         accrueInterests(market, id);
 
-        require(!isHealthy(market, id, borrower), "cannot liquidate a healthy position");
+        (uint256 borrowablePrice, uint256 collateralPrice) = oraclePositionCheck(market, id, borrower, Check.NotHealthy);
 
         // The liquidation incentive is 1 + ALPHA * (1 / LLTV - 1).
         uint256 incentive = WAD + ALPHA.wMul(WAD.wDiv(market.lltv) - WAD);
-        uint256 repaid =
-            seized.wMul(market.collateralOracle.price()).wDiv(incentive).wDiv(market.borrowableOracle.price());
+        uint256 repaid = seized.wMul(collateralPrice).wDiv(incentive).wDiv(borrowablePrice);
         uint256 repaidShares = repaid.wMul(totalBorrowShares[id]).wDiv(totalBorrow[id]);
 
         borrowShare[id][borrower] -= repaidShares;
@@ -263,13 +267,24 @@ contract Blue {
 
     // Health check.
 
-    function isHealthy(Market calldata market, Id id, address user) private view returns (bool) {
+    function oraclePositionCheck(Market calldata market, Id id, address user, Check check)
+        private
+        view
+        returns (uint256 borrowablePrice, uint256 collateralPrice)
+    {
         uint256 borrowShares = borrowShare[id][user];
-        if (borrowShares == 0) return true;
-        // totalBorrowShares[id] > 0 when borrowShares > 0.
-        uint256 borrowValue =
-            borrowShares.wMul(totalBorrow[id]).wDiv(totalBorrowShares[id]).wMul(market.borrowableOracle.price());
-        uint256 collateralValue = collateral[id][user].wMul(market.collateralOracle.price());
-        return collateralValue.wMul(market.lltv) >= borrowValue;
+        bool isHealthy = true;
+        if (borrowShares != 0) {
+            borrowablePrice = market.borrowableOracle.price();
+            collateralPrice = market.collateralOracle.price();
+
+            // totalBorrowShares[id] > 0 when borrowShares > 0.
+            uint256 borrowValue = borrowShares.wMul(totalBorrow[id]).wDiv(totalBorrowShares[id]).wMul(borrowablePrice);
+            uint256 collateralValue = collateral[id][user].wMul(collateralPrice);
+
+            isHealthy = collateralValue.wMul(market.lltv) >= borrowValue;
+        }
+        require(!(check == Check.Healthy && !isHealthy), "position is not healthy");
+        require(!(check == Check.NotHealthy && isHealthy), "position is healthy");
     }
 }

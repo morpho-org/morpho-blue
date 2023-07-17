@@ -299,7 +299,7 @@ contract BlueTest is Test {
             blue.borrow(market, amountBorrowed);
         } else {
             vm.prank(BORROWER);
-            vm.expectRevert("not enough collateral");
+            vm.expectRevert("position is not healthy");
             blue.borrow(market, amountBorrowed);
         }
     }
