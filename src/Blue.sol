@@ -91,7 +91,7 @@ contract Blue {
         isLltvEnabled[lltv] = true;
     }
 
-    // It is the owner's responsibility to ensure a fee recipient is set before setting a fee.
+    // @notice It is the owner's responsibility to ensure a fee recipient is set before setting a non-zero fee.
     function setFee(Market calldata market, uint256 newFee) external onlyOwner {
         Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
