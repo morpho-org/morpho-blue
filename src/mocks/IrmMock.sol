@@ -3,15 +3,14 @@ pragma solidity 0.8.20;
 
 import {IIrm} from "src/interfaces/IIrm.sol";
 
-import {Market} from "src/libraries/Types.sol";
 import {MathLib} from "src/libraries/MathLib.sol";
-import {Id, MarketIdLib} from "src/libraries/MarketIdLib.sol";
+import {Id, Market, MarketLib} from "src/libraries/MarketLib.sol";
 
 import {Blue} from "src/Blue.sol";
 
 contract IrmMock is IIrm {
     using MathLib for uint256;
-    using MarketIdLib for Market;
+    using MarketLib for Market;
 
     Blue public immutable blue;
 
