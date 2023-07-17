@@ -111,7 +111,7 @@ contract Blue {
         require(isLltvEnabled[market.lltv], "LLTV not enabled");
         require(lastUpdate[id] == 0, "market already exists");
 
-        accrueInterests(market, id);
+        _accrueInterests(market, id);
     }
 
     // Supply management.
@@ -121,7 +121,7 @@ contract Blue {
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
 
-        accrueInterests(market, id);
+        _accrueInterests(market, id);
 
         if (totalSupply[id] == 0) {
             supplyShare[id][msg.sender] = WAD;
@@ -142,7 +142,7 @@ contract Blue {
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
 
-        accrueInterests(market, id);
+        _accrueInterests(market, id);
 
         uint256 shares = amount.wMul(totalSupplyShares[id]).wDiv(totalSupply[id]);
         supplyShare[id][msg.sender] -= shares;
@@ -162,7 +162,7 @@ contract Blue {
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
 
-        accrueInterests(market, id);
+        _accrueInterests(market, id);
 
         if (totalBorrow[id] == 0) {
             borrowShare[id][msg.sender] = WAD;
@@ -186,7 +186,7 @@ contract Blue {
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
 
-        accrueInterests(market, id);
+        _accrueInterests(market, id);
 
         uint256 shares = amount.wMul(totalBorrowShares[id]).wDiv(totalBorrow[id]);
         borrowShare[id][msg.sender] -= shares;
@@ -217,7 +217,7 @@ contract Blue {
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
 
-        accrueInterests(market, id);
+        _accrueInterests(market, id);
 
         collateral[id][msg.sender] -= amount;
 
@@ -233,7 +233,7 @@ contract Blue {
         require(lastUpdate[id] != 0, "unknown market");
         require(seized != 0, "zero amount");
 
-        accrueInterests(market, id);
+        _accrueInterests(market, id);
 
         require(!isHealthy(market, id, borrower), "cannot liquidate a healthy position");
 
@@ -264,28 +264,43 @@ contract Blue {
 
     // Interests management.
 
-    function accrueInterests(Market calldata market, Id id)
-        public
+    function accrued(Market calldata market) external returns (uint256 accruedInterests, uint256 feeShares) {
+        Id id = market.toId();
+        require(lastUpdate[id] != 0, "unknown market");
+
+        (accruedInterests, feeShares) = _accruedInterests(market, id);
+    }
+
+    function _accrueInterests(Market calldata market, Id id) internal {
+        (uint256 accruedInterests, uint256 feeShares) = _accruedInterests(market, id);
+
+        if (accruedInterests > 0) {
+            totalBorrow[id] += accruedInterests;
+            totalSupply[id] += accruedInterests;
+        }
+
+        if (feeShares > 0) {
+            supplyShare[id][feeRecipient] += feeShares;
+            totalSupplyShares[id] += feeShares;
+        }
+
+        lastUpdate[id] = block.timestamp;
+    }
+
+    function _accruedInterests(Market calldata market, Id id)
+        internal
         returns (uint256 accruedInterests, uint256 feeShares)
     {
-        uint256 marketTotalBorrow = totalBorrow[id];
-
-        if (marketTotalBorrow != 0) {
+        if (totalBorrow[id] != 0) {
             uint256 borrowRate = market.irm.borrowRate(market);
-            accruedInterests = marketTotalBorrow.wMul(borrowRate).wMul(block.timestamp - lastUpdate[id]);
-            totalBorrow[id] = marketTotalBorrow + accruedInterests;
-            totalSupply[id] += accruedInterests;
+            accruedInterests = totalBorrow[id].wMul(borrowRate).wMul(block.timestamp - lastUpdate[id]);
 
             if (fee[id] != 0) {
                 uint256 feeAmount = accruedInterests.wMul(fee[id]);
                 // The fee amount is subtracted from the total supply in this calculation to compensate for the fact that total supply is already updated.
                 feeShares = feeAmount.wMul(totalSupplyShares[id]).wDiv(totalSupply[id] - feeAmount);
-                supplyShare[id][feeRecipient] += feeShares;
-                totalSupplyShares[id] += feeShares;
             }
         }
-
-        lastUpdate[id] = block.timestamp;
     }
 
     // Health check.
