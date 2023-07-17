@@ -151,10 +151,7 @@ contract Blue {
 
         totalBorrow[id] += amount;
 
-        uint256 collateralPrice = market.collateralOracle.price();
-        uint256 borrowablePrice = market.borrowableOracle.price();
-
-        require(_isHealthy(id, msg.sender, market.lltv, collateralPrice, borrowablePrice), "not enough collateral");
+        require(_isHealthy(market, id, msg.sender, market.lltv), "not enough collateral");
         require(totalBorrow[id] <= totalSupply[id], "not enough liquidity");
 
         market.borrowableAsset.safeTransfer(msg.sender, amount);
@@ -200,10 +197,7 @@ contract Blue {
 
         collateral[id][msg.sender] -= amount;
 
-        uint256 collateralPrice = market.collateralOracle.price();
-        uint256 borrowablePrice = market.borrowableOracle.price();
-
-        require(_isHealthy(id, msg.sender, market.lltv, collateralPrice, borrowablePrice), "not enough collateral");
+        require(_isHealthy(market, id, msg.sender, market.lltv), "not enough collateral");
 
         market.collateralAsset.safeTransfer(msg.sender, amount);
     }
@@ -221,7 +215,7 @@ contract Blue {
         uint256 borrowablePrice = market.borrowableOracle.price();
 
         require(
-            !_isHealthy(id, borrower, market.lltv, collateralPrice, borrowablePrice),
+            !_isPositionHealthy(id, borrower, market.lltv, collateralPrice, borrowablePrice),
             "cannot liquidate a healthy position"
         );
 
@@ -264,17 +258,24 @@ contract Blue {
 
     // Health check.
 
-    function _isHealthy(Id id, address user, uint256 lltv, uint256 collateralPrice, uint256 borrowablePrice)
+    function _isHealthy(Market calldata market, Id id, address user, uint256 lltv) private view returns (bool) {
+        if (borrowShare[id][user] == 0) return true;
+
+        uint256 collateralPrice = market.collateralOracle.price();
+        uint256 borrowablePrice = market.borrowableOracle.price();
+
+        return _isPositionHealthy(id, user, lltv, collateralPrice, borrowablePrice);
+    }
+
+    function _isPositionHealthy(Id id, address user, uint256 lltv, uint256 collateralPrice, uint256 borrowablePrice)
         private
         view
         returns (bool)
     {
-        uint256 borrowShares = borrowShare[id][user];
-        if (borrowShares == 0) return true;
-
-        // totalBorrowShares[id] > 0 when borrowShares > 0.
-        uint256 borrowValue = borrowShares.toAssetsUp(totalBorrow[id], totalBorrowShares[id]).mulWadUp(borrowablePrice);
+        uint256 borrowValue =
+            borrowShare[id][user].toAssetsUp(totalBorrow[id], totalBorrowShares[id]).mulWadUp(borrowablePrice);
         uint256 collateralValue = collateral[id][user].mulWadDown(collateralPrice);
+
         return collateralValue.mulWadDown(lltv) >= borrowValue;
     }
 }
