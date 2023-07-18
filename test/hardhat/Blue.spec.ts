@@ -1,8 +1,7 @@
-import { hexZeroPad } from "@ethersproject/bytes";
-import { setBalance } from "@nomicfoundation/hardhat-network-helpers";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { mine, setBalance } from "@nomicfoundation/hardhat-network-helpers";
+import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 import { expect } from "chai";
-import { BigNumber, Wallet, constants, utils } from "ethers";
+import { AbiCoder, MaxUint256, Wallet, keccak256, toBeHex, toBigInt } from "ethers";
 import hre from "hardhat";
 import { Blue, OracleMock, ERC20Mock, IrmMock } from "types";
 
@@ -10,7 +9,7 @@ const iterations = 400;
 const closePositions = false;
 const nbLiquidations = 50;
 // The liquidations gas test expects that 2*nbLiquidations + 1 is strictly less than the number of signers.
-const initBalance = constants.MaxUint256.div(2);
+const initBalance = MaxUint256 / 2n;
 
 let seed = 42;
 
@@ -23,13 +22,14 @@ function random() {
   return (next() - 1) / 2147483646;
 }
 
-const abiCoder = new utils.AbiCoder();
-
 function identifier(market: Market) {
   const values = Object.values(market);
-  const encodedMarket = abiCoder.encode(["address", "address", "address", "address", "address", "uint256"], values);
+  const encodedMarket = AbiCoder.defaultAbiCoder().encode(
+    ["address", "address", "address", "address", "address", "uint256"],
+    values,
+  );
 
-  return Buffer.from(utils.keccak256(encodedMarket).slice(2), "hex");
+  return Buffer.from(keccak256(encodedMarket).slice(2), "hex");
 }
 
 interface Market {
@@ -38,13 +38,15 @@ interface Market {
   borrowableOracle: string;
   collateralOracle: string;
   irm: string;
-  lltv: BigNumber;
+  lltv: bigint;
 }
 
 describe("Blue", () => {
   let signers: SignerWithAddress[];
   let admin: SignerWithAddress;
   let liquidator: SignerWithAddress;
+
+  let blueAddress: string;
 
   let blue: Blue;
   let borrowable: ERC20Mock;
@@ -70,24 +72,25 @@ describe("Blue", () => {
     borrowableOracle = await OracleMockFactory.deploy();
     collateralOracle = await OracleMockFactory.deploy();
 
-    await borrowableOracle.connect(admin).setPrice(BigNumber.WAD);
-    await collateralOracle.connect(admin).setPrice(BigNumber.WAD);
+    await borrowableOracle.connect(admin).setPrice(0); // Make health check always pass.
+    await collateralOracle.connect(admin).setPrice(BigInt.WAD);
 
     const BlueFactory = await hre.ethers.getContractFactory("Blue", admin);
 
     blue = await BlueFactory.deploy(admin.address);
+    blueAddress = await blue.getAddress();
 
     const IrmMockFactory = await hre.ethers.getContractFactory("IrmMock", admin);
 
-    irm = await IrmMockFactory.deploy(blue.address);
+    irm = await IrmMockFactory.deploy(blueAddress);
 
     market = {
-      borrowableAsset: borrowable.address,
-      collateralAsset: collateral.address,
-      borrowableOracle: borrowableOracle.address,
-      collateralOracle: collateralOracle.address,
-      irm: irm.address,
-      lltv: BigNumber.WAD.div(2),
+      borrowableAsset: await borrowable.getAddress(),
+      collateralAsset: await collateral.getAddress(),
+      borrowableOracle: await borrowableOracle.getAddress(),
+      collateralOracle: await collateralOracle.getAddress(),
+      irm: await irm.getAddress(),
+      lltv: BigInt.WAD / 2n,
     };
 
     id = identifier(market);
@@ -101,32 +104,34 @@ describe("Blue", () => {
     for (let i = 1; i < iterations; ++i) {
       if (i % 20 == 0) console.log("main:", (100 * i) / iterations, "% complete");
 
-      const user = new Wallet(hexZeroPad(BigNumber.from(i).toHexString(), 32), hre.ethers.provider);
+      await mine(Math.floor(random() * 100), { interval: 12 });
+
+      const user = new Wallet(toBeHex(i, 32), hre.ethers.provider);
       await setBalance(user.address, initBalance);
       await borrowable.setBalance(user.address, initBalance);
-      await borrowable.connect(user).approve(blue.address, constants.MaxUint256);
+      await borrowable.connect(user).approve(blueAddress, MaxUint256);
       await collateral.setBalance(user.address, initBalance);
-      await collateral.connect(user).approve(blue.address, constants.MaxUint256);
+      await collateral.connect(user).approve(blueAddress, MaxUint256);
 
-      let amount = BigNumber.WAD.mul(1 + Math.floor(random() * 100));
+      let amount = BigInt.WAD * toBigInt(1 + Math.floor(random() * 100));
 
-      let supplyOnly: boolean = random() < 2 / 3;
+      const supplyOnly: boolean = random() < 2 / 3;
       if (supplyOnly) {
-        if (amount > BigNumber.from(0)) {
+        if (amount > 0n) {
           await blue.connect(user).supply(market, amount);
-          await blue.connect(user).withdraw(market, amount.div(2));
+          await blue.connect(user).withdraw(market, amount / 2n);
         }
       } else {
         const totalSupply = await blue.totalSupply(id);
         const totalBorrow = await blue.totalBorrow(id);
-        let liq = BigNumber.from(totalSupply).sub(BigNumber.from(totalBorrow));
-        amount = BigNumber.min(amount, BigNumber.from(liq).div(2));
 
-        if (amount > BigNumber.from(0)) {
+        amount = BigInt.min(amount, (totalSupply - totalBorrow) / 2n);
+
+        if (amount > 0n) {
           await blue.connect(user).supplyCollateral(market, amount);
-          await blue.connect(user).borrow(market, amount.div(2));
-          await blue.connect(user).repay(market, amount.div(4));
-          await blue.connect(user).withdrawCollateral(market, amount.div(8));
+          await blue.connect(user).borrow(market, amount / 2n);
+          await blue.connect(user).repay(market, amount / 4n);
+          await blue.connect(user).withdrawCollateral(market, amount / 8n);
         }
       }
     }
@@ -138,14 +143,13 @@ describe("Blue", () => {
     // Create accounts close to liquidation
     for (let i = 0; i < 2 * nbLiquidations; ++i) {
       const user = signers[i];
-      const tranche = Math.floor(1 + i / 2);
-      const lltv = BigNumber.WAD.mul(tranche).div(nbLiquidations + 1);
+      const tranche = toBigInt(Math.floor(1 + i / 2));
+      market.lltv = (BigInt.WAD * tranche) / toBigInt(nbLiquidations + 1);
 
-      const amount = BigNumber.WAD.mul(1 + Math.floor(random() * 100));
-      const borrowedAmount = amount.mul(lltv).div(BigNumber.WAD);
-      const maxSeize = closePositions ? constants.MaxUint256 : amount.div(2);
+      const amount = BigInt.WAD * toBigInt(1 + Math.floor(random() * 100));
+      const borrowedAmount = (amount * market.lltv) / BigInt.WAD;
+      const maxSeize = closePositions ? MaxUint256 : amount / 2n;
 
-      market.lltv = lltv;
       // We use 2 different users to borrow from a market so that liquidations do not put the borrow storage back to 0 on that market.
       // Consequently, we should only create the market on a particular lltv once.
       if (i % 2 == 0) {
@@ -153,7 +157,7 @@ describe("Blue", () => {
         await blue.connect(admin).enableIrm(market.irm);
         await blue.connect(admin).createMarket(market);
         liquidationData.push({
-          lltv: lltv,
+          lltv: market.lltv,
           borrower: user.address,
           maxSeize: maxSeize,
         });
@@ -161,9 +165,9 @@ describe("Blue", () => {
 
       await setBalance(user.address, initBalance);
       await borrowable.setBalance(user.address, initBalance);
-      await borrowable.connect(user).approve(blue.address, constants.MaxUint256);
+      await borrowable.connect(user).approve(blueAddress, MaxUint256);
       await collateral.setBalance(user.address, initBalance);
-      await collateral.connect(user).approve(blue.address, constants.MaxUint256);
+      await collateral.connect(user).approve(blueAddress, MaxUint256);
 
       await blue.connect(user).supply(market, amount);
       await blue.connect(user).supplyCollateral(market, amount);
@@ -171,10 +175,10 @@ describe("Blue", () => {
       await blue.connect(user).borrow(market, borrowedAmount);
     }
 
-    await borrowableOracle.connect(admin).setPrice(BigNumber.WAD.mul(1000));
+    await borrowableOracle.connect(admin).setPrice(BigInt.WAD * 1000n);
 
     await setBalance(liquidator.address, initBalance);
-    await borrowable.connect(liquidator).approve(blue.address, constants.MaxUint256);
+    await borrowable.connect(liquidator).approve(blueAddress, MaxUint256);
     await borrowable.setBalance(liquidator.address, initBalance);
     for (let i = 0; i < liquidationData.length; i++) {
       let data = liquidationData[i];
@@ -184,18 +188,14 @@ describe("Blue", () => {
 
     for (let i = 0; i < 2 * nbLiquidations; i++) {
       const user = signers[i];
-      const tranche = Math.floor(1 + i / 2);
-      const lltv = BigNumber.WAD.mul(tranche).div(nbLiquidations + 1);
+      const tranche = toBigInt(Math.floor(1 + i / 2));
+      market.lltv = (BigInt.WAD * tranche) / toBigInt(nbLiquidations + 1);
 
-      market.lltv = lltv;
       id = identifier(market);
 
       let collat = await blue.collateral(id, user.address);
-      expect(
-        !closePositions || collat == BigNumber.from(0),
-        "did not take the whole collateral when closing the position"
-      ).true;
-      expect(closePositions || collat != BigNumber.from(0), "unexpectedly closed the position").true;
+      expect(!closePositions || collat == 0n, "did not take the whole collateral when closing the position").true;
+      expect(closePositions || collat != 0n, "unexpectedly closed the position").true;
     }
   });
 });
