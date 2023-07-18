@@ -8,8 +8,8 @@ struct Oracle {
 
 library OracleLib {
     function price(Oracle memory oracle) internal view returns (uint256) {
-        (, bytes memory borrowOracleData) = oracle.contractAddress.staticcall(abi.encode(oracle.priceSelector));
+        (, bytes memory oracleData) = oracle.contractAddress.staticcall(abi.encode(oracle.priceSelector));
 
-        return abi.decode(borrowOracleData, (uint256));
+        return abi.decode(oracleData, (uint256));
     }
 }
