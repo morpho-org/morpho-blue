@@ -62,6 +62,8 @@ contract Blue {
     mapping(IIrm => bool) public isIrmEnabled;
     // Enabled LLTVs.
     mapping(uint256 => bool) public isLltvEnabled;
+    // User's managers.
+    mapping(address => mapping(address => bool)) public isApproved;
 
     // Constructor.
 
@@ -116,7 +118,7 @@ contract Blue {
 
     // Supply management.
 
-    function supply(Market calldata market, uint256 amount) external {
+    function supply(Market calldata market, uint256 amount, address onBehalf) external {
         Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
@@ -124,11 +126,11 @@ contract Blue {
         accrueInterests(market, id);
 
         if (totalSupply[id] == 0) {
-            supplyShare[id][msg.sender] = WAD;
+            supplyShare[id][onBehalf] = WAD;
             totalSupplyShares[id] = WAD;
         } else {
             uint256 shares = amount.wMul(totalSupplyShares[id]).wDiv(totalSupply[id]);
-            supplyShare[id][msg.sender] += shares;
+            supplyShare[id][onBehalf] += shares;
             totalSupplyShares[id] += shares;
         }
 
@@ -137,15 +139,16 @@ contract Blue {
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
 
-    function withdraw(Market calldata market, uint256 amount) external {
+    function withdraw(Market calldata market, uint256 amount, address onBehalf) external {
         Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
+        require(isSenderOrIsApproved(onBehalf), "not approved");
 
         accrueInterests(market, id);
 
         uint256 shares = amount.wMul(totalSupplyShares[id]).wDiv(totalSupply[id]);
-        supplyShare[id][msg.sender] -= shares;
+        supplyShare[id][onBehalf] -= shares;
         totalSupplyShares[id] -= shares;
 
         totalSupply[id] -= amount;
@@ -157,31 +160,32 @@ contract Blue {
 
     // Borrow management.
 
-    function borrow(Market calldata market, uint256 amount) external {
+    function borrow(Market calldata market, uint256 amount, address onBehalf) external {
         Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
+        require(isSenderOrIsApproved(onBehalf), "not approved");
 
         accrueInterests(market, id);
 
         if (totalBorrow[id] == 0) {
-            borrowShare[id][msg.sender] = WAD;
+            borrowShare[id][onBehalf] = WAD;
             totalBorrowShares[id] = WAD;
         } else {
             uint256 shares = amount.wMul(totalBorrowShares[id]).wDiv(totalBorrow[id]);
-            borrowShare[id][msg.sender] += shares;
+            borrowShare[id][onBehalf] += shares;
             totalBorrowShares[id] += shares;
         }
 
         totalBorrow[id] += amount;
 
-        require(isHealthy(market, id, msg.sender), "not enough collateral");
+        require(isHealthy(market, id, onBehalf), "not enough collateral");
         require(totalBorrow[id] <= totalSupply[id], "not enough liquidity");
 
         market.borrowableAsset.safeTransfer(msg.sender, amount);
     }
 
-    function repay(Market calldata market, uint256 amount) external {
+    function repay(Market calldata market, uint256 amount, address onBehalf) external {
         Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
@@ -189,7 +193,7 @@ contract Blue {
         accrueInterests(market, id);
 
         uint256 shares = amount.wMul(totalBorrowShares[id]).wDiv(totalBorrow[id]);
-        borrowShare[id][msg.sender] -= shares;
+        borrowShare[id][onBehalf] -= shares;
         totalBorrowShares[id] -= shares;
 
         totalBorrow[id] -= amount;
@@ -200,28 +204,29 @@ contract Blue {
     // Collateral management.
 
     /// @dev Don't accrue interests because it's not required and it saves gas.
-    function supplyCollateral(Market calldata market, uint256 amount) external {
+    function supplyCollateral(Market calldata market, uint256 amount, address onBehalf) external {
         Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
 
         // Don't accrue interests because it's not required and it saves gas.
 
-        collateral[id][msg.sender] += amount;
+        collateral[id][onBehalf] += amount;
 
         market.collateralAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
 
-    function withdrawCollateral(Market calldata market, uint256 amount) external {
+    function withdrawCollateral(Market calldata market, uint256 amount, address onBehalf) external {
         Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
+        require(isSenderOrIsApproved(onBehalf), "not approved");
 
         accrueInterests(market, id);
 
-        collateral[id][msg.sender] -= amount;
+        collateral[id][onBehalf] -= amount;
 
-        require(isHealthy(market, id, msg.sender), "not enough collateral");
+        require(isHealthy(market, id, onBehalf), "not enough collateral");
 
         market.collateralAsset.safeTransfer(msg.sender, amount);
     }
@@ -260,6 +265,16 @@ contract Blue {
 
         market.collateralAsset.safeTransfer(msg.sender, seized);
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), repaid);
+    }
+
+    // Position management.
+
+    function setApproval(address manager, bool isAllowed) external {
+        isApproved[msg.sender][manager] = isAllowed;
+    }
+
+    function isSenderOrIsApproved(address user) internal view returns (bool) {
+        return msg.sender == user || isApproved[user][msg.sender];
     }
 
     // Interests management.

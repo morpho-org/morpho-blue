@@ -118,8 +118,8 @@ describe("Blue", () => {
       const supplyOnly: boolean = random() < 2 / 3;
       if (supplyOnly) {
         if (amount > 0n) {
-          await blue.connect(user).supply(market, amount);
-          await blue.connect(user).withdraw(market, amount / 2n);
+          await blue.connect(user).supply(market, amount, user.address);
+          await blue.connect(user).withdraw(market, amount / 2n, user.address);
         }
       } else {
         const totalSupply = await blue.totalSupply(id);
@@ -128,10 +128,10 @@ describe("Blue", () => {
         amount = BigInt.min(amount, (totalSupply - totalBorrow) / 2n);
 
         if (amount > 0n) {
-          await blue.connect(user).supplyCollateral(market, amount);
-          await blue.connect(user).borrow(market, amount / 2n);
-          await blue.connect(user).repay(market, amount / 4n);
-          await blue.connect(user).withdrawCollateral(market, amount / 8n);
+          await blue.connect(user).supplyCollateral(market, amount, user.address);
+          await blue.connect(user).borrow(market, amount / 2n, user.address);
+          await blue.connect(user).repay(market, amount / 4n, user.address);
+          await blue.connect(user).withdrawCollateral(market, amount / 8n, user.address);
         }
       }
     }
@@ -169,10 +169,10 @@ describe("Blue", () => {
       await collateral.setBalance(user.address, initBalance);
       await collateral.connect(user).approve(blueAddress, MaxUint256);
 
-      await blue.connect(user).supply(market, amount);
-      await blue.connect(user).supplyCollateral(market, amount);
+      await blue.connect(user).supply(market, amount, user.address);
+      await blue.connect(user).supplyCollateral(market, amount, user.address);
 
-      await blue.connect(user).borrow(market, borrowedAmount);
+      await blue.connect(user).borrow(market, borrowedAmount, user.address);
     }
 
     await borrowableOracle.connect(admin).setPrice(BigInt.WAD * 1000n);
