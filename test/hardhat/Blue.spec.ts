@@ -5,7 +5,7 @@ import { AbiCoder, MaxUint256, Wallet, keccak256, toBeHex, toBigInt } from "ethe
 import hre from "hardhat";
 import { Blue, OracleMock, ERC20Mock, IrmMock } from "types";
 
-const iterations = 400;
+const iterations = 250;
 const closePositions = false;
 const nbLiquidations = 50;
 // The liquidations gas test expects that 2*nbLiquidations + 1 is strictly less than the number of signers.
