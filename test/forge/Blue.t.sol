@@ -26,9 +26,9 @@ contract BlueTest is Test {
     Blue private blue;
     ERC20 private borrowableAsset;
     ERC20 private collateralAsset;
-    OracleCompound private compoundOracle;
+    OracleCompound private borrowableOracleContract;
     Oracle private borrowableOracle;
-    OracleChainlink private chainlinkOracle;
+    OracleChainlink private collateralOracleContract;
     Oracle private collateralOracle;
     Irm private irm;
     Market public market;
@@ -41,10 +41,10 @@ contract BlueTest is Test {
         // List a market.
         borrowableAsset = new ERC20("borrowable", "B", 18);
         collateralAsset = new ERC20("collateral", "C", 18);
-        compoundOracle = new OracleCompound();
-        borrowableOracle = Oracle(address(compoundOracle), OracleCompound.getUnderlyingPrice.selector);
-        chainlinkOracle = new OracleChainlink();
-        collateralOracle = Oracle(address(chainlinkOracle), OracleChainlink.latestAnswer.selector);
+        borrowableOracleContract = new OracleCompound();
+        borrowableOracle = Oracle(address(borrowableOracleContract), OracleCompound.getUnderlyingPrice.selector);
+        collateralOracleContract = new OracleChainlink();
+        collateralOracle = Oracle(address(collateralOracleContract), OracleChainlink.latestAnswer.selector);
 
         irm = new Irm(blue);
         market = Market(
@@ -65,8 +65,8 @@ contract BlueTest is Test {
 
         // We set the price of the borrowable asset to zero so that borrowers
         // don't need to deposit any collateral.
-        compoundOracle.setPrice(0);
-        chainlinkOracle.setPrice(1e18);
+        borrowableOracleContract.setPrice(0);
+        collateralOracleContract.setPrice(1e18);
 
         borrowableAsset.approve(address(blue), type(uint256).max);
         collateralAsset.approve(address(blue), type(uint256).max);
@@ -288,8 +288,8 @@ contract BlueTest is Test {
         amountCollateral = bound(amountCollateral, 1, 2 ** 64);
         priceCollateral = bound(priceCollateral, 0, 2 ** 64);
 
-        compoundOracle.setPrice(priceBorrowable);
-        chainlinkOracle.setPrice(priceCollateral);
+        borrowableOracleContract.setPrice(priceBorrowable);
+        collateralOracleContract.setPrice(priceCollateral);
 
         borrowableAsset.setBalance(address(this), amountBorrowed);
         collateralAsset.setBalance(BORROWER, amountCollateral);
@@ -363,7 +363,7 @@ contract BlueTest is Test {
     }
 
     function testLiquidate(uint256 amountLent) public {
-        compoundOracle.setPrice(1e18);
+        borrowableOracleContract.setPrice(1e18);
         amountLent = bound(amountLent, 1000, 2 ** 64);
 
         uint256 amountCollateral = amountLent;
@@ -386,7 +386,7 @@ contract BlueTest is Test {
         vm.stopPrank();
 
         // Price change
-        compoundOracle.setPrice(2e18);
+        borrowableOracleContract.setPrice(2e18);
 
         uint256 liquidatorNetWorthBefore = netWorth(LIQUIDATOR);
 
@@ -405,7 +405,7 @@ contract BlueTest is Test {
     }
 
     function testRealizeBadDebt(uint256 amountLent) public {
-        compoundOracle.setPrice(1e18);
+        borrowableOracleContract.setPrice(1e18);
         amountLent = bound(amountLent, 1000, 2 ** 64);
 
         uint256 amountCollateral = amountLent;
@@ -428,7 +428,7 @@ contract BlueTest is Test {
         vm.stopPrank();
 
         // Price change
-        compoundOracle.setPrice(100e18);
+        borrowableOracleContract.setPrice(100e18);
 
         uint256 liquidatorNetWorthBefore = netWorth(LIQUIDATOR);
 
