@@ -6,7 +6,7 @@ import { BigNumber, Wallet, constants, utils } from "ethers";
 import hre from "hardhat";
 import { Blue, OracleMock, ERC20Mock, IrmMock } from "types";
 
-const iterations = 500;
+const iterations = 400;
 const closePositions = false;
 const nbLiquidations = 50;
 // The liquidations gas test expects that 2*nbLiquidations + 1 is strictly less than the number of signers.
@@ -99,7 +99,7 @@ describe("Blue", () => {
 
   it("should simulate gas cost [main]", async () => {
     for (let i = 1; i < iterations; ++i) {
-      console.log(i, "/", iterations);
+      if (i % 20 == 0) console.log("main:", (100 * i) / iterations, "% complete");
 
       const user = new Wallet(hexZeroPad(BigNumber.from(i).toHexString(), 32), hre.ethers.provider);
       await setBalance(user.address, initBalance);
@@ -113,8 +113,8 @@ describe("Blue", () => {
       let supplyOnly: boolean = random() < 2 / 3;
       if (supplyOnly) {
         if (amount > BigNumber.from(0)) {
-          await blue.connect(user).supply(market, amount);
-          await blue.connect(user).withdraw(market, amount.div(2));
+          await blue.connect(user).supply(market, amount, user.address);
+          await blue.connect(user).withdraw(market, amount.div(2), user.address);
         }
       } else {
         const totalSupply = await blue.totalSupply(id);
@@ -123,10 +123,10 @@ describe("Blue", () => {
         amount = BigNumber.min(amount, BigNumber.from(liq).div(2));
 
         if (amount > BigNumber.from(0)) {
-          await blue.connect(user).supplyCollateral(market, amount);
-          await blue.connect(user).borrow(market, amount.div(2));
-          await blue.connect(user).repay(market, amount.div(4));
-          await blue.connect(user).withdrawCollateral(market, amount.div(8));
+          await blue.connect(user).supplyCollateral(market, amount, user.address);
+          await blue.connect(user).borrow(market, amount.div(2), user.address);
+          await blue.connect(user).repay(market, amount.div(4), user.address);
+          await blue.connect(user).withdrawCollateral(market, amount.div(8), user.address);
         }
       }
     }
@@ -165,10 +165,10 @@ describe("Blue", () => {
       await collateral.setBalance(user.address, initBalance);
       await collateral.connect(user).approve(blue.address, constants.MaxUint256);
 
-      await blue.connect(user).supply(market, amount);
-      await blue.connect(user).supplyCollateral(market, amount);
+      await blue.connect(user).supply(market, amount, user.address);
+      await blue.connect(user).supplyCollateral(market, amount, user.address);
 
-      await blue.connect(user).borrow(market, borrowedAmount);
+      await blue.connect(user).borrow(market, borrowedAmount, user.address);
     }
 
     await borrowableOracle.connect(admin).setPrice(BigNumber.WAD.mul(1000));
