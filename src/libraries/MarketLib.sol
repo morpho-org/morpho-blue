@@ -17,7 +17,7 @@ struct Market {
 }
 
 library MarketLib {
-    function toId(Market calldata market) internal pure returns (Id) {
+    function id(Market calldata market) internal pure returns (Id) {
         return Id.wrap(keccak256(abi.encode(market)));
     }
 }

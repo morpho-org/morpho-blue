@@ -72,7 +72,7 @@ contract Blue {
     // Markets management.
 
     function createMarket(Market calldata market) external {
-        Id id = market.toId();
+        Id id = market.id();
         require(isIrmEnabled[market.irm], "IRM not enabled");
         require(isLltvEnabled[market.lltv], "LLTV not enabled");
         require(lastUpdate[id] == 0, "market already exists");
@@ -83,7 +83,7 @@ contract Blue {
     // Supply management.
 
     function supply(Market calldata market, uint256 amount) external {
-        Id id = market.toId();
+        Id id = market.id();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
 
@@ -104,7 +104,7 @@ contract Blue {
     }
 
     function withdraw(Market calldata market, uint256 amount) external {
-        Id id = market.toId();
+        Id id = market.id();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
 
@@ -124,7 +124,7 @@ contract Blue {
     // Borrow management.
 
     function borrow(Market calldata market, uint256 amount) external {
-        Id id = market.toId();
+        Id id = market.id();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
 
@@ -148,7 +148,7 @@ contract Blue {
     }
 
     function repay(Market calldata market, uint256 amount) external {
-        Id id = market.toId();
+        Id id = market.id();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
 
@@ -167,7 +167,7 @@ contract Blue {
 
     /// @dev Don't accrue interests because it's not required and it saves gas.
     function supplyCollateral(Market calldata market, uint256 amount) external {
-        Id id = market.toId();
+        Id id = market.id();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
 
@@ -179,7 +179,7 @@ contract Blue {
     }
 
     function withdrawCollateral(Market calldata market, uint256 amount) external {
-        Id id = market.toId();
+        Id id = market.id();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
 
@@ -195,7 +195,7 @@ contract Blue {
     // Liquidation.
 
     function liquidate(Market calldata market, address borrower, uint256 seized) external {
-        Id id = market.toId();
+        Id id = market.id();
         require(lastUpdate[id] != 0, "unknown market");
         require(seized != 0, "zero amount");
 

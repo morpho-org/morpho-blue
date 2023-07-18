@@ -19,7 +19,7 @@ contract IrmMock is IIrm {
     }
 
     function borrowRate(Market calldata market) external view returns (uint256) {
-        Id id = market.toId();
+        Id id = market.id();
         uint256 utilization = blue.totalBorrow(id).wDiv(blue.totalSupply(id));
 
         // Divide by the number of seconds in a year.
