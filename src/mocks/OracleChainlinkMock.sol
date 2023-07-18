@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.20;
 
-import {IOracle} from "src/interfaces/IOracle.sol";
+contract OracleChainlinkMock {
+    uint256 internal price;
 
-contract OracleMock is IOracle {
-    uint256 public price;
+    function latestAnswer() external view returns (uint256) {
+        return price;
+    }
 
     function setPrice(uint256 newPrice) external {
         price = newPrice;

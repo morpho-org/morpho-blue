@@ -2,14 +2,16 @@
 pragma solidity 0.8.20;
 
 import {IERC20} from "src/interfaces/IERC20.sol";
-import {IOracle} from "src/interfaces/IOracle.sol";
 
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
+import "src/libraries/OracleAdapterLib.sol";
+
 import "src/Blue.sol";
 import {ERC20Mock as ERC20} from "src/mocks/ERC20Mock.sol";
-import {OracleMock as Oracle} from "src/mocks/OracleMock.sol";
+import {OracleCompoundMock as OracleCompound} from "src/mocks/OracleCompoundMock.sol";
+import {OracleChainlinkMock as OracleChainlink} from "src/mocks/OracleChainlinkMock.sol";
 import {IrmMock as Irm} from "src/mocks/IrmMock.sol";
 
 contract BlueTest is Test {
@@ -23,8 +25,8 @@ contract BlueTest is Test {
     Blue private blue;
     ERC20 private borrowableAsset;
     ERC20 private collateralAsset;
-    Oracle private borrowableOracle;
-    Oracle private collateralOracle;
+    OracleCompound private borrowableOracle;
+    OracleChainlink private collateralOracle;
     Irm private irm;
     Market public market;
     Id public id;
@@ -36,15 +38,17 @@ contract BlueTest is Test {
         // List a market.
         borrowableAsset = new ERC20("borrowable", "B", 18);
         collateralAsset = new ERC20("collateral", "C", 18);
-        borrowableOracle = new Oracle();
-        collateralOracle = new Oracle();
+        borrowableOracle = new OracleCompound();
+        collateralOracle = new OracleChainlink();
 
         irm = new Irm(blue);
         market = Market(
             IERC20(address(borrowableAsset)),
             IERC20(address(collateralAsset)),
-            borrowableOracle,
-            collateralOracle,
+            address(borrowableOracle),
+            bytes4(keccak256("getUnderlyingPrice()")),
+            address(collateralOracle),
+            bytes4(keccak256("latestAnswer()")),
             irm,
             LLTV
         );
@@ -75,9 +79,17 @@ contract BlueTest is Test {
 
     // To move to a test utils file later.
 
+    function borrowablePrice() internal view returns (uint256) {
+        return OracleAdapterLib.price(market.borrowableOracle, market.borrowablePrice);
+    }
+
+    function collateralPrice() internal view returns (uint256) {
+        return OracleAdapterLib.price(market.collateralOracle, market.collateralPrice);
+    }
+
     function netWorth(address user) internal view returns (uint256) {
-        uint256 collateralAssetValue = collateralAsset.balanceOf(user).wMul(collateralOracle.price());
-        uint256 borrowableAssetValue = borrowableAsset.balanceOf(user).wMul(borrowableOracle.price());
+        uint256 collateralAssetValue = collateralAsset.balanceOf(user).wMul(collateralPrice());
+        uint256 borrowableAssetValue = borrowableAsset.balanceOf(user).wMul(borrowablePrice());
         return collateralAssetValue + borrowableAssetValue;
     }
 
@@ -389,9 +401,9 @@ contract BlueTest is Test {
 
         uint256 liquidatorNetWorthAfter = netWorth(LIQUIDATOR);
 
-        uint256 expectedRepaid = toSeize.wMul(collateralOracle.price()).wDiv(incentive).wDiv(borrowableOracle.price());
-        uint256 expectedNetWorthAfter = liquidatorNetWorthBefore + toSeize.wMul(collateralOracle.price())
-            - expectedRepaid.wMul(borrowableOracle.price());
+        uint256 expectedRepaid = toSeize.wMul(collateralPrice()).wDiv(incentive).wDiv(borrowablePrice());
+        uint256 expectedNetWorthAfter =
+            liquidatorNetWorthBefore + toSeize.wMul(collateralPrice()) - expectedRepaid.wMul(borrowablePrice());
         assertEq(liquidatorNetWorthAfter, expectedNetWorthAfter, "LIQUIDATOR net worth");
         assertApproxEqAbs(borrowBalance(BORROWER), amountBorrowed - expectedRepaid, 100, "BORROWER balance");
         assertEq(blue.collateral(id, BORROWER), amountCollateral - toSeize, "BORROWER collateral");
@@ -431,9 +443,9 @@ contract BlueTest is Test {
 
         uint256 liquidatorNetWorthAfter = netWorth(LIQUIDATOR);
 
-        uint256 expectedRepaid = toSeize.wMul(collateralOracle.price()).wDiv(incentive).wDiv(borrowableOracle.price());
-        uint256 expectedNetWorthAfter = liquidatorNetWorthBefore + toSeize.wMul(collateralOracle.price())
-            - expectedRepaid.wMul(borrowableOracle.price());
+        uint256 expectedRepaid = toSeize.wMul(collateralPrice()).wDiv(incentive).wDiv(borrowablePrice());
+        uint256 expectedNetWorthAfter =
+            liquidatorNetWorthBefore + toSeize.wMul(collateralPrice()) - expectedRepaid.wMul(borrowablePrice());
         assertEq(liquidatorNetWorthAfter, expectedNetWorthAfter, "LIQUIDATOR net worth");
         assertEq(borrowBalance(BORROWER), 0, "BORROWER balance");
         assertEq(blue.collateral(id, BORROWER), 0, "BORROWER collateral");

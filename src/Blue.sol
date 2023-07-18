@@ -3,8 +3,8 @@ pragma solidity 0.8.20;
 
 import {IIrm} from "src/interfaces/IIrm.sol";
 import {IERC20} from "src/interfaces/IERC20.sol";
-import {IOracle} from "src/interfaces/IOracle.sol";
 
+import {OracleAdapterLib} from "src/libraries/OracleAdapterLib.sol";
 import {MathLib} from "src/libraries/MathLib.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 
@@ -23,8 +23,10 @@ type Id is bytes32;
 struct Market {
     IERC20 borrowableAsset;
     IERC20 collateralAsset;
-    IOracle borrowableOracle;
-    IOracle collateralOracle;
+    address borrowableOracle;
+    bytes4 borrowablePrice;
+    address collateralOracle;
+    bytes4 collateralPrice;
     IIrm irm;
     uint256 lltv;
 }
@@ -275,8 +277,8 @@ contract Blue {
         uint256 borrowShares = borrowShare[id][user];
         bool isHealthy = true;
         if (borrowShares != 0) {
-            borrowablePrice = market.borrowableOracle.price();
-            collateralPrice = market.collateralOracle.price();
+            borrowablePrice = OracleAdapterLib.price(market.borrowableOracle, market.borrowablePrice);
+            collateralPrice = OracleAdapterLib.price(market.collateralOracle, market.collateralPrice);
 
             // totalBorrowShares[id] > 0 when borrowShares > 0.
             uint256 borrowValue = borrowShares.wMul(totalBorrow[id]).wDiv(totalBorrowShares[id]).wMul(borrowablePrice);
