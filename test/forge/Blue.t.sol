@@ -46,9 +46,9 @@ contract BlueTest is Test {
             IERC20(address(borrowableAsset)),
             IERC20(address(collateralAsset)),
             address(borrowableOracle),
-            bytes4(keccak256("getUnderlyingPrice()")),
+            OracleCompound.getUnderlyingPrice.selector,
             address(collateralOracle),
-            bytes4(keccak256("latestAnswer()")),
+            OracleChainlink.latestAnswer.selector,
             irm,
             LLTV
         );
@@ -80,11 +80,11 @@ contract BlueTest is Test {
     // To move to a test utils file later.
 
     function borrowablePrice() internal view returns (uint256) {
-        return OracleAdapterLib.price(market.borrowableOracle, market.borrowablePrice);
+        return OracleAdapterLib.getPrice(market.borrowableOracle, market.borrowablePrice);
     }
 
     function collateralPrice() internal view returns (uint256) {
-        return OracleAdapterLib.price(market.collateralOracle, market.collateralPrice);
+        return OracleAdapterLib.getPrice(market.collateralOracle, market.collateralPrice);
     }
 
     function netWorth(address user) internal view returns (uint256) {

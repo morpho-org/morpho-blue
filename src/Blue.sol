@@ -277,8 +277,8 @@ contract Blue {
         uint256 borrowShares = borrowShare[id][user];
         bool isHealthy = true;
         if (borrowShares != 0) {
-            borrowablePrice = OracleAdapterLib.price(market.borrowableOracle, market.borrowablePrice);
-            collateralPrice = OracleAdapterLib.price(market.collateralOracle, market.collateralPrice);
+            borrowablePrice = OracleAdapterLib.getPrice(market.borrowableOracle, market.borrowablePrice);
+            collateralPrice = OracleAdapterLib.getPrice(market.collateralOracle, market.collateralPrice);
 
             // totalBorrowShares[id] > 0 when borrowShares > 0.
             uint256 borrowValue = borrowShares.wMul(totalBorrow[id]).wDiv(totalBorrowShares[id]).wMul(borrowablePrice);
