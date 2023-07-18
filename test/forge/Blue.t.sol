@@ -260,20 +260,21 @@ contract BlueTest is Test {
         blue.borrow(market, amountBorrowed, BORROWER);
 
         uint256 totalSupplyBefore = blue.totalSupply(id);
+        uint256 totalSupplySharesBefore = blue.totalSupplyShares(id);
 
         // Trigger an accrue.
         vm.warp(block.timestamp + timeElapsed);
+
         collateralAsset.setBalance(address(this), 1);
         blue.supplyCollateral(market, 1, address(this));
         blue.withdrawCollateral(market, 1, address(this));
-        uint256 totalSupplyAfter = blue.totalSupply(id);
 
+        uint256 totalSupplyAfter = blue.totalSupply(id);
         vm.assume(totalSupplyAfter > totalSupplyBefore);
 
         uint256 accrued = totalSupplyAfter - totalSupplyBefore;
         uint256 expectedFee = accrued.mulWadDown(fee);
-        uint256 expectedFeeShares =
-            expectedFee.mulWadDown(blue.totalSupplyShares(id)).divWadDown(blue.totalSupply(id) - expectedFee);
+        uint256 expectedFeeShares = expectedFee.mulDivDown(totalSupplySharesBefore, totalSupplyAfter - expectedFee);
 
         assertEq(blue.supplyShare(id, recipient), expectedFeeShares);
     }
@@ -437,7 +438,10 @@ contract BlueTest is Test {
         blue.repay(market, amountRepaid, onBehalf);
 
         assertApproxEqAbs(
-            blue.borrowShare(id, onBehalf), (amountBorrowed - amountRepaid) * 1e18 / amountBorrowed, 1e3, "borrow share"
+            blue.borrowShare(id, onBehalf),
+            (amountBorrowed - amountRepaid) * SharesMath.VIRTUAL_SHARES,
+            100,
+            "borrow share"
         );
         assertEq(borrowableAsset.balanceOf(onBehalf), amountBorrowed, "onBehalf balance");
         assertEq(borrowableAsset.balanceOf(address(blue)), amountLent - amountBorrowed + amountRepaid, "blue balance");
