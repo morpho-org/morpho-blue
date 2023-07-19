@@ -30,5 +30,13 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
 
+      - name: Save hardhat cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            cache_hardhat
+            artifacts
+          key: ${{ github.ref_name }}-hardhat
+
       - name: Run Hardhat tests
         run: yarn test
