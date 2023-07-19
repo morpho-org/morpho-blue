@@ -177,7 +177,7 @@ contract Blue {
             amount = borrowShare[id][onBehalf].toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
             shares = borrowShare[id][onBehalf];
         } else {
-            shares = amount.toSharesDown(totalSupply[id], totalSupplyShares[id]);
+            shares = amount.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
         }
 
         require(amount != 0, "zero amount");
