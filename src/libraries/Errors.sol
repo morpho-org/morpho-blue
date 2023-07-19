@@ -6,15 +6,17 @@ library Errors {
 
     string internal constant LLTV_TOO_HIGH = "LLTV too high";
 
-    string internal constant IRM_DISABLED = "IRM not enabled";
+    string internal constant IRM_NOT_ENABLED = "IRM not enabled";
 
-    string internal constant LLTV_DISABLED = "LLTV not enabled";
+    string internal constant LLTV_NOT_ENABLED = "LLTV not enabled";
 
     string internal constant MARKET_CREATED = "market already exists";
 
     string internal constant MARKET_NOT_CREATED = "unknown market";
 
     string internal constant ZERO_AMOUNT = "zero amount";
+
+    string internal constant MANAGER_NOT_APPROVED = "not approved";
 
     string internal constant INSUFFICIENT_COLLATERAL = "insufficient collateral";
 

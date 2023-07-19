@@ -158,7 +158,7 @@ contract BlueTest is Test {
         vm.assume(marketFuzz.irm != irm);
 
         vm.prank(OWNER);
-        vm.expectRevert(bytes(Errors.IRM_DISABLED));
+        vm.expectRevert(bytes(Errors.IRM_NOT_ENABLED));
         blue.createMarket(marketFuzz);
     }
 
@@ -278,7 +278,7 @@ contract BlueTest is Test {
         marketFuzz.irm = irm;
 
         vm.prank(OWNER);
-        vm.expectRevert(bytes(Errors.LLTV_DISABLED));
+        vm.expectRevert(bytes(Errors.LLTV_NOT_ENABLED));
         blue.createMarket(marketFuzz);
     }
 

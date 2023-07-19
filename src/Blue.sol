@@ -92,8 +92,8 @@ contract Blue {
 
     function createMarket(Market calldata market) external {
         Id id = market.id();
-        require(isIrmEnabled[market.irm], Errors.IRM_DISABLED);
-        require(isLltvEnabled[market.lltv], Errors.LLTV_DISABLED);
+        require(isIrmEnabled[market.irm], Errors.IRM_NOT_ENABLED);
+        require(isLltvEnabled[market.lltv], Errors.LLTV_NOT_ENABLED);
         require(lastUpdate[id] == 0, Errors.MARKET_CREATED);
 
         accrueInterests(market, id);
@@ -126,7 +126,7 @@ contract Blue {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
-        require(isSenderOrIsApproved(onBehalf), "not approved");
+        require(isSenderOrIsApproved(onBehalf), Errors.MANAGER_NOT_APPROVED);
 
         accrueInterests(market, id);
 
@@ -147,7 +147,7 @@ contract Blue {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
-        require(isSenderOrIsApproved(onBehalf), "not approved");
+        require(isSenderOrIsApproved(onBehalf), Errors.MANAGER_NOT_APPROVED);
 
         accrueInterests(market, id);
 
@@ -203,7 +203,7 @@ contract Blue {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
-        require(isSenderOrIsApproved(onBehalf), "not approved");
+        require(isSenderOrIsApproved(onBehalf), Errors.MANAGER_NOT_APPROVED);
 
         accrueInterests(market, id);
 
