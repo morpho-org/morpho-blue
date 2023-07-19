@@ -276,7 +276,7 @@ contract Blue {
 
     // Interests management.
 
-    function _accrueInterests(Market calldata market, Id id) private {
+    function _accrueInterests(Market calldata market, Id id) internal {
         uint256 marketTotalBorrow = totalBorrow[id];
 
         if (marketTotalBorrow != 0) {
@@ -299,7 +299,7 @@ contract Blue {
 
     // Health check.
 
-    function _isHealthy(Market calldata market, Id id, address user) private view returns (bool) {
+    function _isHealthy(Market calldata market, Id id, address user) internal view returns (bool) {
         if (borrowShare[id][user] == 0) return true;
 
         uint256 collateralPrice = market.collateralOracle.price();
@@ -309,7 +309,7 @@ contract Blue {
     }
 
     function _isPositionHealthy(Id id, address user, uint256 lltv, uint256 collateralPrice, uint256 borrowablePrice)
-        private
+        internal
         view
         returns (bool)
     {
