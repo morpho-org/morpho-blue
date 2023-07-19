@@ -121,18 +121,22 @@ contract Blue {
     function withdraw(Market calldata market, uint256 amount, address onBehalf) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, "unknown market");
-        if (amount == type(uint256).max) {
-            amount = supplyShare[id][msg.sender].toAssetsDown(totalSupply[id], totalSupplyShares[id]);
-        }
-        require(amount != 0, "zero amount");
         require(isSenderOrIsApproved(onBehalf), "not approved");
 
         accrueInterests(market, id);
 
-        uint256 shares = amount.toSharesUp(totalSupply[id], totalSupplyShares[id]);
+        uint256 shares;
+        if (amount == type(uint256).max) {
+            amount = supplyShare[id][onBehalf].toAssetsDown(totalSupply[id], totalSupplyShares[id]);
+            shares = supplyShare[id][onBehalf];
+        } else {
+            shares = amount.toSharesUp(totalSupply[id], totalSupplyShares[id]);
+        }
+
+        require(amount != 0, "zero amount");
+
         supplyShare[id][onBehalf] -= shares;
         totalSupplyShares[id] -= shares;
-
         totalSupply[id] -= amount;
 
         require(totalBorrow[id] <= totalSupply[id], "not enough liquidity");
@@ -165,17 +169,21 @@ contract Blue {
     function repay(Market calldata market, uint256 amount, address onBehalf) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, "unknown market");
-        if (amount == type(uint256).max) {
-            amount = borrowShare[id][msg.sender].toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
-        }
-        require(amount != 0, "zero amount");
 
         accrueInterests(market, id);
 
-        uint256 shares = amount.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
+        uint256 shares;
+        if (amount == type(uint256).max) {
+            amount = supplyShare[id][onBehalf].toAssetsUp(totalSupply[id], totalSupplyShares[id]);
+            shares = supplyShare[id][onBehalf];
+        } else {
+            shares = amount.toSharesDown(totalSupply[id], totalSupplyShares[id]);
+        }
+
+        require(amount != 0, "zero amount");
+
         borrowShare[id][onBehalf] -= shares;
         totalBorrowShares[id] -= shares;
-
         totalBorrow[id] -= amount;
 
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
