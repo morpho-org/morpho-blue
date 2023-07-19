@@ -4,6 +4,3 @@
 [submodule "lib/solmate"]
 	path = lib/solmate
 	url = https://github.com/transmissions11/solmate
-[submodule "lib/morpho-utils"]
-	path = lib/morpho-utils
-	url = https://github.com/morpho-dao/morpho-utils
