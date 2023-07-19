@@ -174,8 +174,8 @@ contract Blue {
 
         uint256 shares;
         if (amount == type(uint256).max) {
-            amount = supplyShare[id][onBehalf].toAssetsUp(totalSupply[id], totalSupplyShares[id]);
-            shares = supplyShare[id][onBehalf];
+            amount = borrowShare[id][onBehalf].toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
+            shares = borrowShare[id][onBehalf];
         } else {
             shares = amount.toSharesDown(totalSupply[id], totalSupplyShares[id]);
         }
