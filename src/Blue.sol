@@ -264,7 +264,7 @@ contract Blue {
 
     // Interests management.
 
-    function accrued(Market calldata market) external returns (uint256 accruedInterests, uint256 feeShares) {
+    function accrued(Market calldata market) external view returns (uint256 accruedInterests, uint256 feeShares) {
         Id id = market.toId();
         require(lastUpdate[id] != 0, "unknown market");
 
@@ -289,6 +289,7 @@ contract Blue {
 
     function _accruedInterests(Market calldata market, Id id)
         internal
+        view
         returns (uint256 accruedInterests, uint256 feeShares)
     {
         if (totalBorrow[id] != 0) {
