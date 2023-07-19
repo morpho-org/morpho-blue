@@ -258,6 +258,7 @@ contract BlueTest is Test {
         blue.borrow(market, amountBorrowed, BORROWER);
 
         uint256 totalSupplyBefore = blue.totalSupply(id);
+        uint256 totalSupplySharesBefore = blue.totalSupplyShares(id);
 
         // Trigger an accrue.
         vm.warp(block.timestamp + timeElapsed);
@@ -270,8 +271,7 @@ contract BlueTest is Test {
 
         uint256 accrued = totalSupplyAfter - totalSupplyBefore;
         uint256 expectedFee = accrued.wMul(fee);
-        uint256 expectedFeeShares =
-            expectedFee.wMul(blue.totalSupplyShares(id)).wDiv(blue.totalSupply(id) - expectedFee);
+        uint256 expectedFeeShares = expectedFee.wMul(totalSupplySharesBefore).wDiv(blue.totalSupply(id) - expectedFee);
 
         assertEq(blue.supplyShare(id, recipient), expectedFeeShares);
     }
