@@ -95,7 +95,7 @@ contract Blue {
         require(isLltvEnabled[market.lltv], "LLTV not enabled");
         require(lastUpdate[id] == 0, "market already exists");
 
-        accrueInterests(market, id);
+        _accrueInterests(market, id);
     }
 
     // Supply management.
@@ -105,7 +105,7 @@ contract Blue {
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
 
-        accrueInterests(market, id);
+        _accrueInterests(market, id);
 
         if (totalSupply[id] == 0) {
             supplyShare[id][onBehalf] = WAD;
@@ -125,9 +125,9 @@ contract Blue {
         Id id = market.id();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
-        require(isSenderOrIsApproved(onBehalf), "not approved");
+        require(_isSenderOrIsApproved(onBehalf), "not approved");
 
-        accrueInterests(market, id);
+        _accrueInterests(market, id);
 
         uint256 shares = amount.wMul(totalSupplyShares[id]).wDiv(totalSupply[id]);
         supplyShare[id][onBehalf] -= shares;
@@ -146,9 +146,9 @@ contract Blue {
         Id id = market.id();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
-        require(isSenderOrIsApproved(onBehalf), "not approved");
+        require(_isSenderOrIsApproved(onBehalf), "not approved");
 
-        accrueInterests(market, id);
+        _accrueInterests(market, id);
 
         if (totalBorrow[id] == 0) {
             borrowShare[id][onBehalf] = WAD;
@@ -161,7 +161,7 @@ contract Blue {
 
         totalBorrow[id] += amount;
 
-        require(isHealthy(market, id, onBehalf), "not enough collateral");
+        require(_isHealthy(market, id, onBehalf), "not enough collateral");
         require(totalBorrow[id] <= totalSupply[id], "not enough liquidity");
 
         market.borrowableAsset.safeTransfer(msg.sender, amount);
@@ -172,7 +172,7 @@ contract Blue {
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
 
-        accrueInterests(market, id);
+        _accrueInterests(market, id);
 
         uint256 shares = amount.wMul(totalBorrowShares[id]).wDiv(totalBorrow[id]);
         borrowShare[id][onBehalf] -= shares;
@@ -202,13 +202,13 @@ contract Blue {
         Id id = market.id();
         require(lastUpdate[id] != 0, "unknown market");
         require(amount != 0, "zero amount");
-        require(isSenderOrIsApproved(onBehalf), "not approved");
+        require(_isSenderOrIsApproved(onBehalf), "not approved");
 
-        accrueInterests(market, id);
+        _accrueInterests(market, id);
 
         collateral[id][onBehalf] -= amount;
 
-        require(isHealthy(market, id, onBehalf), "not enough collateral");
+        require(_isHealthy(market, id, onBehalf), "not enough collateral");
 
         market.collateralAsset.safeTransfer(msg.sender, amount);
     }
@@ -220,9 +220,9 @@ contract Blue {
         require(lastUpdate[id] != 0, "unknown market");
         require(seized != 0, "zero amount");
 
-        accrueInterests(market, id);
+        _accrueInterests(market, id);
 
-        require(!isHealthy(market, id, borrower), "cannot liquidate a healthy position");
+        require(!_isHealthy(market, id, borrower), "cannot liquidate a healthy position");
 
         // The liquidation incentive is 1 + ALPHA * (1 / LLTV - 1).
         uint256 incentive = WAD + ALPHA.wMul(WAD.wDiv(market.lltv) - WAD);
@@ -255,13 +255,13 @@ contract Blue {
         isApproved[msg.sender][manager] = isAllowed;
     }
 
-    function isSenderOrIsApproved(address user) internal view returns (bool) {
+    function _isSenderOrIsApproved(address user) internal view returns (bool) {
         return msg.sender == user || isApproved[user][msg.sender];
     }
 
     // Interests management.
 
-    function accrueInterests(Market calldata market, Id id) private {
+    function _accrueInterests(Market calldata market, Id id) internal {
         uint256 marketTotalBorrow = totalBorrow[id];
 
         if (marketTotalBorrow != 0) {
@@ -284,7 +284,7 @@ contract Blue {
 
     // Health check.
 
-    function isHealthy(Market calldata market, Id id, address user) private view returns (bool) {
+    function _isHealthy(Market calldata market, Id id, address user) internal view returns (bool) {
         uint256 borrowShares = borrowShare[id][user];
         if (borrowShares == 0) return true;
         // totalBorrowShares[id] > 0 when borrowShares > 0.
