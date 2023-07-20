@@ -20,4 +20,12 @@ library MarketLib {
     function id(Market calldata market) internal pure returns (Id) {
         return Id.wrap(keccak256(abi.encode(market)));
     }
+
+    function idMemory(Market memory market) internal pure returns (Id) {
+        return Id.wrap(keccak256(abi.encode(market)));
+    }
+
+    function idStorage(Market storage market) internal pure returns (Id) {
+        return Id.wrap(keccak256(abi.encode(market)));
+    }
 }
