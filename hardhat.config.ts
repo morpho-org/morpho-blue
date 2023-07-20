@@ -5,7 +5,6 @@ import "@nomiclabs/hardhat-ethers";
 import "@typechain/hardhat";
 import * as dotenv from "dotenv";
 import "ethers-maths";
-import "hardhat-deal";
 import "hardhat-gas-reporter";
 import "hardhat-tracer";
 import { HardhatUserConfig } from "hardhat/config";
@@ -43,6 +42,7 @@ const config: HardhatUserConfig = {
     timeout: 3000000,
   },
   typechain: {
+    target: "ethers-v5",
     outDir: "types/",
     externalArtifacts: ["deps/**/*.json"],
   },

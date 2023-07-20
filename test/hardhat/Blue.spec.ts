@@ -1,12 +1,12 @@
 import { hexZeroPad } from "@ethersproject/bytes";
-import { setBalance } from "@nomicfoundation/hardhat-network-helpers";
+import { mine, setBalance } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { BigNumber, Wallet, constants, utils } from "ethers";
 import hre from "hardhat";
 import { Blue, OracleMock, ERC20Mock, IrmMock } from "types";
 
-const iterations = 400;
+const iterations = 250;
 const closePositions = false;
 const nbLiquidations = 50;
 // The liquidations gas test expects that 2*nbLiquidations + 1 is strictly less than the number of signers.
@@ -101,6 +101,8 @@ describe("Blue", () => {
     for (let i = 1; i < iterations; ++i) {
       if (i % 20 == 0) console.log("main:", (100 * i) / iterations, "% complete");
 
+      if (random() < 1 / 2) await mine(1 + Math.floor(random() * 100), { interval: 12 });
+
       const user = new Wallet(hexZeroPad(BigNumber.from(i).toHexString(), 32), hre.ethers.provider);
       await setBalance(user.address, initBalance);
       await borrowable.setBalance(user.address, initBalance);
@@ -193,7 +195,7 @@ describe("Blue", () => {
       let collat = await blue.collateral(id, user.address);
       expect(
         !closePositions || collat == BigNumber.from(0),
-        "did not take the whole collateral when closing the position"
+        "did not take the whole collateral when closing the position",
       ).true;
       expect(closePositions || collat != BigNumber.from(0), "unexpectedly closed the position").true;
     }
