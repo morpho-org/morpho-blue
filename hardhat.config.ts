@@ -20,7 +20,7 @@ const config: HardhatUserConfig = {
       gasPrice: 0,
       initialBaseFeePerGas: 0,
       accounts: {
-        count: 102,
+        count: 252,
       },
     },
   },
