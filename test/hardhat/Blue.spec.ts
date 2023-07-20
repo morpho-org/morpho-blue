@@ -115,7 +115,7 @@ describe("Blue", () => {
       let supplyOnly: boolean = random() < 2 / 3;
       if (supplyOnly) {
         if (amount > BigNumber.from(0)) {
-          await blue.connect(user).supply(market, amount, user.address);
+          await blue.connect(user).supply(market, amount, user.address, "0x");
           await blue.connect(user).withdraw(market, amount.div(2), user.address);
         }
       } else {
@@ -125,9 +125,9 @@ describe("Blue", () => {
         amount = BigNumber.min(amount, BigNumber.from(liq).div(2));
 
         if (amount > BigNumber.from(0)) {
-          await blue.connect(user).supplyCollateral(market, amount, user.address);
+          await blue.connect(user).supplyCollateral(market, amount, user.address, "0x");
           await blue.connect(user).borrow(market, amount.div(2), user.address);
-          await blue.connect(user).repay(market, amount.div(4), user.address);
+          await blue.connect(user).repay(market, amount.div(4), user.address, "0x");
           await blue.connect(user).withdrawCollateral(market, amount.div(8), user.address);
         }
       }
@@ -167,8 +167,8 @@ describe("Blue", () => {
       await collateral.setBalance(user.address, initBalance);
       await collateral.connect(user).approve(blue.address, constants.MaxUint256);
 
-      await blue.connect(user).supply(market, amount, user.address);
-      await blue.connect(user).supplyCollateral(market, amount, user.address);
+      await blue.connect(user).supply(market, amount, user.address, "0x");
+      await blue.connect(user).supplyCollateral(market, amount, user.address, "0x");
 
       await blue.connect(user).borrow(market, borrowedAmount, user.address);
     }
@@ -181,7 +181,7 @@ describe("Blue", () => {
     for (let i = 0; i < liquidationData.length; i++) {
       let data = liquidationData[i];
       market.lltv = data.lltv;
-      await blue.connect(liquidator).liquidate(market, data.borrower, data.maxSeize);
+      await blue.connect(liquidator).liquidate(market, data.borrower, data.maxSeize, "0x");
     }
 
     for (let i = 0; i < 2 * nbLiquidations; i++) {
