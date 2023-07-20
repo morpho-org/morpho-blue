@@ -1,3 +1,4 @@
+import { defaultAbiCoder } from "@ethersproject/abi";
 import { hexZeroPad } from "@ethersproject/bytes";
 import { mine, setBalance } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
@@ -13,24 +14,20 @@ const nbLiquidations = 50;
 const initBalance = constants.MaxUint256.div(2);
 
 let seed = 42;
-
-function next() {
+const random = () => {
   seed = (seed * 16807) % 2147483647;
-  return seed;
-}
 
-function random() {
-  return (next() - 1) / 2147483646;
-}
+  return (seed - 1) / 2147483646;
+};
 
-const abiCoder = new utils.AbiCoder();
-
-function identifier(market: Market) {
-  const values = Object.values(market);
-  const encodedMarket = abiCoder.encode(["address", "address", "address", "address", "address", "uint256"], values);
+const identifier = (market: Market) => {
+  const encodedMarket = defaultAbiCoder.encode(
+    ["address", "address", "address", "address", "address", "uint256"],
+    Object.values(market),
+  );
 
   return Buffer.from(utils.keccak256(encodedMarket).slice(2), "hex");
-}
+};
 
 interface Market {
   borrowableAsset: string;
@@ -112,17 +109,15 @@ describe("Blue", () => {
 
       let amount = BigNumber.WAD.mul(1 + Math.floor(random() * 100));
 
-      let supplyOnly: boolean = random() < 2 / 3;
-      if (supplyOnly) {
-        if (amount > BigNumber.from(0)) {
-          await blue.connect(user).supply(market, amount, user.address);
-          await blue.connect(user).withdraw(market, amount.div(2), user.address);
-        }
+      if (random() < 2 / 3) {
+        await blue.connect(user).supply(market, amount, user.address);
+        await blue.connect(user).withdraw(market, amount.div(2), user.address);
       } else {
         const totalSupply = await blue.totalSupply(id);
         const totalBorrow = await blue.totalBorrow(id);
-        let liq = BigNumber.from(totalSupply).sub(BigNumber.from(totalBorrow));
-        amount = BigNumber.min(amount, BigNumber.from(liq).div(2));
+        const liquidity = BigNumber.from(totalSupply).sub(BigNumber.from(totalBorrow));
+
+        amount = BigNumber.min(amount, BigNumber.from(liquidity).div(2));
 
         if (amount > BigNumber.from(0)) {
           await blue.connect(user).supplyCollateral(market, amount, user.address);
@@ -138,10 +133,9 @@ describe("Blue", () => {
     let liquidationData = [];
 
     // Create accounts close to liquidation
-    for (let i = 0; i < 2 * nbLiquidations; ++i) {
+    for (let i = 1; i <= 2 * nbLiquidations; ++i) {
       const user = signers[i];
-      const tranche = Math.floor(1 + i / 2);
-      const lltv = BigNumber.WAD.mul(tranche).div(nbLiquidations + 1);
+      const lltv = BigNumber.WAD.mul(Math.floor(i / 2 / (nbLiquidations + 1)));
 
       const amount = BigNumber.WAD.mul(1 + Math.floor(random() * 100));
       const borrowedAmount = amount.mul(lltv).div(BigNumber.WAD);
@@ -184,10 +178,9 @@ describe("Blue", () => {
       await blue.connect(liquidator).liquidate(market, data.borrower, data.maxSeize);
     }
 
-    for (let i = 0; i < 2 * nbLiquidations; i++) {
+    for (let i = 1; i <= 2 * nbLiquidations; i++) {
       const user = signers[i];
-      const tranche = Math.floor(1 + i / 2);
-      const lltv = BigNumber.WAD.mul(tranche).div(nbLiquidations + 1);
+      const lltv = BigNumber.WAD.mul(Math.floor(i / 2 / (nbLiquidations + 1)));
 
       market.lltv = lltv;
       id = identifier(market);
