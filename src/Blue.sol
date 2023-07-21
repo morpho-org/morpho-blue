@@ -286,18 +286,18 @@ contract Blue {
         uint256 deadline,
         Signature calldata signature
     ) external {
-        require(uint256(signature.s) <= MAX_VALID_ECDSA_S, "invalid s");
+        require(uint256(signature.s) <= MAX_VALID_ECDSA_S, Errors.INVALID_S);
         // v ∈ {27, 28} (source: https://ethereum.github.io/yellowpaper/paper.pdf #308)
-        require(signature.v == 27 || signature.v == 28, "invalid v");
+        require(signature.v == 27 || signature.v == 28, Errors.INVALID_V);
 
         bytes32 structHash =
             keccak256(abi.encode(EIP712_AUTHORIZATION_TYPEHASH, delegator, manager, isAllowed, nonce, deadline));
         bytes32 digest = keccak256(abi.encodePacked(EIP712_MSG_PREFIX, domainSeparator, structHash));
         address signatory = ecrecover(digest, signature.v, signature.r, signature.s);
 
-        require(signatory != address(0) && delegator == signatory, "invalid signatory");
-        require(block.timestamp < deadline, "signature expired");
-        require(nonce == userNonce[signatory]++, "invalid nonce");
+        require(signatory != address(0) && delegator == signatory, Errors.INVALID_SIGNATORY);
+        require(block.timestamp < deadline, Errors.SIGNATURE_EXPIRED);
+        require(nonce == userNonce[signatory]++, Errors.INVALID_NONCE);
 
         _setApproval(signatory, manager, isAllowed);
     }
