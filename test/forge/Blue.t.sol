@@ -10,7 +10,6 @@ import {OracleMock as Oracle} from "src/mocks/OracleMock.sol";
 import {IrmMock as Irm} from "src/mocks/IrmMock.sol";
 
 contract BlueTest is Test {
-    using MarketLib for Market;
     using MathLib for uint256;
 
     address private constant BORROWER = address(1234);

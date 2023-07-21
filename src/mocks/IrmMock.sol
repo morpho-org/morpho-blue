@@ -10,7 +10,6 @@ import {Blue} from "src/Blue.sol";
 
 contract IrmMock is IIrm {
     using MathLib for uint256;
-    using MarketLib for Market;
 
     Blue public immutable blue;
 

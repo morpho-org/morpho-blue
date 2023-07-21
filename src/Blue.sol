@@ -14,7 +14,6 @@ uint256 constant ALPHA = 0.5e18;
 
 contract Blue {
     using MathLib for uint256;
-    using MarketLib for Market;
     using SafeTransferLib for IERC20;
 
     // Storage.

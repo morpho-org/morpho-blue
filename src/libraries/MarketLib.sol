@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.19;
 
 import {IIrm} from "src/interfaces/IIrm.sol";
 import {IERC20} from "src/interfaces/IERC20.sol";
@@ -29,3 +29,5 @@ library MarketLib {
         return Id.wrap(keccak256(abi.encode(market)));
     }
 }
+
+using MarketLib for Market global;
