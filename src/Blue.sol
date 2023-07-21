@@ -5,7 +5,8 @@ import {IIrm} from "src/interfaces/IIrm.sol";
 import {IERC20} from "src/interfaces/IERC20.sol";
 
 import {Errors} from "./libraries/Errors.sol";
-import {MathLib} from "src/libraries/MathLib.sol";
+import {SharesMath} from "src/libraries/SharesMath.sol";
+import {FixedPointMathLib} from "src/libraries/FixedPointMathLib.sol";
 import {Id, Market, MarketLib} from "src/libraries/MarketLib.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 
@@ -13,9 +14,10 @@ uint256 constant WAD = 1e18;
 uint256 constant ALPHA = 0.5e18;
 
 contract Blue {
-    using MathLib for uint256;
-    using MarketLib for Market;
+    using SharesMath for uint256;
+    using FixedPointMathLib for uint256;
     using SafeTransferLib for IERC20;
+    using MarketLib for Market;
 
     // Storage.
 
@@ -108,14 +110,9 @@ contract Blue {
 
         accrueInterests(market, id);
 
-        if (totalSupply[id] == 0) {
-            supplyShare[id][onBehalf] = WAD;
-            totalSupplyShares[id] = WAD;
-        } else {
-            uint256 shares = amount.wMul(totalSupplyShares[id]).wDiv(totalSupply[id]);
-            supplyShare[id][onBehalf] += shares;
-            totalSupplyShares[id] += shares;
-        }
+        uint256 shares = amount.toSharesDown(totalSupply[id], totalSupplyShares[id]);
+        supplyShare[id][onBehalf] += shares;
+        totalSupplyShares[id] += shares;
 
         totalSupply[id] += amount;
 
@@ -130,7 +127,7 @@ contract Blue {
 
         accrueInterests(market, id);
 
-        uint256 shares = amount.wMul(totalSupplyShares[id]).wDiv(totalSupply[id]);
+        uint256 shares = amount.toSharesUp(totalSupply[id], totalSupplyShares[id]);
         supplyShare[id][onBehalf] -= shares;
         totalSupplyShares[id] -= shares;
 
@@ -151,14 +148,9 @@ contract Blue {
 
         accrueInterests(market, id);
 
-        if (totalBorrow[id] == 0) {
-            borrowShare[id][onBehalf] = WAD;
-            totalBorrowShares[id] = WAD;
-        } else {
-            uint256 shares = amount.wMul(totalBorrowShares[id]).wDiv(totalBorrow[id]);
-            borrowShare[id][onBehalf] += shares;
-            totalBorrowShares[id] += shares;
-        }
+        uint256 shares = amount.toSharesUp(totalBorrow[id], totalBorrowShares[id]);
+        borrowShare[id][onBehalf] += shares;
+        totalBorrowShares[id] += shares;
 
         totalBorrow[id] += amount;
 
@@ -175,7 +167,7 @@ contract Blue {
 
         accrueInterests(market, id);
 
-        uint256 shares = amount.wMul(totalBorrowShares[id]).wDiv(totalBorrow[id]);
+        uint256 shares = amount.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
         borrowShare[id][onBehalf] -= shares;
         totalBorrowShares[id] -= shares;
 
@@ -226,10 +218,11 @@ contract Blue {
         require(!isHealthy(market, id, borrower), Errors.HEALTHY_POSITION);
 
         // The liquidation incentive is 1 + ALPHA * (1 / LLTV - 1).
-        uint256 incentive = WAD + ALPHA.wMul(WAD.wDiv(market.lltv) - WAD);
-        uint256 repaid =
-            seized.wMul(market.collateralOracle.price()).wDiv(incentive).wDiv(market.borrowableOracle.price());
-        uint256 repaidShares = repaid.wMul(totalBorrowShares[id]).wDiv(totalBorrow[id]);
+        uint256 incentive = WAD + ALPHA.mulWadDown(WAD.divWadDown(market.lltv) - WAD);
+        uint256 repaid = seized.mulWadUp(market.collateralOracle.price()).divWadUp(incentive).divWadUp(
+            market.borrowableOracle.price()
+        );
+        uint256 repaidShares = repaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
 
         borrowShare[id][borrower] -= repaidShares;
         totalBorrowShares[id] -= repaidShares;
@@ -239,7 +232,7 @@ contract Blue {
 
         // Realize the bad debt if needed.
         if (collateral[id][borrower] == 0) {
-            uint256 badDebt = borrowShare[id][borrower].wMul(totalBorrow[id]).wDiv(totalBorrowShares[id]);
+            uint256 badDebt = borrowShare[id][borrower].toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
             totalSupply[id] -= badDebt;
             totalBorrow[id] -= badDebt;
             totalBorrowShares[id] -= borrowShare[id][borrower];
@@ -267,14 +260,14 @@ contract Blue {
 
         if (marketTotalBorrow != 0) {
             uint256 borrowRate = market.irm.borrowRate(market);
-            uint256 accruedInterests = marketTotalBorrow.wMul(borrowRate).wMul(block.timestamp - lastUpdate[id]);
+            uint256 accruedInterests = marketTotalBorrow.mulWadDown(borrowRate * (block.timestamp - lastUpdate[id]));
             totalBorrow[id] = marketTotalBorrow + accruedInterests;
             totalSupply[id] += accruedInterests;
 
             if (fee[id] != 0) {
-                uint256 feeAmount = accruedInterests.wMul(fee[id]);
+                uint256 feeAmount = accruedInterests.mulWadDown(fee[id]);
                 // The fee amount is subtracted from the total supply in this calculation to compensate for the fact that total supply is already updated.
-                uint256 feeShares = feeAmount.wMul(totalSupplyShares[id]).wDiv(totalSupply[id] - feeAmount);
+                uint256 feeShares = feeAmount.mulDivDown(totalSupplyShares[id], totalSupply[id] - feeAmount);
                 supplyShare[id][feeRecipient] += feeShares;
                 totalSupplyShares[id] += feeShares;
             }
@@ -288,10 +281,11 @@ contract Blue {
     function isHealthy(Market calldata market, Id id, address user) private view returns (bool) {
         uint256 borrowShares = borrowShare[id][user];
         if (borrowShares == 0) return true;
+
         // totalBorrowShares[id] > 0 when borrowShares > 0.
         uint256 borrowValue =
-            borrowShares.wMul(totalBorrow[id]).wDiv(totalBorrowShares[id]).wMul(market.borrowableOracle.price());
-        uint256 collateralValue = collateral[id][user].wMul(market.collateralOracle.price());
-        return collateralValue.wMul(market.lltv) >= borrowValue;
+            borrowShares.toAssetsUp(totalBorrow[id], totalBorrowShares[id]).mulWadUp(market.borrowableOracle.price());
+        uint256 collateralValue = collateral[id][user].mulWadDown(market.collateralOracle.price());
+        return collateralValue.mulWadDown(market.lltv) >= borrowValue;
     }
 }
