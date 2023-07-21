@@ -1,12 +1,14 @@
-name: Foundry CI
+name: Foundry
 
 on:
-  workflow_dispatch:
   push:
+    branches:
+      - main
   pull_request:
+  workflow_dispatch:
 
 jobs:
-  test:
+  forge-test:
     strategy:
       fail-fast: true
 
@@ -22,7 +24,7 @@ jobs:
       - name: Run Forge tests
         run: forge test -vvv
         env:
-          FOUNDRY_FUZZ_RUNS: 100000 
-          FOUNDRY_FUZZ_MAX_TEST_REJECTS: 500000 
-          FOUNDRY_INVARIANT_RUNS: 1000 
+          FOUNDRY_FUZZ_RUNS: 100000
+          FOUNDRY_FUZZ_MAX_TEST_REJECTS: 500000
+          FOUNDRY_INVARIANT_RUNS: 1000
           FOUNDRY_INVARIANT_DEPTH: 100
