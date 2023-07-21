@@ -123,7 +123,7 @@ contract Blue {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
-        require(isSenderOrIsApproved(onBehalf), Errors.MANAGER_NOT_APPROVED);
+        require(_isSenderOrIsApproved(onBehalf), Errors.MANAGER_NOT_APPROVED);
 
         _accrueInterests(market, id);
 
@@ -144,7 +144,7 @@ contract Blue {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
-        require(isSenderOrIsApproved(onBehalf), Errors.MANAGER_NOT_APPROVED);
+        require(_isSenderOrIsApproved(onBehalf), Errors.MANAGER_NOT_APPROVED);
 
         _accrueInterests(market, id);
 
@@ -195,7 +195,7 @@ contract Blue {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
-        require(isSenderOrIsApproved(onBehalf), Errors.MANAGER_NOT_APPROVED);
+        require(_isSenderOrIsApproved(onBehalf), Errors.MANAGER_NOT_APPROVED);
 
         _accrueInterests(market, id);
 
@@ -252,7 +252,7 @@ contract Blue {
         isApproved[msg.sender][manager] = isAllowed;
     }
 
-    function isSenderOrIsApproved(address user) internal view returns (bool) {
+    function _isSenderOrIsApproved(address user) internal view returns (bool) {
         return msg.sender == user || isApproved[user][msg.sender];
     }
 
