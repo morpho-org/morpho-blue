@@ -46,7 +46,7 @@ contract BlueTest is Test {
             irm,
             LLTV
         );
-        id = market.idStorage();
+        id = market.sId();
 
         vm.startPrank(OWNER);
         blue.enableIrm(irm);
