@@ -4,6 +4,7 @@ pragma solidity 0.8.20;
 import {IIrm} from "src/interfaces/IIrm.sol";
 import {IERC20} from "src/interfaces/IERC20.sol";
 
+import {Errors} from "./libraries/Errors.sol";
 import {SharesMath} from "src/libraries/SharesMath.sol";
 import {FixedPointMathLib} from "src/libraries/FixedPointMathLib.sol";
 import {Id, Market, MarketLib} from "src/libraries/MarketLib.sol";
@@ -58,7 +59,7 @@ contract Blue {
     // Modifiers.
 
     modifier onlyOwner() {
-        require(msg.sender == owner, "not owner");
+        require(msg.sender == owner, Errors.NOT_OWNER);
         _;
     }
 
@@ -73,7 +74,7 @@ contract Blue {
     }
 
     function enableLltv(uint256 lltv) external onlyOwner {
-        require(lltv < WAD, "LLTV too high");
+        require(lltv < WAD, Errors.LLTV_TOO_HIGH);
         isLltvEnabled[lltv] = true;
     }
 
@@ -93,9 +94,9 @@ contract Blue {
 
     function createMarket(Market calldata market) external {
         Id id = market.id();
-        require(isIrmEnabled[market.irm], "IRM not enabled");
-        require(isLltvEnabled[market.lltv], "LLTV not enabled");
-        require(lastUpdate[id] == 0, "market already exists");
+        require(isIrmEnabled[market.irm], Errors.IRM_NOT_ENABLED);
+        require(isLltvEnabled[market.lltv], Errors.LLTV_NOT_ENABLED);
+        require(lastUpdate[id] == 0, Errors.MARKET_CREATED);
 
         accrueInterests(market, id);
     }
@@ -104,8 +105,8 @@ contract Blue {
 
     function supply(Market calldata market, uint256 amount, address onBehalf) external {
         Id id = market.id();
-        require(lastUpdate[id] != 0, "unknown market");
-        require(amount != 0, "zero amount");
+        require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
+        require(amount != 0, Errors.ZERO_AMOUNT);
 
         accrueInterests(market, id);
 
@@ -120,9 +121,9 @@ contract Blue {
 
     function withdraw(Market calldata market, uint256 amount, address onBehalf) external {
         Id id = market.id();
-        require(lastUpdate[id] != 0, "unknown market");
-        require(amount != 0, "zero amount");
-        require(isSenderOrIsApproved(onBehalf), "not approved");
+        require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
+        require(amount != 0, Errors.ZERO_AMOUNT);
+        require(isSenderOrIsApproved(onBehalf), Errors.MANAGER_NOT_APPROVED);
 
         accrueInterests(market, id);
 
@@ -132,7 +133,7 @@ contract Blue {
 
         totalSupply[id] -= amount;
 
-        require(totalBorrow[id] <= totalSupply[id], "not enough liquidity");
+        require(totalBorrow[id] <= totalSupply[id], Errors.INSUFFICIENT_LIQUIDITY);
 
         market.borrowableAsset.safeTransfer(msg.sender, amount);
     }
@@ -141,9 +142,9 @@ contract Blue {
 
     function borrow(Market calldata market, uint256 amount, address onBehalf) external {
         Id id = market.id();
-        require(lastUpdate[id] != 0, "unknown market");
-        require(amount != 0, "zero amount");
-        require(isSenderOrIsApproved(onBehalf), "not approved");
+        require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
+        require(amount != 0, Errors.ZERO_AMOUNT);
+        require(isSenderOrIsApproved(onBehalf), Errors.MANAGER_NOT_APPROVED);
 
         accrueInterests(market, id);
 
@@ -153,16 +154,16 @@ contract Blue {
 
         totalBorrow[id] += amount;
 
-        require(isHealthy(market, id, onBehalf), "not enough collateral");
-        require(totalBorrow[id] <= totalSupply[id], "not enough liquidity");
+        require(isHealthy(market, id, msg.sender), Errors.INSUFFICIENT_COLLATERAL);
+        require(totalBorrow[id] <= totalSupply[id], Errors.INSUFFICIENT_LIQUIDITY);
 
         market.borrowableAsset.safeTransfer(msg.sender, amount);
     }
 
     function repay(Market calldata market, uint256 amount, address onBehalf) external {
         Id id = market.id();
-        require(lastUpdate[id] != 0, "unknown market");
-        require(amount != 0, "zero amount");
+        require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
+        require(amount != 0, Errors.ZERO_AMOUNT);
 
         accrueInterests(market, id);
 
@@ -180,8 +181,8 @@ contract Blue {
     /// @dev Don't accrue interests because it's not required and it saves gas.
     function supplyCollateral(Market calldata market, uint256 amount, address onBehalf) external {
         Id id = market.id();
-        require(lastUpdate[id] != 0, "unknown market");
-        require(amount != 0, "zero amount");
+        require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
+        require(amount != 0, Errors.ZERO_AMOUNT);
 
         // Don't accrue interests because it's not required and it saves gas.
 
@@ -192,15 +193,15 @@ contract Blue {
 
     function withdrawCollateral(Market calldata market, uint256 amount, address onBehalf) external {
         Id id = market.id();
-        require(lastUpdate[id] != 0, "unknown market");
-        require(amount != 0, "zero amount");
-        require(isSenderOrIsApproved(onBehalf), "not approved");
+        require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
+        require(amount != 0, Errors.ZERO_AMOUNT);
+        require(isSenderOrIsApproved(onBehalf), Errors.MANAGER_NOT_APPROVED);
 
         accrueInterests(market, id);
 
         collateral[id][onBehalf] -= amount;
 
-        require(isHealthy(market, id, onBehalf), "not enough collateral");
+        require(isHealthy(market, id, onBehalf), Errors.INSUFFICIENT_COLLATERAL);
 
         market.collateralAsset.safeTransfer(msg.sender, amount);
     }
@@ -209,12 +210,12 @@ contract Blue {
 
     function liquidate(Market calldata market, address borrower, uint256 seized) external {
         Id id = market.id();
-        require(lastUpdate[id] != 0, "unknown market");
-        require(seized != 0, "zero amount");
+        require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
+        require(seized != 0, Errors.ZERO_AMOUNT);
 
         accrueInterests(market, id);
 
-        require(!isHealthy(market, id, borrower), "cannot liquidate a healthy position");
+        require(!isHealthy(market, id, borrower), Errors.HEALTHY_POSITION);
 
         // The liquidation incentive is 1 + ALPHA * (1 / LLTV - 1).
         uint256 incentive = WAD + ALPHA.mulWadDown(WAD.divWadDown(market.lltv) - WAD);
