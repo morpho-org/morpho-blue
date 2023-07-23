@@ -11,6 +11,7 @@ import {Id, Market, MarketLib} from "src/libraries/MarketLib.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 
 uint256 constant WAD = 1e18;
+uint256 constant FEE_CAP = 0.2e18;
 uint256 constant ALPHA = 0.5e18;
 
 contract Blue {
@@ -78,11 +79,11 @@ contract Blue {
         isLltvEnabled[lltv] = true;
     }
 
-    // @notice It is the owner's responsibility to ensure a fee recipient is set before setting a non-zero fee.
+    /// @notice It is the owner's responsibility to ensure a fee recipient is set before setting a non-zero fee.
     function setFee(Market calldata market, uint256 newFee) external onlyOwner {
         Id id = market.id();
         require(lastUpdate[id] != 0, "unknown market");
-        require(newFee <= WAD, "fee must be <= 1");
+        require(newFee <= FEE_CAP, "fee must be <= 20%");
         fee[id] = newFee;
     }
 
