@@ -218,9 +218,7 @@ contract Blue {
         uint256 collateralPrice = market.collateralOracle.price();
         uint256 borrowablePrice = market.borrowableOracle.price();
 
-        require(
-            !_isPositionHealthy(id, borrower, market.lltv, collateralPrice, borrowablePrice), Errors.HEALTHY_POSITION
-        );
+        require(!_isHealthy(market, id, borrower, collateralPrice, borrowablePrice), Errors.HEALTHY_POSITION);
 
         // The liquidation incentive is 1 + ALPHA * (1 / LLTV - 1).
         uint256 incentive = WAD + ALPHA.mulWadDown(WAD.divWadDown(market.lltv) - WAD);
@@ -287,10 +285,10 @@ contract Blue {
         uint256 collateralPrice = market.collateralOracle.price();
         uint256 borrowablePrice = market.borrowableOracle.price();
 
-        return _isPositionHealthy(id, user, market.lltv, collateralPrice, borrowablePrice);
+        return _isHealthy(market, id, user, collateralPrice, borrowablePrice);
     }
 
-    function _isPositionHealthy(Id id, address user, uint256 lltv, uint256 collateralPrice, uint256 borrowablePrice)
+    function _isHealthy(Market calldata market, Id id, address user, uint256 collateralPrice, uint256 borrowablePrice)
         internal
         view
         returns (bool)
@@ -299,6 +297,6 @@ contract Blue {
             borrowShare[id][user].toAssetsUp(totalBorrow[id], totalBorrowShares[id]).mulWadUp(borrowablePrice);
         uint256 collateralValue = collateral[id][user].mulWadDown(collateralPrice);
 
-        return collateralValue.mulWadDown(lltv) >= borrowValue;
+        return collateralValue.mulWadDown(market.lltv) >= borrowValue;
     }
 }
