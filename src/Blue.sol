@@ -154,7 +154,10 @@ contract Blue {
 
         totalBorrow[id] += amount;
 
-        require(_isHealthy(market, id, onBehalf), Errors.INSUFFICIENT_COLLATERAL);
+        (uint256 borrowablePrice, bool canBorrow,) = market.oracle.price();
+
+        require(canBorrow, Errors.BORROW_DISABLED);
+        require(_isHealthy(market, id, onBehalf, borrowablePrice), Errors.INSUFFICIENT_COLLATERAL);
         require(totalBorrow[id] <= totalSupply[id], Errors.INSUFFICIENT_LIQUIDITY);
 
         market.borrowableAsset.safeTransfer(msg.sender, amount);
@@ -201,7 +204,10 @@ contract Blue {
 
         collateral[id][onBehalf] -= amount;
 
-        require(_isHealthy(market, id, onBehalf), Errors.INSUFFICIENT_COLLATERAL);
+        (uint256 borrowablePrice,, bool canWithdrawCollateral) = market.oracle.price();
+
+        require(canWithdrawCollateral, Errors.WITHDRAW_COLLATERAL_DISABLED);
+        require(_isHealthy(market, id, onBehalf, borrowablePrice), Errors.INSUFFICIENT_COLLATERAL);
 
         market.collateralAsset.safeTransfer(msg.sender, amount);
     }
@@ -215,14 +221,14 @@ contract Blue {
 
         _accrueInterests(market, id);
 
-        uint256 collateralPrice = market.collateralOracle.price();
-        uint256 borrowablePrice = market.borrowableOracle.price();
+        (uint256 borrowablePrice,, bool canWithdrawCollateral) = market.oracle.price();
 
-        require(!_isHealthy(market, id, borrower, collateralPrice, borrowablePrice), Errors.HEALTHY_POSITION);
+        require(canWithdrawCollateral, Errors.WITHDRAW_COLLATERAL_DISABLED);
+        require(!_isHealthy(market, id, borrower, borrowablePrice), Errors.HEALTHY_POSITION);
 
         // The liquidation incentive is 1 + ALPHA * (1 / LLTV - 1).
         uint256 incentive = WAD + ALPHA.mulWadDown(WAD.divWadDown(market.lltv) - WAD);
-        uint256 repaid = seized.mulWadUp(collateralPrice).divWadUp(incentive).divWadUp(borrowablePrice);
+        uint256 repaid = seized.divWadUp(borrowablePrice).divWadUp(incentive);
         uint256 repaidShares = repaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
 
         borrowShare[id][borrower] -= repaidShares;
@@ -279,24 +285,17 @@ contract Blue {
 
     // Health check.
 
-    function _isHealthy(Market calldata market, Id id, address user) internal view returns (bool) {
-        if (borrowShare[id][user] == 0) return true;
-
-        uint256 collateralPrice = market.collateralOracle.price();
-        uint256 borrowablePrice = market.borrowableOracle.price();
-
-        return _isHealthy(market, id, user, collateralPrice, borrowablePrice);
-    }
-
-    function _isHealthy(Market calldata market, Id id, address user, uint256 collateralPrice, uint256 borrowablePrice)
+    function _isHealthy(Market calldata market, Id id, address user, uint256 borrowablePrice)
         internal
         view
         returns (bool)
     {
+        if (borrowShare[id][user] == 0) return true;
+
         uint256 borrowValue =
             borrowShare[id][user].toAssetsUp(totalBorrow[id], totalBorrowShares[id]).mulWadUp(borrowablePrice);
-        uint256 collateralValue = collateral[id][user].mulWadDown(collateralPrice);
+        uint256 collateralPower = collateral[id][user].mulWadDown(market.lltv);
 
-        return collateralValue.mulWadDown(market.lltv) >= borrowValue;
+        return collateralPower >= borrowValue;
     }
 }

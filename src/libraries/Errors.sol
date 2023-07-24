@@ -23,4 +23,8 @@ library Errors {
     string internal constant INSUFFICIENT_LIQUIDITY = "insufficient liquidity";
 
     string internal constant HEALTHY_POSITION = "position is healthy";
+
+    string internal constant BORROW_DISABLED = "borrow disabled";
+
+    string internal constant WITHDRAW_COLLATERAL_DISABLED = "withdraw collateral disabled";
 }

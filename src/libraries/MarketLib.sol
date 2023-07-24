@@ -10,8 +10,7 @@ type Id is bytes32;
 struct Market {
     IERC20 borrowableAsset;
     IERC20 collateralAsset;
-    IOracle borrowableOracle;
-    IOracle collateralOracle;
+    IOracle oracle;
     IIrm irm;
     uint256 lltv;
 }

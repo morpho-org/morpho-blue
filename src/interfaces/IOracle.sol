@@ -2,5 +2,5 @@
 pragma solidity >=0.5.0;
 
 interface IOracle {
-    function price() external view returns (uint256);
+    function price() external view returns (uint256 borrowablePrice, bool canBorrow, bool canWithdraw);
 }
