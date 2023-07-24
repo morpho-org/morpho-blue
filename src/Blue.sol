@@ -82,8 +82,8 @@ contract Blue {
     /// @notice It is the owner's responsibility to ensure a fee recipient is set before setting a non-zero fee.
     function setFee(Market calldata market, uint256 newFee) external onlyOwner {
         Id id = market.id();
-        require(lastUpdate[id] != 0, "unknown market");
-        require(newFee <= FEE_CAP, "fee must be <= 20%");
+        require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
+        require(newFee <= FEE_CAP, Errors.FEE_CAP_EXCEEDED);
         fee[id] = newFee;
     }
 
