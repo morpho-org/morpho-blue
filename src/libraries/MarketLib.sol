@@ -20,8 +20,4 @@ library MarketLib {
     function id(Market memory market) internal pure returns (Id) {
         return Id.wrap(keccak256(abi.encode(market)));
     }
-
-    function sId(Market storage market) internal pure returns (Id) {
-        return Id.wrap(keccak256(abi.encode(market)));
-    }
 }
