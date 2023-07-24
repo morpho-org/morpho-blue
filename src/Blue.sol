@@ -11,7 +11,7 @@ import {Id, Market, MarketLib} from "src/libraries/MarketLib.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 
 uint256 constant WAD = 1e18;
-uint256 constant FEE_CAP = 0.2e18;
+uint256 constant MAX_FEE = 0.2e18;
 uint256 constant ALPHA = 0.5e18;
 
 contract Blue {
@@ -83,7 +83,7 @@ contract Blue {
     function setFee(Market calldata market, uint256 newFee) external onlyOwner {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
-        require(newFee <= FEE_CAP, Errors.FEE_CAP_EXCEEDED);
+        require(newFee <= MAX_FEE, Errors.MAX_FEE_EXCEEDED);
         fee[id] = newFee;
     }
 
