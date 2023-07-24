@@ -24,7 +24,11 @@ contract BlueTest is Test {
     Oracle private collateralOracle;
     Irm private irm;
     Market public market;
+    Market public nativeBorrowableMarket;
+    Market public nativeCollateralMarket;
     Id public id;
+    Id public nativeBorrowableId;
+    Id public nativeCollateralId;
 
     function setUp() public {
         // Create Blue.
@@ -68,6 +72,16 @@ contract BlueTest is Test {
         borrowableAsset.approve(address(blue), type(uint256).max);
         collateralAsset.approve(address(blue), type(uint256).max);
         vm.stopPrank();
+    }
+
+    function createNativeBorrowableMarket() internal view returns (Market memory) {
+        return
+            Market(IERC20(address(0)), IERC20(address(collateralAsset)), borrowableOracle, collateralOracle, irm, LLTV);
+    }
+
+    function createNativeCollateralMarket() internal view returns (Market memory) {
+        return
+            Market(IERC20(address(borrowableAsset)), IERC20(address(0)), borrowableOracle, collateralOracle, irm, LLTV);
     }
 
     // To move to a test utils file later.
@@ -162,6 +176,18 @@ contract BlueTest is Test {
         vm.prank(OWNER);
         vm.expectRevert(bytes(Errors.IRM_NOT_ENABLED));
         blue.createMarket(marketFuzz);
+    }
+
+    function testCreateMarketWithNativeBorrowable() public {
+        nativeBorrowableMarket = createNativeBorrowableMarket();
+        blue.createMarket(nativeBorrowableMarket);
+        nativeBorrowableId = Id.wrap(keccak256(abi.encode(nativeBorrowableMarket)));
+    }
+
+    function testCreateMarketWithNativeCollateral() public {
+        nativeCollateralMarket = createNativeCollateralMarket();
+        blue.createMarket(nativeCollateralMarket);
+        nativeCollateralId = Id.wrap(keccak256(abi.encode(nativeBorrowableMarket)));
     }
 
     function testEnableLltvWhenNotOwner(address attacker, uint256 newLltv) public {
@@ -295,6 +321,27 @@ contract BlueTest is Test {
         assertEq(blue.supplyShare(id, onBehalf), amount * SharesMath.VIRTUAL_SHARES, "supply share");
         assertEq(borrowableAsset.balanceOf(onBehalf), 0, "lender balance");
         assertEq(borrowableAsset.balanceOf(address(blue)), amount, "blue balance");
+    }
+
+    function testSupplyNativeTokenOnBehalf(uint256 amount, address onBehalf) public {
+        nativeBorrowableMarket = createNativeBorrowableMarket();
+        blue.createMarket(nativeBorrowableMarket);
+        nativeBorrowableId = Id.wrap(keccak256(abi.encode(nativeBorrowableMarket)));
+
+        vm.assume(onBehalf != address(blue));
+        amount = bound(amount, 1, 2 ** 64);
+
+        vm.deal(address(this), 2 * amount);
+
+        uint256 thisNativeBalanceBefore = address(this).balance;
+        uint256 blueNativeBalanceBefore = address(blue).balance;
+        blue.supply{value: amount}(nativeBorrowableMarket, amount, onBehalf);
+        uint256 thisNativeBalanceAfter = address(this).balance;
+        uint256 blueNativeBalanceAfter = address(blue).balance;
+
+        assertEq(thisNativeBalanceBefore, thisNativeBalanceAfter + amount, "contract native balance");
+        assertEq(blueNativeBalanceBefore + amount, blueNativeBalanceAfter, "blue native balance");
+        assertEq(blue.supplyShare(nativeBorrowableId, onBehalf), amount * SharesMath.VIRTUAL_SHARES, "supply share");
     }
 
     function testBorrow(uint256 amountLent, uint256 amountBorrowed) public {

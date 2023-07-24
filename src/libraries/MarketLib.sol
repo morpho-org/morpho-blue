@@ -20,4 +20,16 @@ library MarketLib {
     function id(Market calldata market) internal pure returns (Id) {
         return Id.wrap(keccak256(abi.encode(market)));
     }
+
+    function isCollateralNative(Market calldata market) internal pure returns (bool) {
+        bool isNative;
+        if (address(market.collateralAsset) == address(0)) isNative = true;
+        return isNative;
+    }
+
+    function isBorrowableNative(Market calldata market) internal pure returns (bool) {
+        bool isNative;
+        if (address(market.borrowableAsset) == address(0)) isNative = true;
+        return isNative;
+    }
 }
