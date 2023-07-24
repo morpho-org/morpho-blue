@@ -215,13 +215,14 @@ contract Blue {
 
         _accrueInterests(market, id);
 
-        require(!_isHealthy(market, id, borrower), Errors.HEALTHY_POSITION);
+        uint256 collateralPrice = market.collateralOracle.price();
+        uint256 borrowablePrice = market.borrowableOracle.price();
+
+        require(!_isHealthy(market, id, borrower, collateralPrice, borrowablePrice), Errors.HEALTHY_POSITION);
 
         // The liquidation incentive is 1 + ALPHA * (1 / LLTV - 1).
         uint256 incentive = WAD + ALPHA.mulWadDown(WAD.divWadDown(market.lltv) - WAD);
-        uint256 repaid = seized.mulWadUp(market.collateralOracle.price()).divWadUp(incentive).divWadUp(
-            market.borrowableOracle.price()
-        );
+        uint256 repaid = seized.mulWadUp(collateralPrice).divWadUp(incentive).divWadUp(borrowablePrice);
         uint256 repaidShares = repaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
 
         borrowShare[id][borrower] -= repaidShares;
@@ -279,13 +280,23 @@ contract Blue {
     // Health check.
 
     function _isHealthy(Market calldata market, Id id, address user) internal view returns (bool) {
-        uint256 borrowShares = borrowShare[id][user];
-        if (borrowShares == 0) return true;
+        if (borrowShare[id][user] == 0) return true;
 
-        // totalBorrowShares[id] > 0 when borrowShares > 0.
+        uint256 collateralPrice = market.collateralOracle.price();
+        uint256 borrowablePrice = market.borrowableOracle.price();
+
+        return _isHealthy(market, id, user, collateralPrice, borrowablePrice);
+    }
+
+    function _isHealthy(Market calldata market, Id id, address user, uint256 collateralPrice, uint256 borrowablePrice)
+        internal
+        view
+        returns (bool)
+    {
         uint256 borrowValue =
-            borrowShares.toAssetsUp(totalBorrow[id], totalBorrowShares[id]).mulWadUp(market.borrowableOracle.price());
-        uint256 collateralValue = collateral[id][user].mulWadDown(market.collateralOracle.price());
+            borrowShare[id][user].toAssetsUp(totalBorrow[id], totalBorrowShares[id]).mulWadUp(borrowablePrice);
+        uint256 collateralValue = collateral[id][user].mulWadDown(collateralPrice);
+
         return collateralValue.mulWadDown(market.lltv) >= borrowValue;
     }
 }
