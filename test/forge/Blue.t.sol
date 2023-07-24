@@ -202,7 +202,7 @@ contract BlueTest is Test {
         fee = bound(fee, FEE_CAP + 1, type(uint256).max);
 
         vm.prank(OWNER);
-        vm.expectRevert("fee must be <= 20%");
+        vm.expectRevert(bytes(Errors.FEE_CAP_EXCEEDED));
         blue.setFee(market, fee);
     }
 
