@@ -3,11 +3,12 @@ pragma solidity 0.8.20;
 
 import {IIrm} from "src/interfaces/IIrm.sol";
 import {IERC20} from "src/interfaces/IERC20.sol";
-import {IOracle} from "src/interfaces/IOracle.sol";
 
 import {Events} from "./libraries/Events.sol";
-import {SharesMath} from "./libraries/SharesMath.sol";
-import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
+import {Errors} from "./libraries/Errors.sol";
+import {SharesMath} from "src/libraries/SharesMath.sol";
+import {FixedPointMathLib} from "src/libraries/FixedPointMathLib.sol";
+import {Id, Market, MarketLib} from "src/libraries/MarketLib.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 
 import {Owned} from "solmate/auth/Owned.sol";
@@ -35,36 +36,11 @@ bytes32 constant EIP712_AUTHORIZATION_TYPEHASH =
 /// @dev The highest valid value for s in an ECDSA signature pair (0 < s < secp256k1n ÷ 2 + 1).
 uint256 constant MAX_VALID_ECDSA_S = 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0;
 
-// Market id.
-type Id is bytes32;
-
-// Market.
-struct Market {
-    IERC20 borrowableAsset;
-    IERC20 collateralAsset;
-    IOracle borrowableOracle;
-    IOracle collateralOracle;
-    IIrm irm;
-    uint256 lltv;
-}
-
-/// @notice Contains the `v`, `r` and `s` parameters of an ECDSA signature.
-struct Signature {
-    uint8 v;
-    bytes32 r;
-    bytes32 s;
-}
-
-using {toId} for Market;
-
-function toId(Market calldata market) pure returns (Id) {
-    return Id.wrap(keccak256(abi.encode(market)));
-}
-
-contract Blue is Owned {
+contract Blue {
     using SharesMath for uint256;
     using FixedPointMathLib for uint256;
     using SafeTransferLib for IERC20;
+    using MarketLib for Market;
 
     // Immutables.
 
@@ -72,6 +48,10 @@ contract Blue is Owned {
 
     // Storage.
 
+    // Owner.
+    address public owner;
+    // Fee recipient.
+    address public feeRecipient;
     // User' supply balances.
     mapping(Id => mapping(address => uint256)) public supplyShare;
     // User' borrow balances.
@@ -88,18 +68,20 @@ contract Blue is Owned {
     mapping(Id => uint256) public totalBorrowShares;
     // Interests last update (used to check if a market has been created).
     mapping(Id => uint256) public lastUpdate;
+    // Fee.
+    mapping(Id => uint256) public fee;
     // Enabled IRMs.
     mapping(IIrm => bool) public isIrmEnabled;
     // Enabled LLTVs.
     mapping(uint256 => bool) public isLltvEnabled;
     // User's managers.
-    mapping(address => mapping(address => bool)) public approval;
-    // User's nonces. Used to prevent replay attacks with EIP-712 signatures.
-    mapping(address => uint256) public userNonce;
+    mapping(address => mapping(address => bool)) public isApproved;
 
     // Constructor.
 
-    constructor(address newOwner) Owned(newOwner) {
+    constructor(address newOwner) {
+        owner = newOwner;
+
         domainSeparator = keccak256(
             abi.encode(
                 EIP712_DOMAIN_TYPEHASH,
@@ -111,7 +93,18 @@ contract Blue is Owned {
         );
     }
 
+    // Modifiers.
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, Errors.NOT_OWNER);
+        _;
+    }
+
     // Only owner functions.
+
+    function transferOwnership(address newOwner) external onlyOwner {
+        owner = newOwner;
+    }
 
     function enableIrm(IIrm irm) external onlyOwner {
         isIrmEnabled[irm] = true;
@@ -120,31 +113,43 @@ contract Blue is Owned {
     }
 
     function enableLltv(uint256 lltv) external onlyOwner {
-        require(lltv < WAD, "LLTV too high");
+        require(lltv < WAD, Errors.LLTV_TOO_HIGH);
         isLltvEnabled[lltv] = true;
 
         emit Events.LltvEnabled(lltv);
     }
 
+    // @notice It is the owner's responsibility to ensure a fee recipient is set before setting a non-zero fee.
+    function setFee(Market calldata market, uint256 newFee) external onlyOwner {
+        Id id = market.id();
+        require(lastUpdate[id] != 0, "unknown market");
+        require(newFee <= WAD, "fee must be <= 1");
+        fee[id] = newFee;
+    }
+
+    function setFeeRecipient(address recipient) external onlyOwner {
+        feeRecipient = recipient;
+    }
+
     // Markets management.
 
     function createMarket(Market calldata market) external {
-        Id id = market.toId();
-        require(isIrmEnabled[market.irm], "IRM not enabled");
-        require(isLltvEnabled[market.lltv], "LLTV not enabled");
-        require(lastUpdate[id] == 0, "market already exists");
+        Id id = market.id();
+        require(isIrmEnabled[market.irm], Errors.IRM_NOT_ENABLED);
+        require(isLltvEnabled[market.lltv], Errors.LLTV_NOT_ENABLED);
+        require(lastUpdate[id] == 0, Errors.MARKET_CREATED);
 
-        accrueInterests(market, id);
+        _accrueInterests(market, id);
     }
 
     // Supply management.
 
     function supply(Market calldata market, uint256 amount, address onBehalf) external {
-        Id id = market.toId();
-        require(lastUpdate[id] != 0, "unknown market");
-        require(amount != 0, "zero amount");
+        Id id = market.id();
+        require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
+        require(amount != 0, Errors.ZERO_AMOUNT);
 
-        accrueInterests(market, id);
+        _accrueInterests(market, id);
 
         uint256 shares = amount.toSharesDown(totalSupply[id], totalSupplyShares[id]);
         supplyShare[id][onBehalf] += shares;
@@ -158,12 +163,12 @@ contract Blue is Owned {
     }
 
     function withdraw(Market calldata market, uint256 amount, address onBehalf) external {
-        Id id = market.toId();
-        require(lastUpdate[id] != 0, "unknown market");
-        require(amount != 0, "zero amount");
-        require(_isSenderApprovedFor(onBehalf), "not approved");
+        Id id = market.id();
+        require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
+        require(amount != 0, Errors.ZERO_AMOUNT);
+        require(_isSenderOrIsApproved(onBehalf), Errors.MANAGER_NOT_APPROVED);
 
-        accrueInterests(market, id);
+        _accrueInterests(market, id);
 
         uint256 shares = amount.toSharesUp(totalSupply[id], totalSupplyShares[id]);
         supplyShare[id][onBehalf] -= shares;
@@ -173,7 +178,7 @@ contract Blue is Owned {
 
         emit Events.Withdraw(Id.unwrap(id), msg.sender, onBehalf, amount, shares);
 
-        require(totalBorrow[id] <= totalSupply[id], "not enough liquidity");
+        require(totalBorrow[id] <= totalSupply[id], Errors.INSUFFICIENT_LIQUIDITY);
 
         market.borrowableAsset.safeTransfer(msg.sender, amount);
     }
@@ -181,12 +186,12 @@ contract Blue is Owned {
     // Borrow management.
 
     function borrow(Market calldata market, uint256 amount, address onBehalf) external {
-        Id id = market.toId();
-        require(lastUpdate[id] != 0, "unknown market");
-        require(amount != 0, "zero amount");
-        require(_isSenderApprovedFor(onBehalf), "not approved");
+        Id id = market.id();
+        require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
+        require(amount != 0, Errors.ZERO_AMOUNT);
+        require(_isSenderOrIsApproved(onBehalf), Errors.MANAGER_NOT_APPROVED);
 
-        accrueInterests(market, id);
+        _accrueInterests(market, id);
 
         uint256 shares = amount.toSharesUp(totalBorrow[id], totalBorrowShares[id]);
         borrowShare[id][onBehalf] += shares;
@@ -196,18 +201,18 @@ contract Blue is Owned {
 
         emit Events.Borrow(Id.unwrap(id), msg.sender, onBehalf, amount, shares);
 
-        require(isHealthy(market, id, onBehalf), "not enough collateral");
-        require(totalBorrow[id] <= totalSupply[id], "not enough liquidity");
+        require(_isHealthy(market, id, onBehalf), Errors.INSUFFICIENT_COLLATERAL);
+        require(totalBorrow[id] <= totalSupply[id], Errors.INSUFFICIENT_LIQUIDITY);
 
         market.borrowableAsset.safeTransfer(msg.sender, amount);
     }
 
     function repay(Market calldata market, uint256 amount, address onBehalf) external {
-        Id id = market.toId();
-        require(lastUpdate[id] != 0, "unknown market");
-        require(amount != 0, "zero amount");
+        Id id = market.id();
+        require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
+        require(amount != 0, Errors.ZERO_AMOUNT);
 
-        accrueInterests(market, id);
+        _accrueInterests(market, id);
 
         uint256 shares = amount.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
         borrowShare[id][onBehalf] -= shares;
@@ -224,9 +229,9 @@ contract Blue is Owned {
 
     /// @dev Don't accrue interests because it's not required and it saves gas.
     function supplyCollateral(Market calldata market, uint256 amount, address onBehalf) external {
-        Id id = market.toId();
-        require(lastUpdate[id] != 0, "unknown market");
-        require(amount != 0, "zero amount");
+        Id id = market.id();
+        require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
+        require(amount != 0, Errors.ZERO_AMOUNT);
 
         // Don't accrue interests because it's not required and it saves gas.
 
@@ -238,18 +243,18 @@ contract Blue is Owned {
     }
 
     function withdrawCollateral(Market calldata market, uint256 amount, address onBehalf) external {
-        Id id = market.toId();
-        require(lastUpdate[id] != 0, "unknown market");
-        require(amount != 0, "zero amount");
-        require(_isSenderApprovedFor(onBehalf), "not approved");
+        Id id = market.id();
+        require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
+        require(amount != 0, Errors.ZERO_AMOUNT);
+        require(_isSenderOrIsApproved(onBehalf), Errors.MANAGER_NOT_APPROVED);
 
-        accrueInterests(market, id);
+        _accrueInterests(market, id);
 
         collateral[id][onBehalf] -= amount;
 
         emit Events.CollateralWithdraw(Id.unwrap(id), msg.sender, onBehalf, amount);
 
-        require(isHealthy(market, id, onBehalf), "not enough collateral");
+        require(_isHealthy(market, id, onBehalf), Errors.INSUFFICIENT_COLLATERAL);
 
         market.collateralAsset.safeTransfer(msg.sender, amount);
     }
@@ -257,13 +262,13 @@ contract Blue is Owned {
     // Liquidation.
 
     function liquidate(Market calldata market, address borrower, uint256 seized) external {
-        Id id = market.toId();
-        require(lastUpdate[id] != 0, "unknown market");
-        require(seized != 0, "zero amount");
+        Id id = market.id();
+        require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
+        require(seized != 0, Errors.ZERO_AMOUNT);
 
-        accrueInterests(market, id);
+        _accrueInterests(market, id);
 
-        require(!isHealthy(market, id, borrower), "cannot liquidate a healthy position");
+        require(!_isHealthy(market, id, borrower), Errors.HEALTHY_POSITION);
 
         // The liquidation incentive is 1 + ALPHA * (1 / LLTV - 1).
         uint256 incentive = WAD + ALPHA.mulWadDown(WAD.divWadDown(market.lltv) - WAD);
@@ -298,48 +303,17 @@ contract Blue is Owned {
 
     // Position management.
 
-    function setApproval(
-        address delegator,
-        address manager,
-        bool isAllowed,
-        uint256 nonce,
-        uint256 deadline,
-        Signature calldata signature
-    ) external {
-        require(uint256(signature.s) <= MAX_VALID_ECDSA_S, "invalid s");
-        // v ∈ {27, 28} (source: https://ethereum.github.io/yellowpaper/paper.pdf #308)
-        require(signature.v == 27 || signature.v == 28, "invalid v");
-
-        bytes32 structHash =
-            keccak256(abi.encode(EIP712_AUTHORIZATION_TYPEHASH, delegator, manager, isAllowed, nonce, deadline));
-        bytes32 digest = keccak256(abi.encodePacked(EIP712_MSG_PREFIX, domainSeparator, structHash));
-        address signatory = ecrecover(digest, signature.v, signature.r, signature.s);
-
-        require(signatory != address(0) && delegator == signatory, "invalid signatory");
-        require(block.timestamp < deadline, "signature expired");
-
-        require(nonce == userNonce[signatory]++, "invalid nonce");
-
-        _setApproval(signatory, manager, isAllowed);
-    }
-
     function setApproval(address manager, bool isAllowed) external {
-        _setApproval(msg.sender, manager, isAllowed);
+        isApproved[msg.sender][manager] = isAllowed;
     }
 
-    function _setApproval(address delegator, address manager, bool isAllowed) internal {
-        approval[delegator][manager] = isAllowed;
-
-        emit Events.Approval(msg.sender, delegator, manager, isAllowed);
-    }
-
-    function _isSenderApprovedFor(address user) internal view returns (bool) {
-        return msg.sender == user || approval[user][msg.sender];
+    function _isSenderOrIsApproved(address user) internal view returns (bool) {
+        return msg.sender == user || isApproved[user][msg.sender];
     }
 
     // Interests management.
 
-    function accrueInterests(Market calldata market, Id id) private {
+    function _accrueInterests(Market calldata market, Id id) internal {
         uint256 marketTotalBorrow = totalBorrow[id];
 
         uint256 accruedInterests;
@@ -348,6 +322,14 @@ contract Blue is Owned {
             accruedInterests = marketTotalBorrow.mulWadDown(borrowRate * (block.timestamp - lastUpdate[id]));
             totalBorrow[id] = marketTotalBorrow + accruedInterests;
             totalSupply[id] += accruedInterests;
+
+            if (fee[id] != 0) {
+                uint256 feeAmount = accruedInterests.mulWadDown(fee[id]);
+                // The fee amount is subtracted from the total supply in this calculation to compensate for the fact that total supply is already updated.
+                uint256 feeShares = feeAmount.mulDivDown(totalSupplyShares[id], totalSupply[id] - feeAmount);
+                supplyShare[id][feeRecipient] += feeShares;
+                totalSupplyShares[id] += feeShares;
+            }
         }
 
         lastUpdate[id] = block.timestamp;
@@ -357,7 +339,7 @@ contract Blue is Owned {
 
     // Health check.
 
-    function isHealthy(Market calldata market, Id id, address user) private view returns (bool) {
+    function _isHealthy(Market calldata market, Id id, address user) internal view returns (bool) {
         uint256 borrowShares = borrowShare[id][user];
         if (borrowShares == 0) return true;
 

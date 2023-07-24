@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.20;
 
-import {IERC20} from "src/interfaces/IERC20.sol";
-import {IOracle} from "src/interfaces/IOracle.sol";
-
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
@@ -131,7 +128,7 @@ contract BlueTest is Test {
         Blue blue2 = new Blue(OWNER);
 
         vm.prank(attacker);
-        vm.expectRevert("UNAUTHORIZED");
+        vm.expectRevert(bytes(Errors.NOT_OWNER));
         blue2.transferOwnership(newOwner);
     }
 
@@ -139,7 +136,7 @@ contract BlueTest is Test {
         vm.assume(attacker != blue.owner());
 
         vm.prank(attacker);
-        vm.expectRevert("UNAUTHORIZED");
+        vm.expectRevert(bytes(Errors.NOT_OWNER));
         blue.enableIrm(newIrm);
     }
 
@@ -163,7 +160,7 @@ contract BlueTest is Test {
         vm.assume(marketFuzz.irm != irm);
 
         vm.prank(OWNER);
-        vm.expectRevert("IRM not enabled");
+        vm.expectRevert(bytes(Errors.IRM_NOT_ENABLED));
         blue.createMarket(marketFuzz);
     }
 
@@ -171,7 +168,7 @@ contract BlueTest is Test {
         vm.assume(attacker != OWNER);
 
         vm.prank(attacker);
-        vm.expectRevert("UNAUTHORIZED");
+        vm.expectRevert(bytes(Errors.NOT_OWNER));
         blue.enableLltv(newLltv);
     }
 
@@ -188,8 +185,95 @@ contract BlueTest is Test {
         newLltv = bound(newLltv, WAD, type(uint256).max);
 
         vm.prank(OWNER);
-        vm.expectRevert("LLTV too high");
+        vm.expectRevert(bytes(Errors.LLTV_TOO_HIGH));
         blue.enableLltv(newLltv);
+    }
+
+    function testSetFee(uint256 fee) public {
+        fee = bound(fee, 0, WAD);
+
+        vm.prank(OWNER);
+        blue.setFee(market, fee);
+
+        assertEq(blue.fee(id), fee);
+    }
+
+    function testSetFeeShouldRevertIfTooHigh(uint256 fee) public {
+        fee = bound(fee, WAD + 1, type(uint256).max);
+
+        vm.prank(OWNER);
+        vm.expectRevert("fee must be <= 1");
+        blue.setFee(market, fee);
+    }
+
+    function testSetFeeShouldRevertIfMarketNotCreated(Market memory marketFuzz, uint256 fee) public {
+        vm.assume(neq(marketFuzz, market));
+        fee = bound(fee, 0, WAD);
+
+        vm.prank(OWNER);
+        vm.expectRevert("unknown market");
+        blue.setFee(marketFuzz, fee);
+    }
+
+    function testSetFeeShouldRevertIfNotOwner(uint256 fee, address caller) public {
+        vm.assume(caller != OWNER);
+        fee = bound(fee, 0, WAD);
+
+        vm.expectRevert("not owner");
+        blue.setFee(market, fee);
+    }
+
+    function testSetFeeRecipient(address recipient) public {
+        vm.prank(OWNER);
+        blue.setFeeRecipient(recipient);
+
+        assertEq(blue.feeRecipient(), recipient);
+    }
+
+    function testSetFeeRecipientShouldRevertIfNotOwner(address caller, address recipient) public {
+        vm.assume(caller != OWNER);
+
+        vm.expectRevert("not owner");
+        vm.prank(caller);
+        blue.setFeeRecipient(recipient);
+    }
+
+    function testFeeAccrues(uint256 amountLent, uint256 amountBorrowed, uint256 fee, uint256 timeElapsed) public {
+        amountLent = bound(amountLent, 1, 2 ** 64);
+        amountBorrowed = bound(amountBorrowed, 1, amountLent);
+        timeElapsed = bound(timeElapsed, 1, 365 days);
+        fee = bound(fee, 0, 1e18);
+        address recipient = OWNER;
+
+        vm.startPrank(OWNER);
+        blue.setFee(market, fee);
+        blue.setFeeRecipient(recipient);
+        vm.stopPrank();
+
+        borrowableAsset.setBalance(address(this), amountLent);
+        blue.supply(market, amountLent, address(this));
+
+        vm.prank(BORROWER);
+        blue.borrow(market, amountBorrowed, BORROWER);
+
+        uint256 totalSupplyBefore = blue.totalSupply(id);
+        uint256 totalSupplySharesBefore = blue.totalSupplyShares(id);
+
+        // Trigger an accrue.
+        vm.warp(block.timestamp + timeElapsed);
+
+        collateralAsset.setBalance(address(this), 1);
+        blue.supplyCollateral(market, 1, address(this));
+        blue.withdrawCollateral(market, 1, address(this));
+
+        uint256 totalSupplyAfter = blue.totalSupply(id);
+        vm.assume(totalSupplyAfter > totalSupplyBefore);
+
+        uint256 accrued = totalSupplyAfter - totalSupplyBefore;
+        uint256 expectedFee = accrued.mulWadDown(fee);
+        uint256 expectedFeeShares = expectedFee.mulDivDown(totalSupplySharesBefore, totalSupplyAfter - expectedFee);
+
+        assertEq(blue.supplyShare(id, recipient), expectedFeeShares);
     }
 
     function testCreateMarketWithNotEnabledLltv(Market memory marketFuzz) public {
@@ -197,18 +281,19 @@ contract BlueTest is Test {
         marketFuzz.irm = irm;
 
         vm.prank(OWNER);
-        vm.expectRevert("LLTV not enabled");
+        vm.expectRevert(bytes(Errors.LLTV_NOT_ENABLED));
         blue.createMarket(marketFuzz);
     }
 
-    function testSupply(uint256 amount) public {
+    function testSupplyOnBehalf(uint256 amount, address onBehalf) public {
+        vm.assume(onBehalf != address(blue));
         amount = bound(amount, 1, 2 ** 64);
 
         borrowableAsset.setBalance(address(this), amount);
-        blue.supply(market, amount, address(this));
+        blue.supply(market, amount, onBehalf);
 
-        assertEq(blue.supplyShare(id, address(this)), amount * SharesMath.VIRTUAL_SHARES, "supply share");
-        assertEq(borrowableAsset.balanceOf(address(this)), 0, "lender balance");
+        assertEq(blue.supplyShare(id, onBehalf), amount * SharesMath.VIRTUAL_SHARES, "supply share");
+        assertEq(borrowableAsset.balanceOf(onBehalf), 0, "lender balance");
         assertEq(borrowableAsset.balanceOf(address(blue)), amount, "blue balance");
     }
 
@@ -226,7 +311,7 @@ contract BlueTest is Test {
 
         if (amountBorrowed > amountLent) {
             vm.prank(BORROWER);
-            vm.expectRevert("not enough liquidity");
+            vm.expectRevert(bytes(Errors.INSUFFICIENT_LIQUIDITY));
             blue.borrow(market, amountBorrowed, BORROWER);
             return;
         }
@@ -255,7 +340,7 @@ contract BlueTest is Test {
             if (amountWithdrawn > amountLent) {
                 vm.expectRevert();
             } else {
-                vm.expectRevert("not enough liquidity");
+                vm.expectRevert(bytes(Errors.INSUFFICIENT_LIQUIDITY));
             }
             blue.withdraw(market, amountWithdrawn, address(this));
             return;
@@ -304,7 +389,7 @@ contract BlueTest is Test {
             blue.borrow(market, amountBorrowed, BORROWER);
         } else {
             vm.prank(BORROWER);
-            vm.expectRevert("not enough collateral");
+            vm.expectRevert(bytes(Errors.INSUFFICIENT_COLLATERAL));
             blue.borrow(market, amountBorrowed, BORROWER);
         }
     }
@@ -332,14 +417,42 @@ contract BlueTest is Test {
         assertEq(borrowableAsset.balanceOf(address(blue)), amountLent - amountBorrowed + amountRepaid, "blue balance");
     }
 
-    function testSupplyCollateral(uint256 amount) public {
+    function testRepayOnBehalf(uint256 amountLent, uint256 amountBorrowed, uint256 amountRepaid, address onBehalf)
+        public
+    {
+        vm.assume(onBehalf != address(blue));
+        vm.assume(onBehalf != address(this));
+        amountLent = bound(amountLent, 1, 2 ** 64);
+        amountBorrowed = bound(amountBorrowed, 1, amountLent);
+        amountRepaid = bound(amountRepaid, 1, amountBorrowed);
+
+        borrowableAsset.setBalance(address(this), amountLent + amountRepaid);
+        blue.supply(market, amountLent, address(this));
+
+        vm.prank(onBehalf);
+        blue.borrow(market, amountBorrowed, onBehalf);
+
+        blue.repay(market, amountRepaid, onBehalf);
+
+        assertApproxEqAbs(
+            blue.borrowShare(id, onBehalf),
+            (amountBorrowed - amountRepaid) * SharesMath.VIRTUAL_SHARES,
+            100,
+            "borrow share"
+        );
+        assertEq(borrowableAsset.balanceOf(onBehalf), amountBorrowed, "onBehalf balance");
+        assertEq(borrowableAsset.balanceOf(address(blue)), amountLent - amountBorrowed + amountRepaid, "blue balance");
+    }
+
+    function testSupplyCollateralOnBehalf(uint256 amount, address onBehalf) public {
+        vm.assume(onBehalf != address(blue));
         amount = bound(amount, 1, 2 ** 64);
 
         collateralAsset.setBalance(address(this), amount);
-        blue.supplyCollateral(market, amount, address(this));
+        blue.supplyCollateral(market, amount, onBehalf);
 
-        assertEq(blue.collateral(id, address(this)), amount, "collateral");
-        assertEq(collateralAsset.balanceOf(address(this)), 0, "this balance");
+        assertEq(blue.collateral(id, onBehalf), amount, "collateral");
+        assertEq(collateralAsset.balanceOf(onBehalf), 0, "onBehalf balance");
         assertEq(collateralAsset.balanceOf(address(blue)), amount, "blue balance");
     }
 
@@ -533,6 +646,44 @@ contract BlueTest is Test {
 
         vm.expectRevert(stdError.arithmeticError);
         blue.withdrawCollateral(market, amount, address(this));
+    }
+
+    function testSetApproval(address manager, bool isAllowed) public {
+        blue.setApproval(manager, isAllowed);
+        assertEq(blue.isApproved(address(this), manager), isAllowed);
+    }
+
+    function testNotApproved(address attacker) public {
+        vm.assume(attacker != address(this));
+
+        vm.startPrank(attacker);
+
+        vm.expectRevert("not approved");
+        blue.withdraw(market, 1, address(this));
+        vm.expectRevert("not approved");
+        blue.withdrawCollateral(market, 1, address(this));
+        vm.expectRevert("not approved");
+        blue.borrow(market, 1, address(this));
+
+        vm.stopPrank();
+    }
+
+    function testApproved(address manager) public {
+        borrowableAsset.setBalance(address(this), 100 ether);
+        collateralAsset.setBalance(address(this), 100 ether);
+
+        blue.supply(market, 100 ether, address(this));
+        blue.supplyCollateral(market, 100 ether, address(this));
+
+        blue.setApproval(manager, true);
+
+        vm.startPrank(manager);
+
+        blue.withdraw(market, 1 ether, address(this));
+        blue.withdrawCollateral(market, 1 ether, address(this));
+        blue.borrow(market, 1 ether, address(this));
+
+        vm.stopPrank();
     }
 }
 
