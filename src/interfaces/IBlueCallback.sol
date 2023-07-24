@@ -2,13 +2,5 @@
 pragma solidity >=0.5.0;
 
 interface IBlueCallback {
-    enum BlueAction {
-        SUPPLY,
-        SUPPLY_COLLATERAL,
-        REPAY,
-        LIQUIDATE,
-        FLASHLOAN
-    }
-
-    function blueCallback(BlueAction action, uint256 amount, bytes calldata data) external;
+    function blueCallback(uint256 amount, bytes calldata data) external;
 }

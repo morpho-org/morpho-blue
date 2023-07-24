@@ -117,7 +117,7 @@ contract Blue {
 
         totalSupply[id] += amount;
 
-        if (data.length > 0) IBlueCallback(msg.sender).blueCallback(IBlueCallback.BlueAction.SUPPLY, amount, data);
+        _callback(amount, data);
 
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
@@ -176,7 +176,7 @@ contract Blue {
 
         totalBorrow[id] -= amount;
 
-        if (data.length > 0) IBlueCallback(msg.sender).blueCallback(IBlueCallback.BlueAction.REPAY, amount, data);
+        _callback(amount, data);
 
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
@@ -193,9 +193,7 @@ contract Blue {
 
         collateral[id][onBehalf] += amount;
 
-        if (data.length > 0) {
-            IBlueCallback(msg.sender).blueCallback(IBlueCallback.BlueAction.SUPPLY_COLLATERAL, amount, data);
-        }
+        _callback(amount, data);
 
         market.collateralAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
@@ -250,7 +248,7 @@ contract Blue {
 
         market.collateralAsset.safeTransfer(msg.sender, seized);
 
-        if (data.length > 0) IBlueCallback(msg.sender).blueCallback(IBlueCallback.BlueAction.LIQUIDATE, repaid, data);
+        _callback(repaid, data);
 
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), repaid);
     }
@@ -299,5 +297,9 @@ contract Blue {
             borrowShares.toAssetsUp(totalBorrow[id], totalBorrowShares[id]).mulWadUp(market.borrowableOracle.price());
         uint256 collateralValue = collateral[id][user].mulWadDown(market.collateralOracle.price());
         return collateralValue.mulWadDown(market.lltv) >= borrowValue;
+    }
+
+    function _callback(uint256 amount, bytes calldata data) internal {
+        if (data.length > 0) IBlueCallback(msg.sender).blueCallback(amount, data);
     }
 }
