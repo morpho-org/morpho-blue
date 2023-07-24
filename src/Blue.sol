@@ -3,6 +3,7 @@ pragma solidity 0.8.20;
 
 import {IIrm} from "src/interfaces/IIrm.sol";
 import {IERC20} from "src/interfaces/IERC20.sol";
+import {IFlashBorrower} from "src/interfaces/IFlashBorrower.sol";
 
 import {Errors} from "./libraries/Errors.sol";
 import {SharesMath} from "src/libraries/SharesMath.sol";
@@ -12,6 +13,9 @@ import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 
 uint256 constant WAD = 1e18;
 uint256 constant ALPHA = 0.5e18;
+
+/// @dev The expected success hash returned by the FlashBorrower.
+bytes32 constant FLASH_BORROWER_SUCCESS_HASH = keccak256("FlashBorrower.onFlashLoan");
 
 contract Blue {
     using SharesMath for uint256;
@@ -242,6 +246,23 @@ contract Blue {
 
         market.collateralAsset.safeTransfer(msg.sender, seized);
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), repaid);
+    }
+
+    // Flash Loans.
+
+    function flashLoan(IFlashBorrower receiver, IERC20 token, uint256 amount, bytes calldata data)
+        public
+        virtual
+        returns (bytes memory)
+    {
+        token.safeTransfer(address(receiver), amount);
+
+        (bytes32 successHash, bytes memory returnData) = receiver.onFlashLoan(msg.sender, token, amount, data);
+        require(successHash == FLASH_BORROWER_SUCCESS_HASH, Errors.INVALID_SUCCESS_HASH);
+
+        token.safeTransferFrom(address(receiver), address(this), amount);
+
+        return returnData;
     }
 
     // Position management.
