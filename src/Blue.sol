@@ -3,7 +3,7 @@ pragma solidity 0.8.20;
 
 import {IIrm} from "src/interfaces/IIrm.sol";
 import {IERC20} from "src/interfaces/IERC20.sol";
-import {IFlashBorrower} from "src/interfaces/IFlashBorrower.sol";
+import {IFlashBorrower, FLASH_BORROWER_SUCCESS_HASH} from "src/interfaces/IFlashBorrower.sol";
 
 import {Errors} from "./libraries/Errors.sol";
 import {SharesMath} from "src/libraries/SharesMath.sol";
@@ -13,9 +13,6 @@ import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 
 uint256 constant WAD = 1e18;
 uint256 constant ALPHA = 0.5e18;
-
-/// @dev The expected success hash returned by the FlashBorrower.
-bytes32 constant FLASH_BORROWER_SUCCESS_HASH = keccak256("FlashBorrower.onFlashLoan");
 
 contract Blue {
     using SharesMath for uint256;

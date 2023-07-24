@@ -5,6 +5,7 @@ import { expect } from "chai";
 import { BigNumber, constants, utils } from "ethers";
 import hre from "hardhat";
 import { Blue, OracleMock, ERC20Mock, IrmMock } from "types";
+import { FlashBorrowerMock } from "types/src/mocks/FlashBorrowerMock";
 
 const closePositions = false;
 const initBalance = constants.MaxUint256.div(2);
@@ -50,6 +51,8 @@ describe("Blue", () => {
   let id: Buffer;
 
   let nbLiquidations: number;
+
+  let flashBorrower: FlashBorrowerMock;
 
   const updateMarket = (newMarket: Partial<Market>) => {
     market = { ...market, ...newMarket };
@@ -110,6 +113,10 @@ describe("Blue", () => {
 
     await borrowable.setBalance(liquidator.address, initBalance);
     await borrowable.connect(liquidator).approve(blue.address, constants.MaxUint256);
+
+    const FlashBorrowerFactory = await hre.ethers.getContractFactory("FlashBorrowerMock", admin);
+
+    flashBorrower = await FlashBorrowerFactory.deploy(blue.address);
   });
 
   it("should simulate gas cost [main]", async () => {
@@ -184,5 +191,14 @@ describe("Blue", () => {
 
       await borrowableOracle.setPrice(BigNumber.WAD);
     }
+  });
+
+  it("should simuate gas cost [flashloan]", async () => {
+    const user = signers[0];
+    const amount = BigNumber.WAD;
+
+    await blue.connect(user).supply(market, amount, user.address);
+
+    await flashBorrower.flashLoan(borrowable.address, amount.div(2), []);
   });
 });

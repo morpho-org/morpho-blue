@@ -1,7 +1,10 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
 import {IERC20} from "src/interfaces/IERC20.sol";
+
+/// @dev The expected success hash returned by the FlashBorrower.
+bytes32 constant FLASH_BORROWER_SUCCESS_HASH = keccak256("FlashBorrower.onFlashLoan");
 
 /// @dev Interface of the FlashBorrower, inspired by https://eips.ethereum.org/EIPS/eip-3156.
 ///      The FlashLender's `flashLoan` function now returns the FlashBorrower's return data.
