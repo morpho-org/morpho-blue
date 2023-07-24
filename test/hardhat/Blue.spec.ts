@@ -123,8 +123,8 @@ describe("Blue", () => {
       let amount = BigNumber.WAD.mul(1 + Math.floor(random() * 100));
 
       if (random() < 2 / 3) {
-        await blue.connect(user).supply(market, amount, user.address);
-        await blue.connect(user).withdraw(market, amount.div(2), user.address);
+        await blue.connect(user).supply(market, amount, defaultAbiCoder.encode(["address"], [user.address]));
+        await blue.connect(user).withdraw(market, amount.div(2), defaultAbiCoder.encode(["address"], [user.address]));
       } else {
         const totalSupply = await blue.totalSupply(id);
         const totalBorrow = await blue.totalBorrow(id);
@@ -133,10 +133,10 @@ describe("Blue", () => {
         amount = BigNumber.min(amount, BigNumber.from(liquidity).div(2));
 
         if (amount > BigNumber.from(0)) {
-          await blue.connect(user).supplyCollateral(market, amount, user.address);
-          await blue.connect(user).borrow(market, amount.div(2), user.address);
-          await blue.connect(user).repay(market, amount.div(4), user.address);
-          await blue.connect(user).withdrawCollateral(market, amount.div(8), user.address);
+          await blue.connect(user).supplyCollateral(market, amount, defaultAbiCoder.encode(["address"], [user.address]));
+          await blue.connect(user).borrow(market, amount.div(2), defaultAbiCoder.encode(["address"], [user.address]));
+          await blue.connect(user).repay(market, amount.div(4), defaultAbiCoder.encode(["address"], [user.address]));
+          await blue.connect(user).withdrawCollateral(market, amount.div(8), defaultAbiCoder.encode(["address"], [user.address]));
         }
       }
     }
@@ -162,21 +162,21 @@ describe("Blue", () => {
       updateMarket({ lltv });
 
       // We use 2 different users to borrow from a market so that liquidations do not put the borrow storage back to 0 on that market.
-      await blue.connect(user).supply(market, amount, user.address);
-      await blue.connect(user).supplyCollateral(market, amount, user.address);
-      await blue.connect(user).borrow(market, borrowedAmount, user.address);
+      await blue.connect(user).supply(market, amount, defaultAbiCoder.encode(["address"], [user.address]));
+      await blue.connect(user).supplyCollateral(market, amount, defaultAbiCoder.encode(["address"], [user.address]));
+      await blue.connect(user).borrow(market, borrowedAmount, defaultAbiCoder.encode(["address"], [user.address]));
 
-      await blue.connect(borrower).supply(market, amount, borrower.address);
-      await blue.connect(borrower).supplyCollateral(market, amount, borrower.address);
-      await blue.connect(borrower).borrow(market, borrowedAmount, borrower.address);
+      await blue.connect(borrower).supply(market, amount, defaultAbiCoder.encode(["address"], [borrower.address]));
+      await blue.connect(borrower).supplyCollateral(market, amount, defaultAbiCoder.encode(["address"], [borrower.address]));
+      await blue.connect(borrower).borrow(market, borrowedAmount, defaultAbiCoder.encode(["address"], [borrower.address]));
 
       await borrowableOracle.setPrice(BigNumber.WAD.mul(1000));
 
       const seized = closePositions ? constants.MaxUint256 : amount.div(2);
 
-      await blue.connect(liquidator).liquidate(market, borrower.address, seized);
+      await blue.connect(liquidator).liquidate(market, defaultAbiCoder.encode(["address"], [borrower.address]), seized);
 
-      const remainingCollateral = await blue.collateral(id, borrower.address);
+      const remainingCollateral = await blue.collateral(id, defaultAbiCoder.encode(["address"], [borrower.address]));
 
       if (closePositions)
         expect(remainingCollateral.isZero(), "did not take the whole collateral when closing the position").to.be.true;

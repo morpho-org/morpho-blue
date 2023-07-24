@@ -23,4 +23,6 @@ library Errors {
     string internal constant INSUFFICIENT_LIQUIDITY = "insufficient liquidity";
 
     string internal constant HEALTHY_POSITION = "position is healthy";
+
+    string internal constant NOT_ACCOUNT_OWNER = "not account owner";
 }
