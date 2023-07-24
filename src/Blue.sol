@@ -27,11 +27,11 @@ contract Blue {
     address public owner;
     // Fee recipient.
     address public feeRecipient;
-    // account' supply balances.
+    // Accounts' supply balances.
     mapping(Id => mapping(bytes32 => uint256)) public supplyShare;
-    // account' borrow balances.
+    // Accounts' borrow balances.
     mapping(Id => mapping(bytes32 => uint256)) public borrowShare;
-    // account' collateral balance.
+    // Accounts' collateral balances.
     mapping(Id => mapping(bytes32 => uint256)) public collateral;
     // Market total supply.
     mapping(Id => uint256) public totalSupply;
@@ -49,7 +49,7 @@ contract Blue {
     mapping(IIrm => bool) public isIrmEnabled;
     // Enabled LLTVs.
     mapping(uint256 => bool) public isLltvEnabled;
-    // account's managers.
+    // Account managers.
     mapping(bytes32 => mapping(address => bool)) public isApproved;
 
     // Constructor.
