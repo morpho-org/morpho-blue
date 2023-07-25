@@ -9,7 +9,7 @@ bytes32 constant FLASH_BORROWER_SUCCESS_HASH = keccak256("FlashBorrower.onFlashL
 /// @dev Interface of the FlashBorrower, inspired by https://eips.ethereum.org/EIPS/eip-3156.
 ///      The FlashLender's `flashLoan` function now returns the FlashBorrower's return data.
 interface IFlashBorrower {
-    /// @dev Receive a flash loan.
+    /// @dev Receives a flash loan.
     /// @param initiator The initiator of the loan.
     /// @param token The loan currency.
     /// @param amount The amount of tokens lent.
