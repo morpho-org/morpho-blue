@@ -18,7 +18,6 @@ contract Blue {
     using SharesMath for uint256;
     using FixedPointMathLib for uint256;
     using SafeTransferLib for IERC20;
-    using SafeTransferLib for address;
     using MarketLib for Market;
 
     // Storage.
@@ -108,6 +107,7 @@ contract Blue {
     function supply(Market memory market, uint256 amount, address onBehalf) external payable {
         Id id = market.id();
         if (market.isBorrowableNative()) amount = msg.value;
+        else require(msg.value == 0, Errors.NOT_NATIVE_TOKEN);
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
 
@@ -139,7 +139,7 @@ contract Blue {
         require(totalBorrow[id] <= totalSupply[id], Errors.INSUFFICIENT_LIQUIDITY);
 
         if (market.isBorrowableNative()) {
-            msg.sender.safeTransferETH(amount);
+            SafeTransferLib.safeTransferETH(msg.sender, amount);
         } else {
             market.borrowableAsset.safeTransfer(msg.sender, amount);
         }
@@ -165,7 +165,7 @@ contract Blue {
         require(totalBorrow[id] <= totalSupply[id], Errors.INSUFFICIENT_LIQUIDITY);
 
         if (market.isBorrowableNative()) {
-            msg.sender.safeTransferETH(amount);
+            SafeTransferLib.safeTransferETH(msg.sender, amount);
         } else {
             market.borrowableAsset.safeTransfer(msg.sender, amount);
         }
@@ -174,6 +174,7 @@ contract Blue {
     function repay(Market memory market, uint256 amount, address onBehalf) external payable {
         Id id = market.id();
         if (market.isBorrowableNative()) amount = msg.value;
+        else require(msg.value == 0, Errors.NOT_NATIVE_TOKEN);
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
 
@@ -194,6 +195,7 @@ contract Blue {
     function supplyCollateral(Market memory market, uint256 amount, address onBehalf) external payable {
         Id id = market.id();
         if (market.isCollateralNative()) amount = msg.value;
+        else require(msg.value == 0, Errors.NOT_NATIVE_TOKEN);
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
 
@@ -217,7 +219,7 @@ contract Blue {
         require(_isHealthy(market, id, onBehalf), Errors.INSUFFICIENT_COLLATERAL);
 
         if (market.isCollateralNative()) {
-            msg.sender.safeTransferETH(amount);
+            SafeTransferLib.safeTransferETH(msg.sender, amount);
         } else {
             market.collateralAsset.safeTransfer(msg.sender, amount);
         }
@@ -257,15 +259,15 @@ contract Blue {
         }
 
         if (market.isCollateralNative()) {
-            msg.sender.safeTransferETH(seized);
+            SafeTransferLib.safeTransferETH(msg.sender, seized);
         } else {
             market.collateralAsset.safeTransfer(msg.sender, seized);
         }
 
         if (market.isBorrowableNative()) {
-            require(msg.value >= repaid);
-            msg.sender.safeTransferETH(msg.value - repaid);
+            SafeTransferLib.safeTransferETH(msg.sender, msg.value - repaid);
         } else {
+            require(msg.value == 0, Errors.NOT_NATIVE_TOKEN);
             market.borrowableAsset.safeTransferFrom(msg.sender, address(this), repaid);
         }
     }
@@ -307,8 +309,10 @@ contract Blue {
 
     function _isHealthy(Market memory market, Id id, address user) internal view returns (bool) {
         if (borrowShare[id][user] == 0) return true;
+
         uint256 collateralPrice = market.collateralOracle.price();
         uint256 borrowablePrice = market.borrowableOracle.price();
+
         return _isHealthy(market, id, user, collateralPrice, borrowablePrice);
     }
 
@@ -320,6 +324,7 @@ contract Blue {
         uint256 borrowValue =
             borrowShare[id][user].toAssetsUp(totalBorrow[id], totalBorrowShares[id]).mulWadUp(borrowablePrice);
         uint256 collateralValue = collateral[id][user].mulWadDown(collateralPrice);
+
         return collateralValue.mulWadDown(market.lltv) >= borrowValue;
     }
 }

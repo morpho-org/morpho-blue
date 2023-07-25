@@ -375,6 +375,15 @@ contract BlueTest is Test {
         assertEq(blue.supplyShare(nativeBorrowableId, onBehalf), amount * SharesMath.VIRTUAL_SHARES, "supply share");
     }
 
+    function testSupplyNativeOnNonNativeMarket(uint256 amount) public {
+        amount = bound(amount, 1, 2 ** 64);
+
+        vm.deal(address(this), 2 * amount);
+        borrowableAsset.setBalance(address(this), amount);
+        vm.expectRevert(bytes(Errors.NOT_NATIVE_TOKEN));
+        blue.supply{value: amount}(market, amount, address(this));
+    }
+
     function testBorrow(uint256 amountLent, uint256 amountBorrowed) public {
         amountLent = bound(amountLent, 1, 2 ** 64);
         amountBorrowed = bound(amountBorrowed, 1, 2 ** 64);
@@ -678,6 +687,24 @@ contract BlueTest is Test {
         assertEq(borrowableAsset.balanceOf(address(blue)), amountLent - amountBorrowed + amountRepaid, "blue balance");
     }
 
+    function testRepayNativeOnNonNativeMarket(uint256 amountLent, uint256 amountBorrowed, uint256 amountRepaid)
+        public
+    {
+        amountLent = bound(amountLent, 1, 2 ** 64);
+        amountBorrowed = bound(amountBorrowed, 1, amountLent);
+        amountRepaid = bound(amountRepaid, 1, amountBorrowed);
+
+        borrowableAsset.setBalance(address(this), amountLent + amountRepaid);
+        blue.supply(market, amountLent, address(this));
+        vm.deal(BORROWER, 2 * amountRepaid);
+
+        vm.startPrank(BORROWER);
+        blue.borrow(market, amountBorrowed, BORROWER);
+        vm.expectRevert(bytes(Errors.NOT_NATIVE_TOKEN));
+        blue.repay{value: amountRepaid}(market, amountRepaid, BORROWER);
+        vm.stopPrank();
+    }
+
     function testSupplyCollateralOnBehalf(uint256 amount, address onBehalf) public {
         vm.assume(onBehalf != address(blue));
         amount = bound(amount, 1, 2 ** 64);
@@ -708,6 +735,15 @@ contract BlueTest is Test {
         assertEq(blue.collateral(nativeCollateralId, onBehalf), amount, "collateral");
         assertEq(thisNativeBalanceBefore, thisNativeBalanceAfter + amount, "this balance");
         assertEq(blueNativeBalanceBefore + amount, blueNativeBalanceAfter, "blue balance");
+    }
+
+    function testSupplyNativeCollateralOnNonNativeMarket(uint256 amount) public {
+        amount = bound(amount, 1, 2 ** 64);
+
+        vm.deal(address(this), 2 * amount);
+        collateralAsset.setBalance(address(this), amount);
+        vm.expectRevert(bytes(Errors.NOT_NATIVE_TOKEN));
+        blue.supplyCollateral{value: amount}(market, amount, address(this));
     }
 
     function testWithdrawCollateral(uint256 amountDeposited, uint256 amountWithdrawn) public {
