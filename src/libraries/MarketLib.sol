@@ -21,11 +21,11 @@ library MarketLib {
         return Id.wrap(keccak256(abi.encode(market)));
     }
 
-    function isCollateralNative(Market calldata market) internal pure returns (bool) {
+    function isCollateralNative(Market memory market) internal pure returns (bool) {
         return address(market.collateralAsset) == address(0);
     }
 
-    function isBorrowableNative(Market calldata market) internal pure returns (bool) {
+    function isBorrowableNative(Market memory market) internal pure returns (bool) {
         return address(market.borrowableAsset) == address(0);
     }
 }
