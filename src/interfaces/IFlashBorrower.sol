@@ -11,7 +11,7 @@ bytes32 constant FLASH_BORROWER_SUCCESS_HASH = keccak256("FlashBorrower.onFlashL
 interface IFlashBorrower {
     /// @dev Receives a flash loan.
     /// @param initiator The initiator of the loan.
-    /// @param token The loan currency.
+    /// @param token The token lent.
     /// @param amount The amount of tokens lent.
     /// @param data Arbitrary data, intended to contain user-defined parameters.
     /// @return The keccak256 hash of "FlashBorrower.onFlashLoan" and any additional arbitrary data.
