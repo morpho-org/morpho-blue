@@ -476,70 +476,66 @@ contract BlueTest is Test {
         assertEq(collateralAsset.balanceOf(address(blue)), amountDeposited - amountWithdrawn, "blue balance");
     }
 
-    function testLiquidate(uint256 amountLent) public {
+    function testLiquidate(uint256 amount) public {
         borrowableOracle.setPrice(1e18);
-        amountLent = bound(amountLent, 1000, 2 ** 64);
+        amount = bound(amount, 1000, 2 ** 64);
 
-        uint256 amountCollateral = amountLent;
-        uint256 borrowingPower = amountCollateral.mulWadDown(LLTV);
-        uint256 amountBorrowed = borrowingPower.mulWadDown(0.8e18);
-        uint256 toSeize = amountCollateral.mulWadDown(LLTV);
+        uint256 collateralAmount = amount.divWadUp(LLTV);
         uint256 incentive = WAD + ALPHA.mulWadDown(WAD.divWadDown(LLTV) - WAD);
+        uint256 repaid = amount / 2;
 
-        borrowableAsset.setBalance(address(this), amountLent);
-        collateralAsset.setBalance(BORROWER, amountCollateral);
-        borrowableAsset.setBalance(LIQUIDATOR, amountBorrowed);
+        borrowableAsset.setBalance(address(this), amount);
+        collateralAsset.setBalance(BORROWER, collateralAmount);
+        borrowableAsset.setBalance(LIQUIDATOR, repaid);
 
         // Supply
-        blue.supply(market, amountLent, address(this));
+        blue.supply(market, amount, address(this));
 
         // Borrow
         vm.startPrank(BORROWER);
-        blue.supplyCollateral(market, amountCollateral, BORROWER);
-        blue.borrow(market, amountBorrowed, BORROWER);
+        blue.supplyCollateral(market, collateralAmount, BORROWER);
+        blue.borrow(market, amount, BORROWER);
         vm.stopPrank();
 
         // Price change
-        borrowableOracle.setPrice(2e18);
+        borrowableOracle.setPrice(1.01e18);
 
+        uint256 expectedSeized =
+            repaid.mulWadDown(borrowableOracle.price()).mulWadDown(incentive).divWadDown(collateralOracle.price());
         uint256 liquidatorNetWorthBefore = netWorth(LIQUIDATOR);
 
         // Liquidate
         vm.prank(LIQUIDATOR);
-        blue.liquidate(market, BORROWER, toSeize);
+        uint256 seized = blue.liquidate(market, BORROWER, repaid);
 
         uint256 liquidatorNetWorthAfter = netWorth(LIQUIDATOR);
 
-        uint256 expectedRepaid =
-            toSeize.mulWadUp(collateralOracle.price()).divWadUp(incentive).divWadUp(borrowableOracle.price());
-        uint256 expectedNetWorthAfter = liquidatorNetWorthBefore + toSeize.mulWadDown(collateralOracle.price())
-            - expectedRepaid.mulWadDown(borrowableOracle.price());
+        uint256 expectedNetWorthAfter = liquidatorNetWorthBefore + expectedSeized.mulWadDown(collateralOracle.price())
+            - repaid.mulWadDown(borrowableOracle.price());
+        assertEq(seized, expectedSeized, "seized");
         assertEq(liquidatorNetWorthAfter, expectedNetWorthAfter, "LIQUIDATOR net worth");
-        assertApproxEqAbs(borrowBalance(BORROWER), amountBorrowed - expectedRepaid, 100, "BORROWER balance");
-        assertEq(blue.collateral(id, BORROWER), amountCollateral - toSeize, "BORROWER collateral");
+        assertApproxEqAbs(borrowBalance(BORROWER), amount - repaid, 100, "BORROWER balance");
+        assertEq(blue.collateral(id, BORROWER), collateralAmount - expectedSeized, "BORROWER collateral");
     }
 
-    function testRealizeBadDebt(uint256 amountLent) public {
+    function testRealizeBadDebt(uint256 amount) public {
         borrowableOracle.setPrice(1e18);
-        amountLent = bound(amountLent, 1000, 2 ** 64);
+        amount = bound(amount, 1000, 2 ** 64);
 
-        uint256 amountCollateral = amountLent;
-        uint256 borrowingPower = amountCollateral.mulWadDown(LLTV);
-        uint256 amountBorrowed = borrowingPower.mulWadDown(0.8e18);
-        uint256 toSeize = amountCollateral;
-        uint256 incentive = WAD + ALPHA.mulWadDown(WAD.divWadDown(market.lltv) - WAD);
+        uint256 collateralAmount = amount.divWadUp(LLTV);
+        uint256 repaid = amount / 2;
 
-        borrowableAsset.setBalance(address(this), amountLent);
-        collateralAsset.setBalance(BORROWER, amountCollateral);
-        borrowableAsset.setBalance(LIQUIDATOR, amountBorrowed);
+        borrowableAsset.setBalance(address(this), amount);
+        collateralAsset.setBalance(BORROWER, collateralAmount);
+        borrowableAsset.setBalance(LIQUIDATOR, amount);
 
         // Supply
-        blue.supply(market, amountLent, address(this));
+        blue.supply(market, amount, address(this));
 
         // Borrow
         vm.startPrank(BORROWER);
-        blue.supplyCollateral(market, amountCollateral, BORROWER);
-        blue.borrow(market, amountBorrowed, BORROWER);
+        blue.supplyCollateral(market, collateralAmount, BORROWER);
+        blue.borrow(market, amount, BORROWER);
         vm.stopPrank();
 
         // Price change
@@ -549,20 +545,17 @@ contract BlueTest is Test {
 
         // Liquidate
         vm.prank(LIQUIDATOR);
-        blue.liquidate(market, BORROWER, toSeize);
+        blue.liquidate(market, BORROWER, repaid);
 
         uint256 liquidatorNetWorthAfter = netWorth(LIQUIDATOR);
 
-        uint256 expectedRepaid =
-            toSeize.mulWadUp(collateralOracle.price()).divWadUp(incentive).divWadUp(borrowableOracle.price());
-        uint256 expectedNetWorthAfter = liquidatorNetWorthBefore + toSeize.mulWadDown(collateralOracle.price())
-            - expectedRepaid.mulWadDown(borrowableOracle.price());
+        uint256 expectedNetWorthAfter = liquidatorNetWorthBefore + collateralAmount.mulWadDown(collateralOracle.price())
+            - repaid.mulWadDown(borrowableOracle.price());
         assertEq(liquidatorNetWorthAfter, expectedNetWorthAfter, "LIQUIDATOR net worth");
         assertEq(borrowBalance(BORROWER), 0, "BORROWER balance");
         assertEq(blue.collateral(id, BORROWER), 0, "BORROWER collateral");
-        uint256 expectedBadDebt = amountBorrowed - expectedRepaid;
-        assertGt(expectedBadDebt, 0, "bad debt");
-        assertApproxEqAbs(supplyBalance(address(this)), amountLent - expectedBadDebt, 10, "lender supply balance");
+
+        assertApproxEqAbs(supplyBalance(address(this)), amount / 2, 10, "lender supply balance");
         assertApproxEqAbs(blue.totalBorrow(id), 0, 10, "total borrow");
     }
 

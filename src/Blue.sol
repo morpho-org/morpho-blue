@@ -209,10 +209,10 @@ contract Blue {
 
     // Liquidation.
 
-    function liquidate(Market memory market, address borrower, uint256 seized) external {
+    function liquidate(Market memory market, address borrower, uint256 repaid) external returns (uint256 seized) {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
-        require(seized != 0, Errors.ZERO_AMOUNT);
+        require(repaid != 0, Errors.ZERO_AMOUNT);
 
         _accrueInterests(market, id);
 
@@ -221,15 +221,18 @@ contract Blue {
 
         require(!_isHealthy(market, id, borrower, collateralPrice, borrowablePrice), Errors.HEALTHY_POSITION);
 
-        // The liquidation incentive is 1 + ALPHA * (1 / LLTV - 1).
-        uint256 incentive = WAD + ALPHA.mulWadDown(WAD.divWadDown(market.lltv) - WAD);
-        uint256 repaid = seized.mulWadUp(collateralPrice).divWadUp(incentive).divWadUp(borrowablePrice);
         uint256 repaidShares = repaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
 
         borrowShare[id][borrower] -= repaidShares;
         totalBorrowShares[id] -= repaidShares;
         totalBorrow[id] -= repaid;
 
+        // The liquidation incentive is 1 + ALPHA * (1 / LLTV - 1).
+        uint256 incentive = WAD + ALPHA.mulWadDown(WAD.divWadDown(market.lltv) - WAD);
+        seized = repaid.mulWadDown(borrowablePrice).mulWadDown(incentive).divWadDown(collateralPrice);
+
+        // Liquidations are not guaranteed to be profitable: the collateral seized is capped to the borrower's collateral.
+        if (seized > collateral[id][borrower]) seized = collateral[id][borrower];
         collateral[id][borrower] -= seized;
 
         // Realize the bad debt if needed.
