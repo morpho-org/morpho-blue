@@ -3,7 +3,8 @@ pragma solidity 0.8.20;
 
 import {IIrm} from "src/interfaces/IIrm.sol";
 import {IERC20} from "src/interfaces/IERC20.sol";
-import {IFlashBorrower, FLASH_BORROWER_SUCCESS_HASH} from "src/interfaces/IFlashBorrower.sol";
+import {IERC3156FlashLender} from "src/interfaces/IERC3156FlashLender.sol";
+import {IERC3156FlashBorrower, FLASH_BORROWER_SUCCESS_HASH} from "src/interfaces/IERC3156FlashBorrower.sol";
 
 import {Errors} from "./libraries/Errors.sol";
 import {SharesMath} from "src/libraries/SharesMath.sol";
@@ -15,7 +16,7 @@ uint256 constant WAD = 1e18;
 uint256 constant MAX_FEE = 0.2e18;
 uint256 constant ALPHA = 0.5e18;
 
-contract Blue {
+contract Blue is IERC3156FlashLender {
     using SharesMath for uint256;
     using FixedPointMathLib for uint256;
     using SafeTransferLib for IERC20;
@@ -248,18 +249,29 @@ contract Blue {
 
     // Flash Loans.
 
-    function flashLoan(IFlashBorrower receiver, IERC20 token, uint256 amount, bytes calldata data)
-        public
-        returns (bytes memory)
-    {
-        token.safeTransfer(address(receiver), amount);
+    /// @inheritdoc IERC3156FlashLender
+    function maxFlashLoan(address token) external view returns (uint256) {
+        return IERC20(token).balanceOf(address(this));
+    }
 
-        (bytes32 successHash, bytes memory returnData) = receiver.onFlashLoan(msg.sender, token, amount, data);
+    /// @inheritdoc IERC3156FlashLender
+    function flashFee(address, uint256) external pure returns (uint256) {
+        return 0;
+    }
+
+    /// @inheritdoc IERC3156FlashLender
+    function flashLoan(IERC3156FlashBorrower receiver, address token, uint256 amount, bytes calldata data)
+        external
+        returns (bool)
+    {
+        IERC20(token).safeTransfer(address(receiver), amount);
+
+        bytes32 successHash = receiver.onFlashLoan(msg.sender, token, amount, 0, data);
         require(successHash == FLASH_BORROWER_SUCCESS_HASH, Errors.INVALID_SUCCESS_HASH);
 
-        token.safeTransferFrom(address(receiver), address(this), amount);
+        IERC20(token).safeTransferFrom(address(receiver), address(this), amount);
 
-        return returnData;
+        return true;
     }
 
     // Position management.

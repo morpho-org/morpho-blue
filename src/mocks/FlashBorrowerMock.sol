@@ -2,37 +2,31 @@
 pragma solidity ^0.8.0;
 
 import {IERC20} from "src/interfaces/IERC20.sol";
-import {IFlashLender} from "src/interfaces/IFlashLender.sol";
-import {IFlashBorrower, FLASH_BORROWER_SUCCESS_HASH} from "src/interfaces/IFlashBorrower.sol";
+import {IERC3156FlashLender} from "src/interfaces/IERC3156FlashLender.sol";
+import {IERC3156FlashBorrower, FLASH_BORROWER_SUCCESS_HASH} from "src/interfaces/IERC3156FlashBorrower.sol";
 
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 
-contract FlashBorrowerMock is IFlashBorrower {
+contract FlashBorrowerMock is IERC3156FlashBorrower {
     using SafeTransferLib for IERC20;
 
-    IFlashLender private immutable _LENDER;
+    IERC3156FlashLender private immutable _LENDER;
 
-    constructor(IFlashLender lender) {
+    constructor(IERC3156FlashLender lender) {
         _LENDER = lender;
     }
 
     /* EXTERNAL */
 
-    function flashLoan(IERC20 token, uint256 amount, bytes calldata data) external virtual returns (bytes memory) {
-        return _LENDER.flashLoan(this, token, amount, data);
-    }
-
-    /// @inheritdoc IFlashBorrower
-    function onFlashLoan(address initiator, IERC20 token, uint256 amount, bytes calldata)
+    /// @inheritdoc IERC3156FlashBorrower
+    function onFlashLoan(address, address token, uint256 amount, uint256 fee, bytes calldata)
         external
-        virtual
-        returns (bytes32, bytes memory)
+        returns (bytes32)
     {
         require(msg.sender == address(_LENDER), "invalid lender");
-        require(initiator == address(this), "invalid initiator");
 
-        token.safeApprove(address(_LENDER), amount);
+        IERC20(token).safeApprove(address(_LENDER), amount + fee);
 
-        return (FLASH_BORROWER_SUCCESS_HASH, bytes(""));
+        return FLASH_BORROWER_SUCCESS_HASH;
     }
 }

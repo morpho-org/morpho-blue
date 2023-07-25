@@ -46,13 +46,12 @@ describe("Blue", () => {
   let borrowableOracle: OracleMock;
   let collateralOracle: OracleMock;
   let irm: IrmMock;
+  let flashBorrower: FlashBorrowerMock;
 
   let market: Market;
   let id: Buffer;
 
   let nbLiquidations: number;
-
-  let flashBorrower: FlashBorrowerMock;
 
   const updateMarket = (newMarket: Partial<Market>) => {
     market = { ...market, ...newMarket };
@@ -199,6 +198,6 @@ describe("Blue", () => {
 
     await blue.connect(user).supply(market, amount, user.address);
 
-    await flashBorrower.flashLoan(borrowable.address, amount.div(2), []);
+    await blue.flashLoan(flashBorrower.address, borrowable.address, amount.div(2), []);
   });
 });
