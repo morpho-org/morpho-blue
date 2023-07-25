@@ -306,7 +306,7 @@ contract Blue {
     function extsload(bytes32[] calldata slots) external view returns (bytes32[] memory res) {
         uint256 nSlots = slots.length;
 
-        res = new bytes32[]( nSlots);
+        res = new bytes32[](nSlots);
 
         for (uint256 i; i < nSlots;) {
             bytes32 slot = slots[i++];

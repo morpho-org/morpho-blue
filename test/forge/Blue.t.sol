@@ -686,33 +686,20 @@ contract BlueTest is Test {
         vm.stopPrank();
     }
 
-    function testExtSLoad(uint256 amount, address onBehalf) public {
-        vm.assume(onBehalf != address(blue));
-        amount = bound(amount, 1, 2 ** 64);
+    function testExtsLoad(uint256 slot, bytes32 value0) public {
+        bytes32[] memory slots = new bytes32[](2);
+        slots[0] = bytes32(slot);
+        slots[1] = bytes32(slot / 2);
 
-        borrowableAsset.setBalance(address(this), amount);
-        blue.supply(market, amount, onBehalf);
+        bytes32 value1 = keccak256(abi.encode(value0));
+        vm.store(address(blue), slots[0], value0);
+        vm.store(address(blue), slots[1], value1);
 
-        bytes32[] memory supplyShareSlot = new bytes32[](1);
-        bytes32[] memory totalSupplySlot = new bytes32[](1);
-        bytes32[] memory totalSupplyShareSlot = new bytes32[](1);
+        bytes32[] memory values = blue.extsload(slots);
 
-        supplyShareSlot[0] = keccak256(abi.encode(onBehalf, keccak256(abi.encode(id, 2))));
-        totalSupplySlot[0] = keccak256(abi.encode(id, 5));
-        totalSupplyShareSlot[0] = keccak256(abi.encode(id, 6));
-
-        bytes32[] memory supplyShare = blue.extsload(supplyShareSlot);
-        bytes32[] memory totalSupply = blue.extsload(totalSupplySlot);
-        bytes32[] memory totalSupplyShare = blue.extsload(totalSupplyShareSlot);
-
-        assertEq(supplyShare.length, 1, "supplyShare.length");
-        assertEq(uint256(supplyShare[0]), 1e18, "supplyShare");
-
-        assertEq(totalSupply.length, 1, "totalSupply.length");
-        assertEq(uint256(totalSupply[0]), amount, "totalSupply");
-
-        assertEq(totalSupplyShare.length, 1, "totalSupplyShare.length");
-        assertEq(uint256(totalSupplyShare[0]), 1e18, "totalSupplyShare");
+        assertEq(values.length, 2, "values.length");
+        assertEq(values[0], slot > 0 ? value0 : value1, "value0");
+        assertEq(values[1], value1, "value1");
     }
 }
 
