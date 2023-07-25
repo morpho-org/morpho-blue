@@ -22,14 +22,10 @@ library MarketLib {
     }
 
     function isCollateralNative(Market calldata market) internal pure returns (bool) {
-        bool isNative;
-        if (address(market.collateralAsset) == address(0)) isNative = true;
-        return isNative;
+        return address(market.collateralAsset) == address(0);
     }
 
     function isBorrowableNative(Market calldata market) internal pure returns (bool) {
-        bool isNative;
-        if (address(market.borrowableAsset) == address(0)) isNative = true;
-        return isNative;
+        return address(market.borrowableAsset) == address(0);
     }
 }

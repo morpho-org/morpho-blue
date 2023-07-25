@@ -11,12 +11,14 @@ import {Id, Market, MarketLib} from "src/libraries/MarketLib.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 
 uint256 constant WAD = 1e18;
+uint256 constant MAX_FEE = 0.2e18;
 uint256 constant ALPHA = 0.5e18;
 
 contract Blue {
     using SharesMath for uint256;
     using FixedPointMathLib for uint256;
     using SafeTransferLib for IERC20;
+    using SafeTransferLib for address;
     using MarketLib for Market;
 
     // Storage.
@@ -78,11 +80,10 @@ contract Blue {
         isLltvEnabled[lltv] = true;
     }
 
-    // @notice It is the owner's responsibility to ensure a fee recipient is set before setting a non-zero fee.
     function setFee(Market calldata market, uint256 newFee) external onlyOwner {
         Id id = market.id();
-        require(lastUpdate[id] != 0, "unknown market");
-        require(newFee <= WAD, "fee must be <= 1");
+        require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
+        require(newFee <= MAX_FEE, Errors.MAX_FEE_EXCEEDED);
         fee[id] = newFee;
     }
 
@@ -137,13 +138,7 @@ contract Blue {
         require(totalBorrow[id] <= totalSupply[id], Errors.INSUFFICIENT_LIQUIDITY);
 
         if (market.isBorrowableNative()) {
-            address to = msg.sender;
-            bool success;
-            assembly {
-                // Transfer the ETH and store if it succeeded or not.
-                success := call(gas(), to, amount, 0, 0, 0, 0)
-            }
-            require(success, Errors.NATIVE_TRANSFER_FAILED);
+            msg.sender.safeTransferETH(amount);
         } else {
             market.borrowableAsset.safeTransfer(msg.sender, amount);
         }
@@ -169,13 +164,7 @@ contract Blue {
         require(totalBorrow[id] <= totalSupply[id], Errors.INSUFFICIENT_LIQUIDITY);
 
         if (market.isBorrowableNative()) {
-            address to = msg.sender;
-            bool success;
-            assembly {
-                // Transfer the ETH and store if it succeeded or not.
-                success := call(gas(), to, amount, 0, 0, 0, 0)
-            }
-            require(success, Errors.NATIVE_TRANSFER_FAILED);
+            msg.sender.safeTransferETH(amount);
         } else {
             market.borrowableAsset.safeTransfer(msg.sender, amount);
         }
@@ -227,13 +216,7 @@ contract Blue {
         require(_isHealthy(market, id, onBehalf), Errors.INSUFFICIENT_COLLATERAL);
 
         if (market.isCollateralNative()) {
-            address to = msg.sender;
-            bool success;
-            assembly {
-                // Transfer the ETH and store if it succeeded or not.
-                success := call(gas(), to, amount, 0, 0, 0, 0)
-            }
-            require(success, Errors.NATIVE_TRANSFER_FAILED);
+            msg.sender.safeTransferETH(amount);
         } else {
             market.collateralAsset.safeTransfer(msg.sender, amount);
         }
@@ -273,27 +256,14 @@ contract Blue {
         }
 
         if (market.isCollateralNative()) {
-            address to = msg.sender;
-            bool success;
-            assembly {
-                // Transfer the ETH and store if it succeeded or not.
-                success := call(gas(), to, seized, 0, 0, 0, 0)
-            }
-            require(success, Errors.NATIVE_TRANSFER_FAILED);
+            msg.sender.safeTransferETH(seized);
         } else {
             market.collateralAsset.safeTransfer(msg.sender, seized);
         }
 
         if (market.isBorrowableNative()) {
             require(msg.value >= repaid);
-            address to = msg.sender;
-            uint256 excessValue = msg.value - repaid;
-            bool success;
-            assembly {
-                // Transfer the ETH and store if it succeeded or not.
-                success := call(gas(), to, excessValue, 0, 0, 0, 0)
-            }
-            require(success, Errors.NATIVE_TRANSFER_FAILED);
+            msg.sender.safeTransferETH(msg.value - repaid);
         } else {
             market.borrowableAsset.safeTransferFrom(msg.sender, address(this), repaid);
         }
