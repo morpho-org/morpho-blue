@@ -300,4 +300,21 @@ contract Blue {
 
         return collateralValue.mulWadDown(market.lltv) >= borrowValue;
     }
+
+    // Storage view.
+
+    function extsload(bytes32[] calldata slots) external view returns (bytes32[] memory res) {
+        uint256 nSlots = slots.length;
+
+        res = new bytes32[](nSlots);
+
+        for (uint256 i; i < nSlots;) {
+            bytes32 slot = slots[i++];
+
+            /// @solidity memory-safe-assembly
+            assembly {
+                mstore(add(res, mul(i, 32)), sload(slot))
+            }
+        }
+    }
 }
