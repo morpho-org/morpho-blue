@@ -82,7 +82,7 @@ contract Blue {
     }
 
     /// @notice It is the owner's responsibility to ensure a fee recipient is set before setting a non-zero fee.
-    function setFee(Market calldata market, uint256 newFee) external onlyOwner {
+    function setFee(Market memory market, uint256 newFee) external onlyOwner {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(newFee <= MAX_FEE, Errors.MAX_FEE_EXCEEDED);
@@ -95,7 +95,7 @@ contract Blue {
 
     // Markets management.
 
-    function createMarket(Market calldata market) external {
+    function createMarket(Market memory market) external {
         Id id = market.id();
         require(isIrmEnabled[market.irm], Errors.IRM_NOT_ENABLED);
         require(isLltvEnabled[market.lltv], Errors.LLTV_NOT_ENABLED);
@@ -106,7 +106,7 @@ contract Blue {
 
     // Supply management.
 
-    function supply(Market calldata market, uint256 amount, bytes32 onBehalf) external {
+    function supply(Market memory market, uint256 amount, bytes32 onBehalf) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
@@ -122,7 +122,7 @@ contract Blue {
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
 
-    function withdraw(Market calldata market, uint256 amount, bytes32 onBehalf) external {
+    function withdraw(Market memory market, uint256 amount, bytes32 onBehalf) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
@@ -143,7 +143,7 @@ contract Blue {
 
     // Borrow management.
 
-    function borrow(Market calldata market, uint256 amount, bytes32 onBehalf) external {
+    function borrow(Market memory market, uint256 amount, bytes32 onBehalf) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
@@ -163,7 +163,7 @@ contract Blue {
         market.borrowableAsset.safeTransfer(msg.sender, amount);
     }
 
-    function repay(Market calldata market, uint256 amount, bytes32 onBehalf) external {
+    function repay(Market memory market, uint256 amount, bytes32 onBehalf) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
@@ -182,7 +182,7 @@ contract Blue {
     // Collateral management.
 
     /// @dev Don't accrue interests because it's not required and it saves gas.
-    function supplyCollateral(Market calldata market, uint256 amount, bytes32 onBehalf) external {
+    function supplyCollateral(Market memory market, uint256 amount, bytes32 onBehalf) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
@@ -194,7 +194,7 @@ contract Blue {
         market.collateralAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
 
-    function withdrawCollateral(Market calldata market, uint256 amount, bytes32 onBehalf) external {
+    function withdrawCollateral(Market memory market, uint256 amount, bytes32 onBehalf) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
@@ -211,7 +211,7 @@ contract Blue {
 
     // Liquidation.
 
-    function liquidate(Market calldata market, bytes32 borrower, uint256 seized) external {
+    function liquidate(Market memory market, bytes32 borrower, uint256 seized) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(seized != 0, Errors.ZERO_AMOUNT);
@@ -260,7 +260,7 @@ contract Blue {
 
     // Interests management.
 
-    function _accrueInterests(Market calldata market, Id id) internal {
+    function _accrueInterests(Market memory market, Id id) internal {
         uint256 marketTotalBorrow = totalBorrow[id];
 
         if (marketTotalBorrow != 0) {
@@ -283,7 +283,7 @@ contract Blue {
 
     // Health check.
 
-    function _isHealthy(Market calldata market, Id id, bytes32 account) internal view returns (bool) {
+    function _isHealthy(Market memory market, Id id, bytes32 account) internal view returns (bool) {
         if (borrowShare[id][account] == 0) return true;
 
         uint256 collateralPrice = market.collateralOracle.price();
@@ -292,13 +292,11 @@ contract Blue {
         return _isHealthy(market, id, account, collateralPrice, borrowablePrice);
     }
 
-    function _isHealthy(
-        Market calldata market,
-        Id id,
-        bytes32 account,
-        uint256 collateralPrice,
-        uint256 borrowablePrice
-    ) internal view returns (bool) {
+    function _isHealthy(Market memory market, Id id, bytes32 account, uint256 collateralPrice, uint256 borrowablePrice)
+        internal
+        view
+        returns (bool)
+    {
         uint256 borrowValue =
             borrowShare[id][account].toAssetsUp(totalBorrow[id], totalBorrowShares[id]).mulWadUp(borrowablePrice);
         uint256 collateralValue = collateral[id][account].mulWadDown(collateralPrice);
