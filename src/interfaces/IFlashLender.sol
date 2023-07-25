@@ -7,7 +7,7 @@ import {IFlashBorrower} from "./IFlashBorrower.sol";
 /// @dev Interface of the Flash Lender, inspired by https://eips.ethereum.org/EIPS/eip-3156.
 ///      The FlashLender's `flashLoan` function now returns the FlashBorrower's return data.
 interface IFlashLender {
-    /// @dev Initiate a flash loan.
+    /// @dev Initiates a flash loan.
     /// @param receiver The receiver of the tokens in the loan, and the receiver of the callback.
     /// @param token The loan currency.
     /// @param amount The amount of tokens lent.
