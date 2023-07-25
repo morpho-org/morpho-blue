@@ -192,7 +192,7 @@ contract BlueTest is Test {
     }
 
     function testSetFee(uint256 fee) public {
-        fee = bound(fee, 0, WAD);
+        fee = bound(fee, 0, MAX_FEE);
 
         vm.prank(OWNER);
         blue.setFee(market, fee);
@@ -201,10 +201,10 @@ contract BlueTest is Test {
     }
 
     function testSetFeeShouldRevertIfTooHigh(uint256 fee) public {
-        fee = bound(fee, WAD + 1, type(uint256).max);
+        fee = bound(fee, MAX_FEE + 1, type(uint256).max);
 
         vm.prank(OWNER);
-        vm.expectRevert("fee must be <= 1");
+        vm.expectRevert(bytes(Errors.MAX_FEE_EXCEEDED));
         blue.setFee(market, fee);
     }
 
@@ -244,7 +244,7 @@ contract BlueTest is Test {
         amountLent = bound(amountLent, 1, 2 ** 64);
         amountBorrowed = bound(amountBorrowed, 1, amountLent);
         timeElapsed = bound(timeElapsed, 1, 365 days);
-        fee = bound(fee, 0, 1e18);
+        fee = bound(fee, 0, MAX_FEE);
         address recipient = OWNER;
 
         vm.startPrank(OWNER);
