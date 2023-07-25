@@ -10,6 +10,7 @@ import {OracleMock as Oracle} from "src/mocks/OracleMock.sol";
 import {IrmMock as Irm} from "src/mocks/IrmMock.sol";
 
 contract BlueTest is Test {
+    using MarketLib for Market;
     using FixedPointMathLib for uint256;
 
     address private constant BORROWER = address(1234);
@@ -37,7 +38,8 @@ contract BlueTest is Test {
         collateralOracle = new Oracle();
 
         irm = new Irm(blue);
-        market = Market(
+
+        Market memory _market = Market(
             IERC20(address(borrowableAsset)),
             IERC20(address(collateralAsset)),
             borrowableOracle,
@@ -45,7 +47,8 @@ contract BlueTest is Test {
             irm,
             LLTV
         );
-        id = Id.wrap(keccak256(abi.encode(market)));
+        market = _market;
+        id = _market.id();
 
         vm.startPrank(OWNER);
         blue.enableIrm(irm);
