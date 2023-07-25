@@ -249,7 +249,6 @@ contract Blue {
 
     function flashLoan(IFlashBorrower receiver, IERC20 token, uint256 amount, bytes calldata data)
         public
-        virtual
         returns (bytes memory)
     {
         token.safeTransfer(address(receiver), amount);
