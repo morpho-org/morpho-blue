@@ -3,8 +3,8 @@ pragma solidity 0.8.20;
 
 import {IIrm} from "src/interfaces/IIrm.sol";
 import {IERC20} from "src/interfaces/IERC20.sol";
-import {IERC3156FlashLender} from "src/interfaces/IERC3156FlashLender.sol";
-import {IERC3156FlashBorrower, FLASH_BORROWER_SUCCESS_HASH} from "src/interfaces/IERC3156FlashBorrower.sol";
+import {IFlashLender} from "src/interfaces/IFlashLender.sol";
+import {IFlashBorrower} from "src/interfaces/IFlashBorrower.sol";
 
 import {Errors} from "./libraries/Errors.sol";
 import {SharesMath} from "src/libraries/SharesMath.sol";
@@ -16,7 +16,7 @@ uint256 constant WAD = 1e18;
 uint256 constant MAX_FEE = 0.2e18;
 uint256 constant ALPHA = 0.5e18;
 
-contract Blue is IERC3156FlashLender {
+contract Blue is IFlashLender {
     using SharesMath for uint256;
     using FixedPointMathLib for uint256;
     using SafeTransferLib for IERC20;
@@ -249,29 +249,13 @@ contract Blue is IERC3156FlashLender {
 
     // Flash Loans.
 
-    /// @inheritdoc IERC3156FlashLender
-    function maxFlashLoan(address token) external view returns (uint256) {
-        return IERC20(token).balanceOf(address(this));
-    }
-
-    /// @inheritdoc IERC3156FlashLender
-    function flashFee(address, uint256) external pure returns (uint256) {
-        return 0;
-    }
-
-    /// @inheritdoc IERC3156FlashLender
-    function flashLoan(IERC3156FlashBorrower receiver, address token, uint256 amount, bytes calldata data)
-        external
-        returns (bool)
-    {
+    /// @inheritdoc IFlashLender
+    function flashLoan(IFlashBorrower receiver, address token, uint256 amount, bytes calldata data) external {
         IERC20(token).safeTransfer(address(receiver), amount);
 
-        bytes32 successHash = receiver.onFlashLoan(msg.sender, token, amount, 0, data);
-        require(successHash == FLASH_BORROWER_SUCCESS_HASH, Errors.INVALID_SUCCESS_HASH);
+        receiver.onFlashLoan(msg.sender, token, amount, data);
 
         IERC20(token).safeTransferFrom(address(receiver), address(this), amount);
-
-        return true;
     }
 
     // Position management.

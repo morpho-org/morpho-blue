@@ -696,6 +696,8 @@ contract BlueTest is Test {
         blue.supply(market, amount, address(this));
 
         blue.flashLoan(flashBorrower, address(borrowableAsset), amount, bytes(""));
+
+        assertEq(borrowableAsset.balanceOf(address(blue)), amount, "balanceOf");
     }
 }
 

@@ -1,31 +1,26 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import {IERC3156FlashLender} from "src/interfaces/IERC3156FlashLender.sol";
-import {IERC3156FlashBorrower, FLASH_BORROWER_SUCCESS_HASH} from "src/interfaces/IERC3156FlashBorrower.sol";
+import {IFlashLender} from "src/interfaces/IFlashLender.sol";
+import {IFlashBorrower} from "src/interfaces/IFlashBorrower.sol";
 
 import {ERC20, SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 
-contract FlashBorrowerMock is IERC3156FlashBorrower {
+contract FlashBorrowerMock is IFlashBorrower {
     using SafeTransferLib for ERC20;
 
-    IERC3156FlashLender private immutable _LENDER;
+    IFlashLender private immutable _LENDER;
 
-    constructor(IERC3156FlashLender lender) {
+    constructor(IFlashLender lender) {
         _LENDER = lender;
     }
 
     /* EXTERNAL */
 
-    /// @inheritdoc IERC3156FlashBorrower
-    function onFlashLoan(address, address token, uint256 amount, uint256 fee, bytes calldata)
-        external
-        returns (bytes32)
-    {
+    /// @inheritdoc IFlashBorrower
+    function onFlashLoan(address, address token, uint256 amount, bytes calldata) external {
         require(msg.sender == address(_LENDER), "invalid lender");
 
-        ERC20(token).safeApprove(address(_LENDER), amount + fee);
-
-        return FLASH_BORROWER_SUCCESS_HASH;
+        ERC20(token).safeApprove(address(_LENDER), amount);
     }
 }
