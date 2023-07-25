@@ -11,7 +11,6 @@ import {Id, Market, MarketLib} from "src/libraries/MarketLib.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 
 uint256 constant WAD = 1e18;
-uint256 constant MAX_FEE = 0.2e18;
 uint256 constant ALPHA = 0.5e18;
 
 contract Blue {
@@ -79,11 +78,11 @@ contract Blue {
         isLltvEnabled[lltv] = true;
     }
 
-    /// @notice It is the owner's responsibility to ensure a fee recipient is set before setting a non-zero fee.
+    // @notice It is the owner's responsibility to ensure a fee recipient is set before setting a non-zero fee.
     function setFee(Market calldata market, uint256 newFee) external onlyOwner {
         Id id = market.id();
-        require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
-        require(newFee <= MAX_FEE, Errors.MAX_FEE_EXCEEDED);
+        require(lastUpdate[id] != 0, "unknown market");
+        require(newFee <= WAD, "fee must be <= 1");
         fee[id] = newFee;
     }
 
@@ -104,8 +103,9 @@ contract Blue {
 
     // Supply management.
 
-    function supply(Market calldata market, uint256 amount, address onBehalf) external {
+    function supply(Market calldata market, uint256 amount, address onBehalf) external payable {
         Id id = market.id();
+        if (market.isBorrowableNative()) amount = msg.value;
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
 
@@ -117,7 +117,7 @@ contract Blue {
 
         totalSupply[id] += amount;
 
-        market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
+        if (!market.isBorrowableNative()) market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
 
     function withdraw(Market calldata market, uint256 amount, address onBehalf) external {
@@ -136,7 +136,17 @@ contract Blue {
 
         require(totalBorrow[id] <= totalSupply[id], Errors.INSUFFICIENT_LIQUIDITY);
 
-        market.borrowableAsset.safeTransfer(msg.sender, amount);
+        if (market.isBorrowableNative()) {
+            address to = msg.sender;
+            bool success;
+            assembly {
+                // Transfer the ETH and store if it succeeded or not.
+                success := call(gas(), to, amount, 0, 0, 0, 0)
+            }
+            require(success, Errors.NATIVE_TRANSFER_FAILED);
+        } else {
+            market.borrowableAsset.safeTransfer(msg.sender, amount);
+        }
     }
 
     // Borrow management.
@@ -158,11 +168,22 @@ contract Blue {
         require(_isHealthy(market, id, onBehalf), Errors.INSUFFICIENT_COLLATERAL);
         require(totalBorrow[id] <= totalSupply[id], Errors.INSUFFICIENT_LIQUIDITY);
 
-        market.borrowableAsset.safeTransfer(msg.sender, amount);
+        if (market.isBorrowableNative()) {
+            address to = msg.sender;
+            bool success;
+            assembly {
+                // Transfer the ETH and store if it succeeded or not.
+                success := call(gas(), to, amount, 0, 0, 0, 0)
+            }
+            require(success, Errors.NATIVE_TRANSFER_FAILED);
+        } else {
+            market.borrowableAsset.safeTransfer(msg.sender, amount);
+        }
     }
 
-    function repay(Market calldata market, uint256 amount, address onBehalf) external {
+    function repay(Market calldata market, uint256 amount, address onBehalf) external payable {
         Id id = market.id();
+        if (market.isBorrowableNative()) amount = msg.value;
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
 
@@ -174,14 +195,15 @@ contract Blue {
 
         totalBorrow[id] -= amount;
 
-        market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
+        if (!market.isBorrowableNative()) market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
 
     // Collateral management.
 
     /// @dev Don't accrue interests because it's not required and it saves gas.
-    function supplyCollateral(Market calldata market, uint256 amount, address onBehalf) external {
+    function supplyCollateral(Market calldata market, uint256 amount, address onBehalf) external payable {
         Id id = market.id();
+        if (market.isCollateralNative()) amount = msg.value;
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
 
@@ -189,7 +211,7 @@ contract Blue {
 
         collateral[id][onBehalf] += amount;
 
-        market.collateralAsset.safeTransferFrom(msg.sender, address(this), amount);
+        if (!market.isCollateralNative()) market.collateralAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
 
     function withdrawCollateral(Market calldata market, uint256 amount, address onBehalf) external {
@@ -204,26 +226,35 @@ contract Blue {
 
         require(_isHealthy(market, id, onBehalf), Errors.INSUFFICIENT_COLLATERAL);
 
-        market.collateralAsset.safeTransfer(msg.sender, amount);
+        if (market.isCollateralNative()) {
+            address to = msg.sender;
+            bool success;
+            assembly {
+                // Transfer the ETH and store if it succeeded or not.
+                success := call(gas(), to, amount, 0, 0, 0, 0)
+            }
+            require(success, Errors.NATIVE_TRANSFER_FAILED);
+        } else {
+            market.collateralAsset.safeTransfer(msg.sender, amount);
+        }
     }
 
     // Liquidation.
 
-    function liquidate(Market calldata market, address borrower, uint256 seized) external {
+    function liquidate(Market calldata market, address borrower, uint256 seized) external payable {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(seized != 0, Errors.ZERO_AMOUNT);
 
         _accrueInterests(market, id);
 
-        uint256 collateralPrice = market.collateralOracle.price();
-        uint256 borrowablePrice = market.borrowableOracle.price();
-
-        require(!_isHealthy(market, id, borrower, collateralPrice, borrowablePrice), Errors.HEALTHY_POSITION);
+        require(!_isHealthy(market, id, borrower), Errors.HEALTHY_POSITION);
 
         // The liquidation incentive is 1 + ALPHA * (1 / LLTV - 1).
         uint256 incentive = WAD + ALPHA.mulWadDown(WAD.divWadDown(market.lltv) - WAD);
-        uint256 repaid = seized.mulWadUp(collateralPrice).divWadUp(incentive).divWadUp(borrowablePrice);
+        uint256 repaid = seized.mulWadUp(market.collateralOracle.price()).divWadUp(incentive).divWadUp(
+            market.borrowableOracle.price()
+        );
         uint256 repaidShares = repaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
 
         borrowShare[id][borrower] -= repaidShares;
@@ -241,8 +272,31 @@ contract Blue {
             borrowShare[id][borrower] = 0;
         }
 
-        market.collateralAsset.safeTransfer(msg.sender, seized);
-        market.borrowableAsset.safeTransferFrom(msg.sender, address(this), repaid);
+        if (market.isCollateralNative()) {
+            address to = msg.sender;
+            bool success;
+            assembly {
+                // Transfer the ETH and store if it succeeded or not.
+                success := call(gas(), to, seized, 0, 0, 0, 0)
+            }
+            require(success, Errors.NATIVE_TRANSFER_FAILED);
+        } else {
+            market.collateralAsset.safeTransfer(msg.sender, seized);
+        }
+
+        if (market.isBorrowableNative()) {
+            require(msg.value >= repaid);
+            address to = msg.sender;
+            uint256 excessValue = msg.value - repaid;
+            bool success;
+            assembly {
+                // Transfer the ETH and store if it succeeded or not.
+                success := call(gas(), to, excessValue, 0, 0, 0, 0)
+            }
+            require(success, Errors.NATIVE_TRANSFER_FAILED);
+        } else {
+            market.borrowableAsset.safeTransferFrom(msg.sender, address(this), repaid);
+        }
     }
 
     // Position management.
@@ -281,23 +335,13 @@ contract Blue {
     // Health check.
 
     function _isHealthy(Market calldata market, Id id, address user) internal view returns (bool) {
-        if (borrowShare[id][user] == 0) return true;
+        uint256 borrowShares = borrowShare[id][user];
+        if (borrowShares == 0) return true;
 
-        uint256 collateralPrice = market.collateralOracle.price();
-        uint256 borrowablePrice = market.borrowableOracle.price();
-
-        return _isHealthy(market, id, user, collateralPrice, borrowablePrice);
-    }
-
-    function _isHealthy(Market calldata market, Id id, address user, uint256 collateralPrice, uint256 borrowablePrice)
-        internal
-        view
-        returns (bool)
-    {
+        // totalBorrowShares[id] > 0 when borrowShares > 0.
         uint256 borrowValue =
-            borrowShare[id][user].toAssetsUp(totalBorrow[id], totalBorrowShares[id]).mulWadUp(borrowablePrice);
-        uint256 collateralValue = collateral[id][user].mulWadDown(collateralPrice);
-
+            borrowShares.toAssetsUp(totalBorrow[id], totalBorrowShares[id]).mulWadUp(market.borrowableOracle.price());
+        uint256 collateralValue = collateral[id][user].mulWadDown(market.collateralOracle.price());
         return collateralValue.mulWadDown(market.lltv) >= borrowValue;
     }
 }
