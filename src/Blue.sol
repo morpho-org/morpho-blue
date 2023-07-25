@@ -305,13 +305,20 @@ contract Blue {
     // Health check.
 
     function _isHealthy(Market calldata market, Id id, address user) internal view returns (bool) {
-        uint256 borrowShares = borrowShare[id][user];
-        if (borrowShares == 0) return true;
+        if (borrowShare[id][user] == 0) return true;
+        uint256 collateralPrice = market.collateralOracle.price();
+        uint256 borrowablePrice = market.borrowableOracle.price();
+        return _isHealthy(market, id, user, collateralPrice, borrowablePrice);
+    }
 
-        // totalBorrowShares[id] > 0 when borrowShares > 0.
+    function _isHealthy(Market calldata market, Id id, address user, uint256 collateralPrice, uint256 borrowablePrice)
+        internal
+        view
+        returns (bool)
+    {
         uint256 borrowValue =
-            borrowShares.toAssetsUp(totalBorrow[id], totalBorrowShares[id]).mulWadUp(market.borrowableOracle.price());
-        uint256 collateralValue = collateral[id][user].mulWadDown(market.collateralOracle.price());
+            borrowShare[id][user].toAssetsUp(totalBorrow[id], totalBorrowShares[id]).mulWadUp(borrowablePrice);
+        uint256 collateralValue = collateral[id][user].mulWadDown(collateralPrice);
         return collateralValue.mulWadDown(market.lltv) >= borrowValue;
     }
 }
