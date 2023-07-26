@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.20;
+pragma solidity 0.8.21;
 
 import {IBlue} from "./interfaces/IBlue.sol";
 import {IIrm} from "./interfaces/IIrm.sol";
