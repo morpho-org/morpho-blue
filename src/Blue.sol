@@ -123,15 +123,22 @@ contract Blue {
     function withdraw(Market memory market, uint256 amount, address onBehalf) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
-        require(amount != 0, Errors.ZERO_AMOUNT);
         require(_isSenderOrIsApproved(onBehalf), Errors.MANAGER_NOT_APPROVED);
 
         _accrueInterests(market, id);
 
-        uint256 shares = amount.toSharesUp(totalSupply[id], totalSupplyShares[id]);
+        uint256 shares;
+        if (amount == type(uint256).max) {
+            amount = supplyShare[id][onBehalf].toAssetsDown(totalSupply[id], totalSupplyShares[id]);
+            shares = supplyShare[id][onBehalf];
+        } else {
+            shares = amount.toSharesUp(totalSupply[id], totalSupplyShares[id]);
+        }
+
+        require(amount != 0, Errors.ZERO_AMOUNT);
+
         supplyShare[id][onBehalf] -= shares;
         totalSupplyShares[id] -= shares;
-
         totalSupply[id] -= amount;
 
         require(totalBorrow[id] <= totalSupply[id], Errors.INSUFFICIENT_LIQUIDITY);
@@ -164,14 +171,21 @@ contract Blue {
     function repay(Market memory market, uint256 amount, address onBehalf) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
-        require(amount != 0, Errors.ZERO_AMOUNT);
 
         _accrueInterests(market, id);
 
-        uint256 shares = amount.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
+        uint256 shares;
+        if (amount == type(uint256).max) {
+            amount = borrowShare[id][onBehalf].toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
+            shares = borrowShare[id][onBehalf];
+        } else {
+            shares = amount.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
+        }
+
+        require(amount != 0, Errors.ZERO_AMOUNT);
+
         borrowShare[id][onBehalf] -= shares;
         totalBorrowShares[id] -= shares;
-
         totalBorrow[id] -= amount;
 
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
@@ -195,6 +209,7 @@ contract Blue {
     function withdrawCollateral(Market memory market, uint256 amount, address onBehalf) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
+        if (amount == type(uint256).max) amount = collateral[id][msg.sender];
         require(amount != 0, Errors.ZERO_AMOUNT);
         require(_isSenderOrIsApproved(onBehalf), Errors.MANAGER_NOT_APPROVED);
 
