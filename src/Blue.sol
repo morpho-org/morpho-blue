@@ -4,7 +4,7 @@ pragma solidity 0.8.20;
 import {IIrm} from "src/interfaces/IIrm.sol";
 import {IERC20} from "src/interfaces/IERC20.sol";
 
-import {Account} from "./libraries/Account.sol";
+import {Account, AccountLib} from "./libraries/AccountLib.sol";
 import {Errors} from "./libraries/Errors.sol";
 import {SharesMath} from "src/libraries/SharesMath.sol";
 import {FixedPointMathLib} from "src/libraries/FixedPointMathLib.sol";
@@ -16,7 +16,7 @@ uint256 constant MAX_FEE = 0.2e18;
 uint256 constant ALPHA = 0.5e18;
 
 contract Blue {
-    using Account for bytes32;
+    using AccountLib for Account;
     using SharesMath for uint256;
     using FixedPointMathLib for uint256;
     using SafeTransferLib for IERC20;
@@ -29,11 +29,11 @@ contract Blue {
     // Fee recipient.
     address public feeRecipient;
     // Accounts' supply balances.
-    mapping(Id => mapping(bytes32 => uint256)) public supplyShare;
+    mapping(Id => mapping(Account => uint256)) public supplyShare;
     // Accounts' borrow balances.
-    mapping(Id => mapping(bytes32 => uint256)) public borrowShare;
+    mapping(Id => mapping(Account => uint256)) public borrowShare;
     // Accounts' collateral balances.
-    mapping(Id => mapping(bytes32 => uint256)) public collateral;
+    mapping(Id => mapping(Account => uint256)) public collateral;
     // Market total supply.
     mapping(Id => uint256) public totalSupply;
     // Market total supply shares.
@@ -51,7 +51,7 @@ contract Blue {
     // Enabled LLTVs.
     mapping(uint256 => bool) public isLltvEnabled;
     // Account managers.
-    mapping(bytes32 => mapping(address => bool)) public isApproved;
+    mapping(Account => mapping(address => bool)) public isApproved;
 
     // Constructor.
 
@@ -106,7 +106,7 @@ contract Blue {
 
     // Supply management.
 
-    function supply(Market memory market, uint256 amount, bytes32 onBehalf) external {
+    function supply(Market memory market, uint256 amount, Account onBehalf) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
@@ -122,7 +122,7 @@ contract Blue {
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
 
-    function withdraw(Market memory market, uint256 amount, bytes32 onBehalf) external {
+    function withdraw(Market memory market, uint256 amount, Account onBehalf) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
@@ -143,7 +143,7 @@ contract Blue {
 
     // Borrow management.
 
-    function borrow(Market memory market, uint256 amount, bytes32 onBehalf) external {
+    function borrow(Market memory market, uint256 amount, Account onBehalf) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
@@ -163,7 +163,7 @@ contract Blue {
         market.borrowableAsset.safeTransfer(msg.sender, amount);
     }
 
-    function repay(Market memory market, uint256 amount, bytes32 onBehalf) external {
+    function repay(Market memory market, uint256 amount, Account onBehalf) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
@@ -182,7 +182,7 @@ contract Blue {
     // Collateral management.
 
     /// @dev Don't accrue interests because it's not required and it saves gas.
-    function supplyCollateral(Market memory market, uint256 amount, bytes32 onBehalf) external {
+    function supplyCollateral(Market memory market, uint256 amount, Account onBehalf) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
@@ -194,7 +194,7 @@ contract Blue {
         market.collateralAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
 
-    function withdrawCollateral(Market memory market, uint256 amount, bytes32 onBehalf) external {
+    function withdrawCollateral(Market memory market, uint256 amount, Account onBehalf) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
@@ -211,7 +211,7 @@ contract Blue {
 
     // Liquidation.
 
-    function liquidate(Market memory market, bytes32 borrower, uint256 seized) external {
+    function liquidate(Market memory market, Account borrower, uint256 seized) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(seized != 0, Errors.ZERO_AMOUNT);
@@ -249,12 +249,12 @@ contract Blue {
 
     // Position management.
 
-    function setApproval(bytes32 account, address manager, bool isAllowed) external {
+    function setApproval(Account account, address manager, bool isAllowed) external {
         require(account.getAddress() == msg.sender, Errors.NOT_ACCOUNT_OWNER);
         isApproved[account][manager] = isAllowed;
     }
 
-    function _isSenderOrIsApproved(bytes32 account) internal view returns (bool) {
+    function _isSenderOrIsApproved(Account account) internal view returns (bool) {
         return msg.sender == account.getAddress() || isApproved[account][msg.sender];
     }
 
@@ -273,7 +273,7 @@ contract Blue {
                 uint256 feeAmount = accruedInterests.mulWadDown(fee[id]);
                 // The fee amount is subtracted from the total supply in this calculation to compensate for the fact that total supply is already updated.
                 uint256 feeShares = feeAmount.mulDivDown(totalSupplyShares[id], totalSupply[id] - feeAmount);
-                supplyShare[id][Account.account(feeRecipient, 0)] += feeShares;
+                supplyShare[id][AccountLib.account(feeRecipient, 0)] += feeShares;
                 totalSupplyShares[id] += feeShares;
             }
         }
@@ -283,7 +283,7 @@ contract Blue {
 
     // Health check.
 
-    function _isHealthy(Market memory market, Id id, bytes32 account) internal view returns (bool) {
+    function _isHealthy(Market memory market, Id id, Account account) internal view returns (bool) {
         if (borrowShare[id][account] == 0) return true;
 
         uint256 collateralPrice = market.collateralOracle.price();
@@ -292,7 +292,7 @@ contract Blue {
         return _isHealthy(market, id, account, collateralPrice, borrowablePrice);
     }
 
-    function _isHealthy(Market memory market, Id id, bytes32 account, uint256 collateralPrice, uint256 borrowablePrice)
+    function _isHealthy(Market memory market, Id id, Account account, uint256 collateralPrice, uint256 borrowablePrice)
         internal
         view
         returns (bool)
