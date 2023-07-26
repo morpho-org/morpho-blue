@@ -120,7 +120,7 @@ contract Blue {
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
 
-    function withdraw(Market memory market, uint256 amount, address onBehalf) external {
+    function withdraw(Market memory market, uint256 amount, address onBehalf) external returns (uint256) {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(_isSenderOrIsApproved(onBehalf), Errors.MANAGER_NOT_APPROVED);
@@ -144,6 +144,8 @@ contract Blue {
         require(totalBorrow[id] <= totalSupply[id], Errors.INSUFFICIENT_LIQUIDITY);
 
         market.borrowableAsset.safeTransfer(msg.sender, amount);
+
+        return amount;
     }
 
     // Borrow management.
@@ -168,7 +170,7 @@ contract Blue {
         market.borrowableAsset.safeTransfer(msg.sender, amount);
     }
 
-    function repay(Market memory market, uint256 amount, address onBehalf) external {
+    function repay(Market memory market, uint256 amount, address onBehalf) external returns (uint256) {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
 
@@ -189,6 +191,8 @@ contract Blue {
         totalBorrow[id] -= amount;
 
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
+
+        return amount;
     }
 
     // Collateral management.
