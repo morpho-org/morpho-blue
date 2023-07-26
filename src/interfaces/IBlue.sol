@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.5.0;
 
-import {IIrm} from "src/interfaces/IIrm.sol";
+import {IIrm} from "./IIrm.sol";
 
-import {Id, Market} from "src/libraries/MarketLib.sol";
+import {Id, Market} from "../libraries/MarketLib.sol";
 
 interface IBlue {
     function owner() external view returns (address);

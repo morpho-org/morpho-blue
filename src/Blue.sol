@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.20;
 
-import {IBlue} from "src/interfaces/IBlue.sol";
-import {IIrm} from "src/interfaces/IIrm.sol";
-import {IERC20} from "src/interfaces/IERC20.sol";
+import {IBlue} from "./interfaces/IBlue.sol";
+import {IIrm} from "./interfaces/IIrm.sol";
+import {IERC20} from "./interfaces/IERC20.sol";
 
 import {Errors} from "./libraries/Errors.sol";
-import {SharesMath} from "src/libraries/SharesMath.sol";
-import {FixedPointMathLib} from "src/libraries/FixedPointMathLib.sol";
-import {Id, Market, MarketLib} from "src/libraries/MarketLib.sol";
-import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
+import {SharesMath} from "./libraries/SharesMath.sol";
+import {FixedPointMathLib} from "./libraries/FixedPointMathLib.sol";
+import {Id, Market, MarketLib} from "./libraries/MarketLib.sol";
+import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
 
 uint256 constant WAD = 1e18;
 uint256 constant MAX_FEE = 0.2e18;
