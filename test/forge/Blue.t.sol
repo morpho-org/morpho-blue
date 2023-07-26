@@ -190,7 +190,7 @@ contract BlueTest is Test {
     }
 
     function testSetFee(uint256 fee) public {
-        fee = bound(fee, 0, WAD);
+        fee = bound(fee, 0, MAX_FEE);
 
         vm.prank(OWNER);
         blue.setFee(market, fee);
@@ -199,10 +199,10 @@ contract BlueTest is Test {
     }
 
     function testSetFeeShouldRevertIfTooHigh(uint256 fee) public {
-        fee = bound(fee, WAD + 1, type(uint256).max);
+        fee = bound(fee, MAX_FEE + 1, type(uint256).max);
 
         vm.prank(OWNER);
-        vm.expectRevert("fee must be <= 1");
+        vm.expectRevert(bytes(Errors.MAX_FEE_EXCEEDED));
         blue.setFee(market, fee);
     }
 
@@ -242,7 +242,7 @@ contract BlueTest is Test {
         amountLent = bound(amountLent, 1, 2 ** 64);
         amountBorrowed = bound(amountBorrowed, 1, amountLent);
         timeElapsed = bound(timeElapsed, 1, 365 days);
-        fee = bound(fee, 0, 1e18);
+        fee = bound(fee, 0, MAX_FEE);
         address recipient = OWNER;
 
         vm.startPrank(OWNER);
@@ -727,6 +727,22 @@ contract BlueTest is Test {
         blue.borrow(market, 1 ether, address(this));
 
         vm.stopPrank();
+    }
+
+    function testExtsLoad(uint256 slot, bytes32 value0) public {
+        bytes32[] memory slots = new bytes32[](2);
+        slots[0] = bytes32(slot);
+        slots[1] = bytes32(slot / 2);
+
+        bytes32 value1 = keccak256(abi.encode(value0));
+        vm.store(address(blue), slots[0], value0);
+        vm.store(address(blue), slots[1], value1);
+
+        bytes32[] memory values = blue.extsload(slots);
+
+        assertEq(values.length, 2, "values.length");
+        assertEq(values[0], slot > 0 ? value0 : value1, "value0");
+        assertEq(values[1], value1, "value1");
     }
 }
 
