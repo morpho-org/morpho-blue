@@ -99,7 +99,7 @@ contract Blue {
         require(isLltvEnabled[market.lltv], Errors.LLTV_NOT_ENABLED);
         require(lastUpdate[id] == 0, Errors.MARKET_CREATED);
 
-        _accrueInterests(market, id);
+        accrueInterests(market, id);
     }
 
     // Supply management.
@@ -109,7 +109,7 @@ contract Blue {
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
 
-        _accrueInterests(market, id);
+        accrueInterests(market, id);
 
         uint256 shares = amount.toSharesDown(totalSupply[id], totalSupplyShares[id]);
         supplyShare[id][onBehalf] += shares;
@@ -126,7 +126,7 @@ contract Blue {
         require(amount != 0, Errors.ZERO_AMOUNT);
         require(_isSenderOrIsApproved(onBehalf), Errors.MANAGER_NOT_APPROVED);
 
-        _accrueInterests(market, id);
+        accrueInterests(market, id);
 
         uint256 shares = amount.toSharesUp(totalSupply[id], totalSupplyShares[id]);
         supplyShare[id][onBehalf] -= shares;
@@ -147,7 +147,7 @@ contract Blue {
         require(amount != 0, Errors.ZERO_AMOUNT);
         require(_isSenderOrIsApproved(onBehalf), Errors.MANAGER_NOT_APPROVED);
 
-        _accrueInterests(market, id);
+        accrueInterests(market, id);
 
         uint256 shares = amount.toSharesUp(totalBorrow[id], totalBorrowShares[id]);
         borrowShare[id][onBehalf] += shares;
@@ -166,7 +166,7 @@ contract Blue {
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
 
-        _accrueInterests(market, id);
+        accrueInterests(market, id);
 
         uint256 shares = amount.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
         borrowShare[id][onBehalf] -= shares;
@@ -198,7 +198,7 @@ contract Blue {
         require(amount != 0, Errors.ZERO_AMOUNT);
         require(_isSenderOrIsApproved(onBehalf), Errors.MANAGER_NOT_APPROVED);
 
-        _accrueInterests(market, id);
+        accrueInterests(market, id);
 
         collateral[id][onBehalf] -= amount;
 
@@ -214,7 +214,7 @@ contract Blue {
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(seized != 0, Errors.ZERO_AMOUNT);
 
-        _accrueInterests(market, id);
+        accrueInterests(market, id);
 
         uint256 collateralPrice = market.collateralOracle.price();
         uint256 borrowablePrice = market.borrowableOracle.price();
@@ -257,7 +257,7 @@ contract Blue {
 
     // Interests management.
 
-    function _accrueInterests(Market memory market, Id id) internal {
+    function accrueInterests(Market memory market, Id id) public {
         uint256 marketTotalBorrow = totalBorrow[id];
 
         if (marketTotalBorrow != 0) {
