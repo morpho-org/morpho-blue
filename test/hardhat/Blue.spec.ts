@@ -1,10 +1,11 @@
 import { defaultAbiCoder } from "@ethersproject/abi";
-import { mine, setBalance } from "@nomicfoundation/hardhat-network-helpers";
+import { mine } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { BigNumber, constants, utils } from "ethers";
 import hre from "hardhat";
 import { Blue, OracleMock, ERC20Mock, IrmMock } from "types";
+import { MarketStruct } from "types/src/Blue";
 
 const closePositions = false;
 const initBalance = constants.MaxUint256.div(2);
@@ -16,7 +17,7 @@ const random = () => {
   return (seed - 1) / 2147483646;
 };
 
-const identifier = (market: Market) => {
+const identifier = (market: MarketStruct) => {
   const encodedMarket = defaultAbiCoder.encode(
     ["address", "address", "address", "address", "address", "uint256"],
     Object.values(market),
@@ -26,12 +27,8 @@ const identifier = (market: Market) => {
 };
 
 interface Market {
-  borrowableAsset: string;
-  collateralAsset: string;
-  borrowableOracle: string;
-  collateralOracle: string;
-  irm: string;
-  lltv: BigNumber;
+  id: Buffer;
+  struct: MarketStruct;
 }
 
 describe("Blue", () => {
@@ -47,13 +44,13 @@ describe("Blue", () => {
   let irm: IrmMock;
 
   let market: Market;
-  let id: Buffer;
 
   let nbLiquidations: number;
 
-  const updateMarket = (newMarket: Partial<Market>) => {
-    market = { ...market, ...newMarket };
-    id = identifier(market);
+  const updateMarket = (market: Market, newStruct: Partial<MarketStruct>) => {
+    const struct = { ...market.struct, ...newStruct };
+
+    market = { struct, id: identifier(struct) };
   };
 
   beforeEach(async () => {
@@ -85,18 +82,20 @@ describe("Blue", () => {
 
     irm = await IrmMockFactory.deploy(blue.address);
 
-    updateMarket({
+    const struct: MarketStruct = {
       borrowableAsset: borrowable.address,
       collateralAsset: collateral.address,
       borrowableOracle: borrowableOracle.address,
       collateralOracle: collateralOracle.address,
       irm: irm.address,
       lltv: BigNumber.WAD.div(2).add(1),
-    });
+    };
+    market = { struct, id: identifier(struct) };
 
-    await blue.enableLltv(market.lltv);
-    await blue.enableIrm(market.irm);
-    await blue.createMarket(market);
+    await blue.enableLltv(market.struct.lltv);
+    await blue.enableIrm(market.struct.irm);
+
+    await blue.createMarket(market.struct);
 
     for (const signer of signers) {
       await borrowable.setBalance(signer.address, initBalance);
@@ -123,20 +122,26 @@ describe("Blue", () => {
       let amount = BigNumber.WAD.mul(1 + Math.floor(random() * 100));
 
       if (random() < 2 / 3) {
-        await blue.connect(user).supply(market, amount, user.address);
-        await blue.connect(user).withdraw(market, amount.div(2), user.address);
+        await blue.connect(user).supply(market.struct, amount, user.address, {
+          value: market.struct.borrowableAsset === constants.AddressZero ? amount : 0,
+        });
+        await blue.connect(user).withdraw(market.struct, amount.div(2), user.address);
       } else {
-        const totalSupply = await blue.totalSupply(id);
-        const totalBorrow = await blue.totalBorrow(id);
+        const totalSupply = await blue.totalSupply(market.id);
+        const totalBorrow = await blue.totalBorrow(market.id);
         const liquidity = BigNumber.from(totalSupply).sub(BigNumber.from(totalBorrow));
 
         amount = BigNumber.min(amount, BigNumber.from(liquidity).div(2));
 
         if (amount > BigNumber.from(0)) {
-          await blue.connect(user).supplyCollateral(market, amount, user.address);
-          await blue.connect(user).borrow(market, amount.div(2), user.address);
-          await blue.connect(user).repay(market, amount.div(4), user.address);
-          await blue.connect(user).withdrawCollateral(market, amount.div(8), user.address);
+          await blue.connect(user).supplyCollateral(market.struct, amount, user.address, {
+            value: market.struct.collateralAsset === constants.AddressZero ? amount : 0,
+          });
+          await blue.connect(user).borrow(market.struct, amount.div(2), user.address);
+          await blue.connect(user).repay(market.struct, amount.div(4), user.address, {
+            value: market.struct.borrowableAsset === constants.AddressZero ? amount.div(4) : 0,
+          });
+          await blue.connect(user).withdrawCollateral(market.struct, amount.div(8), user.address);
         }
       }
     }
@@ -155,28 +160,30 @@ describe("Blue", () => {
 
       if (!(await blue.isLltvEnabled(lltv))) {
         await blue.enableLltv(lltv);
-        await blue.enableIrm(market.irm);
-        await blue.createMarket({ ...market, lltv });
+        await blue.enableIrm(market.struct.irm);
+        await blue.createMarket({ ...market.struct, lltv });
       }
 
-      updateMarket({ lltv });
+      updateMarket(market, { lltv });
 
       // We use 2 different users to borrow from a market so that liquidations do not put the borrow storage back to 0 on that market.
-      await blue.connect(user).supply(market, amount, user.address);
-      await blue.connect(user).supplyCollateral(market, amount, user.address);
-      await blue.connect(user).borrow(market, borrowedAmount, user.address);
+      await blue.connect(user).supply(market.struct, amount, user.address);
+      await blue.connect(user).supplyCollateral(market.struct, amount, user.address);
+      await blue.connect(user).borrow(market.struct, borrowedAmount, user.address);
 
-      await blue.connect(borrower).supply(market, amount, borrower.address);
-      await blue.connect(borrower).supplyCollateral(market, amount, borrower.address);
-      await blue.connect(borrower).borrow(market, borrowedAmount, borrower.address);
+      await blue.connect(borrower).supply(market.struct, amount, borrower.address);
+      await blue.connect(borrower).supplyCollateral(market.struct, amount, borrower.address);
+      await blue.connect(borrower).borrow(market.struct, borrowedAmount, borrower.address);
 
       await borrowableOracle.setPrice(BigNumber.WAD.mul(1000));
 
       const seized = closePositions ? constants.MaxUint256 : amount.div(2);
 
-      await blue.connect(liquidator).liquidate(market, borrower.address, seized);
+      await blue.connect(liquidator).liquidate(market.struct, borrower.address, seized, {
+        value: market.struct.borrowableAsset === constants.AddressZero ? amount : 0,
+      });
 
-      const remainingCollateral = await blue.collateral(id, borrower.address);
+      const remainingCollateral = await blue.collateral(market.id, borrower.address);
 
       if (closePositions)
         expect(remainingCollateral.isZero(), "did not take the whole collateral when closing the position").to.be.true;
