@@ -170,11 +170,11 @@ describe("Blue", () => {
       await blue.connect(borrower).supplyCollateral(market, amount, borrower.address);
       await blue.connect(borrower).borrow(market, borrowedAmount, borrower.address);
 
-      await borrowableOracle.setPrice(BigNumber.WAD.mul(1000));
+      await borrowableOracle.setPrice(BigNumber.WAD.mul(2));
 
-      const seized = closePositions ? constants.MaxUint256 : amount.div(2);
+      const repaid = closePositions ? constants.MaxUint256 : borrowedAmount.div(4);
 
-      await blue.connect(liquidator).liquidate(market, borrower.address, seized);
+      await blue.connect(liquidator).liquidate(market, borrower.address, repaid);
 
       const remainingCollateral = await blue.collateral(id, borrower.address);
 

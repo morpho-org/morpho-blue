@@ -221,7 +221,13 @@ contract Blue {
 
         require(!_isHealthy(market, id, borrower, collateralPrice, borrowablePrice), Errors.HEALTHY_POSITION);
 
-        uint256 repaidShares = repaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
+        uint256 repaidShares;
+        if (repaid == type(uint256).max) {
+            repaid = borrowShare[id][borrower].toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
+            repaidShares = borrowShare[id][borrower];
+        } else {
+            repaidShares = repaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
+        }
 
         borrowShare[id][borrower] -= repaidShares;
         totalBorrowShares[id] -= repaidShares;
