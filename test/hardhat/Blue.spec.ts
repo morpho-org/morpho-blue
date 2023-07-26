@@ -4,7 +4,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { BigNumber, constants, utils } from "ethers";
 import hre from "hardhat";
-import { Blue, OracleMock, ERC20Mock, IrmMock } from "types";
+import { Blue, OracleMock, ERC20Mock, IrmMock, IntegratorMock } from "types";
 
 const closePositions = false;
 const initBalance = constants.MaxUint256.div(2);
@@ -45,6 +45,7 @@ describe("Blue", () => {
   let borrowableOracle: OracleMock;
   let collateralOracle: OracleMock;
   let irm: IrmMock;
+  let integrator: IntegratorMock;
 
   let market: Market;
   let id: Buffer;
@@ -183,6 +184,30 @@ describe("Blue", () => {
       else expect(!remainingCollateral.isZero(), "unexpectedly closed the position").to.be.true;
 
       await borrowableOracle.setPrice(BigNumber.WAD);
+    }
+  });
+
+  it("should simulate gas cost [integrator]", async () => {
+    const IntegratorMockFactory = await hre.ethers.getContractFactory("IntegratorMock", admin);
+
+    integrator = await IntegratorMockFactory.deploy(blue.address);
+
+    // Never leave the market empty.
+    await blue.supply(market, BigNumber.WAD, admin.address);
+
+    for (const user of signers) {
+      if (random() < 1 / 2) await mine(1 + Math.floor(random() * 100), { interval: 12 });
+
+      const amount = BigNumber.WAD.mul(1 + Math.floor(random() * 100));
+
+      await blue.connect(user).setApproval(integrator.address, true);
+
+      await blue.connect(user).supply(market, amount, user.address);
+      await integrator.connect(user).withdrawAll(market, user.address);
+
+      const remainingShares = await blue.supplyShare(id, user.address);
+
+      expect(remainingShares.isZero());
     }
   });
 });
