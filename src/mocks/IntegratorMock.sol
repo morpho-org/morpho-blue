@@ -19,11 +19,8 @@ contract IntegratorMock {
 
     /// @dev Withdraws `amount` of `asset` on behalf of `onBehalf`. Sender must have previously approved the bulker as their manager on Morpho.
     function withdrawAll(Market memory market, address receiver) external {
-        uint256 balanceBefore = market.borrowableAsset.balanceOf(address(this));
+        uint256 withdrawn = _BLUE.withdraw(market, type(uint256).max, msg.sender);
 
-        _BLUE.withdraw(market, type(uint256).max, msg.sender);
-
-        uint256 withdrawn = market.borrowableAsset.balanceOf(address(this)) - balanceBefore;
         if (receiver != address(this)) market.borrowableAsset.safeTransfer(receiver, withdrawn);
     }
 }
