@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.20;
 
-import {IBlueCallback} from "src/interfaces/IBlueCallback.sol";
+import "src/interfaces/IBlueCallbacks.sol";
 import {IIrm} from "src/interfaces/IIrm.sol";
 import {IERC20} from "src/interfaces/IERC20.sol";
 
@@ -118,7 +118,7 @@ contract Blue {
 
         totalSupply[id] += amount;
 
-        if (data.length > 0) IBlueCallback(msg.sender).blueCallback(IBlueCallback.BlueAction.SUPPLY, amount, data);
+        if (data.length > 0) IBlueSupplyCallback(msg.sender).blueSupplyCallback(amount, data);
 
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
@@ -177,7 +177,7 @@ contract Blue {
 
         totalBorrow[id] -= amount;
 
-        if (data.length > 0) IBlueCallback(msg.sender).blueCallback(IBlueCallback.BlueAction.REPAY, amount, data);
+        if (data.length > 0) IBlueRepayCallback(msg.sender).blueRepayCallback(amount, data);
 
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
@@ -195,7 +195,7 @@ contract Blue {
         collateral[id][onBehalf] += amount;
 
         if (data.length > 0) {
-            IBlueCallback(msg.sender).blueCallback(IBlueCallback.BlueAction.SUPPLY_COLLATERAL, amount, data);
+            IBlueSupplyCollateralCallback(msg.sender).blueSupplyCollateralCallback(amount, data);
         }
 
         market.collateralAsset.safeTransferFrom(msg.sender, address(this), amount);
@@ -252,7 +252,7 @@ contract Blue {
 
         market.collateralAsset.safeTransfer(msg.sender, seized);
 
-        if (data.length > 0) IBlueCallback(msg.sender).blueCallback(IBlueCallback.BlueAction.LIQUIDATE, repaid, data);
+        if (data.length > 0) IBlueLiquidateCallback(msg.sender).blueLiquidateCallback(seized, repaid, data);
 
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), repaid);
     }
