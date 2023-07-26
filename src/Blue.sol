@@ -138,11 +138,7 @@ contract Blue {
 
         require(totalBorrow[id] <= totalSupply[id], Errors.INSUFFICIENT_LIQUIDITY);
 
-        if (market.isBorrowableNative()) {
-            SafeTransferLib.safeTransferETH(msg.sender, amount);
-        } else {
-            market.borrowableAsset.safeTransfer(msg.sender, amount);
-        }
+        SafeTransferLib.safeTransferBorrowable(market, msg.sender, amount);
     }
 
     // Borrow management.
@@ -164,11 +160,7 @@ contract Blue {
         require(_isHealthy(market, id, onBehalf), Errors.INSUFFICIENT_COLLATERAL);
         require(totalBorrow[id] <= totalSupply[id], Errors.INSUFFICIENT_LIQUIDITY);
 
-        if (market.isBorrowableNative()) {
-            SafeTransferLib.safeTransferETH(msg.sender, amount);
-        } else {
-            market.borrowableAsset.safeTransfer(msg.sender, amount);
-        }
+        SafeTransferLib.safeTransferBorrowable(market, msg.sender, amount);
     }
 
     function repay(Market memory market, uint256 amount, address onBehalf) external payable {
@@ -218,11 +210,7 @@ contract Blue {
 
         require(_isHealthy(market, id, onBehalf), Errors.INSUFFICIENT_COLLATERAL);
 
-        if (market.isCollateralNative()) {
-            SafeTransferLib.safeTransferETH(msg.sender, amount);
-        } else {
-            market.collateralAsset.safeTransfer(msg.sender, amount);
-        }
+        SafeTransferLib.safeTransferCollateral(market, msg.sender, amount);
     }
 
     // Liquidation.
@@ -258,11 +246,7 @@ contract Blue {
             borrowShare[id][borrower] = 0;
         }
 
-        if (market.isCollateralNative()) {
-            SafeTransferLib.safeTransferETH(msg.sender, seized);
-        } else {
-            market.collateralAsset.safeTransfer(msg.sender, seized);
-        }
+        SafeTransferLib.safeTransferCollateral(market, msg.sender, seized);
 
         if (market.isBorrowableNative()) {
             SafeTransferLib.safeTransferETH(msg.sender, msg.value - repaid);

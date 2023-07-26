@@ -2,12 +2,15 @@
 pragma solidity ^0.8.0;
 
 import {IERC20} from "src/interfaces/IERC20.sol";
+import {Market, MarketLib} from "src/libraries/MarketLib.sol";
 
 /// @notice Safe ERC20 transfer library that gracefully handles missing return values.
 /// @dev Greatly inspired by Solmate (https://github.com/transmissions11/solmate/blob/main/src/utils/SafeTransferLib.sol).
 /// @dev Use with caution! Some functions in this library knowingly create dirty bits at the destination of the free memory pointer.
 /// @dev Note that none of the functions in this library check that a token has code at all! That responsibility is delegated to the caller.
 library SafeTransferLib {
+    using MarketLib for Market;
+
     function safeTransferFrom(IERC20 token, address from, address to, uint256 amount) internal {
         bool success;
 
@@ -77,5 +80,21 @@ library SafeTransferLib {
         }
 
         require(success, "ETH_TRANSFER_FAILED");
+    }
+
+    function safeTransferCollateral(Market memory market, address to, uint256 amount) internal {
+        if (market.isCollateralNative()) {
+            safeTransferETH(to, amount);
+        } else {
+            safeTransfer(market.collateralAsset, to, amount);
+        }
+    }
+
+    function safeTransferBorrowable(Market memory market, address to, uint256 amount) internal {
+        if (market.isBorrowableNative()) {
+            safeTransferETH(to, amount);
+        } else {
+            safeTransfer(market.borrowableAsset, to, amount);
+        }
     }
 }
