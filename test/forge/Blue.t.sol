@@ -17,7 +17,7 @@ contract BlueTest is Test {
     uint256 private constant LLTV = 0.8 ether;
     address private constant OWNER = address(0xdead);
 
-    Blue private blue;
+    IBlue private blue;
     ERC20 private borrowableAsset;
     ERC20 private collateralAsset;
     Oracle private borrowableOracle;

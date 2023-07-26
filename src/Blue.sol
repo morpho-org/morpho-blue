@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.20;
 
+import {IBlue} from "src/interfaces/IBlue.sol";
 import {IIrm} from "src/interfaces/IIrm.sol";
 import {IERC20} from "src/interfaces/IERC20.sol";
 
@@ -14,7 +15,7 @@ uint256 constant WAD = 1e18;
 uint256 constant MAX_FEE = 0.2e18;
 uint256 constant ALPHA = 0.5e18;
 
-contract Blue {
+contract Blue is IBlue {
     using SharesMath for uint256;
     using FixedPointMathLib for uint256;
     using SafeTransferLib for IERC20;
