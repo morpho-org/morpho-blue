@@ -2,5 +2,5 @@
 pragma solidity >=0.5.0;
 
 interface IBlueRepayCallback {
-    function blueRepayCallback(uint256 amountToRepay, bytes calldata data) external;
+    function blueRepayCallback(uint256 amount, bytes calldata data) external;
 }
