@@ -138,7 +138,7 @@ contract Blue {
 
         require(totalBorrow[id] <= totalSupply[id], Errors.INSUFFICIENT_LIQUIDITY);
 
-        SafeTransferLib.safeTransferBorrowable(market, msg.sender, amount);
+        market.safeTransferBorrowable(msg.sender, amount);
     }
 
     // Borrow management.
@@ -160,7 +160,7 @@ contract Blue {
         require(_isHealthy(market, id, onBehalf), Errors.INSUFFICIENT_COLLATERAL);
         require(totalBorrow[id] <= totalSupply[id], Errors.INSUFFICIENT_LIQUIDITY);
 
-        SafeTransferLib.safeTransferBorrowable(market, msg.sender, amount);
+        market.safeTransferBorrowable(msg.sender, amount);
     }
 
     function repay(Market memory market, uint256 amount, address onBehalf) external payable {
@@ -210,7 +210,7 @@ contract Blue {
 
         require(_isHealthy(market, id, onBehalf), Errors.INSUFFICIENT_COLLATERAL);
 
-        SafeTransferLib.safeTransferCollateral(market, msg.sender, amount);
+        market.safeTransferCollateral(msg.sender, amount);
     }
 
     // Liquidation.
@@ -222,13 +222,14 @@ contract Blue {
 
         _accrueInterests(market, id);
 
-        require(!_isHealthy(market, id, borrower), Errors.HEALTHY_POSITION);
+        uint256 collateralPrice = market.collateralOracle.price();
+        uint256 borrowablePrice = market.borrowableOracle.price();
+
+        require(!_isHealthy(market, id, borrower, collateralPrice, borrowablePrice), Errors.HEALTHY_POSITION);
 
         // The liquidation incentive is 1 + ALPHA * (1 / LLTV - 1).
         uint256 incentive = WAD + ALPHA.mulWadDown(WAD.divWadDown(market.lltv) - WAD);
-        uint256 repaid = seized.mulWadUp(market.collateralOracle.price()).divWadUp(incentive).divWadUp(
-            market.borrowableOracle.price()
-        );
+        uint256 repaid = seized.mulWadUp(collateralPrice).divWadUp(incentive).divWadUp(borrowablePrice);
         uint256 repaidShares = repaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
 
         borrowShare[id][borrower] -= repaidShares;
@@ -246,7 +247,7 @@ contract Blue {
             borrowShare[id][borrower] = 0;
         }
 
-        SafeTransferLib.safeTransferCollateral(market, msg.sender, seized);
+        market.safeTransferCollateral(msg.sender, seized);
 
         if (market.isBorrowableNative()) {
             SafeTransferLib.safeTransferETH(msg.sender, msg.value - repaid);

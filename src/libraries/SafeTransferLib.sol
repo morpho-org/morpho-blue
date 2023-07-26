@@ -81,20 +81,4 @@ library SafeTransferLib {
 
         require(success, "ETH_TRANSFER_FAILED");
     }
-
-    function safeTransferCollateral(Market memory market, address to, uint256 amount) internal {
-        if (market.isCollateralNative()) {
-            safeTransferETH(to, amount);
-        } else {
-            safeTransfer(market.collateralAsset, to, amount);
-        }
-    }
-
-    function safeTransferBorrowable(Market memory market, address to, uint256 amount) internal {
-        if (market.isBorrowableNative()) {
-            safeTransferETH(to, amount);
-        } else {
-            safeTransfer(market.borrowableAsset, to, amount);
-        }
-    }
 }
