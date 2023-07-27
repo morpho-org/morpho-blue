@@ -124,7 +124,7 @@ describe("Blue", () => {
 
       if (random() < 2 / 3) {
         await blue.connect(user).supply(market, amount, user.address);
-        await blue.connect(user).withdraw(market, amount.div(2), user.address);
+        await blue.connect(user).withdraw(market, amount.div(2), user.address, user.address);
       } else {
         const totalSupply = await blue.totalSupply(id);
         const totalBorrow = await blue.totalBorrow(id);
@@ -134,9 +134,9 @@ describe("Blue", () => {
 
         if (amount > BigNumber.from(0)) {
           await blue.connect(user).supplyCollateral(market, amount, user.address);
-          await blue.connect(user).borrow(market, amount.div(2), user.address);
+          await blue.connect(user).borrow(market, amount.div(2), user.address, user.address);
           await blue.connect(user).repay(market, amount.div(4), user.address);
-          await blue.connect(user).withdrawCollateral(market, amount.div(8), user.address);
+          await blue.connect(user).withdrawCollateral(market, amount.div(8), user.address, user.address);
         }
       }
     }
@@ -164,11 +164,11 @@ describe("Blue", () => {
       // We use 2 different users to borrow from a market so that liquidations do not put the borrow storage back to 0 on that market.
       await blue.connect(user).supply(market, amount, user.address);
       await blue.connect(user).supplyCollateral(market, amount, user.address);
-      await blue.connect(user).borrow(market, borrowedAmount, user.address);
+      await blue.connect(user).borrow(market, borrowedAmount, user.address, user.address);
 
       await blue.connect(borrower).supply(market, amount, borrower.address);
       await blue.connect(borrower).supplyCollateral(market, amount, borrower.address);
-      await blue.connect(borrower).borrow(market, borrowedAmount, borrower.address);
+      await blue.connect(borrower).borrow(market, borrowedAmount, borrower.address, user.address);
 
       await borrowableOracle.setPrice(BigNumber.WAD.mul(1000));
 
