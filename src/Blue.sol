@@ -2,6 +2,7 @@
 pragma solidity 0.8.21;
 
 import {
+    CallbackData,
     IBlueLiquidateCallback,
     IBlueRepayCallback,
     IBlueSupplyCallback,
