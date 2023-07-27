@@ -118,7 +118,7 @@ contract Blue {
 
         totalSupply[id] += amount;
 
-        if (data.length > 0) IBlueSupplyCallback(msg.sender).blueSupplyCallback(amount, data);
+        if (data.length > 0) IBlueSupplyCallback(msg.sender).onBlueSupply(amount, data);
 
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
@@ -177,7 +177,7 @@ contract Blue {
 
         totalBorrow[id] -= amount;
 
-        if (data.length > 0) IBlueRepayCallback(msg.sender).blueRepayCallback(amount, data);
+        if (data.length > 0) IBlueRepayCallback(msg.sender).onBlueRepay(amount, data);
 
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
@@ -195,7 +195,7 @@ contract Blue {
         collateral[id][onBehalf] += amount;
 
         if (data.length > 0) {
-            IBlueSupplyCollateralCallback(msg.sender).blueSupplyCollateralCallback(amount, data);
+            IBlueSupplyCollateralCallback(msg.sender).onBlueSupplyCollateral(amount, data);
         }
 
         market.collateralAsset.safeTransferFrom(msg.sender, address(this), amount);
@@ -252,7 +252,7 @@ contract Blue {
 
         market.collateralAsset.safeTransfer(msg.sender, seized);
 
-        if (data.length > 0) IBlueLiquidateCallback(msg.sender).blueLiquidateCallback(seized, repaid, data);
+        if (data.length > 0) IBlueLiquidateCallback(msg.sender).onBlueLiquidate(seized, repaid, data);
 
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), repaid);
     }
