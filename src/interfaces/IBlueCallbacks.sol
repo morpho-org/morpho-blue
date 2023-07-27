@@ -2,17 +2,17 @@
 pragma solidity >=0.5.0;
 
 interface IBlueLiquidateCallback {
-    function onBlueLiquidate(uint256 amountSeized, uint256 amountToRepay, bytes calldata data) external;
+    function onBlueLiquidate(uint256 seized, uint256 repaid, bytes calldata data) external;
 }
 
 interface IBlueRepayCallback {
-    function onBlueRepay(uint256 amountToRepay, bytes calldata data) external;
+    function onBlueRepay(uint256 amount, bytes calldata data) external;
 }
 
 interface IBlueSupplyCallback {
-    function onBlueSupply(uint256 amountToSupply, bytes calldata data) external;
+    function onBlueSupply(uint256 amount, bytes calldata data) external;
 }
 
 interface IBlueSupplyCollateralCallback {
-    function onBlueSupplyCollateral(uint256 amountToSupply, bytes calldata data) external;
+    function onBlueSupplyCollateral(uint256 amount, bytes calldata data) external;
 }
