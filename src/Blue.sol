@@ -23,7 +23,7 @@ string constant EIP712_NAME = "Blue";
 bytes32 constant EIP712_DOMAIN_TYPEHASH =
     keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
 
-/// @dev The typehash for approveManagerWithSig Authorization used for the EIP-712 signature.
+/// @dev The EIP-712 typeHash for Authorization.
 bytes32 constant EIP712_AUTHORIZATION_TYPEHASH =
     keccak256("Authorization(address delegator,address manager,bool isAllowed,uint256 nonce,uint256 deadline)");
 
@@ -276,7 +276,7 @@ contract Blue {
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), repaid);
     }
 
-    // Position management.
+    // Position approvals.
 
     function setApproval(
         address delegator,
@@ -290,12 +290,12 @@ contract Blue {
         // v ∈ {27, 28} (source: https://ethereum.github.io/yellowpaper/paper.pdf #308)
         require(signature.v == 27 || signature.v == 28, Errors.INVALID_V);
 
-        bytes32 structHash =
+        bytes32 hashStruct =
             keccak256(abi.encode(EIP712_AUTHORIZATION_TYPEHASH, delegator, manager, isAllowed, nonce, deadline));
-        bytes32 digest = keccak256(abi.encodePacked(EIP712_MSG_PREFIX, domainSeparator, structHash));
+        bytes32 digest = keccak256(abi.encodePacked(EIP712_MSG_PREFIX, domainSeparator, hashStruct));
         address signatory = ecrecover(digest, signature.v, signature.r, signature.s);
 
-        require(signatory != address(0) && delegator == signatory, Errors.INVALID_SIGNATORY);
+        require(delegator == signatory, Errors.INVALID_SIGNATURE);
         require(block.timestamp < deadline, Errors.SIGNATURE_EXPIRED);
         require(nonce == userNonce[signatory]++, Errors.INVALID_NONCE);
 

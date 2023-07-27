@@ -28,7 +28,7 @@ library Errors {
 
     string internal constant INVALID_V = "invalid v";
 
-    string internal constant INVALID_SIGNATORY = "invalid signatory";
+    string internal constant INVALID_SIGNATURE = "invalid signature";
 
     string internal constant SIGNATURE_EXPIRED = "signature expired";
 
