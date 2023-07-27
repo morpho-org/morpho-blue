@@ -1,7 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.20;
 
-import "src/interfaces/IBlueCallbacks.sol";
+import {
+    IBlueLiquidateCallback,
+    IBlueRepayCallback,
+    IBlueSupplyCallback,
+    IBlueSupplyCollateralCallback
+} from "src/interfaces/IBlueCallbacks.sol";
 import {IIrm} from "src/interfaces/IIrm.sol";
 import {IERC20} from "src/interfaces/IERC20.sol";
 
