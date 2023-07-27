@@ -4,6 +4,8 @@ pragma solidity 0.8.20;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
+import {SigUtils} from "./helpers/SigUtils.sol";
+
 import "src/Blue.sol";
 import {ERC20Mock as ERC20} from "src/mocks/ERC20Mock.sol";
 import {OracleMock as Oracle} from "src/mocks/OracleMock.sol";
@@ -18,6 +20,7 @@ contract BlueTest is Test {
     address private constant OWNER = address(0xdead);
 
     Blue private blue;
+    SigUtils internal sigUtils;
     ERC20 private borrowableAsset;
     ERC20 private collateralAsset;
     Oracle private borrowableOracle;
@@ -29,6 +32,8 @@ contract BlueTest is Test {
     function setUp() public {
         // Create Blue.
         blue = new Blue(OWNER);
+
+        sigUtils = new SigUtils(blue.domainSeparator());
 
         // List a market.
         borrowableAsset = new ERC20("borrowable", "B", 18);
@@ -684,6 +689,37 @@ contract BlueTest is Test {
         blue.borrow(market, 1 ether, address(this));
 
         vm.stopPrank();
+    }
+
+    function testApprovalWithSig(uint128 deadline, address manager, uint256 privateKey, bool isAllowed) public {
+        vm.assume(deadline > block.timestamp);
+        privateKey = bound(privateKey, 1, type(uint32).max); // "Private key must be less than the secp256k1 curve order (115792089237316195423570985008687907852837564279074904382605163141518161494337)."
+        address delegator = vm.addr(privateKey);
+
+        SigUtils.Authorization memory authorization = SigUtils.Authorization({
+            delegator: delegator,
+            manager: manager,
+            isAllowed: isAllowed,
+            nonce: blue.userNonce(delegator),
+            deadline: block.timestamp + deadline
+        });
+
+        bytes32 digest = sigUtils.getTypedDataHash(authorization);
+
+        Signature memory sig;
+        (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
+
+        blue.setApproval(
+            authorization.delegator,
+            authorization.manager,
+            authorization.isAllowed,
+            authorization.nonce,
+            authorization.deadline,
+            sig
+        );
+
+        assertEq(blue.isApproved(delegator, manager), isAllowed);
+        assertEq(blue.userNonce(delegator), 1);
     }
 }
 
