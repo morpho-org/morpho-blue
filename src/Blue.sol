@@ -105,7 +105,10 @@ contract Blue {
 
     // Supply management.
 
-    function supply(Market memory market, uint256 amount, address onBehalf, bytes calldata data) external {
+    function supply(Market memory market, uint256 amount, address onBehalf, CallbackData calldata callbackData)
+        external
+        returns (bytes memory returnData)
+    {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
@@ -118,7 +121,9 @@ contract Blue {
 
         totalSupply[id] += amount;
 
-        if (data.length > 0) IBlueSupplyCallback(msg.sender).onBlueSupply(amount, data);
+        if (callbackData.receiver != address(0)) {
+            returnData = IBlueSupplyCallback(callbackData.receiver).onBlueSupply(msg.sender, amount, callbackData.data);
+        }
 
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
@@ -164,7 +169,10 @@ contract Blue {
         market.borrowableAsset.safeTransfer(msg.sender, amount);
     }
 
-    function repay(Market memory market, uint256 amount, address onBehalf, bytes calldata data) external {
+    function repay(Market memory market, uint256 amount, address onBehalf, CallbackData calldata callbackData)
+        external
+        returns (bytes memory returnData)
+    {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
@@ -177,7 +185,9 @@ contract Blue {
 
         totalBorrow[id] -= amount;
 
-        if (data.length > 0) IBlueRepayCallback(msg.sender).onBlueRepay(amount, data);
+        if (callbackData.receiver != address(0)) {
+            returnData = IBlueRepayCallback(callbackData.receiver).onBlueRepay(msg.sender, amount, callbackData.data);
+        }
 
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
@@ -185,7 +195,12 @@ contract Blue {
     // Collateral management.
 
     /// @dev Don't accrue interests because it's not required and it saves gas.
-    function supplyCollateral(Market memory market, uint256 amount, address onBehalf, bytes calldata data) external {
+    function supplyCollateral(
+        Market memory market,
+        uint256 amount,
+        address onBehalf,
+        CallbackData calldata callbackData
+    ) external returns (bytes memory returnData) {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
@@ -194,8 +209,10 @@ contract Blue {
 
         collateral[id][onBehalf] += amount;
 
-        if (data.length > 0) {
-            IBlueSupplyCollateralCallback(msg.sender).onBlueSupplyCollateral(amount, data);
+        if (callbackData.receiver != address(0)) {
+            returnData = IBlueSupplyCollateralCallback(callbackData.receiver).onBlueSupplyCollateral(
+                msg.sender, amount, callbackData.data
+            );
         }
 
         market.collateralAsset.safeTransferFrom(msg.sender, address(this), amount);
@@ -218,7 +235,10 @@ contract Blue {
 
     // Liquidation.
 
-    function liquidate(Market memory market, address borrower, uint256 seized, bytes calldata data) external {
+    function liquidate(Market memory market, address borrower, uint256 seized, CallbackData calldata callbackData)
+        external
+        returns (bytes memory returnData)
+    {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(seized != 0, Errors.ZERO_AMOUNT);
@@ -252,7 +272,11 @@ contract Blue {
 
         market.collateralAsset.safeTransfer(msg.sender, seized);
 
-        if (data.length > 0) IBlueLiquidateCallback(msg.sender).onBlueLiquidate(seized, repaid, data);
+        if (callbackData.receiver != address(0)) {
+            returnData = IBlueLiquidateCallback(callbackData.receiver).onBlueLiquidate(
+                msg.sender, seized, repaid, callbackData.data
+            );
+        }
 
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), repaid);
     }

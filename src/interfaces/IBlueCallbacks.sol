@@ -1,18 +1,27 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.5.0;
 
+struct CallbackData {
+    address receiver;
+    bytes data;
+}
+
 interface IBlueLiquidateCallback {
-    function onBlueLiquidate(uint256 seized, uint256 repaid, bytes calldata data) external;
+    function onBlueLiquidate(address initiator, uint256 seized, uint256 repaid, bytes calldata data)
+        external
+        returns (bytes memory);
 }
 
 interface IBlueRepayCallback {
-    function onBlueRepay(uint256 amount, bytes calldata data) external;
+    function onBlueRepay(address initiator, uint256 amount, bytes calldata data) external returns (bytes memory);
 }
 
 interface IBlueSupplyCallback {
-    function onBlueSupply(uint256 amount, bytes calldata data) external;
+    function onBlueSupply(address initiator, uint256 amount, bytes calldata data) external returns (bytes memory);
 }
 
 interface IBlueSupplyCollateralCallback {
-    function onBlueSupplyCollateral(uint256 amount, bytes calldata data) external;
+    function onBlueSupplyCollateral(address initiator, uint256 amount, bytes calldata data)
+        external
+        returns (bytes memory);
 }
