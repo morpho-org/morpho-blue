@@ -301,15 +301,11 @@ contract Blue {
         require(block.timestamp < deadline, Errors.SIGNATURE_EXPIRED);
         require(nonce == userNonce[signatory]++, Errors.INVALID_NONCE);
 
-        _setApproval(signatory, manager, isAllowed);
+        isApproved[signatory][manager] = isAllowed;
     }
 
     function setApproval(address manager, bool isAllowed) external {
-        _setApproval(msg.sender, manager, isAllowed);
-    }
-
-    function _setApproval(address delegator, address manager, bool isAllowed) internal {
-        isApproved[delegator][manager] = isAllowed;
+        isApproved[msg.sender][manager] = isAllowed;
     }
 
     function _isSenderOrIsApproved(address user) internal view returns (bool) {
