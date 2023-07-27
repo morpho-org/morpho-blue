@@ -39,7 +39,7 @@ contract BlueTest is Test {
 
         irm = new Irm(blue);
 
-        Market memory _market = Market(
+        market = Market(
             IERC20(address(borrowableAsset)),
             IERC20(address(collateralAsset)),
             borrowableOracle,
@@ -47,8 +47,7 @@ contract BlueTest is Test {
             irm,
             LLTV
         );
-        market = _market;
-        id = _market.id();
+        id = market.id();
 
         vm.startPrank(OWNER);
         blue.enableIrm(irm);
