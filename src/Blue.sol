@@ -291,6 +291,7 @@ contract Blue {
         require(uint256(signature.s) <= MAX_VALID_ECDSA_S, Errors.INVALID_S);
         // v ∈ {27, 28} (source: https://ethereum.github.io/yellowpaper/paper.pdf #308)
         require(signature.v == 27 || signature.v == 28, Errors.INVALID_V);
+        require(block.timestamp < deadline, Errors.SIGNATURE_EXPIRED);
 
         bytes32 hashStruct =
             keccak256(abi.encode(EIP712_AUTHORIZATION_TYPEHASH, delegator, manager, isAllowed, nonce, deadline));
@@ -298,7 +299,6 @@ contract Blue {
         address signatory = ecrecover(digest, signature.v, signature.r, signature.s);
 
         require(delegator == signatory, Errors.INVALID_SIGNATURE);
-        require(block.timestamp < deadline, Errors.SIGNATURE_EXPIRED);
         require(nonce == userNonce[signatory]++, Errors.INVALID_NONCE);
 
         isApproved[signatory][manager] = isAllowed;
