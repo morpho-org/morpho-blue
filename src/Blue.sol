@@ -20,7 +20,7 @@ bytes32 constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(uint256 chainId,addre
 
 /// @dev The EIP-712 typeHash for Authorization.
 bytes32 constant AUTHORIZATION_TYPEHASH =
-    keccak256("Authorization(address delegator,address manager,bool isAllowed,uint256 nonce,uint256 deadline)");
+    keccak256("Authorization(address authoriser,address authorizee,bool isAuthorized,uint256 nonce,uint256 deadline)");
 
 /// @dev The highest valid value for s in an ECDSA signature pair (0 < s < secp256k1n ÷ 2 + 1).
 uint256 constant MAX_VALID_ECDSA_S = 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0;
@@ -70,8 +70,8 @@ contract Blue is IFlashLender {
     mapping(IIrm => bool) public isIrmEnabled;
     // Enabled LLTVs.
     mapping(uint256 => bool) public isLltvEnabled;
-    // User's managers.
-    mapping(address => mapping(address => bool)) public isApproved;
+    // User's authorizations.
+    mapping(address => mapping(address => bool)) public isAuthorized;
     // User's nonces. Used to prevent replay attacks with EIP-712 signatures.
     mapping(address => uint256) public userNonce;
 
@@ -150,7 +150,7 @@ contract Blue is IFlashLender {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
-        require(_isSenderOrIsApproved(onBehalf), Errors.MANAGER_NOT_APPROVED);
+        require(_isSenderOrIsAuthorized(onBehalf), Errors.NOT_SENDER_AND_NOT_AUTHORIZED);
 
         _accrueInterests(market, id);
 
@@ -171,7 +171,7 @@ contract Blue is IFlashLender {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
-        require(_isSenderOrIsApproved(onBehalf), Errors.MANAGER_NOT_APPROVED);
+        require(_isSenderOrIsAuthorized(onBehalf), Errors.NOT_SENDER_AND_NOT_AUTHORIZED);
 
         _accrueInterests(market, id);
 
@@ -222,7 +222,7 @@ contract Blue is IFlashLender {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
-        require(_isSenderOrIsApproved(onBehalf), Errors.MANAGER_NOT_APPROVED);
+        require(_isSenderOrIsAuthorized(onBehalf), Errors.NOT_SENDER_AND_NOT_AUTHORIZED);
 
         _accrueInterests(market, id);
 
@@ -272,12 +272,12 @@ contract Blue is IFlashLender {
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), repaid);
     }
 
-    // Position approvals.
+    // Position authorizations.
 
-    function setApproval(
-        address delegator,
-        address manager,
-        bool isAllowed,
+    function setAuthorization(
+        address authorizer,
+        address authorizee,
+        bool newIsAuthorized,
         uint256 deadline,
         Signature calldata signature
     ) external {
@@ -287,14 +287,24 @@ contract Blue is IFlashLender {
         require(block.timestamp < deadline, Errors.SIGNATURE_EXPIRED);
 
         bytes32 hashStruct = keccak256(
-            abi.encode(AUTHORIZATION_TYPEHASH, delegator, manager, isAllowed, userNonce[delegator]++, deadline)
+            abi.encode(
+                AUTHORIZATION_TYPEHASH, authorizer, authorizee, newIsAuthorized, userNonce[authorizer]++, deadline
+            )
         );
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, hashStruct));
         address signatory = ecrecover(digest, signature.v, signature.r, signature.s);
 
-        require(delegator == signatory, Errors.WRONG_SIGNATURE);
+        require(authorizer == signatory, Errors.WRONG_SIGNATURE);
 
-        isApproved[signatory][manager] = isAllowed;
+        isAuthorized[signatory][authorizee] = newIsAuthorized;
+    }
+
+    function setAuthorization(address authorizee, bool newIsAuthorized) external {
+        isAuthorized[msg.sender][authorizee] = newIsAuthorized;
+    }
+
+    function _isSenderOrIsAuthorized(address user) internal view returns (bool) {
+        return msg.sender == user || isAuthorized[user][msg.sender];
     }
 
     // Flash Loans.
@@ -306,16 +316,6 @@ contract Blue is IFlashLender {
         receiver.onFlashLoan(msg.sender, token, amount, data);
 
         IERC20(token).safeTransferFrom(address(receiver), address(this), amount);
-    }
-
-    // Position management.
-
-    function setApproval(address manager, bool isAllowed) external {
-        isApproved[msg.sender][manager] = isAllowed;
-    }
-
-    function _isSenderOrIsApproved(address user) internal view returns (bool) {
-        return msg.sender == user || isApproved[user][msg.sender];
     }
 
     // Interests management.

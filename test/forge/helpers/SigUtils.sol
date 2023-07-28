@@ -5,9 +5,9 @@ import {AUTHORIZATION_TYPEHASH} from "src/Blue.sol";
 
 library SigUtils {
     struct Authorization {
-        address delegator;
-        address manager;
-        bool isAllowed;
+        address authorizer;
+        address authorizee;
+        bool isAuthorized;
         uint256 nonce;
         uint256 deadline;
     }
@@ -25,9 +25,9 @@ library SigUtils {
         return keccak256(
             abi.encode(
                 AUTHORIZATION_TYPEHASH,
-                authorization.delegator,
-                authorization.manager,
-                authorization.isAllowed,
+                authorization.authorizer,
+                authorization.authorizee,
+                authorization.isAuthorized,
                 authorization.nonce,
                 authorization.deadline
             )

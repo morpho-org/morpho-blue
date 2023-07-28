@@ -657,36 +657,36 @@ contract BlueTest is Test {
         blue.withdrawCollateral(market, amount, address(this));
     }
 
-    function testSetApproval(address manager, bool isAllowed) public {
-        blue.setApproval(manager, isAllowed);
-        assertEq(blue.isApproved(address(this), manager), isAllowed);
+    function testSetAuthorization(address authorizee, bool isAuthorized) public {
+        blue.setAuthorization(authorizee, isAuthorized);
+        assertEq(blue.isAuthorized(address(this), authorizee), isAuthorized);
     }
 
-    function testNotApproved(address attacker) public {
+    function testNotAuthorized(address attacker) public {
         vm.assume(attacker != address(this));
 
         vm.startPrank(attacker);
 
-        vm.expectRevert("not approved");
+        vm.expectRevert("not sender and not authorized");
         blue.withdraw(market, 1, address(this));
-        vm.expectRevert("not approved");
+        vm.expectRevert("not sender and not authorized");
         blue.withdrawCollateral(market, 1, address(this));
-        vm.expectRevert("not approved");
+        vm.expectRevert("not sender and not authorized");
         blue.borrow(market, 1, address(this));
 
         vm.stopPrank();
     }
 
-    function testApproved(address manager) public {
+    function testAuthorization(address authorizee) public {
         borrowableAsset.setBalance(address(this), 100 ether);
         collateralAsset.setBalance(address(this), 100 ether);
 
         blue.supply(market, 100 ether, address(this));
         blue.supplyCollateral(market, 100 ether, address(this));
 
-        blue.setApproval(manager, true);
+        blue.setAuthorization(authorizee, true);
 
-        vm.startPrank(manager);
+        vm.startPrank(authorizee);
 
         blue.withdraw(market, 1 ether, address(this));
         blue.withdrawCollateral(market, 1 ether, address(this));
@@ -695,16 +695,18 @@ contract BlueTest is Test {
         vm.stopPrank();
     }
 
-    function testApprovalWithSig(uint128 deadline, address manager, uint256 privateKey, bool isAllowed) public {
+    function testAuthorizationWithSig(uint128 deadline, address authorizee, uint256 privateKey, bool isAuthorized)
+        public
+    {
         vm.assume(deadline > block.timestamp);
         privateKey = bound(privateKey, 1, type(uint32).max); // "Private key must be less than the secp256k1 curve order (115792089237316195423570985008687907852837564279074904382605163141518161494337)."
-        address delegator = vm.addr(privateKey);
+        address authorizer = vm.addr(privateKey);
 
         SigUtils.Authorization memory authorization = SigUtils.Authorization({
-            delegator: delegator,
-            manager: manager,
-            isAllowed: isAllowed,
-            nonce: blue.userNonce(delegator),
+            authorizer: authorizer,
+            authorizee: authorizee,
+            isAuthorized: isAuthorized,
+            nonce: blue.userNonce(authorizer),
             deadline: block.timestamp + deadline
         });
 
@@ -713,12 +715,12 @@ contract BlueTest is Test {
         Signature memory sig;
         (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
 
-        blue.setApproval(
-            authorization.delegator, authorization.manager, authorization.isAllowed, authorization.deadline, sig
+        blue.setAuthorization(
+            authorization.authorizer, authorization.authorizee, authorization.isAuthorized, authorization.deadline, sig
         );
 
-        assertEq(blue.isApproved(delegator, manager), isAllowed);
-        assertEq(blue.userNonce(delegator), 1);
+        assertEq(blue.isAuthorized(authorizer, authorizee), isAuthorized);
+        assertEq(blue.userNonce(authorizer), 1);
     }
 
     function testFlashLoan(uint256 amount) public {
