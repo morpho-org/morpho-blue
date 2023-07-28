@@ -8,6 +8,7 @@ import "src/Blue.sol";
 import {ERC20Mock as ERC20} from "src/mocks/ERC20Mock.sol";
 import {OracleMock as Oracle} from "src/mocks/OracleMock.sol";
 import {IrmMock as Irm} from "src/mocks/IrmMock.sol";
+import {FlashBorrowerMock} from "src/mocks/FlashBorrowerMock.sol";
 
 contract BlueTest is Test {
     using MarketLib for Market;
@@ -26,6 +27,7 @@ contract BlueTest is Test {
     Irm private irm;
     Market public market;
     Id public id;
+    FlashBorrowerMock internal flashBorrower;
 
     function setUp() public {
         // Create Blue.
@@ -36,6 +38,7 @@ contract BlueTest is Test {
         collateralAsset = new ERC20("collateral", "C", 18);
         borrowableOracle = new Oracle();
         collateralOracle = new Oracle();
+        flashBorrower = new FlashBorrowerMock(blue);
 
         irm = new Irm(blue);
 
@@ -688,6 +691,17 @@ contract BlueTest is Test {
         blue.borrow(market, 1 ether, address(this));
 
         vm.stopPrank();
+    }
+
+    function testFlashLoan(uint256 amount) public {
+        amount = bound(amount, 1, 2 ** 64);
+
+        borrowableAsset.setBalance(address(this), amount);
+        blue.supply(market, amount, address(this));
+
+        blue.flashLoan(flashBorrower, address(borrowableAsset), amount, bytes(""));
+
+        assertEq(borrowableAsset.balanceOf(address(blue)), amount, "balanceOf");
     }
 
     function testExtsLoad(uint256 slot, bytes32 value0) public {

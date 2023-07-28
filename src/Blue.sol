@@ -3,6 +3,8 @@ pragma solidity 0.8.21;
 
 import {IIrm} from "src/interfaces/IIrm.sol";
 import {IERC20} from "src/interfaces/IERC20.sol";
+import {IFlashLender} from "src/interfaces/IFlashLender.sol";
+import {IFlashBorrower} from "src/interfaces/IFlashBorrower.sol";
 
 import {Errors} from "./libraries/Errors.sol";
 import {SharesMath} from "src/libraries/SharesMath.sol";
@@ -13,7 +15,7 @@ import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 uint256 constant MAX_FEE = 0.25e18;
 uint256 constant ALPHA = 0.5e18;
 
-contract Blue {
+contract Blue is IFlashLender {
     using SharesMath for uint256;
     using FixedPointMathLib for uint256;
     using SafeTransferLib for IERC20;
@@ -243,6 +245,17 @@ contract Blue {
 
         market.collateralAsset.safeTransfer(msg.sender, seized);
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), repaid);
+    }
+
+    // Flash Loans.
+
+    /// @inheritdoc IFlashLender
+    function flashLoan(IFlashBorrower receiver, address token, uint256 amount, bytes calldata data) external {
+        IERC20(token).safeTransfer(address(receiver), amount);
+
+        receiver.onFlashLoan(msg.sender, token, amount, data);
+
+        IERC20(token).safeTransferFrom(address(receiver), address(this), amount);
     }
 
     // Position management.
