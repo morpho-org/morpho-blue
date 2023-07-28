@@ -7,5 +7,5 @@ interface IFlashBorrower {
     /// @param token The token lent.
     /// @param amount The amount of tokens lent.
     /// @param data Arbitrary data structure, intended to contain user-defined parameters.
-    function onFlashLoan(address initiator, address token, uint256 amount, bytes calldata data) external;
+    function onBlueFlashLoan(address initiator, address token, uint256 amount, bytes calldata data) external;
 }
