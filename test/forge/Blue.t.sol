@@ -708,7 +708,7 @@ contract BlueTest is Test {
             deadline: block.timestamp + deadline
         });
 
-        bytes32 digest = SigUtils.getTypedDataHash(blue.domainSeparator(), authorization);
+        bytes32 digest = SigUtils.getTypedDataHash(blue.DOMAIN_SEPARATOR(), authorization);
 
         Signature memory sig;
         (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);

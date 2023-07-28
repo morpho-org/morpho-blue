@@ -40,7 +40,7 @@ contract Blue is IFlashLender {
 
     // Immutables.
 
-    bytes32 public immutable domainSeparator;
+    bytes32 public immutable DOMAIN_SEPARATOR;
 
     // Storage.
 
@@ -80,7 +80,7 @@ contract Blue is IFlashLender {
     constructor(address newOwner) {
         owner = newOwner;
 
-        domainSeparator = keccak256(abi.encode(DOMAIN_TYPEHASH, block.chainid, address(this)));
+        DOMAIN_SEPARATOR = keccak256(abi.encode(DOMAIN_TYPEHASH, block.chainid, address(this)));
     }
 
     // Modifiers.
@@ -289,7 +289,7 @@ contract Blue is IFlashLender {
         bytes32 hashStruct = keccak256(
             abi.encode(AUTHORIZATION_TYPEHASH, delegator, manager, isAllowed, userNonce[delegator]++, deadline)
         );
-        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, hashStruct));
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, hashStruct));
         address signatory = ecrecover(digest, signature.v, signature.r, signature.s);
 
         require(delegator == signatory, Errors.WRONG_SIGNATURE);
