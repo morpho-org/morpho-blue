@@ -26,10 +26,6 @@ library Errors {
 
     string internal constant HEALTHY_POSITION = "position is healthy";
 
-    string internal constant INVALID_S = "invalid s";
-
-    string internal constant INVALID_V = "invalid v";
-
     string internal constant WRONG_SIGNATURE = "wrong signature";
 
     string internal constant SIGNATURE_EXPIRED = "signature expired";

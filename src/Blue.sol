@@ -22,9 +22,6 @@ bytes32 constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(uint256 chainId,addre
 bytes32 constant AUTHORIZATION_TYPEHASH =
     keccak256("Authorization(address authoriser,address authorizee,bool isAuthorized,uint256 nonce,uint256 deadline)");
 
-/// @dev The highest valid value for s in an ECDSA signature pair (0 < s < secp256k1n ÷ 2 + 1).
-uint256 constant MAX_VALID_ECDSA_S = 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0;
-
 /// @notice Contains the `v`, `r` and `s` parameters of an ECDSA signature.
 struct Signature {
     uint8 v;
@@ -281,9 +278,6 @@ contract Blue is IFlashLender {
         uint256 deadline,
         Signature calldata signature
     ) external {
-        require(uint256(signature.s) <= MAX_VALID_ECDSA_S, Errors.INVALID_S);
-        // v ∈ {27, 28} (source: https://ethereum.github.io/yellowpaper/paper.pdf #308)
-        require(signature.v == 27 || signature.v == 28, Errors.INVALID_V);
         require(block.timestamp < deadline, Errors.SIGNATURE_EXPIRED);
 
         bytes32 hashStruct = keccak256(
