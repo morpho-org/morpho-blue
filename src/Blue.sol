@@ -119,22 +119,15 @@ contract Blue {
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
 
-    function withdraw(Market calldata market, uint256 amount, address onBehalf) external {
+    function withdraw(Market calldata market, uint256 shares, address onBehalf) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
+        require(shares != 0, Errors.ZERO_AMOUNT);
         require(_isSenderOrIsApproved(onBehalf), Errors.MANAGER_NOT_APPROVED);
 
         _accrueInterests(market, id);
 
-        uint256 shares;
-        if (amount == type(uint256).max) {
-            amount = supplyShare[id][onBehalf].toAssetsDown(totalSupply[id], totalSupplyShares[id]);
-            shares = supplyShare[id][onBehalf];
-        } else {
-            shares = amount.toSharesUp(totalSupply[id], totalSupplyShares[id]);
-        }
-
-        require(amount != 0, Errors.ZERO_AMOUNT);
+        uint256 amount = shares.toAssetsDown(totalSupply[id], totalSupplyShares[id]);
 
         supplyShare[id][onBehalf] -= shares;
         totalSupplyShares[id] -= shares;
@@ -167,21 +160,14 @@ contract Blue {
         market.borrowableAsset.safeTransfer(msg.sender, amount);
     }
 
-    function repay(Market calldata market, uint256 amount, address onBehalf) external {
+    function repay(Market calldata market, uint256 shares, address onBehalf) external {
         Id id = market.id();
+        require(shares != 0, Errors.ZERO_AMOUNT);
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
 
         _accrueInterests(market, id);
 
-        uint256 shares;
-        if (amount == type(uint256).max) {
-            amount = borrowShare[id][onBehalf].toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
-            shares = borrowShare[id][onBehalf];
-        } else {
-            shares = amount.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
-        }
-
-        require(amount != 0, Errors.ZERO_AMOUNT);
+        uint256 amount = shares.toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
 
         borrowShare[id][onBehalf] -= shares;
         totalBorrowShares[id] -= shares;
@@ -208,7 +194,6 @@ contract Blue {
     function withdrawCollateral(Market calldata market, uint256 amount, address onBehalf) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
-        if (amount == type(uint256).max) amount = collateral[id][msg.sender];
         require(amount != 0, Errors.ZERO_AMOUNT);
         require(_isSenderOrIsApproved(onBehalf), Errors.MANAGER_NOT_APPROVED);
 
