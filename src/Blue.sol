@@ -278,7 +278,6 @@ contract Blue is IFlashLender {
         address delegator,
         address manager,
         bool isAllowed,
-        uint256 nonce,
         uint256 deadline,
         Signature calldata signature
     ) external {
@@ -287,13 +286,13 @@ contract Blue is IFlashLender {
         require(signature.v == 27 || signature.v == 28, Errors.INVALID_V);
         require(block.timestamp < deadline, Errors.SIGNATURE_EXPIRED);
 
-        bytes32 hashStruct =
-            keccak256(abi.encode(AUTHORIZATION_TYPEHASH, delegator, manager, isAllowed, nonce, deadline));
+        bytes32 hashStruct = keccak256(
+            abi.encode(AUTHORIZATION_TYPEHASH, delegator, manager, isAllowed, userNonce[delegator]++, deadline)
+        );
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, hashStruct));
         address signatory = ecrecover(digest, signature.v, signature.r, signature.s);
 
         require(delegator == signatory, Errors.INVALID_SIGNATURE);
-        require(nonce == userNonce[signatory]++, Errors.INVALID_NONCE);
 
         isApproved[signatory][manager] = isAllowed;
     }

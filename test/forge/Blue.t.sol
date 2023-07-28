@@ -714,12 +714,7 @@ contract BlueTest is Test {
         (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
 
         blue.setApproval(
-            authorization.delegator,
-            authorization.manager,
-            authorization.isAllowed,
-            authorization.nonce,
-            authorization.deadline,
-            sig
+            authorization.delegator, authorization.manager, authorization.isAllowed, authorization.deadline, sig
         );
 
         assertEq(blue.isApproved(delegator, manager), isAllowed);
