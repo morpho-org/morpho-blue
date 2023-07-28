@@ -771,6 +771,23 @@ contract BlueTest is
         blue.liquidate(market, address(this), toSeize, abi.encode(this.testLiquidateCallback.selector, hex""));
     }
 
+    function testFlashActions(uint256 amount) public {
+        amount = bound(amount, 10, 2 ** 64);
+        borrowableOracle.setPrice(1e18);
+        uint256 toBorrow = amount.mulWadDown(LLTV);
+
+        borrowableAsset.setBalance(address(this), 2 * toBorrow);
+        blue.supply(market, toBorrow, address(this), hex"");
+
+        blue.supplyCollateral(
+            market, amount, address(this), abi.encode(this.testFlashActions.selector, abi.encode(toBorrow))
+        );
+        assertGt(blue.borrowShare(market.id(), address(this)), 0, "no borrow");
+
+        blue.repay(market, toBorrow, address(this), abi.encode(this.testFlashActions.selector, abi.encode(amount)));
+        assertEq(blue.collateral(market.id(), address(this)), 0, "no withdraw collateral");
+    }
+
     function onBlueSupply(uint256 amount, bytes calldata data) external {
         require(msg.sender == address(blue));
         (bytes4 selector, bytes memory data) = abi.decode(data, (bytes4, bytes));
@@ -784,6 +801,11 @@ contract BlueTest is
         (bytes4 selector, bytes memory data) = abi.decode(data, (bytes4, bytes));
         if (selector == this.testSupplyCollateralCallback.selector) {
             collateralAsset.approve(address(blue), amount);
+        } else if (selector == this.testFlashActions.selector) {
+            uint256 toBorrow = abi.decode(data, (uint256));
+            collateralAsset.setBalance(address(this), amount);
+            borrowableAsset.setBalance(address(this), toBorrow);
+            blue.borrow(market, toBorrow, address(this));
         }
     }
 
@@ -792,6 +814,9 @@ contract BlueTest is
         (bytes4 selector, bytes memory data) = abi.decode(data, (bytes4, bytes));
         if (selector == this.testRepayCallback.selector) {
             borrowableAsset.approve(address(blue), amount);
+        } else if (selector == this.testFlashActions.selector) {
+            uint256 toWithdraw = abi.decode(data, (uint256));
+            blue.withdrawCollateral(market, toWithdraw, address(this));
         }
     }
 
