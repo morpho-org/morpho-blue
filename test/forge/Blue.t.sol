@@ -14,6 +14,7 @@ import {
 import {ERC20Mock as ERC20} from "src/mocks/ERC20Mock.sol";
 import {OracleMock as Oracle} from "src/mocks/OracleMock.sol";
 import {IrmMock as Irm} from "src/mocks/IrmMock.sol";
+import {FlashBorrowerMock} from "src/mocks/FlashBorrowerMock.sol";
 
 contract BlueTest is
     Test,
@@ -38,6 +39,7 @@ contract BlueTest is
     Irm private irm;
     Market public market;
     Id public id;
+    FlashBorrowerMock internal flashBorrower;
 
     function setUp() public {
         // Create Blue.
@@ -48,6 +50,7 @@ contract BlueTest is
         collateralAsset = new ERC20("collateral", "C", 18);
         borrowableOracle = new Oracle();
         collateralOracle = new Oracle();
+        flashBorrower = new FlashBorrowerMock(blue);
 
         irm = new Irm(blue);
 
@@ -187,7 +190,7 @@ contract BlueTest is
     }
 
     function testEnableLltv(uint256 newLltv) public {
-        newLltv = bound(newLltv, 0, WAD - 1);
+        newLltv = bound(newLltv, 0, FixedPointMathLib.WAD - 1);
 
         vm.prank(OWNER);
         blue.enableLltv(newLltv);
@@ -196,7 +199,7 @@ contract BlueTest is
     }
 
     function testEnableLltvShouldFailWhenLltvTooHigh(uint256 newLltv) public {
-        newLltv = bound(newLltv, WAD, type(uint256).max);
+        newLltv = bound(newLltv, FixedPointMathLib.WAD, type(uint256).max);
 
         vm.prank(OWNER);
         vm.expectRevert(bytes(Errors.LLTV_TOO_HIGH));
@@ -222,7 +225,7 @@ contract BlueTest is
 
     function testSetFeeShouldRevertIfMarketNotCreated(Market memory marketFuzz, uint256 fee) public {
         vm.assume(neq(marketFuzz, market));
-        fee = bound(fee, 0, WAD);
+        fee = bound(fee, 0, FixedPointMathLib.WAD);
 
         vm.prank(OWNER);
         vm.expectRevert("unknown market");
@@ -231,7 +234,7 @@ contract BlueTest is
 
     function testSetFeeShouldRevertIfNotOwner(uint256 fee, address caller) public {
         vm.assume(caller != OWNER);
-        fee = bound(fee, 0, WAD);
+        fee = bound(fee, 0, FixedPointMathLib.WAD);
 
         vm.expectRevert("not owner");
         blue.setFee(market, fee);
@@ -498,7 +501,8 @@ contract BlueTest is
         uint256 borrowingPower = amountCollateral.mulWadDown(LLTV);
         uint256 amountBorrowed = borrowingPower.mulWadDown(0.8e18);
         uint256 toSeize = amountCollateral.mulWadDown(LLTV);
-        uint256 incentive = WAD + ALPHA.mulWadDown(WAD.divWadDown(LLTV) - WAD);
+        uint256 incentive =
+            FixedPointMathLib.WAD + ALPHA.mulWadDown(FixedPointMathLib.WAD.divWadDown(LLTV) - FixedPointMathLib.WAD);
 
         borrowableAsset.setBalance(address(this), amountLent);
         collateralAsset.setBalance(BORROWER, amountCollateral);
@@ -541,7 +545,8 @@ contract BlueTest is
         uint256 borrowingPower = amountCollateral.mulWadDown(LLTV);
         uint256 amountBorrowed = borrowingPower.mulWadDown(0.8e18);
         uint256 toSeize = amountCollateral;
-        uint256 incentive = WAD + ALPHA.mulWadDown(WAD.divWadDown(market.lltv) - WAD);
+        uint256 incentive = FixedPointMathLib.WAD
+            + ALPHA.mulWadDown(FixedPointMathLib.WAD.divWadDown(market.lltv) - FixedPointMathLib.WAD);
 
         borrowableAsset.setBalance(address(this), amountLent);
         collateralAsset.setBalance(BORROWER, amountCollateral);
@@ -698,6 +703,17 @@ contract BlueTest is
         blue.borrow(market, 1 ether, address(this));
 
         vm.stopPrank();
+    }
+
+    function testFlashLoan(uint256 amount) public {
+        amount = bound(amount, 1, 2 ** 64);
+
+        borrowableAsset.setBalance(address(this), amount);
+        blue.supply(market, amount, address(this));
+
+        blue.flashLoan(flashBorrower, address(borrowableAsset), amount, bytes(""));
+
+        assertEq(borrowableAsset.balanceOf(address(blue)), amount, "balanceOf");
     }
 
     function testExtsLoad(uint256 slot, bytes32 value0) public {

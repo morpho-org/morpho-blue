@@ -25,4 +25,6 @@ library Errors {
     string internal constant INSUFFICIENT_LIQUIDITY = "insufficient liquidity";
 
     string internal constant HEALTHY_POSITION = "position is healthy";
+
+    string internal constant INVALID_SUCCESS_HASH = "invalid success hash";
 }
