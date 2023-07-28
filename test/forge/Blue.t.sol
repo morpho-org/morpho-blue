@@ -304,11 +304,6 @@ contract BlueTest is Test {
         borrowableAsset.setBalance(address(this), amountLent);
         blue.supply(market, amountLent, address(this));
 
-        if (amountBorrowed == 0) {
-            blue.borrow(market, amountBorrowed, address(this), address(this));
-            return;
-        }
-
         if (amountBorrowed > amountLent) {
             vm.prank(BORROWER);
             vm.expectRevert(bytes(Errors.INSUFFICIENT_LIQUIDITY));
@@ -321,6 +316,21 @@ contract BlueTest is Test {
 
         assertEq(blue.borrowShare(id, BORROWER), amountBorrowed * SharesMath.VIRTUAL_SHARES, "borrow share");
         assertEq(borrowableAsset.balanceOf(BORROWER), amountBorrowed, "BORROWER balance");
+        assertEq(borrowableAsset.balanceOf(address(blue)), amountLent - amountBorrowed, "blue balance");
+    }
+
+    function testBorrowReceiver(uint256 amountLent, uint256 amountBorrowed, address receiver) public {
+        amountLent = bound(amountLent, 1, 2 ** 64);
+        amountBorrowed = bound(amountBorrowed, 1, amountLent);
+
+        borrowableAsset.setBalance(address(this), amountLent);
+        blue.supply(market, amountLent, address(this));
+
+        vm.prank(BORROWER);
+        blue.borrow(market, amountBorrowed, BORROWER, receiver);
+
+        assertEq(blue.borrowShare(id, BORROWER), amountBorrowed * SharesMath.VIRTUAL_SHARES, "borrow share");
+        assertEq(borrowableAsset.balanceOf(receiver), amountBorrowed, "receiver balance");
         assertEq(borrowableAsset.balanceOf(address(blue)), amountLent - amountBorrowed, "blue balance");
     }
 
@@ -358,6 +368,24 @@ contract BlueTest is Test {
         assertEq(
             borrowableAsset.balanceOf(address(blue)), amountLent - amountBorrowed - amountWithdrawn, "blue balance"
         );
+    }
+
+    function testWithdrawReceiver(uint256 amountLent, uint256 amountWithdrawn, address receiver) public {
+        amountLent = bound(amountLent, 1, 2 ** 64);
+        amountWithdrawn = bound(amountWithdrawn, 1, amountLent);
+
+        borrowableAsset.setBalance(address(this), amountLent);
+        blue.supply(market, amountLent, address(this));
+        blue.withdraw(market, amountWithdrawn, address(this), receiver);
+
+        assertApproxEqAbs(
+            blue.supplyShare(id, address(this)),
+            (amountLent - amountWithdrawn) * SharesMath.VIRTUAL_SHARES,
+            100,
+            "supply share"
+        );
+        assertEq(borrowableAsset.balanceOf(receiver), amountWithdrawn, "receiver balance");
+        assertEq(borrowableAsset.balanceOf(address(blue)), amountLent - amountWithdrawn, "blue balance");
     }
 
     function testCollateralRequirements(
@@ -473,6 +501,19 @@ contract BlueTest is Test {
 
         assertEq(blue.collateral(id, address(this)), amountDeposited - amountWithdrawn, "this collateral");
         assertEq(collateralAsset.balanceOf(address(this)), amountWithdrawn, "this balance");
+        assertEq(collateralAsset.balanceOf(address(blue)), amountDeposited - amountWithdrawn, "blue balance");
+    }
+
+    function testWithdrawCollateral(uint256 amountDeposited, uint256 amountWithdrawn, address receiver) public {
+        amountDeposited = bound(amountDeposited, 1, 2 ** 64);
+        amountWithdrawn = bound(amountWithdrawn, 1, amountDeposited);
+
+        collateralAsset.setBalance(address(this), amountDeposited);
+        blue.supplyCollateral(market, amountDeposited, address(this));
+        blue.withdrawCollateral(market, amountWithdrawn, address(this), receiver);
+
+        assertEq(blue.collateral(id, address(this)), amountDeposited - amountWithdrawn, "this collateral");
+        assertEq(collateralAsset.balanceOf(receiver), amountWithdrawn, "receiver balance");
         assertEq(collateralAsset.balanceOf(address(blue)), amountDeposited - amountWithdrawn, "blue balance");
     }
 
