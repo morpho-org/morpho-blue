@@ -3,6 +3,8 @@ pragma solidity 0.8.21;
 
 import {IIrm} from "src/interfaces/IIrm.sol";
 import {IERC20} from "src/interfaces/IERC20.sol";
+import {IFlashLender} from "src/interfaces/IFlashLender.sol";
+import {IFlashBorrower} from "src/interfaces/IFlashBorrower.sol";
 
 import {Errors} from "./libraries/Errors.sol";
 import {SharesMath} from "src/libraries/SharesMath.sol";
@@ -10,7 +12,6 @@ import {FixedPointMathLib} from "src/libraries/FixedPointMathLib.sol";
 import {Id, Market, MarketLib} from "src/libraries/MarketLib.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 
-uint256 constant WAD = 1e18;
 uint256 constant MAX_FEE = 0.25e18;
 uint256 constant ALPHA = 0.5e18;
 
@@ -38,7 +39,7 @@ struct Signature {
     bytes32 s;
 }
 
-contract Blue {
+contract Blue is IFlashLender {
     using SharesMath for uint256;
     using FixedPointMathLib for uint256;
     using SafeTransferLib for IERC20;
@@ -108,7 +109,7 @@ contract Blue {
     }
 
     function enableLltv(uint256 lltv) external onlyOwner {
-        require(lltv < WAD, Errors.LLTV_TOO_HIGH);
+        require(lltv < FixedPointMathLib.WAD, Errors.LLTV_TOO_HIGH);
         isLltvEnabled[lltv] = true;
     }
 
@@ -255,7 +256,8 @@ contract Blue {
         require(!_isHealthy(market, id, borrower, collateralPrice, borrowablePrice), Errors.HEALTHY_POSITION);
 
         // The liquidation incentive is 1 + ALPHA * (1 / LLTV - 1).
-        uint256 incentive = WAD + ALPHA.mulWadDown(WAD.divWadDown(market.lltv) - WAD);
+        uint256 incentive = FixedPointMathLib.WAD
+            + ALPHA.mulWadDown(FixedPointMathLib.WAD.divWadDown(market.lltv) - FixedPointMathLib.WAD);
         uint256 repaid = seized.mulWadUp(collateralPrice).divWadUp(incentive).divWadUp(borrowablePrice);
         uint256 repaidShares = repaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
 
@@ -303,6 +305,19 @@ contract Blue {
 
         isApproved[signatory][manager] = isAllowed;
     }
+
+    // Flash Loans.
+
+    /// @inheritdoc IFlashLender
+    function flashLoan(IFlashBorrower receiver, address token, uint256 amount, bytes calldata data) external {
+        IERC20(token).safeTransfer(address(receiver), amount);
+
+        receiver.onFlashLoan(msg.sender, token, amount, data);
+
+        IERC20(token).safeTransferFrom(address(receiver), address(this), amount);
+    }
+
+    // Position management.
 
     function setApproval(address manager, bool isAllowed) external {
         isApproved[msg.sender][manager] = isAllowed;

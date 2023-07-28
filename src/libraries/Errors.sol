@@ -35,4 +35,6 @@ library Errors {
     string internal constant SIGNATURE_EXPIRED = "signature expired";
 
     string internal constant INVALID_NONCE = "invalid nonce";
+
+    string internal constant INVALID_SUCCESS_HASH = "invalid success hash";
 }
