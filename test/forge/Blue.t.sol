@@ -709,7 +709,7 @@ contract BlueTest is
         amount = bound(amount, 1, 2 ** 64);
 
         borrowableAsset.setBalance(address(this), amount);
-        blue.supply(market, amount, address(this));
+        blue.supply(market, amount, address(this), hex"");
 
         blue.flashLoan(flashBorrower, address(borrowableAsset), amount, bytes(""));
 
@@ -804,17 +804,19 @@ contract BlueTest is
         assertEq(blue.collateral(market.id(), address(this)), 0, "no withdraw collateral");
     }
 
-    function onBlueSupply(uint256 amount, bytes calldata data) external {
+    function onBlueSupply(uint256 amount, bytes memory data) external {
         require(msg.sender == address(blue));
-        (bytes4 selector, bytes memory data) = abi.decode(data, (bytes4, bytes));
+        bytes4 selector;
+        (selector, data) = abi.decode(data, (bytes4, bytes));
         if (selector == this.testSupplyCallback.selector) {
             borrowableAsset.approve(address(blue), amount);
         }
     }
 
-    function onBlueSupplyCollateral(uint256 amount, bytes calldata data) external {
+    function onBlueSupplyCollateral(uint256 amount, bytes memory data) external {
         require(msg.sender == address(blue));
-        (bytes4 selector, bytes memory data) = abi.decode(data, (bytes4, bytes));
+        bytes4 selector;
+        (selector, data) = abi.decode(data, (bytes4, bytes));
         if (selector == this.testSupplyCollateralCallback.selector) {
             collateralAsset.approve(address(blue), amount);
         } else if (selector == this.testFlashActions.selector) {
@@ -825,9 +827,10 @@ contract BlueTest is
         }
     }
 
-    function onBlueRepay(uint256 amount, bytes calldata data) external {
+    function onBlueRepay(uint256 amount, bytes memory data) external {
         require(msg.sender == address(blue));
-        (bytes4 selector, bytes memory data) = abi.decode(data, (bytes4, bytes));
+        bytes4 selector;
+        (selector, data) = abi.decode(data, (bytes4, bytes));
         if (selector == this.testRepayCallback.selector) {
             borrowableAsset.approve(address(blue), amount);
         } else if (selector == this.testFlashActions.selector) {
@@ -836,9 +839,10 @@ contract BlueTest is
         }
     }
 
-    function onBlueLiquidate(uint256, uint256 repaid, bytes calldata data) external {
+    function onBlueLiquidate(uint256, uint256 repaid, bytes memory data) external {
         require(msg.sender == address(blue));
-        (bytes4 selector, bytes memory data) = abi.decode(data, (bytes4, bytes));
+        bytes4 selector;
+        (selector, data) = abi.decode(data, (bytes4, bytes));
         if (selector == this.testLiquidateCallback.selector) {
             borrowableAsset.approve(address(blue), repaid);
         }
