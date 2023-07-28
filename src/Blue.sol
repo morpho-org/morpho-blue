@@ -2,7 +2,6 @@
 pragma solidity 0.8.21;
 
 import {
-    CallbackData,
     IBlueLiquidateCallback,
     IBlueRepayCallback,
     IBlueSupplyCallback,
@@ -112,7 +111,7 @@ contract Blue is IFlashLender {
 
     // Supply management.
 
-    function supply(Market memory market, uint256 amount, address onBehalf, CallbackData calldata callbackData)
+    function supply(Market memory market, uint256 amount, address onBehalf, bytes calldata data)
         external
         returns (bytes memory returnData)
     {
@@ -128,9 +127,7 @@ contract Blue is IFlashLender {
 
         totalSupply[id] += amount;
 
-        if (callbackData.receiver != address(0)) {
-            returnData = IBlueSupplyCallback(callbackData.receiver).onBlueSupply(msg.sender, amount, callbackData.data);
-        }
+        if (data.length > 0) returnData = IBlueSupplyCallback(msg.sender).onBlueSupply(amount, data);
 
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
@@ -176,7 +173,7 @@ contract Blue is IFlashLender {
         market.borrowableAsset.safeTransfer(msg.sender, amount);
     }
 
-    function repay(Market memory market, uint256 amount, address onBehalf, CallbackData calldata callbackData)
+    function repay(Market memory market, uint256 amount, address onBehalf, bytes calldata data)
         external
         returns (bytes memory returnData)
     {
@@ -192,9 +189,7 @@ contract Blue is IFlashLender {
 
         totalBorrow[id] -= amount;
 
-        if (callbackData.receiver != address(0)) {
-            returnData = IBlueRepayCallback(callbackData.receiver).onBlueRepay(msg.sender, amount, callbackData.data);
-        }
+        if (data.length > 0) returnData = IBlueRepayCallback(msg.sender).onBlueRepay(amount, data);
 
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
@@ -202,12 +197,10 @@ contract Blue is IFlashLender {
     // Collateral management.
 
     /// @dev Don't accrue interests because it's not required and it saves gas.
-    function supplyCollateral(
-        Market memory market,
-        uint256 amount,
-        address onBehalf,
-        CallbackData calldata callbackData
-    ) external returns (bytes memory returnData) {
+    function supplyCollateral(Market memory market, uint256 amount, address onBehalf, bytes calldata data)
+        external
+        returns (bytes memory returnData)
+    {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
@@ -216,10 +209,8 @@ contract Blue is IFlashLender {
 
         collateral[id][onBehalf] += amount;
 
-        if (callbackData.receiver != address(0)) {
-            returnData = IBlueSupplyCollateralCallback(callbackData.receiver).onBlueSupplyCollateral(
-                msg.sender, amount, callbackData.data
-            );
+        if (data.length > 0) {
+            returnData = IBlueSupplyCollateralCallback(msg.sender).onBlueSupplyCollateral(amount, data);
         }
 
         market.collateralAsset.safeTransferFrom(msg.sender, address(this), amount);
@@ -242,7 +233,7 @@ contract Blue is IFlashLender {
 
     // Liquidation.
 
-    function liquidate(Market memory market, address borrower, uint256 seized, CallbackData calldata callbackData)
+    function liquidate(Market memory market, address borrower, uint256 seized, bytes calldata data)
         external
         returns (bytes memory returnData)
     {
@@ -280,11 +271,7 @@ contract Blue is IFlashLender {
 
         market.collateralAsset.safeTransfer(msg.sender, seized);
 
-        if (callbackData.receiver != address(0)) {
-            returnData = IBlueLiquidateCallback(callbackData.receiver).onBlueLiquidate(
-                msg.sender, seized, repaid, callbackData.data
-            );
-        }
+        if (data.length > 0) returnData = IBlueLiquidateCallback(msg.sender).onBlueLiquidate(seized, repaid, data);
 
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), repaid);
     }
