@@ -5,11 +5,23 @@ import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
 import "src/Blue.sol";
+import {
+    IBlueLiquidateCallback,
+    IBlueRepayCallback,
+    IBlueSupplyCallback,
+    IBlueSupplyCollateralCallback
+} from "src/interfaces/IBlueCallbacks.sol";
 import {ERC20Mock as ERC20} from "src/mocks/ERC20Mock.sol";
 import {OracleMock as Oracle} from "src/mocks/OracleMock.sol";
 import {IrmMock as Irm} from "src/mocks/IrmMock.sol";
 
-contract BlueTest is Test {
+contract BlueTest is
+    Test,
+    IBlueSupplyCallback,
+    IBlueSupplyCollateralCallback,
+    IBlueRepayCallback,
+    IBlueLiquidateCallback
+{
     using MarketLib for Market;
     using FixedPointMathLib for uint256;
 
@@ -702,6 +714,93 @@ contract BlueTest is Test {
         assertEq(values.length, 2, "values.length");
         assertEq(values[0], slot > 0 ? value0 : value1, "value0");
         assertEq(values[1], value1, "value1");
+    }
+
+    function testSupplyCallback(uint256 amount) public {
+        amount = bound(amount, 1, 2 ** 64);
+        borrowableAsset.setBalance(address(this), amount);
+        borrowableAsset.approve(address(blue), 0);
+
+        vm.expectRevert();
+        blue.supply(market, amount, address(this), hex"");
+        blue.supply(market, amount, address(this), abi.encode(this.testSupplyCallback.selector, hex""));
+    }
+
+    function testSupplyCollateralCallback(uint256 amount) public {
+        amount = bound(amount, 1, 2 ** 64);
+        collateralAsset.setBalance(address(this), amount);
+        collateralAsset.approve(address(blue), 0);
+
+        vm.expectRevert();
+        blue.supplyCollateral(market, amount, address(this), hex"");
+        blue.supplyCollateral(
+            market, amount, address(this), abi.encode(this.testSupplyCollateralCallback.selector, hex"")
+        );
+    }
+
+    function testRepayCallback(uint256 amount) public {
+        amount = bound(amount, 1, 2 ** 64);
+        borrowableAsset.setBalance(address(this), amount);
+        blue.supply(market, amount, address(this), hex"");
+        blue.borrow(market, amount, address(this));
+
+        borrowableAsset.approve(address(blue), 0);
+
+        vm.expectRevert();
+        blue.repay(market, amount, address(this), hex"");
+        blue.repay(market, amount, address(this), abi.encode(this.testRepayCallback.selector, hex""));
+    }
+
+    function testLiquidateCallback(uint256 amount) public {
+        amount = bound(amount, 10, 2 ** 64);
+        borrowableOracle.setPrice(1e18);
+        borrowableAsset.setBalance(address(this), amount);
+        collateralAsset.setBalance(address(this), amount);
+        blue.supply(market, amount, address(this), hex"");
+        blue.supplyCollateral(market, amount, address(this), hex"");
+        blue.borrow(market, amount.mulWadDown(LLTV), address(this));
+
+        borrowableOracle.setPrice(1.01e18);
+
+        uint256 toSeize = amount.mulWadDown(LLTV);
+
+        borrowableAsset.setBalance(address(this), toSeize);
+        borrowableAsset.approve(address(blue), 0);
+        vm.expectRevert();
+        blue.liquidate(market, address(this), toSeize, hex"");
+        blue.liquidate(market, address(this), toSeize, abi.encode(this.testLiquidateCallback.selector, hex""));
+    }
+
+    function onBlueSupply(uint256 amount, bytes calldata data) external {
+        require(msg.sender == address(blue));
+        (bytes4 selector, bytes memory data) = abi.decode(data, (bytes4, bytes));
+        if (selector == this.testSupplyCallback.selector) {
+            borrowableAsset.approve(address(blue), amount);
+        }
+    }
+
+    function onBlueSupplyCollateral(uint256 amount, bytes calldata data) external {
+        require(msg.sender == address(blue));
+        (bytes4 selector, bytes memory data) = abi.decode(data, (bytes4, bytes));
+        if (selector == this.testSupplyCollateralCallback.selector) {
+            collateralAsset.approve(address(blue), amount);
+        }
+    }
+
+    function onBlueRepay(uint256 amount, bytes calldata data) external {
+        require(msg.sender == address(blue));
+        (bytes4 selector, bytes memory data) = abi.decode(data, (bytes4, bytes));
+        if (selector == this.testRepayCallback.selector) {
+            borrowableAsset.approve(address(blue), amount);
+        }
+    }
+
+    function onBlueLiquidate(uint256, uint256 repaid, bytes calldata data) external {
+        require(msg.sender == address(blue));
+        (bytes4 selector, bytes memory data) = abi.decode(data, (bytes4, bytes));
+        if (selector == this.testLiquidateCallback.selector) {
+            borrowableAsset.approve(address(blue), repaid);
+        }
     }
 }
 
