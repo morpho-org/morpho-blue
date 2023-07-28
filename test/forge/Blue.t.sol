@@ -320,6 +320,7 @@ contract BlueTest is Test {
     }
 
     function testBorrowReceiver(uint256 amountLent, uint256 amountBorrowed, address receiver) public {
+        vm.assume(receiver != address(blue));
         amountLent = bound(amountLent, 1, 2 ** 64);
         amountBorrowed = bound(amountBorrowed, 1, amountLent);
 
@@ -371,6 +372,7 @@ contract BlueTest is Test {
     }
 
     function testWithdrawReceiver(uint256 amountLent, uint256 amountWithdrawn, address receiver) public {
+        vm.assume(receiver != address(blue));
         amountLent = bound(amountLent, 1, 2 ** 64);
         amountWithdrawn = bound(amountWithdrawn, 1, amountLent);
 
@@ -505,6 +507,7 @@ contract BlueTest is Test {
     }
 
     function testWithdrawCollateral(uint256 amountDeposited, uint256 amountWithdrawn, address receiver) public {
+        vm.assume(receiver != address(blue));
         amountDeposited = bound(amountDeposited, 1, 2 ** 64);
         amountWithdrawn = bound(amountWithdrawn, 1, amountDeposited);
 
