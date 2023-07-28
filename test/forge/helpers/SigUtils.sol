@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import {EIP712_AUTHORIZATION_TYPEHASH} from "src/Blue.sol";
+import {AUTHORIZATION_TYPEHASH} from "src/Blue.sol";
 
 library SigUtils {
     struct Authorization {
@@ -24,7 +24,7 @@ library SigUtils {
     function hashStruct(Authorization memory authorization) internal pure returns (bytes32) {
         return keccak256(
             abi.encode(
-                EIP712_AUTHORIZATION_TYPEHASH,
+                AUTHORIZATION_TYPEHASH,
                 authorization.delegator,
                 authorization.manager,
                 authorization.isAllowed,

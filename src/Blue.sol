@@ -15,18 +15,11 @@ import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 uint256 constant MAX_FEE = 0.25e18;
 uint256 constant ALPHA = 0.5e18;
 
-/// @dev The prefix used for EIP-712 signature.
-string constant EIP712_MSG_PREFIX = "\x19\x01";
-
-/// @dev The name used for EIP-712 signature.
-string constant EIP712_NAME = "Blue";
-
 /// @dev The EIP-712 typeHash for EIP712Domain.
-bytes32 constant EIP712_DOMAIN_TYPEHASH =
-    keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
+bytes32 constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(uint256 chainId,address verifyingContract)");
 
 /// @dev The EIP-712 typeHash for Authorization.
-bytes32 constant EIP712_AUTHORIZATION_TYPEHASH =
+bytes32 constant AUTHORIZATION_TYPEHASH =
     keccak256("Authorization(address delegator,address manager,bool isAllowed,uint256 nonce,uint256 deadline)");
 
 /// @dev The highest valid value for s in an ECDSA signature pair (0 < s < secp256k1n ÷ 2 + 1).
@@ -87,8 +80,7 @@ contract Blue is IFlashLender {
     constructor(address newOwner) {
         owner = newOwner;
 
-        domainSeparator =
-            keccak256(abi.encode(EIP712_DOMAIN_TYPEHASH, keccak256(bytes(EIP712_NAME)), block.chainid, address(this)));
+        domainSeparator = keccak256(abi.encode(DOMAIN_TYPEHASH, block.chainid, address(this)));
     }
 
     // Modifiers.
@@ -296,8 +288,8 @@ contract Blue is IFlashLender {
         require(block.timestamp < deadline, Errors.SIGNATURE_EXPIRED);
 
         bytes32 hashStruct =
-            keccak256(abi.encode(EIP712_AUTHORIZATION_TYPEHASH, delegator, manager, isAllowed, nonce, deadline));
-        bytes32 digest = keccak256(abi.encodePacked(EIP712_MSG_PREFIX, domainSeparator, hashStruct));
+            keccak256(abi.encode(AUTHORIZATION_TYPEHASH, delegator, manager, isAllowed, nonce, deadline));
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, hashStruct));
         address signatory = ecrecover(digest, signature.v, signature.r, signature.s);
 
         require(delegator == signatory, Errors.INVALID_SIGNATURE);
