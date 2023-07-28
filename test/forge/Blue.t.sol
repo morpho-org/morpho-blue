@@ -21,7 +21,6 @@ contract BlueTest is Test {
     address private constant OWNER = address(0xdead);
 
     Blue private blue;
-    SigUtils internal sigUtils;
     ERC20 private borrowableAsset;
     ERC20 private collateralAsset;
     Oracle private borrowableOracle;
@@ -33,8 +32,6 @@ contract BlueTest is Test {
     function setUp() public {
         // Create Blue.
         blue = new Blue(OWNER);
-
-        sigUtils = new SigUtils(blue.domainSeparator());
 
         // List a market.
         borrowableAsset = new ERC20("borrowable", "B", 18);
@@ -706,7 +703,7 @@ contract BlueTest is Test {
             deadline: block.timestamp + deadline
         });
 
-        bytes32 digest = sigUtils.getTypedDataHash(authorization);
+        bytes32 digest = SigUtils.getTypedDataHash(blue.domainSeparator(), authorization);
 
         Signature memory sig;
         (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);

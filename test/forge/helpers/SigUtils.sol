@@ -1,9 +1,9 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
 import {EIP712_AUTHORIZATION_TYPEHASH} from "src/Blue.sol";
 
-contract SigUtils {
+library SigUtils {
     struct Authorization {
         address delegator;
         address manager;
@@ -12,18 +12,16 @@ contract SigUtils {
         uint256 deadline;
     }
 
-    bytes32 internal domainSeparator;
-
-    constructor(bytes32 _domainSeparator) {
-        domainSeparator = _domainSeparator;
+    /// @dev Computes the hash of the EIP-712 encoded data.
+    function getTypedDataHash(bytes32 domainSeparator, Authorization memory authorization)
+        public
+        pure
+        returns (bytes32)
+    {
+        return keccak256(abi.encodePacked("\x19\x01", domainSeparator, hashStruct(authorization)));
     }
 
-    /// @dev Computes the hash of the fully encoded EIP-712 message for the domain, which can be used to recover the signer
-    function getTypedDataHash(Authorization memory authorization) public view returns (bytes32) {
-        return keccak256(abi.encodePacked("\x19\x01", domainSeparator, getStructHash(authorization)));
-    }
-
-    function getStructHash(Authorization memory authorization) internal pure returns (bytes32) {
+    function hashStruct(Authorization memory authorization) internal pure returns (bytes32) {
         return keccak256(
             abi.encode(
                 EIP712_AUTHORIZATION_TYPEHASH,
