@@ -16,7 +16,7 @@ uint256 constant MAX_FEE = 0.25e18;
 uint256 constant ALPHA = 0.5e18;
 
 /// @dev The EIP-712 typeHash for EIP712Domain.
-bytes32 constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(uint256 chainId,address verifyingContract)");
+bytes32 constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
 
 /// @dev The EIP-712 typeHash for Authorization.
 bytes32 constant AUTHORIZATION_TYPEHASH =
@@ -77,7 +77,7 @@ contract Blue is IFlashLender {
     constructor(address newOwner) {
         owner = newOwner;
 
-        DOMAIN_SEPARATOR = keccak256(abi.encode(DOMAIN_TYPEHASH, block.chainid, address(this)));
+        DOMAIN_SEPARATOR = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256("Blue"), block.chainid, address(this)));
     }
 
     // Modifiers.
