@@ -286,7 +286,7 @@ contract Blue is IFlashLender {
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, hashStruct));
         address signatory = ecrecover(digest, signature.v, signature.r, signature.s);
 
-        require(authorizer == signatory, Errors.INVALID_SIGNATURE);
+        require(signatory != address(0) && authorizer == signatory, Errors.INVALID_SIGNATURE);
 
         isAuthorized[signatory][authorizee] = newIsAuthorized;
     }
