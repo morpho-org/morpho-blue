@@ -1,182 +1,188 @@
 .
-└── transferOwnership(address newOwner) external onlyOwner/
-    ├── when msg.sender not owner/
+└── transferOwnership(address newOwner) external
+    ├── when msg.sender not owner
     │   └── revert with NOT_OWNER
-    └── when msg.sender is owner/
+    └── when msg.sender is owner
         └── should set owner to newOwner
 .
-└── enableIrm(IIrm irm) external onlyOwner/
-    ├── when msg.sender not owner/
+└── enableIrm(IIrm irm) external
+    ├── when msg.sender not owner
     │   └── revert with NOT_OWNER
-    └── when msg.sender is owner/
+    └── when msg.sender is owner
         └── should set isIrmEnabled[irm] to true
 .
-└── enableLltv(uint256 lltv) external onlyOwner/
-    ├── when msg.sender not owner/
+└── enableLltv(uint256 lltv) external
+    ├── when msg.sender not owner
     │   └── revert with NOT_OWNER
-    └── when msg.sender is owner/
-        ├── when lltv >= WAD/
+    └── when msg.sender is owner
+        ├── when lltv >= WAD
         │   └── revert with LLTV_TOO_HIGH
-        └── when lltv < WAD/
+        └── when lltv < WAD
             └── should set isLltvEnabled[lltv] to true
 .
-└── setFee(Market memory market, uint256 newFee) external onlyOwner/
-    ├── when msg.sender not owner/
+└── setFee(Market memory market, uint256 newFee) external
+    ├── when msg.sender not owner
     │   └── revert with NOT_OWNER
-    └── when msg.sender is owner/
-        ├── when market is not created/
+    └── when msg.sender is owner
+        ├── when market is not created
         │   └── revert with MARKET_NOT_CREATED
-        └── when market is created/
-            ├── when newFee > MAX_FEE/
+        └── when market is created
+            ├── when newFee > MAX_FEE
             │   └── revert with MAX_FEE_EXCEEDED
-            └── when newFee <= MAX_FEE/
+            └── when newFee <= MAX_FEE
                 └── should set fee[id] to newFee
 .
-└── setFeeRecipient(address recipient) external onlyOwner/
-    ├── when msg.sender not owner/
+└── setFeeRecipient(address recipient) external
+    ├── when msg.sender not owner
     │   └── revert with NOT_OWNER
-    └── when msg.sender is owner/
+    └── when msg.sender is owner
         └── should set feeRecipient to recipient
 .
-└── createMarket(Market memory market) external/
-    ├── when irm is not enabled/
+└── createMarket(Market memory market) external
+    ├── when irm is not enabled
     │   └── revert with IRM_NOT_ENABLED
-    └── when irm is enabled/
-        ├── when lltv is not enabled/
+    └── when irm is enabled
+        ├── when lltv is not enabled
         │   └── revert with LLTV_NOT_ENABLED
-        └── when lltv is enabled/
-            ├── when market is already created/
+        └── when lltv is enabled
+            ├── when market is already created
             │   └── revert with MARKET_CREATED
-            └── when market is not already created/
+            └── when market is not already created
                 └── it should create market
 
 .
-└── supply(Market calldata market, uint256 amount, address onBehalf) external/
-    ├── when market is not created/
+└── supply(Market calldata market, uint256 amount, address onBehalf) external
+    ├── when market is not created
     │   └── revert with MARKET_NOT_CREATED
-    └── when market is created/
-        ├── when the amount to supply is zero/
+    └── when market is created
+        ├── when the amount to supply is zero
         │   └── revert with ZERO_AMOUNT
-        └── when the amount to supply is not zero/
+        └── when the amount to supply is not zero
+            ├── it should accrue the interests
             ├── it should add amount.toSharesDown(totalSupply[id], totalSupplyShares[id]) to supplyShare[id][onBehalf] 
             ├── it should add amount.toSharesDown(totalSupply[id], totalSupplyShares[id]) to totalSupplyShares[id]
             ├── it should add amount to totalSupply[id]
             └── it should make the ERC-20 transfer (checks on blue and supplier balances)
 .
-└── withdraw(Market memory market, uint256 amount, address onBehalf) external/
-    ├── when market is not created/
+└── withdraw(Market memory market, uint256 amount, address onBehalf) external
+    ├── when market is not created
     │   └── revert with MARKET_NOT_CREATED
-    └── when market is created/
-        ├── when the amount to withdraw is zero/
+    └── when market is created
+        ├── when the amount to withdraw is zero
         │   └── revert with ZERO_AMOUNT
-        └── when the amount to withdraw is not zero/
-            ├── when not sender and not approved/
+        └── when the amount to withdraw is not zero
+            ├── when not sender and not approved
             │   └── revert with MANAGER_NOT_APPROVED
-            └── when sender or approved/
-                ├── when totalBorrow > totalSupply/
+            └── when sender or approved
+                ├── it should accrue the interests
+                ├── when totalBorrow > totalSupply
                 │   └── revert with INSUFFICIENT_LIQUIDITY
-                └── when totalBorrow <= totalSupply/
+                └── when totalBorrow <= totalSupply
                     ├── it should remove amount.toSharesUp(totalSupply[id], totalSupplyShares[id]) to supplyShare[id][onBehalf] 
                     ├── it should remove amount.toSharesUp(totalSupply[id], totalSupplyShares[id]) to totalSupplyShares[id]
                     ├── it should remouve amount from totalSupply[id]
                     └── it should make the ERC-20 transfer (checks on blue and withdrawer balances)
 .
-└── borrow(Market memory market, uint256 amount, address onBehalf) external/
-    ├── when market is not created/
+└── borrow(Market memory market, uint256 amount, address onBehalf) external
+    ├── when market is not created
     │   └── revert with MARKET_NOT_CREATED
-    └── when market is created/
-        ├── when the amount to borrow is zero/
+    └── when market is created
+        ├── when the amount to borrow is zero
         │   └── revert with ZERO_AMOUNT
-        └── when the amount to borrow is not zero/
-            ├── when not sender and not approved/
+        └── when the amount to borrow is not zero
+            ├── when not sender and not approved
             │   └── revert with MANAGER_NOT_APPROVED
-            └── when sender or approved/
-                ├── when position not healthy/
+            └── when sender or approved
+                ├── it should accrue the interests
+                ├── when position not healthy
                 │   └── revert with INSUFFICIENT_COLLATERAL
-                └── when position healthy/
-                    ├── when totalBorrow > totalSupply/
+                └── when position healthy
+                    ├── when totalBorrow > totalSupply
                     │   └── revert with INSUFFICIENT_LIQUIDITY
-                    └── when totalBorrow <= totalSupply/
+                    └── when totalBorrow <= totalSupply
                         ├── it should add amount.toSharesUp(totalBorrow[id], totalBorrowShares[id]) to borrowShare[id][onBehalf] 
                         ├── it should add amount.toSharesUp(totalBorrow[id], totalBorrowShares[id]) to totalBorrowShares[id]
                         ├── it should add amount to totalBorrow[id]
                         └── it should make the ERC-20 transfer (checks on blue and borrower balances)
 .
-└── repay(Market memory market, uint256 amount, address onBehalf) external/
-    ├── when market is not created/
+└── repay(Market memory market, uint256 amount, address onBehalf) external
+    ├── when market is not created
     │   └── revert with MARKET_NOT_CREATED
-    └── when market is created/
-        ├── when the amount to repay is zero/
+    └── when market is created
+        ├── when the amount to repay is zero
         │   └── revert with ZERO_AMOUNT
-        └── when the amount to repay is not zero/
+        └── when the amount to repay is not zero
+            ├── it should accrue the interests
             ├── it should remove amount.toSharesDown(totalBorrow[id], totalBorrowShares[id]) from borrowShare[id][onBehalf]
             ├── it should remove amount.toSharesDown(totalBorrow[id], totalBorrowShares[id]) from totalBorrowShares[id],
             ├── it should remove amount from totalBorrow[id]
             └── it should make the ERC-20 transfer (checks on blue and repayer balances)
 .
-└── supplyCollateral(Market memory market, uint256 amount, address onBehalf) external/
-    ├── when market is not created/
+└── supplyCollateral(Market memory market, uint256 amount, address onBehalf) external
+    ├── when market is not created
     │   └── revert with MARKET_NOT_CREATED
-    └── when market is created/
-        ├── when the amount to supply is zero/
+    └── when market is created
+        ├── when the amount to supply is zero
         │   └── revert with ZERO_AMOUNT
-        └── when the amount to supply is not zero/
+        └── when the amount to supply is not zero
             ├── it should add amount to collateral[id][onBehalf]
             └── it should make the ERC-20 transfer (checks on blue and supplier balances)
 .
-└── withdrawCollateral(Market memory market, uint256 amount, address onBehalf) external/
-    ├── when market is not created/
+└── withdrawCollateral(Market memory market, uint256 amount, address onBehalf) external
+    ├── when market is not created
     │   └── revert with MARKET_NOT_CREATED
-    └── when market is created/
-        ├── when the amount to withdraw is zero/
+    └── when market is created
+        ├── when the amount to withdraw is zero
         │   └── revert with ZERO_AMOUNT
-        └── when the amount to withdraw is not zero/
-            ├── when not sender and not approved/
+        └── when the amount to withdraw is not zero
+            ├── when not sender and not approved
             │   └── revert with MANAGER_NOT_APPROVED
-            └── when sender or approved/
-                ├── when position not healthy/
+            └── when sender or approved
+                ├── it should accrue the interests
+                ├── when position not healthy
                 │   └── revert with INSUFFICIENT_COLLATERAL
-                └── when position healthy/
+                └── when position healthy
                     ├── it should remove amount from collateral[id][onBehalf]
                     └── it should make the ERC-20 transfer (checks on blue and withdrawer balances)
 .
-└── liquidate(Market memory market, address borrower, address onBehalf) external/
-    ├── when market is not created/
+└── liquidate(Market memory market, address borrower, address onBehalf) external
+    ├── when market is not created
     │   └── revert with MARKET_NOT_CREATED
-    └── when market is created/
-        ├── when the amount to seized is zero/
+    └── when market is created
+        ├── when the amount to seized is zero
         │   └── revert with ZERO_AMOUNT
-        └── when the amount to seized is not zero/
-            ├── when position is healthy/
+        └── when the amount to seized is not zero
+            ├── it should accrue the interests
+            ├── when position is healthy
             │   └── revert with HEALTHY_POSITION
-            └── when the position not healthy/
+            └── when the position not healthy
                 ├── it should compute repaid = seized.mulWadUp(collateralPrice).divWadUp(incentive).divWadUp(borrowablePrice);
                 ├── it should remove repaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]) from borrowShare[id][borrower]
                 ├── it should remove repaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]) from totalBorrowShares[id]
                 ├── it should remove repaid from totalBorrow[id]
                 ├── it should remove seized from collateral[id][borrower]
                 ├── it should make the ERC-20 transfers (checks on blue and liquidator balances)
-                └── if after the liquidation the borrower's collateral is 0/
-                    └── it should realise bad debt/
+                └── if after the liquidation the borrower's collateral is 0
+                    └── it should realise bad debt
                         ├── it should compute badDebt = borrowShare[id][borrower].toAssetsUp(totalBorrow[id], totalBorrowShares[id])
                         ├── it should remove bad debt from totalSupply[id]
                         ├── it should remove bad debt from totalBorrow[id]
                         ├── it should remove borrowShare[id][borrower] from totalBorrowShares[id]
                         └── it should set borrowShare[id][borrower] to 0
 .
-└── setApproval(address manager, bool isAllowed) external/
+└── setApproval(address manager, bool isAllowed) external
     └── should set isApproved[msg.sender][manager] to isAllowed
 .
-└── _accrueInterests(Market memory market, Id id) internal/
-    ├── when marketTotalBorrow is 0/
+└── _accrueInterests(Market memory market, Id id) internal
+    ├── when marketTotalBorrow is 0
     │   └── it should just set lastUpdate to block.timestamp
-    └── when marketTotalBorrow is not 0/
-        ├── when lastUpdate = block.timestamp/
+    └── when marketTotalBorrow is not 0
+        ├── when lastUpdate = block.timestamp
         │   └── it should just set lastUpdate to block.timestamp
-        └── when lastUpdate doesn't equal block.timestamp/
+        └── when lastUpdate doesn't equal block.timestamp
             ├── it should add accruedInterests to totalBorrow
             ├── it should add accruedInterests to totalSupply
-            └── when fee[id] != 0/
+            └── when fee[id] != 0
                 ├── it should add accruedInterests.mulWadDown(fee[id]) to feeAmount
                 ├── it should add feeAmount.mulDivDown(totalSupplyShares[id], totalSupply[id] - feeAmount) to supplyShare[id][feeRecipient]
                 └── it should add feeAmount.mulDivDown(totalSupplyShares[id], totalSupply[id] - feeAmount) to totalSupplyShares[id]
