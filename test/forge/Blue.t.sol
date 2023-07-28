@@ -175,7 +175,7 @@ contract BlueTest is Test {
     }
 
     function testEnableLltv(uint256 newLltv) public {
-        newLltv = bound(newLltv, 0, WAD - 1);
+        newLltv = bound(newLltv, 0, FixedPointMathLib.WAD - 1);
 
         vm.prank(OWNER);
         blue.enableLltv(newLltv);
@@ -184,7 +184,7 @@ contract BlueTest is Test {
     }
 
     function testEnableLltvShouldFailWhenLltvTooHigh(uint256 newLltv) public {
-        newLltv = bound(newLltv, WAD, type(uint256).max);
+        newLltv = bound(newLltv, FixedPointMathLib.WAD, type(uint256).max);
 
         vm.prank(OWNER);
         vm.expectRevert(bytes(Errors.LLTV_TOO_HIGH));
@@ -210,7 +210,7 @@ contract BlueTest is Test {
 
     function testSetFeeShouldRevertIfMarketNotCreated(Market memory marketFuzz, uint256 fee) public {
         vm.assume(neq(marketFuzz, market));
-        fee = bound(fee, 0, WAD);
+        fee = bound(fee, 0, FixedPointMathLib.WAD);
 
         vm.prank(OWNER);
         vm.expectRevert("unknown market");
@@ -219,7 +219,7 @@ contract BlueTest is Test {
 
     function testSetFeeShouldRevertIfNotOwner(uint256 fee, address caller) public {
         vm.assume(caller != OWNER);
-        fee = bound(fee, 0, WAD);
+        fee = bound(fee, 0, FixedPointMathLib.WAD);
 
         vm.expectRevert("not owner");
         blue.setFee(market, fee);
@@ -486,7 +486,8 @@ contract BlueTest is Test {
         uint256 borrowingPower = amountCollateral.mulWadDown(LLTV);
         uint256 amountBorrowed = borrowingPower.mulWadDown(0.8e18);
         uint256 toSeize = amountCollateral.mulWadDown(LLTV);
-        uint256 incentive = WAD + ALPHA.mulWadDown(WAD.divWadDown(LLTV) - WAD);
+        uint256 incentive =
+            FixedPointMathLib.WAD + ALPHA.mulWadDown(FixedPointMathLib.WAD.divWadDown(LLTV) - FixedPointMathLib.WAD);
 
         borrowableAsset.setBalance(address(this), amountLent);
         collateralAsset.setBalance(BORROWER, amountCollateral);
@@ -529,7 +530,8 @@ contract BlueTest is Test {
         uint256 borrowingPower = amountCollateral.mulWadDown(LLTV);
         uint256 amountBorrowed = borrowingPower.mulWadDown(0.8e18);
         uint256 toSeize = amountCollateral;
-        uint256 incentive = WAD + ALPHA.mulWadDown(WAD.divWadDown(market.lltv) - WAD);
+        uint256 incentive = FixedPointMathLib.WAD
+            + ALPHA.mulWadDown(FixedPointMathLib.WAD.divWadDown(market.lltv) - FixedPointMathLib.WAD);
 
         borrowableAsset.setBalance(address(this), amountLent);
         collateralAsset.setBalance(BORROWER, amountCollateral);
