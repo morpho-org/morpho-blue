@@ -196,7 +196,7 @@ describe("Blue", () => {
     const user = signers[0];
     const amount = BigNumber.WAD;
 
-    await blue.connect(user).supply(market, amount, user.address);
+    await blue.connect(user).supply(market, amount, user.address, "0x");
 
     await blue.flashLoan(flashBorrower.address, borrowable.address, amount.div(2), []);
   });
