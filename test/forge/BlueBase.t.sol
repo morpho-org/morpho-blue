@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.20;
+pragma solidity 0.8.21;
 
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
@@ -12,17 +12,17 @@ import {IrmMock as Irm} from "src/mocks/IrmMock.sol";
 contract BlueBaseTest is Test {
     using FixedPointMathLib for uint256;
 
-    address private constant BORROWER = address(1234);
-    address private constant LIQUIDATOR = address(5678);
-    uint256 private constant LLTV = 0.8 ether;
-    address private constant OWNER = address(0xdead);
+    address internal constant BORROWER = address(1234);
+    address internal constant LIQUIDATOR = address(5678);
+    uint256 internal constant LLTV = 0.8 ether;
+    address internal constant OWNER = address(0xdead);
 
-    Blue private blue;
-    ERC20 private borrowableAsset;
-    ERC20 private collateralAsset;
-    Oracle private borrowableOracle;
-    Oracle private collateralOracle;
-    Irm private irm;
+    Blue internal blue;
+    ERC20 internal borrowableAsset;
+    ERC20 internal collateralAsset;
+    Oracle internal borrowableOracle;
+    Oracle internal collateralOracle;
+    Irm internal irm;
     Market public market;
     Id public id;
 
@@ -92,5 +92,11 @@ contract BlueBaseTest is Test {
         uint256 totalShares = blue.totalBorrowShares(id);
         uint256 totalBorrow = blue.totalBorrow(id);
         return borrowerShares.divWadUp(totalShares).mulWadUp(totalBorrow);
+    }
+
+    function neq(Market memory a, Market memory b) internal pure returns (bool) {
+    return a.borrowableAsset != b.borrowableAsset || a.collateralAsset != b.collateralAsset
+        || a.borrowableOracle != b.borrowableOracle || a.collateralOracle != b.collateralOracle || a.lltv != b.lltv
+        || a.irm != b.irm;
     }
 }
