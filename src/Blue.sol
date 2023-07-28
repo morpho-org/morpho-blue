@@ -20,7 +20,7 @@ bytes32 constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(uint256 chainId,addre
 
 /// @dev The EIP-712 typeHash for Authorization.
 bytes32 constant AUTHORIZATION_TYPEHASH =
-    keccak256("Authorization(address authoriser,address authorizee,bool isAuthorized,uint256 nonce,uint256 deadline)");
+    keccak256("Authorization(address authorizer,address authorizee,bool isAuthorized,uint256 nonce,uint256 deadline)");
 
 /// @notice Contains the `v`, `r` and `s` parameters of an ECDSA signature.
 struct Signature {
@@ -70,7 +70,7 @@ contract Blue is IFlashLender {
     // User's authorizations.
     mapping(address => mapping(address => bool)) public isAuthorized;
     // User's nonces. Used to prevent replay attacks with EIP-712 signatures.
-    mapping(address => uint256) public userNonce;
+    mapping(address => uint256) public nonce;
 
     // Constructor.
 
@@ -281,14 +281,12 @@ contract Blue is IFlashLender {
         require(block.timestamp < deadline, Errors.SIGNATURE_EXPIRED);
 
         bytes32 hashStruct = keccak256(
-            abi.encode(
-                AUTHORIZATION_TYPEHASH, authorizer, authorizee, newIsAuthorized, userNonce[authorizer]++, deadline
-            )
+            abi.encode(AUTHORIZATION_TYPEHASH, authorizer, authorizee, newIsAuthorized, nonce[authorizer]++, deadline)
         );
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, hashStruct));
         address signatory = ecrecover(digest, signature.v, signature.r, signature.s);
 
-        require(authorizer == signatory, Errors.WRONG_SIGNATURE);
+        require(authorizer == signatory, Errors.INVALID_SIGNATURE);
 
         isAuthorized[signatory][authorizee] = newIsAuthorized;
     }

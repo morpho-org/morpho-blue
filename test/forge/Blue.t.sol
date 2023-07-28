@@ -706,7 +706,7 @@ contract BlueTest is Test {
             authorizer: authorizer,
             authorizee: authorizee,
             isAuthorized: isAuthorized,
-            nonce: blue.userNonce(authorizer),
+            nonce: blue.nonce(authorizer),
             deadline: block.timestamp + deadline
         });
 
@@ -720,7 +720,7 @@ contract BlueTest is Test {
         );
 
         assertEq(blue.isAuthorized(authorizer, authorizee), isAuthorized);
-        assertEq(blue.userNonce(authorizer), 1);
+        assertEq(blue.nonce(authorizer), 1);
     }
 
     function testFlashLoan(uint256 amount) public {
