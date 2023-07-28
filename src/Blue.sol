@@ -270,7 +270,7 @@ contract Blue is IFlashLender {
     function flashLoan(IFlashBorrower receiver, address token, uint256 amount, bytes calldata data) external {
         IERC20(token).safeTransfer(address(receiver), amount);
 
-        receiver.onFlashLoan(msg.sender, token, amount, data);
+        receiver.onBlueFlashLoan(msg.sender, token, amount, data);
 
         IERC20(token).safeTransferFrom(address(receiver), address(this), amount);
     }
