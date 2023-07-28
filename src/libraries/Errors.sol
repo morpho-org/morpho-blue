@@ -30,9 +30,7 @@ library Errors {
 
     string internal constant INVALID_V = "invalid v";
 
-    string internal constant INVALID_SIGNATURE = "invalid signature";
+    string internal constant WRONG_SIGNATURE = "wrong signature";
 
     string internal constant SIGNATURE_EXPIRED = "signature expired";
-
-    string internal constant INVALID_SUCCESS_HASH = "invalid success hash";
 }
