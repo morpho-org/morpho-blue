@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.20;
+pragma solidity 0.8.21;
 
 import {IIrm} from "src/interfaces/IIrm.sol";
 import {IERC20} from "src/interfaces/IERC20.sol";
+import {IFlashLender} from "src/interfaces/IFlashLender.sol";
+import {IFlashBorrower} from "src/interfaces/IFlashBorrower.sol";
 
 import {Events} from "./libraries/Events.sol";
 import {Errors} from "./libraries/Errors.sol";
@@ -11,9 +13,7 @@ import {FixedPointMathLib} from "src/libraries/FixedPointMathLib.sol";
 import {Id, Market, MarketLib} from "src/libraries/MarketLib.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 
-import {Owned} from "solmate/auth/Owned.sol";
-
-uint256 constant WAD = 1e18;
+uint256 constant MAX_FEE = 0.25e18;
 uint256 constant ALPHA = 0.5e18;
 
 /// @dev The prefix used for EIP-712 signature.
@@ -22,11 +22,11 @@ string constant EIP712_MSG_PREFIX = "\x19\x01";
 /// @dev The name used for EIP-712 signature.
 string constant EIP712_NAME = "Blue";
 
-/// @dev The domain typehash used for the EIP-712 signature.
+/// @dev The EIP-712 typeHash for EIP712Domain.
 bytes32 constant EIP712_DOMAIN_TYPEHASH =
     keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
 
-/// @dev The typehash for approveManagerWithSig Authorization used for the EIP-712 signature.
+/// @dev The EIP-712 typeHash for Authorization.
 bytes32 constant EIP712_AUTHORIZATION_TYPEHASH =
     keccak256("Authorization(address delegator,address manager,bool approval,uint256 nonce,uint256 deadline)");
 
@@ -40,7 +40,7 @@ struct Signature {
     bytes32 s;
 }
 
-contract Blue {
+contract Blue is IFlashLender {
     using SharesMath for uint256;
     using FixedPointMathLib for uint256;
     using SafeTransferLib for IERC20;
@@ -112,17 +112,17 @@ contract Blue {
     }
 
     function enableLltv(uint256 lltv) external onlyOwner {
-        require(lltv < WAD, Errors.LLTV_TOO_HIGH);
+        require(lltv < FixedPointMathLib.WAD, Errors.LLTV_TOO_HIGH);
         isLltvEnabled[lltv] = true;
 
         emit Events.LltvEnabled(lltv);
     }
 
-    // @notice It is the owner's responsibility to ensure a fee recipient is set before setting a non-zero fee.
-    function setFee(Market calldata market, uint256 newFee) external onlyOwner {
+    /// @notice It is the owner's responsibility to ensure a fee recipient is set before setting a non-zero fee.
+    function setFee(Market memory market, uint256 newFee) external onlyOwner {
         Id id = market.id();
-        require(lastUpdate[id] != 0, "unknown market");
-        require(newFee <= WAD, "fee must be <= 1");
+        require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
+        require(newFee <= MAX_FEE, Errors.MAX_FEE_EXCEEDED);
         fee[id] = newFee;
     }
 
@@ -132,7 +132,7 @@ contract Blue {
 
     // Markets management.
 
-    function createMarket(Market calldata market) external {
+    function createMarket(Market memory market) external {
         Id id = market.id();
         require(isIrmEnabled[market.irm], Errors.IRM_NOT_ENABLED);
         require(isLltvEnabled[market.lltv], Errors.LLTV_NOT_ENABLED);
@@ -143,7 +143,7 @@ contract Blue {
 
     // Supply management.
 
-    function supply(Market calldata market, uint256 amount, address onBehalf) external {
+    function supply(Market memory market, uint256 amount, address onBehalf) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
@@ -161,7 +161,7 @@ contract Blue {
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
 
-    function withdraw(Market calldata market, uint256 amount, address onBehalf) external {
+    function withdraw(Market memory market, uint256 amount, address onBehalf) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
@@ -184,7 +184,7 @@ contract Blue {
 
     // Borrow management.
 
-    function borrow(Market calldata market, uint256 amount, address onBehalf) external {
+    function borrow(Market memory market, uint256 amount, address onBehalf) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
@@ -206,7 +206,7 @@ contract Blue {
         market.borrowableAsset.safeTransfer(msg.sender, amount);
     }
 
-    function repay(Market calldata market, uint256 amount, address onBehalf) external {
+    function repay(Market memory market, uint256 amount, address onBehalf) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
@@ -227,7 +227,7 @@ contract Blue {
     // Collateral management.
 
     /// @dev Don't accrue interests because it's not required and it saves gas.
-    function supplyCollateral(Market calldata market, uint256 amount, address onBehalf) external {
+    function supplyCollateral(Market memory market, uint256 amount, address onBehalf) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
@@ -241,7 +241,7 @@ contract Blue {
         market.collateralAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
 
-    function withdrawCollateral(Market calldata market, uint256 amount, address onBehalf) external {
+    function withdrawCollateral(Market memory market, uint256 amount, address onBehalf) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
@@ -260,20 +260,22 @@ contract Blue {
 
     // Liquidation.
 
-    function liquidate(Market calldata market, address borrower, uint256 seized) external {
+    function liquidate(Market memory market, address borrower, uint256 seized) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(seized != 0, Errors.ZERO_AMOUNT);
 
         _accrueInterests(market, id);
 
-        require(!_isHealthy(market, id, borrower), Errors.HEALTHY_POSITION);
+        uint256 collateralPrice = market.collateralOracle.price();
+        uint256 borrowablePrice = market.borrowableOracle.price();
+
+        require(!_isHealthy(market, id, borrower, collateralPrice, borrowablePrice), Errors.HEALTHY_POSITION);
 
         // The liquidation incentive is 1 + ALPHA * (1 / LLTV - 1).
-        uint256 incentive = WAD + ALPHA.mulWadDown(WAD.divWadDown(market.lltv) - WAD);
-        uint256 repaid = seized.mulWadUp(market.collateralOracle.price()).divWadUp(incentive).divWadUp(
-            market.borrowableOracle.price()
-        );
+        uint256 incentive = FixedPointMathLib.WAD
+            + ALPHA.mulWadDown(FixedPointMathLib.WAD.divWadDown(market.lltv) - FixedPointMathLib.WAD);
+        uint256 repaid = seized.mulWadUp(collateralPrice).divWadUp(incentive).divWadUp(borrowablePrice);
         uint256 repaidShares = repaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
 
         borrowShare[id][borrower] -= repaidShares;
@@ -300,7 +302,7 @@ contract Blue {
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), repaid);
     }
 
-    // Position management.
+    // Position approvals.
 
     function setApproval(
         address delegator,
@@ -313,27 +315,34 @@ contract Blue {
         require(uint256(signature.s) <= MAX_VALID_ECDSA_S, Errors.INVALID_S);
         // v ∈ {27, 28} (source: https://ethereum.github.io/yellowpaper/paper.pdf #308)
         require(signature.v == 27 || signature.v == 28, Errors.INVALID_V);
+        require(block.timestamp < deadline, Errors.SIGNATURE_EXPIRED);
 
-        bytes32 structHash =
+        bytes32 hashStruct =
             keccak256(abi.encode(EIP712_AUTHORIZATION_TYPEHASH, delegator, manager, approval, nonce, deadline));
-        bytes32 digest = keccak256(abi.encodePacked(EIP712_MSG_PREFIX, domainSeparator, structHash));
+        bytes32 digest = keccak256(abi.encodePacked(EIP712_MSG_PREFIX, domainSeparator, hashStruct));
         address signatory = ecrecover(digest, signature.v, signature.r, signature.s);
 
-        require(signatory != address(0) && delegator == signatory, Errors.INVALID_SIGNATORY);
-        require(block.timestamp < deadline, Errors.SIGNATURE_EXPIRED);
+        require(delegator == signatory, Errors.INVALID_SIGNATURE);
         require(nonce == userNonce[signatory]++, Errors.INVALID_NONCE);
 
-        _setApproval(signatory, manager, approval);
+        isApproved[signatory][manager] = approval;
     }
 
-    function setApproval(address manager, bool approval) external {
-        _setApproval(msg.sender, manager, approval);
+    // Flash Loans.
+
+    /// @inheritdoc IFlashLender
+    function flashLoan(IFlashBorrower receiver, address token, uint256 amount, bytes calldata data) external {
+        IERC20(token).safeTransfer(address(receiver), amount);
+
+        receiver.onFlashLoan(msg.sender, token, amount, data);
+
+        IERC20(token).safeTransferFrom(address(receiver), address(this), amount);
     }
 
-    function _setApproval(address delegator, address manager, bool approval) internal {
-        isApproved[delegator][manager] = approval;
+    // Position management.
 
-        emit Events.Approval(msg.sender, delegator, manager, approval);
+    function setApproval(address manager, bool isAllowed) external {
+        isApproved[msg.sender][manager] = isAllowed;
     }
 
     function _isSenderOrIsApproved(address user) internal view returns (bool) {
@@ -342,7 +351,7 @@ contract Blue {
 
     // Interests management.
 
-    function _accrueInterests(Market calldata market, Id id) internal {
+    function _accrueInterests(Market memory market, Id id) internal {
         uint256 marketTotalBorrow = totalBorrow[id];
 
         uint256 accruedInterests;
@@ -368,14 +377,41 @@ contract Blue {
 
     // Health check.
 
-    function _isHealthy(Market calldata market, Id id, address user) internal view returns (bool) {
-        uint256 borrowShares = borrowShare[id][user];
-        if (borrowShares == 0) return true;
+    function _isHealthy(Market memory market, Id id, address user) internal view returns (bool) {
+        if (borrowShare[id][user] == 0) return true;
 
-        // totalBorrowShares[id] > 0 when borrowShares > 0.
+        uint256 collateralPrice = market.collateralOracle.price();
+        uint256 borrowablePrice = market.borrowableOracle.price();
+
+        return _isHealthy(market, id, user, collateralPrice, borrowablePrice);
+    }
+
+    function _isHealthy(Market memory market, Id id, address user, uint256 collateralPrice, uint256 borrowablePrice)
+        internal
+        view
+        returns (bool)
+    {
         uint256 borrowValue =
-            borrowShares.toAssetsUp(totalBorrow[id], totalBorrowShares[id]).mulWadUp(market.borrowableOracle.price());
-        uint256 collateralValue = collateral[id][user].mulWadDown(market.collateralOracle.price());
+            borrowShare[id][user].toAssetsUp(totalBorrow[id], totalBorrowShares[id]).mulWadUp(borrowablePrice);
+        uint256 collateralValue = collateral[id][user].mulWadDown(collateralPrice);
+
         return collateralValue.mulWadDown(market.lltv) >= borrowValue;
+    }
+
+    // Storage view.
+
+    function extsload(bytes32[] calldata slots) external view returns (bytes32[] memory res) {
+        uint256 nSlots = slots.length;
+
+        res = new bytes32[](nSlots);
+
+        for (uint256 i; i < nSlots;) {
+            bytes32 slot = slots[i++];
+
+            /// @solidity memory-safe-assembly
+            assembly {
+                mstore(add(res, mul(i, 32)), sload(slot))
+            }
+        }
     }
 }

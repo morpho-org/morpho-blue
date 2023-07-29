@@ -6,6 +6,8 @@ library Errors {
 
     string internal constant LLTV_TOO_HIGH = "LLTV too high";
 
+    string internal constant MAX_FEE_EXCEEDED = "fee must be <= MAX_FEE";
+
     string internal constant IRM_NOT_ENABLED = "IRM not enabled";
 
     string internal constant LLTV_NOT_ENABLED = "LLTV not enabled";
@@ -28,9 +30,11 @@ library Errors {
 
     string internal constant INVALID_V = "invalid v";
 
-    string internal constant INVALID_SIGNATORY = "invalid signatory";
+    string internal constant INVALID_SIGNATURE = "invalid signature";
 
     string internal constant SIGNATURE_EXPIRED = "signature expired";
 
     string internal constant INVALID_NONCE = "invalid nonce";
+
+    string internal constant INVALID_SUCCESS_HASH = "invalid success hash";
 }
