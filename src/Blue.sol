@@ -87,9 +87,10 @@ contract Blue is IFlashLender {
 
     constructor(address newOwner) {
         owner = newOwner;
-
         domainSeparator =
             keccak256(abi.encode(EIP712_DOMAIN_TYPEHASH, keccak256(bytes(EIP712_NAME)), block.chainid, address(this)));
+
+        emit Events.OwnershipTransferred(address(0), newOwner);
     }
 
     // Modifiers.
@@ -103,6 +104,8 @@ contract Blue is IFlashLender {
 
     function transferOwnership(address newOwner) external onlyOwner {
         owner = newOwner;
+
+        emit Events.OwnershipTransferred(owner, newOwner);
     }
 
     function enableIrm(IIrm irm) external onlyOwner {
@@ -124,10 +127,14 @@ contract Blue is IFlashLender {
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(newFee <= MAX_FEE, Errors.MAX_FEE_EXCEEDED);
         fee[id] = newFee;
+
+        emit Events.FeeSet(Id.unwrap(id), newFee);
     }
 
     function setFeeRecipient(address recipient) external onlyOwner {
         feeRecipient = recipient;
+
+        emit Events.FeeRecipientSet(recipient);
     }
 
     // Markets management.
@@ -137,6 +144,8 @@ contract Blue is IFlashLender {
         require(isIrmEnabled[market.irm], Errors.IRM_NOT_ENABLED);
         require(isLltvEnabled[market.lltv], Errors.LLTV_NOT_ENABLED);
         require(lastUpdate[id] == 0, Errors.MARKET_CREATED);
+
+        emit Events.MarketCreated(market);
 
         _accrueInterests(market, id);
     }
@@ -323,9 +332,12 @@ contract Blue is IFlashLender {
         address signatory = ecrecover(digest, signature.v, signature.r, signature.s);
 
         require(delegator == signatory, Errors.INVALID_SIGNATURE);
-        require(nonce == userNonce[signatory]++, Errors.INVALID_NONCE);
+        uint256 usedNonce = userNonce[signatory]++;
+        require(nonce == usedNonce, Errors.INVALID_NONCE);
 
-        isApproved[signatory][manager] = approval;
+        emit Events.NonceIncremented(msg.sender, signatory, usedNonce);
+
+        _setApproval(signatory, manager, approval);
     }
 
     // Flash Loans.
@@ -336,17 +348,25 @@ contract Blue is IFlashLender {
 
         receiver.onFlashLoan(msg.sender, token, amount, data);
 
+        emit Events.Flashloan(msg.sender, token, address(receiver), amount);
+
         IERC20(token).safeTransferFrom(address(receiver), address(this), amount);
     }
 
     // Position management.
 
     function setApproval(address manager, bool isAllowed) external {
-        isApproved[msg.sender][manager] = isAllowed;
+        _setApproval(msg.sender, manager, isAllowed);
     }
 
     function _isSenderOrIsApproved(address user) internal view returns (bool) {
         return msg.sender == user || isApproved[user][msg.sender];
+    }
+
+    function _setApproval(address delegator, address manager, bool isAllowed) internal {
+        isApproved[delegator][manager] = isAllowed;
+
+        emit Events.Approval(msg.sender, delegator, manager, isAllowed);
     }
 
     // Interests management.
