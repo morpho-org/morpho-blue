@@ -73,7 +73,7 @@ contract Blue is IFlashLender {
 
     // Only owner functions.
 
-    function transferOwnership(address newOwner) external onlyOwner {
+    function setOwner(address newOwner) external onlyOwner {
         owner = newOwner;
     }
 
@@ -129,7 +129,7 @@ contract Blue is IFlashLender {
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
 
-    function withdraw(Market memory market, uint256 amount, address onBehalf) external {
+    function withdraw(Market memory market, uint256 amount, address onBehalf, address receiver) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
@@ -145,12 +145,12 @@ contract Blue is IFlashLender {
 
         require(totalBorrow[id] <= totalSupply[id], Errors.INSUFFICIENT_LIQUIDITY);
 
-        market.borrowableAsset.safeTransfer(msg.sender, amount);
+        market.borrowableAsset.safeTransfer(receiver, amount);
     }
 
     // Borrow management.
 
-    function borrow(Market memory market, uint256 amount, address onBehalf) external {
+    function borrow(Market memory market, uint256 amount, address onBehalf, address receiver) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
@@ -167,7 +167,7 @@ contract Blue is IFlashLender {
         require(_isHealthy(market, id, onBehalf), Errors.INSUFFICIENT_COLLATERAL);
         require(totalBorrow[id] <= totalSupply[id], Errors.INSUFFICIENT_LIQUIDITY);
 
-        market.borrowableAsset.safeTransfer(msg.sender, amount);
+        market.borrowableAsset.safeTransfer(receiver, amount);
     }
 
     function repay(Market memory market, uint256 amount, address onBehalf, bytes calldata data) external {
@@ -207,7 +207,7 @@ contract Blue is IFlashLender {
         market.collateralAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
 
-    function withdrawCollateral(Market memory market, uint256 amount, address onBehalf) external {
+    function withdrawCollateral(Market memory market, uint256 amount, address onBehalf, address receiver) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
@@ -219,7 +219,7 @@ contract Blue is IFlashLender {
 
         require(_isHealthy(market, id, onBehalf), Errors.INSUFFICIENT_COLLATERAL);
 
-        market.collateralAsset.safeTransfer(msg.sender, amount);
+        market.collateralAsset.safeTransfer(receiver, amount);
     }
 
     // Liquidation.
