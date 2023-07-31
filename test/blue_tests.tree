@@ -171,6 +171,23 @@
                 ├── it should transfer seized of collateral asset to the sender
                 └── it should transfer repaid of borrowable asset from the sender the Blue
 .
+└── flashLoan(IFlashBorrower receiver, address token, uint256 amount, bytes calldata data) external
+    ├── when IERC20(token).balanceOf(blue) < amount
+    │   └── revert
+    └── when IERC20(token).balanceOf(blue) >= amount
+        ├── receiver's onBlueFlashLoan should be called
+        └── if the safeTransferFrom fails
+            └── revert
+.
+└── setAuthorization(address authorizer, address authorizee, bool newIsAuthorized, uint256 deadline, Signature calldata signature) external
+    ├── when block.timestamp >= deadline
+    │   └── revert with SIGNATURE_EXPIRED
+    └── when block.timestamp < deadline
+        ├── when signatory is zero address or signatory is not authorizer
+        │   └── revert with INVALID_SIGNATURE
+        └── when signatory is authorizer and not zero address
+            └── it should set isAuthorized[signatory][authorizee] to newIsAuthorized
+.
 └── setApproval(address manager, bool isAllowed) external
     └── should set isApproved[msg.sender][manager] to isAllowed
 .
