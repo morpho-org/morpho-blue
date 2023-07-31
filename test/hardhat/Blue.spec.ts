@@ -176,7 +176,7 @@ describe("Blue", () => {
       await blue.connect(borrower).supplyCollateral(market, amount, borrower.address, "0x");
       await blue.connect(borrower).borrow(market, borrowedAmount, borrower.address, user.address);
 
-      await oracle.setPrice(BigNumber.WAD.mul(1000));
+      await oracle.setPrice(BigNumber.WAD.div(10));
 
       const seized = closePositions ? constants.MaxUint256 : amount.div(2);
 
