@@ -27,4 +27,8 @@ library Errors {
     string internal constant HEALTHY_POSITION = "position is healthy";
 
     string internal constant INVALID_SUCCESS_HASH = "invalid success hash";
+
+    string internal constant TOO_MUCH_REPAID = "too much repaid";
+
+    string internal constant TOO_MUCH_REQUESTED = "too much requested";
 }

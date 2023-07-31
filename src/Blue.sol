@@ -138,8 +138,13 @@ contract Blue is IFlashLender {
         _accrueInterests(market, id);
 
         uint256 shares = amount.toSharesUp(totalSupply[id], totalSupplyShares[id]);
-        supplyShare[id][onBehalf] -= shares;
-        totalSupplyShares[id] -= shares;
+
+        require(shares < supplyShare[id][onBehalf], Errors.TOO_MUCH_REQUESTED);
+
+        unchecked {
+            supplyShare[id][onBehalf] -= shares;
+            totalSupplyShares[id] -= shares;
+        }
 
         totalSupply[id] -= amount;
 
@@ -178,8 +183,13 @@ contract Blue is IFlashLender {
         _accrueInterests(market, id);
 
         uint256 shares = amount.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
-        borrowShare[id][onBehalf] -= shares;
-        totalBorrowShares[id] -= shares;
+
+        require(shares < borrowShare[id][onBehalf], Errors.TOO_MUCH_REPAID);
+
+        unchecked {
+            borrowShare[id][onBehalf] -= shares;
+            totalBorrowShares[id] -= shares;
+        }
 
         totalBorrow[id] -= amount;
 
@@ -212,10 +222,13 @@ contract Blue is IFlashLender {
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
         require(_isSenderOrIsApproved(onBehalf), Errors.MANAGER_NOT_APPROVED);
+        require(amount < collateral[id][onBehalf], Errors.TOO_MUCH_REQUESTED);
 
         _accrueInterests(market, id);
 
-        collateral[id][onBehalf] -= amount;
+        unchecked {
+            collateral[id][onBehalf] -= amount;
+        }
 
         require(_isHealthy(market, id, onBehalf), Errors.INSUFFICIENT_COLLATERAL);
 
@@ -239,14 +252,25 @@ contract Blue is IFlashLender {
         // The liquidation incentive is 1 + ALPHA * (1 / LLTV - 1).
         uint256 incentive = FixedPointMathLib.WAD
             + ALPHA.mulWadDown(FixedPointMathLib.WAD.divWadDown(market.lltv) - FixedPointMathLib.WAD);
-        uint256 repaid = seized.mulWadUp(collateralPrice).divWadUp(incentive).divWadUp(borrowablePrice);
-        uint256 repaidShares = repaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
 
-        borrowShare[id][borrower] -= repaidShares;
-        totalBorrowShares[id] -= repaidShares;
+        uint256 repaid = seized.mulWadUp(collateralPrice).divWadUp(incentive).divWadUp(borrowablePrice);
+
         totalBorrow[id] -= repaid;
 
-        collateral[id][borrower] -= seized;
+        uint256 repaidShares = repaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
+
+        require(repaidShares < borrowShare[id][borrower], Errors.TOO_MUCH_REPAID);
+
+        unchecked {
+            borrowShare[id][borrower] -= repaidShares;
+            totalBorrowShares[id] -= repaidShares;
+        }
+
+        require(seized < collateral[id][borrower], Errors.TOO_MUCH_REQUESTED);
+
+        unchecked {
+            collateral[id][borrower] -= seized;
+        }
 
         // Realize the bad debt if needed.
         if (collateral[id][borrower] == 0) {
