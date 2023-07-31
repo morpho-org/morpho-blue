@@ -73,7 +73,7 @@ contract Blue is IFlashLender {
 
     // Only owner functions.
 
-    function transferOwnership(address newOwner) external onlyOwner {
+    function setOwner(address newOwner) external onlyOwner {
         owner = newOwner;
     }
 

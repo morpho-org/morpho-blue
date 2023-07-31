@@ -135,7 +135,7 @@ contract BlueTest is
         Blue blue2 = new Blue(oldOwner);
 
         vm.prank(oldOwner);
-        blue2.transferOwnership(newOwner);
+        blue2.setOwner(newOwner);
         assertEq(blue2.owner(), newOwner, "owner");
     }
 
@@ -146,7 +146,7 @@ contract BlueTest is
 
         vm.prank(attacker);
         vm.expectRevert(bytes(Errors.NOT_OWNER));
-        blue2.transferOwnership(newOwner);
+        blue2.setOwner(newOwner);
     }
 
     function testEnableIrmWhenNotOwner(address attacker, IIrm newIrm) public {
