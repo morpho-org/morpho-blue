@@ -669,9 +669,9 @@ contract BlueTest is
         blue.withdrawCollateral(market, amount, address(this));
     }
 
-    function testSetAuthorization(address authorizee, bool isAuthorized) public {
-        blue.setAuthorization(authorizee, isAuthorized);
-        assertEq(blue.isAuthorized(address(this), authorizee), isAuthorized);
+    function testSetAuthorization(address authorized, bool isAuthorized) public {
+        blue.setAuthorization(authorized, isAuthorized);
+        assertEq(blue.isAuthorized(address(this), authorized), isAuthorized);
     }
 
     function testNotAuthorized(address attacker) public {
@@ -689,16 +689,16 @@ contract BlueTest is
         vm.stopPrank();
     }
 
-    function testAuthorization(address authorizee) public {
+    function testAuthorization(address authorized) public {
         borrowableAsset.setBalance(address(this), 100 ether);
         collateralAsset.setBalance(address(this), 100 ether);
 
         blue.supply(market, 100 ether, address(this), hex"");
         blue.supplyCollateral(market, 100 ether, address(this), hex"");
 
-        blue.setAuthorization(authorizee, true);
+        blue.setAuthorization(authorized, true);
 
-        vm.startPrank(authorizee);
+        vm.startPrank(authorized);
 
         blue.withdraw(market, 1 ether, address(this));
         blue.withdrawCollateral(market, 1 ether, address(this));
@@ -707,7 +707,7 @@ contract BlueTest is
         vm.stopPrank();
     }
 
-    function testAuthorizationWithSig(uint128 deadline, address authorizee, uint256 privateKey, bool isAuthorized)
+    function testAuthorizationWithSig(uint128 deadline, address authorized, uint256 privateKey, bool isAuthorized)
         public
     {
         vm.assume(deadline > block.timestamp);
@@ -716,7 +716,7 @@ contract BlueTest is
 
         SigUtils.Authorization memory authorization = SigUtils.Authorization({
             authorizer: authorizer,
-            authorizee: authorizee,
+            authorized: authorized,
             isAuthorized: isAuthorized,
             nonce: blue.nonce(authorizer),
             deadline: block.timestamp + deadline
@@ -728,10 +728,10 @@ contract BlueTest is
         (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
 
         blue.setAuthorization(
-            authorization.authorizer, authorization.authorizee, authorization.isAuthorized, authorization.deadline, sig
+            authorization.authorizer, authorization.authorized, authorization.isAuthorized, authorization.deadline, sig
         );
 
-        assertEq(blue.isAuthorized(authorizer, authorizee), isAuthorized);
+        assertEq(blue.isAuthorized(authorizer, authorized), isAuthorized);
         assertEq(blue.nonce(authorizer), 1);
     }
 

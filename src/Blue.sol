@@ -26,7 +26,7 @@ bytes32 constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,uint256 c
 
 /// @dev The EIP-712 typeHash for Authorization.
 bytes32 constant AUTHORIZATION_TYPEHASH =
-    keccak256("Authorization(address authorizer,address authorizee,bool isAuthorized,uint256 nonce,uint256 deadline)");
+    keccak256("Authorization(address authorizer,address authorized,bool isAuthorized,uint256 nonce,uint256 deadline)");
 
 /// @notice Contains the `v`, `r` and `s` parameters of an ECDSA signature.
 struct Signature {
@@ -302,7 +302,7 @@ contract Blue is IFlashLender {
     /// @dev The signature is malleable, but it has no impact on the security here.
     function setAuthorization(
         address authorizer,
-        address authorizee,
+        address authorized,
         bool newIsAuthorized,
         uint256 deadline,
         Signature calldata signature
@@ -310,18 +310,18 @@ contract Blue is IFlashLender {
         require(block.timestamp < deadline, Errors.SIGNATURE_EXPIRED);
 
         bytes32 hashStruct = keccak256(
-            abi.encode(AUTHORIZATION_TYPEHASH, authorizer, authorizee, newIsAuthorized, nonce[authorizer]++, deadline)
+            abi.encode(AUTHORIZATION_TYPEHASH, authorizer, authorized, newIsAuthorized, nonce[authorizer]++, deadline)
         );
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, hashStruct));
         address signatory = ecrecover(digest, signature.v, signature.r, signature.s);
 
         require(signatory != address(0) && authorizer == signatory, Errors.INVALID_SIGNATURE);
 
-        isAuthorized[signatory][authorizee] = newIsAuthorized;
+        isAuthorized[signatory][authorized] = newIsAuthorized;
     }
 
-    function setAuthorization(address authorizee, bool newIsAuthorized) external {
-        isAuthorized[msg.sender][authorizee] = newIsAuthorized;
+    function setAuthorization(address authorized, bool newIsAuthorized) external {
+        isAuthorized[msg.sender][authorized] = newIsAuthorized;
     }
 
     function _isSenderAuthorized(address user) internal view returns (bool) {

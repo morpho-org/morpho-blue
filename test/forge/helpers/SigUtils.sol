@@ -6,7 +6,7 @@ import {AUTHORIZATION_TYPEHASH} from "src/Blue.sol";
 library SigUtils {
     struct Authorization {
         address authorizer;
-        address authorizee;
+        address authorized;
         bool isAuthorized;
         uint256 nonce;
         uint256 deadline;
@@ -26,7 +26,7 @@ library SigUtils {
             abi.encode(
                 AUTHORIZATION_TYPEHASH,
                 authorization.authorizer,
-                authorization.authorizee,
+                authorization.authorized,
                 authorization.isAuthorized,
                 authorization.nonce,
                 authorization.deadline
