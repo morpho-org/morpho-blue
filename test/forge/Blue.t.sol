@@ -667,11 +667,11 @@ contract BlueTest is Test {
 
         vm.startPrank(attacker);
 
-        vm.expectRevert(bytes(Errors.NOT_SENDER_AND_NOT_AUTHORIZED));
+        vm.expectRevert(bytes(Errors.UNAUTHORIZED));
         blue.withdraw(market, 1, address(this));
-        vm.expectRevert(bytes(Errors.NOT_SENDER_AND_NOT_AUTHORIZED));
+        vm.expectRevert(bytes(Errors.UNAUTHORIZED));
         blue.withdrawCollateral(market, 1, address(this));
-        vm.expectRevert(bytes(Errors.NOT_SENDER_AND_NOT_AUTHORIZED));
+        vm.expectRevert(bytes(Errors.UNAUTHORIZED));
         blue.borrow(market, 1, address(this));
 
         vm.stopPrank();

@@ -67,7 +67,7 @@ contract Blue is IFlashLender {
     mapping(IIrm => bool) public isIrmEnabled;
     // Enabled LLTVs.
     mapping(uint256 => bool) public isLltvEnabled;
-    // User's authorizations.
+    // User's authorizations. Note that by default, msg.sender is authorized by themself.
     mapping(address => mapping(address => bool)) public isAuthorized;
     // User's nonces. Used to prevent replay attacks with EIP-712 signatures.
     mapping(address => uint256) public nonce;
@@ -147,7 +147,7 @@ contract Blue is IFlashLender {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
-        require(_isSenderOrIsAuthorized(onBehalf), Errors.NOT_SENDER_AND_NOT_AUTHORIZED);
+        require(_isAuthorized(onBehalf), Errors.UNAUTHORIZED);
 
         _accrueInterests(market, id);
 
@@ -168,7 +168,7 @@ contract Blue is IFlashLender {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
-        require(_isSenderOrIsAuthorized(onBehalf), Errors.NOT_SENDER_AND_NOT_AUTHORIZED);
+        require(_isAuthorized(onBehalf), Errors.UNAUTHORIZED);
 
         _accrueInterests(market, id);
 
@@ -219,7 +219,7 @@ contract Blue is IFlashLender {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
-        require(_isSenderOrIsAuthorized(onBehalf), Errors.NOT_SENDER_AND_NOT_AUTHORIZED);
+        require(_isAuthorized(onBehalf), Errors.UNAUTHORIZED);
 
         _accrueInterests(market, id);
 
@@ -295,7 +295,7 @@ contract Blue is IFlashLender {
         isAuthorized[msg.sender][authorizee] = newIsAuthorized;
     }
 
-    function _isSenderOrIsAuthorized(address user) internal view returns (bool) {
+    function _isAuthorized(address user) internal view returns (bool) {
         return msg.sender == user || isAuthorized[user][msg.sender];
     }
 

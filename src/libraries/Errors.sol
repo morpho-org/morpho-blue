@@ -18,7 +18,7 @@ library Errors {
 
     string internal constant ZERO_AMOUNT = "zero amount";
 
-    string internal constant NOT_SENDER_AND_NOT_AUTHORIZED = "not sender and not authorized";
+    string internal constant UNAUTHORIZED = "unauthorized";
 
     string internal constant INSUFFICIENT_COLLATERAL = "insufficient collateral";
 
