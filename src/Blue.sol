@@ -147,7 +147,7 @@ contract Blue is IFlashLender {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
-        require(_isAuthorized(onBehalf), Errors.UNAUTHORIZED);
+        require(_isSenderAuthorized(onBehalf), Errors.UNAUTHORIZED);
 
         _accrueInterests(market, id);
 
@@ -168,7 +168,7 @@ contract Blue is IFlashLender {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
-        require(_isAuthorized(onBehalf), Errors.UNAUTHORIZED);
+        require(_isSenderAuthorized(onBehalf), Errors.UNAUTHORIZED);
 
         _accrueInterests(market, id);
 
@@ -219,7 +219,7 @@ contract Blue is IFlashLender {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
-        require(_isAuthorized(onBehalf), Errors.UNAUTHORIZED);
+        require(_isSenderAuthorized(onBehalf), Errors.UNAUTHORIZED);
 
         _accrueInterests(market, id);
 
@@ -295,7 +295,7 @@ contract Blue is IFlashLender {
         isAuthorized[msg.sender][authorizee] = newIsAuthorized;
     }
 
-    function _isAuthorized(address user) internal view returns (bool) {
+    function _isSenderAuthorized(address user) internal view returns (bool) {
         return msg.sender == user || isAuthorized[user][msg.sender];
     }
 
