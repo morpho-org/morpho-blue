@@ -1,5 +1,5 @@
 import { defaultAbiCoder } from "@ethersproject/abi";
-import { mine, setBalance } from "@nomicfoundation/hardhat-network-helpers";
+import { mine } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { BigNumber, constants, utils } from "ethers";
@@ -119,6 +119,9 @@ describe("Blue", () => {
   });
 
   it("should simulate gas cost [main]", async () => {
+    await hre.network.provider.send("evm_setAutomine", [false]);
+    await hre.network.provider.send("evm_setIntervalMining", [0]);
+
     for (let i = 0; i < signers.length; ++i) {
       if (i % 20 == 0) console.log("[main]", Math.floor((100 * i) / signers.length), "%");
 
@@ -129,8 +132,10 @@ describe("Blue", () => {
       let amount = BigNumber.WAD.mul(1 + Math.floor(random() * 100));
 
       if (random() < 2 / 3) {
-        await blue.connect(user).supply(market, amount, user.address, "0x");
-        await blue.connect(user).withdraw(market, amount.div(2), user.address);
+        Promise.all([
+          blue.connect(user).supply(market, amount, user.address, []),
+          blue.connect(user).withdraw(market, amount.div(2), user.address),
+        ]);
       } else {
         const totalSupply = await blue.totalSupply(id);
         const totalBorrow = await blue.totalBorrow(id);
@@ -139,10 +144,12 @@ describe("Blue", () => {
         amount = BigNumber.min(amount, BigNumber.from(liquidity).div(2));
 
         if (amount > BigNumber.from(0)) {
-          await blue.connect(user).supplyCollateral(market, amount, user.address, "0x");
-          await blue.connect(user).borrow(market, amount.div(2), user.address);
-          await blue.connect(user).repay(market, amount.div(4), user.address, "0x");
-          await blue.connect(user).withdrawCollateral(market, amount.div(8), user.address);
+          Promise.all([
+            blue.connect(user).supplyCollateral(market, amount, user.address, []),
+            blue.connect(user).borrow(market, amount.div(2), user.address),
+            blue.connect(user).repay(market, amount.div(4), user.address, []),
+            blue.connect(user).withdrawCollateral(market, amount.div(8), user.address),
+          ]);
         }
       }
     }
