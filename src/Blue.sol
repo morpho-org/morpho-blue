@@ -288,11 +288,15 @@ contract Blue is IFlashLender {
     // Interests management.
 
     function _accrueInterests(Market memory market, Id id) internal {
+        uint256 elapsed = block.timestamp - lastUpdate[id];
+
+        if (elapsed == 0) return;
+
         uint256 marketTotalBorrow = totalBorrow[id];
 
         if (marketTotalBorrow != 0) {
             uint256 borrowRate = market.irm.borrowRate(market);
-            uint256 accruedInterests = marketTotalBorrow.mulWadDown(borrowRate * (block.timestamp - lastUpdate[id]));
+            uint256 accruedInterests = marketTotalBorrow.mulWadDown(borrowRate * elapsed);
             totalBorrow[id] = marketTotalBorrow + accruedInterests;
             totalSupply[id] += accruedInterests;
 
