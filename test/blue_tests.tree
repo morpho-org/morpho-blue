@@ -62,9 +62,9 @@
             ├── it should add amount.toSharesDown(totalSupply[id], totalSupplyShares[id]) to supplyShare[id][onBehalf] 
             ├── it should add amount.toSharesDown(totalSupply[id], totalSupplyShares[id]) to totalSupplyShares[id]
             ├── it should add amount to totalSupply[id]
-            └── it should make the ERC-20 transfer (checks on blue and supplier balances)
+            └── it should transfer amount of the borrowable asset from the sender to Blue
 .
-└── withdraw(Market memory market, uint256 amount, address onBehalf) external
+└── function withdraw(Market memory market, uint256 amount, address onBehalf, address receiver) external
     ├── when market is not created
     │   └── revert with MARKET_NOT_CREATED
     └── when market is created
@@ -81,9 +81,9 @@
                     ├── it should remove amount.toSharesUp(totalSupply[id], totalSupplyShares[id]) to supplyShare[id][onBehalf] 
                     ├── it should remove amount.toSharesUp(totalSupply[id], totalSupplyShares[id]) to totalSupplyShares[id]
                     ├── it should remouve amount from totalSupply[id]
-                    └── it should make the ERC-20 transfer (checks on blue and withdrawer balances)
+                    └── it should transfer amount of the borrowable asset to the receiver
 .
-└── borrow(Market memory market, uint256 amount, address onBehalf) external
+└── function borrow(Market memory market, uint256 amount, address onBehalf, address receiver) external
     ├── when market is not created
     │   └── revert with MARKET_NOT_CREATED
     └── when market is created
@@ -103,7 +103,7 @@
                         ├── it should add amount.toSharesUp(totalBorrow[id], totalBorrowShares[id]) to borrowShare[id][onBehalf] 
                         ├── it should add amount.toSharesUp(totalBorrow[id], totalBorrowShares[id]) to totalBorrowShares[id]
                         ├── it should add amount to totalBorrow[id]
-                        └── it should make the ERC-20 transfer (checks on blue and borrower balances)
+                        └── it should transfer amount of the borrowable asset to the receiver
 .
 └── repay(Market memory market, uint256 amount, address onBehalf) external
     ├── when market is not created
@@ -116,7 +116,7 @@
             ├── it should remove amount.toSharesDown(totalBorrow[id], totalBorrowShares[id]) from borrowShare[id][onBehalf]
             ├── it should remove amount.toSharesDown(totalBorrow[id], totalBorrowShares[id]) from totalBorrowShares[id],
             ├── it should remove amount from totalBorrow[id]
-            └── it should make the ERC-20 transfer (checks on blue and repayer balances)
+            └── it should transfer amount of the borrowable asset from the sender to Blue
 .
 └── supplyCollateral(Market memory market, uint256 amount, address onBehalf) external
     ├── when market is not created
@@ -126,9 +126,9 @@
         │   └── revert with ZERO_AMOUNT
         └── when the amount to supply is not zero
             ├── it should add amount to collateral[id][onBehalf]
-            └── it should make the ERC-20 transfer (checks on blue and supplier balances)
+            └── it should transfer amount of the collateral asset from the sender to Blue
 .
-└── withdrawCollateral(Market memory market, uint256 amount, address onBehalf) external
+└── function withdrawCollateral(Market memory market, uint256 amount, address onBehalf, address receiver) external
     ├── when market is not created
     │   └── revert with MARKET_NOT_CREATED
     └── when market is created
@@ -143,7 +143,7 @@
                 │   └── revert with INSUFFICIENT_COLLATERAL
                 └── when position healthy
                     ├── it should remove amount from collateral[id][onBehalf]
-                    └── it should make the ERC-20 transfer (checks on blue and withdrawer balances)
+                    └── it should transfer amount of the collateral asset to the receiver
 .
 └── liquidate(Market memory market, address borrower, address onBehalf) external
     ├── when market is not created
@@ -161,14 +161,15 @@
                 ├── it should remove repaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]) from totalBorrowShares[id]
                 ├── it should remove repaid from totalBorrow[id]
                 ├── it should remove seized from collateral[id][borrower]
-                ├── it should make the ERC-20 transfers (checks on blue and liquidator balances)
-                └── if after the liquidation the borrower's collateral is 0
-                    └── it should realise bad debt
-                        ├── it should compute badDebt = borrowShare[id][borrower].toAssetsUp(totalBorrow[id], totalBorrowShares[id])
-                        ├── it should remove bad debt from totalSupply[id]
-                        ├── it should remove bad debt from totalBorrow[id]
-                        ├── it should remove borrowShare[id][borrower] from totalBorrowShares[id]
-                        └── it should set borrowShare[id][borrower] to 0
+                ├── if after the liquidation the borrower's collateral is 0
+                │   └── it should realise bad debt
+                │       ├── it should compute badDebt = borrowShare[id][borrower].toAssetsUp(totalBorrow[id], totalBorrowShares[id])
+                │       ├── it should remove bad debt from totalSupply[id]
+                │       ├── it should remove bad debt from totalBorrow[id]
+                │       ├── it should remove borrowShare[id][borrower] from totalBorrowShares[id]
+                │       └── it should set borrowShare[id][borrower] to 0
+                ├── it should transfer seized of collateral asset to the sender
+                └── it should transfer repaid of borrowable asset from the sender the Blue
 .
 └── setApproval(address manager, bool isAllowed) external
     └── should set isApproved[msg.sender][manager] to isAllowed
