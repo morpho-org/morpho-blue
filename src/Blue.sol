@@ -115,6 +115,7 @@ contract Blue is IFlashLender {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
+        if (onBehalf == address(0)) onBehalf = msg.sender;
 
         _accrueInterests(market, id);
 
@@ -133,6 +134,8 @@ contract Blue is IFlashLender {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
+        if (onBehalf == address(0)) onBehalf = msg.sender;
+        if (receiver == address(0)) receiver = msg.sender;
         require(_isSenderOrIsApproved(onBehalf), Errors.MANAGER_NOT_APPROVED);
 
         _accrueInterests(market, id);
@@ -154,6 +157,8 @@ contract Blue is IFlashLender {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
+        if (onBehalf == address(0)) onBehalf = msg.sender;
+        if (receiver == address(0)) receiver = msg.sender;
         require(_isSenderOrIsApproved(onBehalf), Errors.MANAGER_NOT_APPROVED);
 
         _accrueInterests(market, id);
@@ -174,6 +179,7 @@ contract Blue is IFlashLender {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
+        if (onBehalf == address(0)) onBehalf = msg.sender;
 
         _accrueInterests(market, id);
 
@@ -195,6 +201,7 @@ contract Blue is IFlashLender {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
+        if (onBehalf == address(0)) onBehalf = msg.sender;
 
         // Don't accrue interests because it's not required and it saves gas.
 
@@ -211,6 +218,8 @@ contract Blue is IFlashLender {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
+        if (onBehalf == address(0)) onBehalf = msg.sender;
+        if (receiver == address(0)) receiver = msg.sender;
         require(_isSenderOrIsApproved(onBehalf), Errors.MANAGER_NOT_APPROVED);
 
         _accrueInterests(market, id);
