@@ -303,6 +303,7 @@ contract BlueTest is
     }
 
     function testSupplyOnBehalf(uint256 amount, address onBehalf) public {
+        vm.assume(onBehalf != address(0));
         vm.assume(onBehalf != address(blue));
         amount = bound(amount, 1, 2 ** 64);
 
@@ -337,6 +338,7 @@ contract BlueTest is
     }
 
     function testBorrowReceiver(uint256 amountLent, uint256 amountBorrowed, address receiver) public {
+        vm.assume(receiver != address(0));
         vm.assume(receiver != address(blue));
         amountLent = bound(amountLent, 1, 2 ** 64);
         amountBorrowed = bound(amountBorrowed, 1, amountLent);
@@ -389,6 +391,7 @@ contract BlueTest is
     }
 
     function testWithdrawReceiver(uint256 amountLent, uint256 amountWithdrawn, address receiver) public {
+        vm.assume(receiver != address(0));
         vm.assume(receiver != address(blue));
         amountLent = bound(amountLent, 1, 2 ** 64);
         amountWithdrawn = bound(amountWithdrawn, 1, amountLent);
@@ -467,6 +470,7 @@ contract BlueTest is
     function testRepayOnBehalf(uint256 amountLent, uint256 amountBorrowed, uint256 amountRepaid, address onBehalf)
         public
     {
+        vm.assume(onBehalf != address(0));
         vm.assume(onBehalf != address(blue));
         vm.assume(onBehalf != address(this));
         amountLent = bound(amountLent, 1, 2 ** 64);
@@ -492,6 +496,7 @@ contract BlueTest is
     }
 
     function testSupplyCollateralOnBehalf(uint256 amount, address onBehalf) public {
+        vm.assume(onBehalf != address(0));
         vm.assume(onBehalf != address(blue));
         amount = bound(amount, 1, 2 ** 64);
 

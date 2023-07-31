@@ -1,4 +1,7 @@
 [profile.default]
 via-ir = true
 
+[fuzz]
+runs = 10000
+
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
