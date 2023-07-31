@@ -231,15 +231,14 @@ contract Blue is IFlashLender {
 
         _accrueInterests(market, id);
 
-        uint256 collateralPrice = market.collateralOracle.price();
-        uint256 borrowablePrice = market.borrowableOracle.price();
+        uint256 borrowablePrice = market.oracle.price();
 
-        require(!_isHealthy(market, id, borrower, collateralPrice, borrowablePrice), Errors.HEALTHY_POSITION);
+        require(!_isHealthy(market, id, borrower, borrowablePrice), Errors.HEALTHY_POSITION);
 
         // The liquidation incentive is 1 + ALPHA * (1 / LLTV - 1).
         uint256 incentive = FixedPointMathLib.WAD
             + ALPHA.mulWadDown(FixedPointMathLib.WAD.divWadDown(market.lltv) - FixedPointMathLib.WAD);
-        uint256 repaid = seized.mulWadUp(collateralPrice).divWadUp(incentive).divWadUp(borrowablePrice);
+        uint256 repaid = seized.divWadUp(incentive).divWadUp(borrowablePrice);
         uint256 repaidShares = repaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
 
         borrowShare[id][borrower] -= repaidShares;
@@ -313,22 +312,21 @@ contract Blue is IFlashLender {
     function _isHealthy(Market memory market, Id id, address user) internal view returns (bool) {
         if (borrowShare[id][user] == 0) return true;
 
-        uint256 collateralPrice = market.collateralOracle.price();
-        uint256 borrowablePrice = market.borrowableOracle.price();
+        uint256 borrowablePrice = market.oracle.price();
 
-        return _isHealthy(market, id, user, collateralPrice, borrowablePrice);
+        return _isHealthy(market, id, user, borrowablePrice);
     }
 
-    function _isHealthy(Market memory market, Id id, address user, uint256 collateralPrice, uint256 borrowablePrice)
+    function _isHealthy(Market memory market, Id id, address user, uint256 borrowablePrice)
         internal
         view
         returns (bool)
     {
         uint256 borrowValue =
             borrowShare[id][user].toAssetsUp(totalBorrow[id], totalBorrowShares[id]).mulWadUp(borrowablePrice);
-        uint256 collateralValue = collateral[id][user].mulWadDown(collateralPrice);
+        uint256 collateralPower = collateral[id][user].mulWadDown(market.lltv);
 
-        return collateralValue.mulWadDown(market.lltv) >= borrowValue;
+        return collateralPower >= borrowValue;
     }
 
     // Storage view.
