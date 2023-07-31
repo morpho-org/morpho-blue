@@ -481,7 +481,7 @@ contract BlueTest is
         blue.supplyCollateral(market, amountDeposited, address(this), hex"");
 
         if (amountWithdrawn > amountDeposited) {
-            vm.expectRevert(stdError.arithmeticError);
+            vm.expectRevert(bytes(Errors.TOO_MUCH_REQUESTED));
             blue.withdrawCollateral(market, amountWithdrawn, address(this));
             return;
         }
@@ -657,13 +657,13 @@ contract BlueTest is
     function testEmptyMarket(uint256 amount) public {
         amount = bound(amount, 1, type(uint256).max / SharesMath.VIRTUAL_SHARES);
 
-        vm.expectRevert(stdError.arithmeticError);
+        vm.expectRevert(bytes(Errors.TOO_MUCH_REQUESTED));
         blue.withdraw(market, amount, address(this));
 
-        vm.expectRevert(stdError.arithmeticError);
+        vm.expectRevert(bytes(Errors.TOO_MUCH_REPAID));
         blue.repay(market, amount, address(this), hex"");
 
-        vm.expectRevert(stdError.arithmeticError);
+        vm.expectRevert(bytes(Errors.TOO_MUCH_REQUESTED));
         blue.withdrawCollateral(market, amount, address(this));
     }
 

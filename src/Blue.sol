@@ -139,7 +139,7 @@ contract Blue is IFlashLender {
 
         uint256 shares = amount.toSharesUp(totalSupply[id], totalSupplyShares[id]);
 
-        require(shares < supplyShare[id][onBehalf], Errors.TOO_MUCH_REQUESTED);
+        require(shares <= supplyShare[id][onBehalf], Errors.TOO_MUCH_REQUESTED);
 
         unchecked {
             supplyShare[id][onBehalf] -= shares;
@@ -184,7 +184,7 @@ contract Blue is IFlashLender {
 
         uint256 shares = amount.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
 
-        require(shares < borrowShare[id][onBehalf], Errors.TOO_MUCH_REPAID);
+        require(shares <= borrowShare[id][onBehalf], Errors.TOO_MUCH_REPAID);
 
         unchecked {
             borrowShare[id][onBehalf] -= shares;
@@ -222,7 +222,7 @@ contract Blue is IFlashLender {
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
         require(_isSenderOrIsApproved(onBehalf), Errors.MANAGER_NOT_APPROVED);
-        require(amount < collateral[id][onBehalf], Errors.TOO_MUCH_REQUESTED);
+        require(amount <= collateral[id][onBehalf], Errors.TOO_MUCH_REQUESTED);
 
         _accrueInterests(market, id);
 
@@ -254,19 +254,18 @@ contract Blue is IFlashLender {
             + ALPHA.mulWadDown(FixedPointMathLib.WAD.divWadDown(market.lltv) - FixedPointMathLib.WAD);
 
         uint256 repaid = seized.mulWadUp(collateralPrice).divWadUp(incentive).divWadUp(borrowablePrice);
-
-        totalBorrow[id] -= repaid;
-
         uint256 repaidShares = repaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
 
-        require(repaidShares < borrowShare[id][borrower], Errors.TOO_MUCH_REPAID);
+        require(repaidShares <= borrowShare[id][borrower], Errors.TOO_MUCH_REPAID);
 
         unchecked {
             borrowShare[id][borrower] -= repaidShares;
             totalBorrowShares[id] -= repaidShares;
         }
 
-        require(seized < collateral[id][borrower], Errors.TOO_MUCH_REQUESTED);
+        totalBorrow[id] -= repaid;
+
+        require(seized <= collateral[id][borrower], Errors.TOO_MUCH_REQUESTED);
 
         unchecked {
             collateral[id][borrower] -= seized;
