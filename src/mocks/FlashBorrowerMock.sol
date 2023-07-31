@@ -18,7 +18,7 @@ contract FlashBorrowerMock is IFlashBorrower {
     /* EXTERNAL */
 
     /// @inheritdoc IFlashBorrower
-    function onFlashLoan(address, address token, uint256 amount, bytes calldata) external {
+    function onBlueFlashLoan(address, address token, uint256 amount, bytes calldata) external {
         require(msg.sender == address(_LENDER), "invalid lender");
 
         ERC20(token).safeApprove(address(_LENDER), amount);
