@@ -64,7 +64,7 @@
             ├── it should add amount to totalSupply[id]
             └── it should transfer amount of the borrowable asset from the sender to Blue
 .
-└── function withdraw(Market memory market, uint256 amount, address onBehalf, address receiver) external
+└── withdraw(Market memory market, uint256 amount, address onBehalf, address receiver) external
     ├── when market is not created
     │   └── revert with MARKET_NOT_CREATED
     └── when market is created
@@ -83,7 +83,7 @@
                     ├── it should remove amount from totalSupply[id]
                     └── it should transfer amount of the borrowable asset to the receiver
 .
-└── function borrow(Market memory market, uint256 amount, address onBehalf, address receiver) external
+└── borrow(Market memory market, uint256 amount, address onBehalf, address receiver) external
     ├── when market is not created
     │   └── revert with MARKET_NOT_CREATED
     └── when market is created
@@ -128,7 +128,7 @@
             ├── it should add amount to collateral[id][onBehalf]
             └── it should transfer amount of the collateral asset from the sender to Blue
 .
-└── function withdrawCollateral(Market memory market, uint256 amount, address onBehalf, address receiver) external
+└── withdrawCollateral(Market memory market, uint256 amount, address onBehalf, address receiver) external
     ├── when market is not created
     │   └── revert with MARKET_NOT_CREATED
     └── when market is created
