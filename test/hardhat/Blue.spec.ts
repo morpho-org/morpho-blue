@@ -154,7 +154,7 @@ describe("Blue", () => {
       }
     }
 
-    await mine();
+    await hre.network.provider.send("evm_setAutomine", [true]);
   });
 
   it("should simulate gas cost [liquidations]", async () => {
