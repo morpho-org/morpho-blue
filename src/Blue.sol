@@ -299,6 +299,7 @@ contract Blue is IFlashLender {
 
     // Authorizations.
 
+    /// @dev The signature is malleable, but it has no impact on the security here.
     function setAuthorization(
         address authorizer,
         address authorizee,
