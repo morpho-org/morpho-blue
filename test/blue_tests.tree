@@ -174,15 +174,11 @@
     └── should set isApproved[msg.sender][manager] to isAllowed
 .
 └── _accrueInterests(Market memory market, Id id) internal
-    ├── when marketTotalBorrow is 0
-    │   └── it should just set lastUpdate to block.timestamp
+    ├── it should set lastUpdate to block.timestamp
     └── when marketTotalBorrow is not 0
-        ├── when lastUpdate = block.timestamp
-        │   └── it should just set lastUpdate to block.timestamp
-        └── when lastUpdate doesn't equal block.timestamp
-            ├── it should add accruedInterests to totalBorrow
-            ├── it should add accruedInterests to totalSupply
-            └── when fee[id] != 0
-                ├── it should add accruedInterests.mulWadDown(fee[id]) to feeAmount
-                ├── it should add feeAmount.mulDivDown(totalSupplyShares[id], totalSupply[id] - feeAmount) to supplyShare[id][feeRecipient]
-                └── it should add feeAmount.mulDivDown(totalSupplyShares[id], totalSupply[id] - feeAmount) to totalSupplyShares[id]
+        ├── it should add accruedInterests to totalBorrow
+        ├── it should add accruedInterests to totalSupply
+        └── when fee[id] != 0
+            ├── it should add accruedInterests.mulWadDown(fee[id]) to feeAmount
+            ├── it should add feeAmount.mulDivDown(totalSupplyShares[id], totalSupply[id] - feeAmount) to supplyShare[id][feeRecipient]
+            └── it should add feeAmount.mulDivDown(totalSupplyShares[id], totalSupply[id] - feeAmount) to totalSupplyShares[id]
