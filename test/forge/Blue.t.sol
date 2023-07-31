@@ -314,7 +314,8 @@ contract BlueTest is
         assertEq(borrowableAsset.balanceOf(address(blue)), amount, "blue balance");
     }
 
-    function testBorrow(uint256 amountLent, uint256 amountBorrowed) public {
+    function testBorrow(uint256 amountLent, uint256 amountBorrowed, address receiver) public {
+        vm.assume(receiver != address(blue));
         amountLent = bound(amountLent, 1, 2 ** 64);
         amountBorrowed = bound(amountBorrowed, 1, 2 ** 64);
 
@@ -324,25 +325,9 @@ contract BlueTest is
         if (amountBorrowed > amountLent) {
             vm.prank(BORROWER);
             vm.expectRevert(bytes(Errors.INSUFFICIENT_LIQUIDITY));
-            blue.borrow(market, amountBorrowed, BORROWER, BORROWER);
+            blue.borrow(market, amountBorrowed, BORROWER, receiver);
             return;
         }
-
-        vm.prank(BORROWER);
-        blue.borrow(market, amountBorrowed, BORROWER, BORROWER);
-
-        assertEq(blue.borrowShare(id, BORROWER), amountBorrowed * SharesMath.VIRTUAL_SHARES, "borrow share");
-        assertEq(borrowableAsset.balanceOf(BORROWER), amountBorrowed, "BORROWER balance");
-        assertEq(borrowableAsset.balanceOf(address(blue)), amountLent - amountBorrowed, "blue balance");
-    }
-
-    function testBorrowReceiver(uint256 amountLent, uint256 amountBorrowed, address receiver) public {
-        vm.assume(receiver != address(blue));
-        amountLent = bound(amountLent, 1, 2 ** 64);
-        amountBorrowed = bound(amountBorrowed, 1, amountLent);
-
-        borrowableAsset.setBalance(address(this), amountLent);
-        blue.supply(market, amountLent, address(this), hex"");
 
         vm.prank(BORROWER);
         blue.borrow(market, amountBorrowed, BORROWER, receiver);
@@ -352,7 +337,10 @@ contract BlueTest is
         assertEq(borrowableAsset.balanceOf(address(blue)), amountLent - amountBorrowed, "blue balance");
     }
 
-    function testWithdraw(uint256 amountLent, uint256 amountWithdrawn, uint256 amountBorrowed) public {
+    function testWithdraw(uint256 amountLent, uint256 amountWithdrawn, uint256 amountBorrowed, address receiver)
+        public
+    {
+        vm.assume(receiver != address(blue));
         amountLent = bound(amountLent, 1, 2 ** 64);
         amountWithdrawn = bound(amountWithdrawn, 1, 2 ** 64);
         amountBorrowed = bound(amountBorrowed, 1, 2 ** 64);
@@ -370,31 +358,10 @@ contract BlueTest is
             } else {
                 vm.expectRevert(bytes(Errors.INSUFFICIENT_LIQUIDITY));
             }
-            blue.withdraw(market, amountWithdrawn, address(this), address(this));
+            blue.withdraw(market, amountWithdrawn, address(this), receiver);
             return;
         }
 
-        blue.withdraw(market, amountWithdrawn, address(this), address(this));
-
-        assertApproxEqAbs(
-            blue.supplyShare(id, address(this)),
-            (amountLent - amountWithdrawn) * SharesMath.VIRTUAL_SHARES,
-            100,
-            "supply share"
-        );
-        assertEq(borrowableAsset.balanceOf(address(this)), amountWithdrawn, "this balance");
-        assertEq(
-            borrowableAsset.balanceOf(address(blue)), amountLent - amountBorrowed - amountWithdrawn, "blue balance"
-        );
-    }
-
-    function testWithdrawReceiver(uint256 amountLent, uint256 amountWithdrawn, address receiver) public {
-        vm.assume(receiver != address(blue));
-        amountLent = bound(amountLent, 1, 2 ** 64);
-        amountWithdrawn = bound(amountWithdrawn, 1, amountLent);
-
-        borrowableAsset.setBalance(address(this), amountLent);
-        blue.supply(market, amountLent, address(this), hex"");
         blue.withdraw(market, amountWithdrawn, address(this), receiver);
 
         assertApproxEqAbs(
@@ -404,7 +371,9 @@ contract BlueTest is
             "supply share"
         );
         assertEq(borrowableAsset.balanceOf(receiver), amountWithdrawn, "receiver balance");
-        assertEq(borrowableAsset.balanceOf(address(blue)), amountLent - amountWithdrawn, "blue balance");
+        assertEq(
+            borrowableAsset.balanceOf(address(blue)), amountLent - amountBorrowed - amountWithdrawn, "blue balance"
+        );
     }
 
     function testCollateralRequirements(
@@ -503,7 +472,8 @@ contract BlueTest is
         assertEq(collateralAsset.balanceOf(address(blue)), amount, "blue balance");
     }
 
-    function testWithdrawCollateral(uint256 amountDeposited, uint256 amountWithdrawn) public {
+    function testWithdrawCollateral(uint256 amountDeposited, uint256 amountWithdrawn, address receiver) public {
+        vm.assume(receiver != address(blue));
         amountDeposited = bound(amountDeposited, 1, 2 ** 64);
         amountWithdrawn = bound(amountWithdrawn, 1, 2 ** 64);
 
@@ -512,24 +482,10 @@ contract BlueTest is
 
         if (amountWithdrawn > amountDeposited) {
             vm.expectRevert(stdError.arithmeticError);
-            blue.withdrawCollateral(market, amountWithdrawn, address(this), address(this));
+            blue.withdrawCollateral(market, amountWithdrawn, address(this), receiver);
             return;
         }
 
-        blue.withdrawCollateral(market, amountWithdrawn, address(this), address(this));
-
-        assertEq(blue.collateral(id, address(this)), amountDeposited - amountWithdrawn, "this collateral");
-        assertEq(collateralAsset.balanceOf(address(this)), amountWithdrawn, "this balance");
-        assertEq(collateralAsset.balanceOf(address(blue)), amountDeposited - amountWithdrawn, "blue balance");
-    }
-
-    function testWithdrawCollateral(uint256 amountDeposited, uint256 amountWithdrawn, address receiver) public {
-        vm.assume(receiver != address(blue));
-        amountDeposited = bound(amountDeposited, 1, 2 ** 64);
-        amountWithdrawn = bound(amountWithdrawn, 1, amountDeposited);
-
-        collateralAsset.setBalance(address(this), amountDeposited);
-        blue.supplyCollateral(market, amountDeposited, address(this), hex"");
         blue.withdrawCollateral(market, amountWithdrawn, address(this), receiver);
 
         assertEq(blue.collateral(id, address(this)), amountDeposited - amountWithdrawn, "this collateral");
