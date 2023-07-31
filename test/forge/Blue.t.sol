@@ -218,7 +218,7 @@ contract BlueTest is Test {
         fee = bound(fee, 0, FixedPointMathLib.WAD);
 
         vm.prank(OWNER);
-        vm.expectRevert("unknown market");
+        vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
         blue.setFee(marketFuzz, fee);
     }
 
@@ -226,7 +226,7 @@ contract BlueTest is Test {
         vm.assume(caller != OWNER);
         fee = bound(fee, 0, FixedPointMathLib.WAD);
 
-        vm.expectRevert("not owner");
+        vm.expectRevert(bytes(Errors.NOT_OWNER));
         blue.setFee(market, fee);
     }
 
@@ -240,7 +240,7 @@ contract BlueTest is Test {
     function testSetFeeRecipientShouldRevertIfNotOwner(address caller, address recipient) public {
         vm.assume(caller != OWNER);
 
-        vm.expectRevert("not owner");
+        vm.expectRevert(bytes(Errors.NOT_OWNER));
         vm.prank(caller);
         blue.setFeeRecipient(recipient);
     }
@@ -599,48 +599,48 @@ contract BlueTest is Test {
     function testUnknownMarket(Market memory marketFuzz) public {
         vm.assume(neq(marketFuzz, market));
 
-        vm.expectRevert("unknown market");
+        vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
         blue.supply(marketFuzz, 1, address(this));
 
-        vm.expectRevert("unknown market");
+        vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
         blue.withdraw(marketFuzz, 1, address(this));
 
-        vm.expectRevert("unknown market");
+        vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
         blue.borrow(marketFuzz, 1, address(this));
 
-        vm.expectRevert("unknown market");
+        vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
         blue.repay(marketFuzz, 1, address(this));
 
-        vm.expectRevert("unknown market");
+        vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
         blue.supplyCollateral(marketFuzz, 1, address(this));
 
-        vm.expectRevert("unknown market");
+        vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
         blue.withdrawCollateral(marketFuzz, 1, address(this));
 
-        vm.expectRevert("unknown market");
+        vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
         blue.liquidate(marketFuzz, address(0), 1);
     }
 
     function testAmountZero() public {
-        vm.expectRevert("zero amount");
+        vm.expectRevert(bytes(Errors.ZERO_AMOUNT));
         blue.supply(market, 0, address(this));
 
-        vm.expectRevert("zero amount");
+        vm.expectRevert(bytes(Errors.ZERO_AMOUNT));
         blue.withdraw(market, 0, address(this));
 
-        vm.expectRevert("zero amount");
+        vm.expectRevert(bytes(Errors.ZERO_AMOUNT));
         blue.borrow(market, 0, address(this));
 
-        vm.expectRevert("zero amount");
+        vm.expectRevert(bytes(Errors.ZERO_AMOUNT));
         blue.repay(market, 0, address(this));
 
-        vm.expectRevert("zero amount");
+        vm.expectRevert(bytes(Errors.ZERO_AMOUNT));
         blue.supplyCollateral(market, 0, address(this));
 
-        vm.expectRevert("zero amount");
+        vm.expectRevert(bytes(Errors.ZERO_AMOUNT));
         blue.withdrawCollateral(market, 0, address(this));
 
-        vm.expectRevert("zero amount");
+        vm.expectRevert(bytes(Errors.ZERO_AMOUNT));
         blue.liquidate(market, address(0), 0);
     }
 
@@ -667,11 +667,11 @@ contract BlueTest is Test {
 
         vm.startPrank(attacker);
 
-        vm.expectRevert("not sender and not authorized");
+        vm.expectRevert(bytes(Errors.NOT_SENDER_AND_NOT_AUTHORIZED));
         blue.withdraw(market, 1, address(this));
-        vm.expectRevert("not sender and not authorized");
+        vm.expectRevert(bytes(Errors.NOT_SENDER_AND_NOT_AUTHORIZED));
         blue.withdrawCollateral(market, 1, address(this));
-        vm.expectRevert("not sender and not authorized");
+        vm.expectRevert(bytes(Errors.NOT_SENDER_AND_NOT_AUTHORIZED));
         blue.borrow(market, 1, address(this));
 
         vm.stopPrank();
