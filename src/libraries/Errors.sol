@@ -6,6 +6,8 @@ library Errors {
 
     string internal constant LLTV_TOO_HIGH = "LLTV too high";
 
+    string internal constant MAX_FEE_EXCEEDED = "fee must be <= MAX_FEE";
+
     string internal constant IRM_NOT_ENABLED = "IRM not enabled";
 
     string internal constant LLTV_NOT_ENABLED = "LLTV not enabled";
