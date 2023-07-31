@@ -290,26 +290,26 @@ contract Blue is IFlashLender {
     function _accrueInterests(Market memory market, Id id) internal {
         uint256 elapsed = block.timestamp - lastUpdate[id];
 
-        if (elapsed != 0) {
-            uint256 marketTotalBorrow = totalBorrow[id];
+        if (elapsed == 0) return;
 
-            if (marketTotalBorrow != 0) {
-                uint256 borrowRate = market.irm.borrowRate(market);
-                uint256 accruedInterests = marketTotalBorrow.mulWadDown(borrowRate * elapsed);
-                totalBorrow[id] = marketTotalBorrow + accruedInterests;
-                totalSupply[id] += accruedInterests;
+        uint256 marketTotalBorrow = totalBorrow[id];
 
-                if (fee[id] != 0) {
-                    uint256 feeAmount = accruedInterests.mulWadDown(fee[id]);
-                    // The fee amount is subtracted from the total supply in this calculation to compensate for the fact that total supply is already updated.
-                    uint256 feeShares = feeAmount.mulDivDown(totalSupplyShares[id], totalSupply[id] - feeAmount);
-                    supplyShare[id][feeRecipient] += feeShares;
-                    totalSupplyShares[id] += feeShares;
-                }
+        if (marketTotalBorrow != 0) {
+            uint256 borrowRate = market.irm.borrowRate(market);
+            uint256 accruedInterests = marketTotalBorrow.mulWadDown(borrowRate * elapsed);
+            totalBorrow[id] = marketTotalBorrow + accruedInterests;
+            totalSupply[id] += accruedInterests;
+
+            if (fee[id] != 0) {
+                uint256 feeAmount = accruedInterests.mulWadDown(fee[id]);
+                // The fee amount is subtracted from the total supply in this calculation to compensate for the fact that total supply is already updated.
+                uint256 feeShares = feeAmount.mulDivDown(totalSupplyShares[id], totalSupply[id] - feeAmount);
+                supplyShare[id][feeRecipient] += feeShares;
+                totalSupplyShares[id] += feeShares;
             }
-
-            lastUpdate[id] = block.timestamp;
         }
+
+        lastUpdate[id] = block.timestamp;
     }
 
     // Health check.
