@@ -297,7 +297,7 @@ contract Blue is IFlashLender {
         IERC20(token).safeTransferFrom(address(receiver), address(this), amount);
     }
 
-    // Position authorizations.
+    // Authorizations.
 
     function setAuthorization(
         address authorizer,
