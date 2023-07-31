@@ -80,7 +80,7 @@
                 └── when totalBorrow <= totalSupply
                     ├── it should remove amount.toSharesUp(totalSupply[id], totalSupplyShares[id]) to supplyShare[id][onBehalf] 
                     ├── it should remove amount.toSharesUp(totalSupply[id], totalSupplyShares[id]) to totalSupplyShares[id]
-                    ├── it should remouve amount from totalSupply[id]
+                    ├── it should remove amount from totalSupply[id]
                     └── it should transfer amount of the borrowable asset to the receiver
 .
 └── function borrow(Market memory market, uint256 amount, address onBehalf, address receiver) external
