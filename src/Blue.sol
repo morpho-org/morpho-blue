@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.21;
 
+import {
+    IBlueLiquidateCallback,
+    IBlueRepayCallback,
+    IBlueSupplyCallback,
+    IBlueSupplyCollateralCallback
+} from "src/interfaces/IBlueCallbacks.sol";
 import {IIrm} from "src/interfaces/IIrm.sol";
 import {IERC20} from "src/interfaces/IERC20.sol";
 import {IFlashLender} from "src/interfaces/IFlashLender.sol";
@@ -89,7 +95,7 @@ contract Blue is IFlashLender {
 
     // Only owner functions.
 
-    function transferOwnership(address newOwner) external onlyOwner {
+    function setOwner(address newOwner) external onlyOwner {
         owner = newOwner;
     }
 
@@ -127,7 +133,7 @@ contract Blue is IFlashLender {
 
     // Supply management.
 
-    function supply(Market memory market, uint256 amount, address onBehalf) external {
+    function supply(Market memory market, uint256 amount, address onBehalf, bytes calldata data) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
@@ -139,6 +145,8 @@ contract Blue is IFlashLender {
         totalSupplyShares[id] += shares;
 
         totalSupply[id] += amount;
+
+        if (data.length > 0) IBlueSupplyCallback(msg.sender).onBlueSupply(amount, data);
 
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
@@ -184,7 +192,7 @@ contract Blue is IFlashLender {
         market.borrowableAsset.safeTransfer(msg.sender, amount);
     }
 
-    function repay(Market memory market, uint256 amount, address onBehalf) external {
+    function repay(Market memory market, uint256 amount, address onBehalf, bytes calldata data) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
@@ -197,13 +205,15 @@ contract Blue is IFlashLender {
 
         totalBorrow[id] -= amount;
 
+        if (data.length > 0) IBlueRepayCallback(msg.sender).onBlueRepay(amount, data);
+
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
 
     // Collateral management.
 
     /// @dev Don't accrue interests because it's not required and it saves gas.
-    function supplyCollateral(Market memory market, uint256 amount, address onBehalf) external {
+    function supplyCollateral(Market memory market, uint256 amount, address onBehalf, bytes calldata data) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
@@ -211,6 +221,10 @@ contract Blue is IFlashLender {
         // Don't accrue interests because it's not required and it saves gas.
 
         collateral[id][onBehalf] += amount;
+
+        if (data.length > 0) {
+            IBlueSupplyCollateralCallback(msg.sender).onBlueSupplyCollateral(amount, data);
+        }
 
         market.collateralAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
@@ -232,7 +246,7 @@ contract Blue is IFlashLender {
 
     // Liquidation.
 
-    function liquidate(Market memory market, address borrower, uint256 seized) external {
+    function liquidate(Market memory market, address borrower, uint256 seized, bytes calldata data) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(seized != 0, Errors.ZERO_AMOUNT);
@@ -266,6 +280,9 @@ contract Blue is IFlashLender {
         }
 
         market.collateralAsset.safeTransfer(msg.sender, seized);
+
+        if (data.length > 0) IBlueLiquidateCallback(msg.sender).onBlueLiquidate(seized, repaid, data);
+
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), repaid);
     }
 
@@ -305,7 +322,7 @@ contract Blue is IFlashLender {
     function flashLoan(IFlashBorrower receiver, address token, uint256 amount, bytes calldata data) external {
         IERC20(token).safeTransfer(address(receiver), amount);
 
-        receiver.onFlashLoan(msg.sender, token, amount, data);
+        receiver.onBlueFlashLoan(msg.sender, token, amount, data);
 
         IERC20(token).safeTransferFrom(address(receiver), address(this), amount);
     }
