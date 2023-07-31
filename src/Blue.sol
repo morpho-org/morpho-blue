@@ -286,6 +286,17 @@ contract Blue is IFlashLender {
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), repaid);
     }
 
+    // Flash Loans.
+
+    /// @inheritdoc IFlashLender
+    function flashLoan(IFlashBorrower receiver, address token, uint256 amount, bytes calldata data) external {
+        IERC20(token).safeTransfer(address(receiver), amount);
+
+        receiver.onBlueFlashLoan(msg.sender, token, amount, data);
+
+        IERC20(token).safeTransferFrom(address(receiver), address(this), amount);
+    }
+
     // Position authorizations.
 
     function setAuthorization(
@@ -314,17 +325,6 @@ contract Blue is IFlashLender {
 
     function _isSenderAuthorized(address user) internal view returns (bool) {
         return msg.sender == user || isAuthorized[user][msg.sender];
-    }
-
-    // Flash Loans.
-
-    /// @inheritdoc IFlashLender
-    function flashLoan(IFlashBorrower receiver, address token, uint256 amount, bytes calldata data) external {
-        IERC20(token).safeTransfer(address(receiver), amount);
-
-        receiver.onBlueFlashLoan(msg.sender, token, amount, data);
-
-        IERC20(token).safeTransferFrom(address(receiver), address(this), amount);
     }
 
     // Interests management.
