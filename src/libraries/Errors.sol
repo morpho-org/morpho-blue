@@ -18,6 +18,8 @@ library Errors {
 
     string internal constant ZERO_AMOUNT = "zero amount";
 
+    string internal constant ZERO_ADDRESS = "zero address";
+
     string internal constant MANAGER_NOT_APPROVED = "not approved";
 
     string internal constant INSUFFICIENT_COLLATERAL = "insufficient collateral";

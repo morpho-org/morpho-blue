@@ -115,6 +115,7 @@ contract Blue is IFlashLender {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
+        require(onBehalf != address(0), Errors.ZERO_ADDRESS);
 
         _accrueInterests(market, id);
 
@@ -133,6 +134,7 @@ contract Blue is IFlashLender {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
+        require(receiver != address(0), Errors.ZERO_ADDRESS); // Only receiver it's checked since if onBehalf == address(0), the check below will fail.
         require(_isSenderOrIsApproved(onBehalf), Errors.MANAGER_NOT_APPROVED);
 
         _accrueInterests(market, id);
@@ -154,6 +156,7 @@ contract Blue is IFlashLender {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
+        require(receiver != address(0), Errors.ZERO_ADDRESS); // Only receiver it's checked since if onBehalf == address(0), the check below will fail.
         require(_isSenderOrIsApproved(onBehalf), Errors.MANAGER_NOT_APPROVED);
 
         _accrueInterests(market, id);
@@ -174,6 +177,7 @@ contract Blue is IFlashLender {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
+        require(onBehalf != address(0), Errors.ZERO_ADDRESS);
 
         _accrueInterests(market, id);
 
@@ -195,6 +199,7 @@ contract Blue is IFlashLender {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
+        require(onBehalf != address(0), Errors.ZERO_ADDRESS);
 
         // Don't accrue interests because it's not required and it saves gas.
 
@@ -211,6 +216,7 @@ contract Blue is IFlashLender {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
+        require(receiver != address(0), Errors.ZERO_ADDRESS); // Only receiver it's checked since if onBehalf == address(0), the check below will fail.
         require(_isSenderOrIsApproved(onBehalf), Errors.MANAGER_NOT_APPROVED);
 
         _accrueInterests(market, id);
@@ -228,6 +234,7 @@ contract Blue is IFlashLender {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(seized != 0, Errors.ZERO_AMOUNT);
+        require(borrower != address(0), Errors.ZERO_ADDRESS);
 
         _accrueInterests(market, id);
 
