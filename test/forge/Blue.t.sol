@@ -218,7 +218,7 @@ contract BlueTest is Test {
         fee = bound(fee, 0, FixedPointMathLib.WAD);
 
         vm.prank(OWNER);
-        vm.expectRevert("unknown market");
+        vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
         blue.setFee(marketFuzz, fee);
     }
 
@@ -226,7 +226,7 @@ contract BlueTest is Test {
         vm.assume(caller != OWNER);
         fee = bound(fee, 0, FixedPointMathLib.WAD);
 
-        vm.expectRevert("not owner");
+        vm.expectRevert(bytes(Errors.NOT_OWNER));
         blue.setFee(market, fee);
     }
 
@@ -240,7 +240,7 @@ contract BlueTest is Test {
     function testSetFeeRecipientShouldRevertIfNotOwner(address caller, address recipient) public {
         vm.assume(caller != OWNER);
 
-        vm.expectRevert("not owner");
+        vm.expectRevert(bytes(Errors.NOT_OWNER));
         vm.prank(caller);
         blue.setFeeRecipient(recipient);
     }
@@ -599,48 +599,48 @@ contract BlueTest is Test {
     function testUnknownMarket(Market memory marketFuzz) public {
         vm.assume(neq(marketFuzz, market));
 
-        vm.expectRevert("unknown market");
+        vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
         blue.supply(marketFuzz, 1, address(this));
 
-        vm.expectRevert("unknown market");
+        vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
         blue.withdraw(marketFuzz, 1, address(this));
 
-        vm.expectRevert("unknown market");
+        vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
         blue.borrow(marketFuzz, 1, address(this));
 
-        vm.expectRevert("unknown market");
+        vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
         blue.repay(marketFuzz, 1, address(this));
 
-        vm.expectRevert("unknown market");
+        vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
         blue.supplyCollateral(marketFuzz, 1, address(this));
 
-        vm.expectRevert("unknown market");
+        vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
         blue.withdrawCollateral(marketFuzz, 1, address(this));
 
-        vm.expectRevert("unknown market");
+        vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
         blue.liquidate(marketFuzz, address(0), 1);
     }
 
     function testAmountZero() public {
-        vm.expectRevert("zero amount");
+        vm.expectRevert(bytes(Errors.ZERO_AMOUNT));
         blue.supply(market, 0, address(this));
 
-        vm.expectRevert("zero amount");
+        vm.expectRevert(bytes(Errors.ZERO_AMOUNT));
         blue.withdraw(market, 0, address(this));
 
-        vm.expectRevert("zero amount");
+        vm.expectRevert(bytes(Errors.ZERO_AMOUNT));
         blue.borrow(market, 0, address(this));
 
-        vm.expectRevert("zero amount");
+        vm.expectRevert(bytes(Errors.ZERO_AMOUNT));
         blue.repay(market, 0, address(this));
 
-        vm.expectRevert("zero amount");
+        vm.expectRevert(bytes(Errors.ZERO_AMOUNT));
         blue.supplyCollateral(market, 0, address(this));
 
-        vm.expectRevert("zero amount");
+        vm.expectRevert(bytes(Errors.ZERO_AMOUNT));
         blue.withdrawCollateral(market, 0, address(this));
 
-        vm.expectRevert("zero amount");
+        vm.expectRevert(bytes(Errors.ZERO_AMOUNT));
         blue.liquidate(market, address(0), 0);
     }
 
@@ -657,36 +657,36 @@ contract BlueTest is Test {
         blue.withdrawCollateral(market, amount, address(this));
     }
 
-    function testSetApproval(address manager, bool isAllowed) public {
-        blue.setApproval(manager, isAllowed);
-        assertEq(blue.isApproved(address(this), manager), isAllowed);
+    function testSetAuthorization(address authorizee, bool isAuthorized) public {
+        blue.setAuthorization(authorizee, isAuthorized);
+        assertEq(blue.isAuthorized(address(this), authorizee), isAuthorized);
     }
 
-    function testNotApproved(address attacker) public {
+    function testNotAuthorized(address attacker) public {
         vm.assume(attacker != address(this));
 
         vm.startPrank(attacker);
 
-        vm.expectRevert("not approved");
+        vm.expectRevert(bytes(Errors.UNAUTHORIZED));
         blue.withdraw(market, 1, address(this));
-        vm.expectRevert("not approved");
+        vm.expectRevert(bytes(Errors.UNAUTHORIZED));
         blue.withdrawCollateral(market, 1, address(this));
-        vm.expectRevert("not approved");
+        vm.expectRevert(bytes(Errors.UNAUTHORIZED));
         blue.borrow(market, 1, address(this));
 
         vm.stopPrank();
     }
 
-    function testApproved(address manager) public {
+    function testAuthorization(address authorizee) public {
         borrowableAsset.setBalance(address(this), 100 ether);
         collateralAsset.setBalance(address(this), 100 ether);
 
         blue.supply(market, 100 ether, address(this));
         blue.supplyCollateral(market, 100 ether, address(this));
 
-        blue.setApproval(manager, true);
+        blue.setAuthorization(authorizee, true);
 
-        vm.startPrank(manager);
+        vm.startPrank(authorizee);
 
         blue.withdraw(market, 1 ether, address(this));
         blue.withdrawCollateral(market, 1 ether, address(this));
@@ -695,35 +695,32 @@ contract BlueTest is Test {
         vm.stopPrank();
     }
 
-    function testApprovalWithSig(uint128 deadline, address manager, uint256 privateKey, bool isAllowed) public {
+    function testAuthorizationWithSig(uint128 deadline, address authorizee, uint256 privateKey, bool isAuthorized)
+        public
+    {
         vm.assume(deadline > block.timestamp);
         privateKey = bound(privateKey, 1, type(uint32).max); // "Private key must be less than the secp256k1 curve order (115792089237316195423570985008687907852837564279074904382605163141518161494337)."
-        address delegator = vm.addr(privateKey);
+        address authorizer = vm.addr(privateKey);
 
         SigUtils.Authorization memory authorization = SigUtils.Authorization({
-            delegator: delegator,
-            manager: manager,
-            isAllowed: isAllowed,
-            nonce: blue.userNonce(delegator),
+            authorizer: authorizer,
+            authorizee: authorizee,
+            isAuthorized: isAuthorized,
+            nonce: blue.nonce(authorizer),
             deadline: block.timestamp + deadline
         });
 
-        bytes32 digest = SigUtils.getTypedDataHash(blue.domainSeparator(), authorization);
+        bytes32 digest = SigUtils.getTypedDataHash(blue.DOMAIN_SEPARATOR(), authorization);
 
         Signature memory sig;
         (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
 
-        blue.setApproval(
-            authorization.delegator,
-            authorization.manager,
-            authorization.isAllowed,
-            authorization.nonce,
-            authorization.deadline,
-            sig
+        blue.setAuthorization(
+            authorization.authorizer, authorization.authorizee, authorization.isAuthorized, authorization.deadline, sig
         );
 
-        assertEq(blue.isApproved(delegator, manager), isAllowed);
-        assertEq(blue.userNonce(delegator), 1);
+        assertEq(blue.isAuthorized(authorizer, authorizee), isAuthorized);
+        assertEq(blue.nonce(authorizer), 1);
     }
 
     function testFlashLoan(uint256 amount) public {
