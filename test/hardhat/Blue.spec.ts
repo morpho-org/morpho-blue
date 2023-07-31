@@ -153,6 +153,8 @@ describe("Blue", () => {
         }
       }
     }
+
+    await mine();
   });
 
   it("should simulate gas cost [liquidations]", async () => {
