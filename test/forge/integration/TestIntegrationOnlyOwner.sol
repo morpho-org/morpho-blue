@@ -7,19 +7,19 @@ contract IntegrationOnlyOwnerTest is BlueBaseTest {
     using MarketLib for Market;
     using FixedPointMathLib for uint256;
 
-    function testTransferOwnershipWhenNotOwner(address addressFuzz) public {
+    function testSetOwnerWhenNotOwner(address addressFuzz) public {
         vm.assume(addressFuzz != OWNER);
 
         vm.prank(addressFuzz);
         vm.expectRevert(bytes(Errors.NOT_OWNER));
-        blue.transferOwnership(addressFuzz);
+        blue.setOwner(addressFuzz);
     }
 
-    function testTransferOwnership(address newOwner) public {
+    function testSetOwner(address newOwner) public {
         vm.assume(newOwner != OWNER);
 
         vm.prank(OWNER);
-        blue.transferOwnership(newOwner);
+        blue.setOwner(newOwner);
 
         assertEq(blue.owner(), newOwner, 'owner');
     }
