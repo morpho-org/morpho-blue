@@ -46,7 +46,7 @@ library Events {
 
     event FeeRecipientSet(address indexed feeRecipient);
 
-    event MarketCreated(Market market);
+    event MarketCreated(Id indexed id, Market market);
 
     event BadDebtRealized(Id indexed id, address indexed borrower, uint256 amount, uint256 shares);
 
@@ -60,5 +60,5 @@ library Events {
 
     event LltvEnabled(uint256 lltv);
 
-    event InterestsAccrued(Id indexed id, uint256 accruedInterests);
+    event InterestsAccrued(Id indexed id, uint256 accruedInterests, uint256 feeShares);
 }

@@ -139,7 +139,7 @@ contract Blue is IFlashLender {
         require(isLltvEnabled[market.lltv], Errors.LLTV_NOT_ENABLED);
         require(lastUpdate[id] == 0, Errors.MARKET_CREATED);
 
-        emit Events.MarketCreated(market);
+        emit Events.MarketCreated(id, market);
 
         _accrueInterests(market, id);
     }
@@ -374,6 +374,7 @@ contract Blue is IFlashLender {
         uint256 marketTotalBorrow = totalBorrow[id];
 
         uint256 accruedInterests;
+        uint256 feeShares;
         if (marketTotalBorrow != 0) {
             uint256 borrowRate = market.irm.borrowRate(market);
             accruedInterests = marketTotalBorrow.mulWadDown(borrowRate * elapsed);
@@ -391,7 +392,7 @@ contract Blue is IFlashLender {
 
         lastUpdate[id] = block.timestamp;
 
-        emit Events.InterestsAccrued(id, accruedInterests);
+        emit Events.InterestsAccrued(id, accruedInterests, feeShares);
     }
 
     // Health check.
