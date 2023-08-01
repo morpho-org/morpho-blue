@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import {IFlashLender} from "src/interfaces/IFlashLender.sol";
-import {IFlashBorrower} from "src/interfaces/IFlashBorrower.sol";
+import {IFlashLender} from "../interfaces/IFlashLender.sol";
+import {IFlashBorrower} from "../interfaces/IFlashBorrower.sol";
 
 import {ERC20, SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 

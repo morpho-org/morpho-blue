@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import {IIrm} from "src/interfaces/IIrm.sol";
+import {IIrm} from "../interfaces/IIrm.sol";
+import {IBlue} from "../interfaces/IBlue.sol";
 
-import {FixedPointMathLib} from "src/libraries/FixedPointMathLib.sol";
-import {Id, Market, MarketLib} from "src/libraries/MarketLib.sol";
-
-import {IBlue} from "src/Blue.sol";
+import {FixedPointMathLib} from "../libraries/FixedPointMathLib.sol";
+import {Id, Market, MarketLib} from "../libraries/MarketLib.sol";
 
 contract IrmMock is IIrm {
     using FixedPointMathLib for uint256;

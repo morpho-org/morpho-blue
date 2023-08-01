@@ -62,14 +62,8 @@ contract BlueTest is
 
         irm = new Irm(blue);
 
-        market = Market(
-            IERC20(address(borrowableAsset)),
-            IERC20(address(collateralAsset)),
-            borrowableOracle,
-            collateralOracle,
-            irm,
-            LLTV
-        );
+        market =
+            Market(address(borrowableAsset), address(collateralAsset), borrowableOracle, collateralOracle, irm, LLTV);
         id = market.id();
 
         vm.startPrank(OWNER);

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.5.0;
 
-import {IFlashBorrower} from "src/interfaces/IFlashBorrower.sol";
+import {IFlashBorrower} from "./IFlashBorrower.sol";
 
 interface IFlashLender {
     /// @dev Initiate a flash loan.

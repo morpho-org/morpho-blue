@@ -6,11 +6,11 @@ import {
     IBlueRepayCallback,
     IBlueSupplyCallback,
     IBlueSupplyCollateralCallback
-} from "src/interfaces/IBlueCallbacks.sol";
+} from "./interfaces/IBlueCallbacks.sol";
 import {IBlue} from "./interfaces/IBlue.sol";
-import {IIrm} from "src/interfaces/IIrm.sol";
-import {IERC20} from "src/interfaces/IERC20.sol";
-import {IFlashBorrower} from "src/interfaces/IFlashBorrower.sol";
+import {IIrm} from "./interfaces/IIrm.sol";
+import {IERC20} from "./interfaces/IERC20.sol";
+import {IFlashBorrower} from "./interfaces/IFlashBorrower.sol";
 
 import {Errors} from "./libraries/Errors.sol";
 import {SharesMath} from "./libraries/SharesMath.sol";
@@ -135,7 +135,7 @@ contract Blue is IBlue {
 
         if (data.length > 0) IBlueSupplyCallback(msg.sender).onBlueSupply(amount, data);
 
-        market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
+        IERC20(market.borrowableAsset).safeTransferFrom(msg.sender, address(this), amount);
     }
 
     function withdraw(Market memory market, uint256 amount, address onBehalf, address receiver) external {
@@ -154,7 +154,7 @@ contract Blue is IBlue {
 
         require(totalBorrow[id] <= totalSupply[id], Errors.INSUFFICIENT_LIQUIDITY);
 
-        market.borrowableAsset.safeTransfer(receiver, amount);
+        IERC20(market.borrowableAsset).safeTransfer(receiver, amount);
     }
 
     // Borrow management.
@@ -176,7 +176,7 @@ contract Blue is IBlue {
         require(_isHealthy(market, id, onBehalf), Errors.INSUFFICIENT_COLLATERAL);
         require(totalBorrow[id] <= totalSupply[id], Errors.INSUFFICIENT_LIQUIDITY);
 
-        market.borrowableAsset.safeTransfer(receiver, amount);
+        IERC20(market.borrowableAsset).safeTransfer(receiver, amount);
     }
 
     function repay(Market memory market, uint256 amount, address onBehalf, bytes calldata data) external {
@@ -194,7 +194,7 @@ contract Blue is IBlue {
 
         if (data.length > 0) IBlueRepayCallback(msg.sender).onBlueRepay(amount, data);
 
-        market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
+        IERC20(market.borrowableAsset).safeTransferFrom(msg.sender, address(this), amount);
     }
 
     // Collateral management.
@@ -213,7 +213,7 @@ contract Blue is IBlue {
             IBlueSupplyCollateralCallback(msg.sender).onBlueSupplyCollateral(amount, data);
         }
 
-        market.collateralAsset.safeTransferFrom(msg.sender, address(this), amount);
+        IERC20(market.collateralAsset).safeTransferFrom(msg.sender, address(this), amount);
     }
 
     function withdrawCollateral(Market memory market, uint256 amount, address onBehalf, address receiver) external {
@@ -228,7 +228,7 @@ contract Blue is IBlue {
 
         require(_isHealthy(market, id, onBehalf), Errors.INSUFFICIENT_COLLATERAL);
 
-        market.collateralAsset.safeTransfer(receiver, amount);
+        IERC20(market.collateralAsset).safeTransfer(receiver, amount);
     }
 
     // Liquidation.
@@ -266,11 +266,11 @@ contract Blue is IBlue {
             borrowShare[id][borrower] = 0;
         }
 
-        market.collateralAsset.safeTransfer(msg.sender, seized);
+        IERC20(market.collateralAsset).safeTransfer(msg.sender, seized);
 
         if (data.length > 0) IBlueLiquidateCallback(msg.sender).onBlueLiquidate(seized, repaid, data);
 
-        market.borrowableAsset.safeTransferFrom(msg.sender, address(this), repaid);
+        IERC20(market.borrowableAsset).safeTransferFrom(msg.sender, address(this), repaid);
     }
 
     // Flash Loans.
