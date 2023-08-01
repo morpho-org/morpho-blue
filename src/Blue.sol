@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.21;
 
+import {
+    IBlueLiquidateCallback,
+    IBlueRepayCallback,
+    IBlueSupplyCallback,
+    IBlueSupplyCollateralCallback
+} from "src/interfaces/IBlueCallbacks.sol";
 import {IIrm} from "src/interfaces/IIrm.sol";
 import {IERC20} from "src/interfaces/IERC20.sol";
 import {IFlashLender} from "src/interfaces/IFlashLender.sol";
@@ -16,22 +22,12 @@ import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 uint256 constant MAX_FEE = 0.25e18;
 uint256 constant ALPHA = 0.5e18;
 
-/// @dev The prefix used for EIP-712 signature.
-string constant EIP712_MSG_PREFIX = "\x19\x01";
-
-/// @dev The name used for EIP-712 signature.
-string constant EIP712_NAME = "Blue";
-
 /// @dev The EIP-712 typeHash for EIP712Domain.
-bytes32 constant EIP712_DOMAIN_TYPEHASH =
-    keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
+bytes32 constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
 
 /// @dev The EIP-712 typeHash for Authorization.
-bytes32 constant EIP712_AUTHORIZATION_TYPEHASH =
-    keccak256("Authorization(address delegator,address manager,bool approval,uint256 nonce,uint256 deadline)");
-
-/// @dev The highest valid value for s in an ECDSA signature pair (0 < s < secp256k1n ÷ 2 + 1).
-uint256 constant MAX_VALID_ECDSA_S = 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0;
+bytes32 constant AUTHORIZATION_TYPEHASH =
+    keccak256("Authorization(address authorizer,address authorized,bool isAuthorized,uint256 nonce,uint256 deadline)");
 
 /// @notice Contains the `v`, `r` and `s` parameters of an ECDSA signature.
 struct Signature {
@@ -48,7 +44,7 @@ contract Blue is IFlashLender {
 
     // Immutables.
 
-    bytes32 public immutable domainSeparator;
+    bytes32 public immutable DOMAIN_SEPARATOR;
 
     // Storage.
 
@@ -78,19 +74,17 @@ contract Blue is IFlashLender {
     mapping(IIrm => bool) public isIrmEnabled;
     // Enabled LLTVs.
     mapping(uint256 => bool) public isLltvEnabled;
-    // User's managers.
-    mapping(address => mapping(address => bool)) public isApproved;
+    // User's authorizations. Note that by default, msg.sender is authorized by themself.
+    mapping(address => mapping(address => bool)) public isAuthorized;
     // User's nonces. Used to prevent replay attacks with EIP-712 signatures.
-    mapping(address => uint256) public userNonce;
+    mapping(address => uint256) public nonce;
 
     // Constructor.
 
     constructor(address newOwner) {
         owner = newOwner;
-        domainSeparator =
-            keccak256(abi.encode(EIP712_DOMAIN_TYPEHASH, keccak256(bytes(EIP712_NAME)), block.chainid, address(this)));
 
-        emit Events.OwnershipTransferred(address(0), newOwner);
+        DOMAIN_SEPARATOR = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256("Blue"), block.chainid, address(this)));
     }
 
     // Modifiers.
@@ -102,7 +96,7 @@ contract Blue is IFlashLender {
 
     // Only owner functions.
 
-    function transferOwnership(address newOwner) external onlyOwner {
+    function setOwner(address newOwner) external onlyOwner {
         owner = newOwner;
 
         emit Events.OwnershipTransferred(owner, newOwner);
@@ -152,7 +146,7 @@ contract Blue is IFlashLender {
 
     // Supply management.
 
-    function supply(Market memory market, uint256 amount, address onBehalf) external {
+    function supply(Market memory market, uint256 amount, address onBehalf, bytes calldata data) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
@@ -167,14 +161,16 @@ contract Blue is IFlashLender {
 
         emit Events.Supply(Id.unwrap(id), msg.sender, onBehalf, amount, shares);
 
+        if (data.length > 0) IBlueSupplyCallback(msg.sender).onBlueSupply(amount, data);
+
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
 
-    function withdraw(Market memory market, uint256 amount, address onBehalf) external {
+    function withdraw(Market memory market, uint256 amount, address onBehalf, address receiver) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
-        require(_isSenderOrIsApproved(onBehalf), Errors.MANAGER_NOT_APPROVED);
+        require(_isSenderAuthorized(onBehalf), Errors.UNAUTHORIZED);
 
         _accrueInterests(market, id);
 
@@ -188,16 +184,16 @@ contract Blue is IFlashLender {
 
         require(totalBorrow[id] <= totalSupply[id], Errors.INSUFFICIENT_LIQUIDITY);
 
-        market.borrowableAsset.safeTransfer(msg.sender, amount);
+        market.borrowableAsset.safeTransfer(receiver, amount);
     }
 
     // Borrow management.
 
-    function borrow(Market memory market, uint256 amount, address onBehalf) external {
+    function borrow(Market memory market, uint256 amount, address onBehalf, address receiver) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
-        require(_isSenderOrIsApproved(onBehalf), Errors.MANAGER_NOT_APPROVED);
+        require(_isSenderAuthorized(onBehalf), Errors.UNAUTHORIZED);
 
         _accrueInterests(market, id);
 
@@ -212,10 +208,10 @@ contract Blue is IFlashLender {
         require(_isHealthy(market, id, onBehalf), Errors.INSUFFICIENT_COLLATERAL);
         require(totalBorrow[id] <= totalSupply[id], Errors.INSUFFICIENT_LIQUIDITY);
 
-        market.borrowableAsset.safeTransfer(msg.sender, amount);
+        market.borrowableAsset.safeTransfer(receiver, amount);
     }
 
-    function repay(Market memory market, uint256 amount, address onBehalf) external {
+    function repay(Market memory market, uint256 amount, address onBehalf, bytes calldata data) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
@@ -230,13 +226,15 @@ contract Blue is IFlashLender {
 
         emit Events.Repay(Id.unwrap(id), msg.sender, onBehalf, amount, shares);
 
+        if (data.length > 0) IBlueRepayCallback(msg.sender).onBlueRepay(amount, data);
+
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
 
     // Collateral management.
 
     /// @dev Don't accrue interests because it's not required and it saves gas.
-    function supplyCollateral(Market memory market, uint256 amount, address onBehalf) external {
+    function supplyCollateral(Market memory market, uint256 amount, address onBehalf, bytes calldata data) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
@@ -247,14 +245,16 @@ contract Blue is IFlashLender {
 
         emit Events.CollateralSupply(Id.unwrap(id), msg.sender, onBehalf, amount);
 
+        if (data.length > 0) IBlueSupplyCollateralCallback(msg.sender).onBlueSupplyCollateral(amount, data);
+
         market.collateralAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
 
-    function withdrawCollateral(Market memory market, uint256 amount, address onBehalf) external {
+    function withdrawCollateral(Market memory market, uint256 amount, address onBehalf, address receiver) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
-        require(_isSenderOrIsApproved(onBehalf), Errors.MANAGER_NOT_APPROVED);
+        require(_isSenderAuthorized(onBehalf), Errors.UNAUTHORIZED);
 
         _accrueInterests(market, id);
 
@@ -264,12 +264,12 @@ contract Blue is IFlashLender {
 
         require(_isHealthy(market, id, onBehalf), Errors.INSUFFICIENT_COLLATERAL);
 
-        market.collateralAsset.safeTransfer(msg.sender, amount);
+        market.collateralAsset.safeTransfer(receiver, amount);
     }
 
     // Liquidation.
 
-    function liquidate(Market memory market, address borrower, uint256 seized) external {
+    function liquidate(Market memory market, address borrower, uint256 seized, bytes calldata data) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(seized != 0, Errors.ZERO_AMOUNT);
@@ -308,36 +308,10 @@ contract Blue is IFlashLender {
         }
 
         market.collateralAsset.safeTransfer(msg.sender, seized);
+
+        if (data.length > 0) IBlueLiquidateCallback(msg.sender).onBlueLiquidate(seized, repaid, data);
+
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), repaid);
-    }
-
-    // Position approvals.
-
-    function setApproval(
-        address delegator,
-        address manager,
-        bool approval,
-        uint256 nonce,
-        uint256 deadline,
-        Signature calldata signature
-    ) external {
-        require(uint256(signature.s) <= MAX_VALID_ECDSA_S, Errors.INVALID_S);
-        // v ∈ {27, 28} (source: https://ethereum.github.io/yellowpaper/paper.pdf #308)
-        require(signature.v == 27 || signature.v == 28, Errors.INVALID_V);
-        require(block.timestamp < deadline, Errors.SIGNATURE_EXPIRED);
-
-        bytes32 hashStruct =
-            keccak256(abi.encode(EIP712_AUTHORIZATION_TYPEHASH, delegator, manager, approval, nonce, deadline));
-        bytes32 digest = keccak256(abi.encodePacked(EIP712_MSG_PREFIX, domainSeparator, hashStruct));
-        address signatory = ecrecover(digest, signature.v, signature.r, signature.s);
-
-        require(delegator == signatory, Errors.INVALID_SIGNATURE);
-        uint256 usedNonce = userNonce[signatory]++;
-        require(nonce == usedNonce, Errors.INVALID_NONCE);
-
-        emit Events.NonceIncremented(msg.sender, signatory, usedNonce);
-
-        _setApproval(signatory, manager, approval);
     }
 
     // Flash Loans.
@@ -346,38 +320,63 @@ contract Blue is IFlashLender {
     function flashLoan(IFlashBorrower receiver, address token, uint256 amount, bytes calldata data) external {
         IERC20(token).safeTransfer(address(receiver), amount);
 
-        receiver.onFlashLoan(msg.sender, token, amount, data);
+        receiver.onBlueFlashLoan(msg.sender, token, amount, data);
 
         emit Events.Flashloan(msg.sender, token, address(receiver), amount);
 
         IERC20(token).safeTransferFrom(address(receiver), address(this), amount);
     }
 
-    // Position management.
+    // Authorizations.
 
-    function setApproval(address manager, bool isAllowed) external {
-        _setApproval(msg.sender, manager, isAllowed);
+    /// @dev The signature is malleable, but it has no impact on the security here.
+    function setAuthorization(
+        address authorizer,
+        address authorized,
+        bool newIsAuthorized,
+        uint256 deadline,
+        Signature calldata signature
+    ) external {
+        require(block.timestamp < deadline, Errors.SIGNATURE_EXPIRED);
+
+        bytes32 hashStruct = keccak256(
+            abi.encode(AUTHORIZATION_TYPEHASH, authorizer, authorized, newIsAuthorized, nonce[authorizer]++, deadline)
+        );
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, hashStruct));
+        address signatory = ecrecover(digest, signature.v, signature.r, signature.s);
+
+        require(signatory != address(0) && authorizer == signatory, Errors.INVALID_SIGNATURE);
+
+        _setAuthorization(signatory, authorized, newIsAuthorized);
     }
 
-    function _isSenderOrIsApproved(address user) internal view returns (bool) {
-        return msg.sender == user || isApproved[user][msg.sender];
+    function setAuthorization(address authorized, bool newIsAuthorized) external {
+        _setAuthorization(msg.sender, authorized, newIsAuthorized);
     }
 
-    function _setApproval(address delegator, address manager, bool isAllowed) internal {
-        isApproved[delegator][manager] = isAllowed;
+    function _isSenderAuthorized(address user) internal view returns (bool) {
+        return msg.sender == user || isAuthorized[user][msg.sender];
+    }
 
-        emit Events.Approval(msg.sender, delegator, manager, isAllowed);
+    function _setAuthorization(address authorizer, address authorized, bool newIsAuthorized) internal {
+        isAuthorized[authorizer][authorized] = newIsAuthorized;
+
+        emit Events.Approval(msg.sender, authorizer, authorized, newIsAuthorized);
     }
 
     // Interests management.
 
     function _accrueInterests(Market memory market, Id id) internal {
+        uint256 elapsed = block.timestamp - lastUpdate[id];
+
+        if (elapsed == 0) return;
+
         uint256 marketTotalBorrow = totalBorrow[id];
 
         uint256 accruedInterests;
         if (marketTotalBorrow != 0) {
             uint256 borrowRate = market.irm.borrowRate(market);
-            accruedInterests = marketTotalBorrow.mulWadDown(borrowRate * (block.timestamp - lastUpdate[id]));
+            uint256 accruedInterests = marketTotalBorrow.mulWadDown(borrowRate * elapsed);
             totalBorrow[id] = marketTotalBorrow + accruedInterests;
             totalSupply[id] += accruedInterests;
 

@@ -6,19 +6,19 @@ library Errors {
 
     string internal constant LLTV_TOO_HIGH = "LLTV too high";
 
-    string internal constant MAX_FEE_EXCEEDED = "fee must be <= MAX_FEE";
+    string internal constant MAX_FEE_EXCEEDED = "MAX_FEE exceeded";
 
     string internal constant IRM_NOT_ENABLED = "IRM not enabled";
 
     string internal constant LLTV_NOT_ENABLED = "LLTV not enabled";
 
-    string internal constant MARKET_CREATED = "market already exists";
+    string internal constant MARKET_CREATED = "market created";
 
-    string internal constant MARKET_NOT_CREATED = "unknown market";
+    string internal constant MARKET_NOT_CREATED = "market not created";
 
     string internal constant ZERO_AMOUNT = "zero amount";
 
-    string internal constant MANAGER_NOT_APPROVED = "not approved";
+    string internal constant UNAUTHORIZED = "unauthorized";
 
     string internal constant INSUFFICIENT_COLLATERAL = "insufficient collateral";
 
@@ -26,15 +26,7 @@ library Errors {
 
     string internal constant HEALTHY_POSITION = "position is healthy";
 
-    string internal constant INVALID_S = "invalid s";
-
-    string internal constant INVALID_V = "invalid v";
-
     string internal constant INVALID_SIGNATURE = "invalid signature";
 
     string internal constant SIGNATURE_EXPIRED = "signature expired";
-
-    string internal constant INVALID_NONCE = "invalid nonce";
-
-    string internal constant INVALID_SUCCESS_HASH = "invalid success hash";
 }
