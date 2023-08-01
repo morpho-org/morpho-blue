@@ -1,10 +1,11 @@
 import { defaultAbiCoder } from "@ethersproject/abi";
-import { mine, setBalance } from "@nomicfoundation/hardhat-network-helpers";
+import { mine } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { BigNumber, constants, utils } from "ethers";
 import hre from "hardhat";
 import { Blue, OracleMock, ERC20Mock, IrmMock, IntegratorMock } from "types";
+import { FlashBorrowerMock } from "types/src/mocks/FlashBorrowerMock";
 
 const closePositions = false;
 const initBalance = constants.MaxUint256.div(2);
@@ -45,6 +46,7 @@ describe("Blue", () => {
   let borrowableOracle: OracleMock;
   let collateralOracle: OracleMock;
   let irm: IrmMock;
+  let flashBorrower: FlashBorrowerMock;
   let integrator: IntegratorMock;
 
   let market: Market;
@@ -111,9 +113,16 @@ describe("Blue", () => {
 
     await borrowable.setBalance(liquidator.address, initBalance);
     await borrowable.connect(liquidator).approve(blue.address, constants.MaxUint256);
+
+    const FlashBorrowerFactory = await hre.ethers.getContractFactory("FlashBorrowerMock", admin);
+
+    flashBorrower = await FlashBorrowerFactory.deploy(blue.address);
   });
 
   it("should simulate gas cost [main]", async () => {
+    await hre.network.provider.send("evm_setAutomine", [false]);
+    await hre.network.provider.send("evm_setIntervalMining", [0]);
+
     for (let i = 0; i < signers.length; ++i) {
       if (i % 20 == 0) console.log("[main]", Math.floor((100 * i) / signers.length), "%");
 
@@ -124,8 +133,10 @@ describe("Blue", () => {
       let amount = BigNumber.WAD.mul(1 + Math.floor(random() * 100));
 
       if (random() < 2 / 3) {
-        await blue.connect(user).supply(market, amount, user.address);
-        await blue.connect(user).withdraw(market, amount.div(2), user.address);
+        Promise.all([
+          blue.connect(user).supply(market, amount, user.address, []),
+          blue.connect(user).withdraw(market, amount.div(2), user.address, user.address),
+        ]);
       } else {
         const totalSupply = await blue.totalSupply(id);
         const totalBorrow = await blue.totalBorrow(id);
@@ -134,13 +145,17 @@ describe("Blue", () => {
         amount = BigNumber.min(amount, BigNumber.from(liquidity).div(2));
 
         if (amount > BigNumber.from(0)) {
-          await blue.connect(user).supplyCollateral(market, amount, user.address);
-          await blue.connect(user).borrow(market, amount.div(2), user.address);
-          await blue.connect(user).repay(market, amount.div(4), user.address);
-          await blue.connect(user).withdrawCollateral(market, amount.div(8), user.address);
+          Promise.all([
+            blue.connect(user).supplyCollateral(market, amount, user.address, []),
+            blue.connect(user).borrow(market, amount.div(2), user.address, user.address),
+            blue.connect(user).repay(market, amount.div(4), user.address, []),
+            blue.connect(user).withdrawCollateral(market, amount.div(8), user.address, user.address),
+          ]);
         }
       }
     }
+
+    await hre.network.provider.send("evm_setAutomine", [true]);
   });
 
   it("should simulate gas cost [liquidations]", async () => {
@@ -163,19 +178,19 @@ describe("Blue", () => {
       updateMarket({ lltv });
 
       // We use 2 different users to borrow from a market so that liquidations do not put the borrow storage back to 0 on that market.
-      await blue.connect(user).supply(market, amount, user.address);
-      await blue.connect(user).supplyCollateral(market, amount, user.address);
-      await blue.connect(user).borrow(market, borrowedAmount, user.address);
+      await blue.connect(user).supply(market, amount, user.address, "0x");
+      await blue.connect(user).supplyCollateral(market, amount, user.address, "0x");
+      await blue.connect(user).borrow(market, borrowedAmount, user.address, user.address);
 
-      await blue.connect(borrower).supply(market, amount, borrower.address);
-      await blue.connect(borrower).supplyCollateral(market, amount, borrower.address);
-      await blue.connect(borrower).borrow(market, borrowedAmount, borrower.address);
+      await blue.connect(borrower).supply(market, amount, borrower.address, "0x");
+      await blue.connect(borrower).supplyCollateral(market, amount, borrower.address, "0x");
+      await blue.connect(borrower).borrow(market, borrowedAmount, borrower.address, user.address);
 
       await borrowableOracle.setPrice(BigNumber.WAD.mul(1000));
 
       const seized = closePositions ? constants.MaxUint256 : amount.div(2);
 
-      await blue.connect(liquidator).liquidate(market, borrower.address, seized);
+      await blue.connect(liquidator).liquidate(market, borrower.address, seized, "0x");
 
       const remainingCollateral = await blue.collateral(id, borrower.address);
 
@@ -193,21 +208,30 @@ describe("Blue", () => {
     integrator = await IntegratorMockFactory.deploy(blue.address);
 
     // Never leave the market empty.
-    await blue.supply(market, BigNumber.WAD, admin.address);
+    await blue.supply(market, BigNumber.WAD, admin.address, []);
 
     for (const user of signers) {
       if (random() < 1 / 2) await mine(1 + Math.floor(random() * 100), { interval: 12 });
 
       const amount = BigNumber.WAD.mul(1 + Math.floor(random() * 100));
 
-      await blue.connect(user).setApproval(integrator.address, true);
+      await blue.connect(user)["setAuthorization(address,bool)"](integrator.address, true);
 
-      await blue.connect(user).supply(market, amount, user.address);
+      await blue.connect(user).supply(market, amount, user.address, []);
       await integrator.connect(user).withdrawAll(market, user.address);
 
       const remainingShares = await blue.supplyShare(id, user.address);
 
       expect(remainingShares.isZero());
     }
+  });
+
+  it("should simuate gas cost [flashloan]", async () => {
+    const user = signers[0];
+    const amount = BigNumber.WAD;
+
+    await blue.connect(user).supply(market, amount, user.address, "0x");
+
+    await blue.flashLoan(flashBorrower.address, borrowable.address, amount.div(2), []);
   });
 });
