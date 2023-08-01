@@ -207,6 +207,6 @@ describe("Blue", () => {
 
     await blue.connect(user).supply(market, amount, user.address, "0x");
 
-    await blue.flashLoan(flashBorrower.address, borrowable.address, amount.div(2), []);
+    await flashBorrower.flashLoan(borrowable.address, amount.div(2), []);
   });
 });
