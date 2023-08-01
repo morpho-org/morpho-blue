@@ -16,7 +16,6 @@ import {Errors} from "./libraries/Errors.sol";
 import {SharesMath} from "src/libraries/SharesMath.sol";
 import {FixedPointMathLib} from "src/libraries/FixedPointMathLib.sol";
 import {Id, Market, MarketLib} from "src/libraries/MarketLib.sol";
-import {MathLib} from "src/libraries/MathLib.sol";
 import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 
 uint256 constant MAX_FEE = 0.25e18;
@@ -41,7 +40,6 @@ contract Blue is IFlashLender {
     using FixedPointMathLib for uint256;
     using SafeTransferLib for IERC20;
     using MarketLib for Market;
-    using MathLib for uint256;
 
     // Immutables.
 
@@ -340,8 +338,8 @@ contract Blue is IFlashLender {
         uint256 marketTotalBorrow = totalBorrow[id];
 
         if (marketTotalBorrow != 0) {
-            uint256 accruedInterests =
-                market.irm.borrowRate(market).wTaylorCompounded(block.timestamp - lastUpdate[id], 3);
+            uint256 borrowRate = market.irm.borrowRate(market);
+            uint256 accruedInterests = borrowRate.wTaylorCompounded(block.timestamp - lastUpdate[id]);
             totalBorrow[id] = marketTotalBorrow + accruedInterests;
             totalSupply[id] += accruedInterests;
 
