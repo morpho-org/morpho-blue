@@ -6,7 +6,7 @@ import {
     IBlueRepayCallback,
     IBlueSupplyCallback,
     IBlueSupplyCollateralCallback,
-    IBlueFlashBorrower
+    IBlueFlashloanCallback
 } from "src/interfaces/IBlueCallbacks.sol";
 import {IIrm} from "src/interfaces/IIrm.sol";
 import {IERC20} from "src/interfaces/IERC20.sol";
@@ -290,7 +290,7 @@ contract Blue {
     function flashLoan(address token, uint256 amount, bytes calldata data) external {
         IERC20(token).safeTransfer(msg.sender, amount);
 
-        IBlueFlashBorrower(msg.sender).onBlueFlashLoan(token, amount, data);
+        IBlueFlashloanCallback(msg.sender).onBlueFlashLoan(token, amount, data);
 
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
     }
