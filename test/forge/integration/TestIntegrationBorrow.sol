@@ -42,7 +42,10 @@ contract IntegrationBorrowTest is BlueBaseTest {
         amountCollateral = bound(amountCollateral, 1, 2 ** 64);
         priceCollateral = bound(priceCollateral, 0, 2 ** 64);
 
-        vm.assume(amountCollateral.mulWadDown(priceCollateral).mulWadDown(market.lltv) < amountBorrowed.mulWadUp(priceBorrowable));
+        vm.assume(
+            amountCollateral.mulWadDown(priceCollateral).mulWadDown(market.lltv)
+                < amountBorrowed.mulWadUp(priceBorrowable)
+        );
 
         borrowableOracle.setPrice(priceBorrowable);
         collateralOracle.setPrice(priceCollateral);
@@ -72,7 +75,10 @@ contract IntegrationBorrowTest is BlueBaseTest {
         amountCollateral = bound(amountCollateral, 1, 2 ** 64);
         priceCollateral = bound(priceCollateral, 0, 2 ** 64);
 
-        vm.assume(amountCollateral.mulWadDown(priceCollateral).mulWadDown(market.lltv) >= amountBorrowed.mulWadUp(priceBorrowable));
+        vm.assume(
+            amountCollateral.mulWadDown(priceCollateral).mulWadDown(market.lltv)
+                >= amountBorrowed.mulWadUp(priceBorrowable)
+        );
         vm.assume(amountSupplied < amountBorrowed);
 
         borrowableOracle.setPrice(priceBorrowable);
@@ -103,7 +109,10 @@ contract IntegrationBorrowTest is BlueBaseTest {
         amountCollateral = bound(amountCollateral, 1, 2 ** 64);
         priceCollateral = bound(priceCollateral, 0, 2 ** 64);
 
-        vm.assume(amountCollateral.mulWadDown(priceCollateral).mulWadDown(market.lltv) >= amountBorrowed.mulWadUp(priceBorrowable));
+        vm.assume(
+            amountCollateral.mulWadDown(priceCollateral).mulWadDown(market.lltv)
+                >= amountBorrowed.mulWadUp(priceBorrowable)
+        );
         vm.assume(amountSupplied >= amountBorrowed);
 
         borrowableOracle.setPrice(priceBorrowable);
@@ -139,7 +148,10 @@ contract IntegrationBorrowTest is BlueBaseTest {
         amountCollateral = bound(amountCollateral, 1, 2 ** 64);
         priceCollateral = bound(priceCollateral, 0, 2 ** 64);
 
-        vm.assume(amountCollateral.mulWadDown(priceCollateral).mulWadDown(market.lltv) >= amountBorrowed.mulWadUp(priceBorrowable));
+        vm.assume(
+            amountCollateral.mulWadDown(priceCollateral).mulWadDown(market.lltv)
+                >= amountBorrowed.mulWadUp(priceBorrowable)
+        );
         vm.assume(amountSupplied >= amountBorrowed);
 
         borrowableOracle.setPrice(priceBorrowable);

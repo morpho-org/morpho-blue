@@ -4,8 +4,6 @@ pragma solidity 0.8.21;
 import "test/forge/BlueBase.t.sol";
 
 contract IntegrationWithdrawTest is BlueBaseTest {
-
-
     function testWithdrawUnknownMarket(Market memory marketFuzz) public {
         vm.assume(neq(marketFuzz, market));
 
@@ -29,7 +27,7 @@ contract IntegrationWithdrawTest is BlueBaseTest {
 
         borrowableAsset.setBalance(address(this), amount);
         blue.supply(market, amount, address(this), hex"");
-        
+
         vm.prank(attacker);
         vm.expectRevert("unauthorized");
         blue.withdraw(market, amount, address(this), address(this));
@@ -44,7 +42,7 @@ contract IntegrationWithdrawTest is BlueBaseTest {
 
         vm.prank(BORROWER);
         blue.borrow(market, amountBorrowed, BORROWER, BORROWER);
-        
+
         vm.expectRevert("insufficient liquidity");
         blue.withdraw(market, amountSupplied, address(this), address(this));
     }
@@ -60,7 +58,7 @@ contract IntegrationWithdrawTest is BlueBaseTest {
 
         vm.prank(BORROWER);
         blue.borrow(market, amountBorrowed, BORROWER, BORROWER);
-        
+
         blue.withdraw(market, amountWithdrawn, address(this), address(this));
 
         assertApproxEqAbs(
@@ -76,7 +74,12 @@ contract IntegrationWithdrawTest is BlueBaseTest {
         );
     }
 
-    function testWithdrawOnBehalf(uint256 amountSupplied, uint256 amountBorrowed, uint256 amountWithdrawn, uint256 amountWithdrawnToReceiver) public {
+    function testWithdrawOnBehalf(
+        uint256 amountSupplied,
+        uint256 amountBorrowed,
+        uint256 amountWithdrawn,
+        uint256 amountWithdrawnToReceiver
+    ) public {
         amountSupplied = bound(amountSupplied, 1, 2 ** 64);
         amountBorrowed = bound(amountBorrowed, 1, amountSupplied);
         amountWithdrawn = bound(amountWithdrawn, 1, amountSupplied);
@@ -89,13 +92,13 @@ contract IntegrationWithdrawTest is BlueBaseTest {
 
         vm.startPrank(BORROWER);
         blue.borrow(market, amountBorrowed, BORROWER, BORROWER);
-        
+
         blue.withdraw(market, amountWithdrawn, address(this), BORROWER);
         blue.withdraw(market, amountWithdrawnToReceiver, address(this), address(this));
 
         vm.stopPrank();
 
-        assertEq(blue.totalSupply(id),amountSupplied - amountWithdrawn - amountWithdrawnToReceiver,"total supply");
+        assertEq(blue.totalSupply(id), amountSupplied - amountWithdrawn - amountWithdrawnToReceiver, "total supply");
         assertApproxEqAbs(
             blue.supplyShare(id, address(this)),
             (amountSupplied - amountWithdrawn - amountWithdrawnToReceiver) * SharesMath.VIRTUAL_SHARES,
@@ -105,7 +108,9 @@ contract IntegrationWithdrawTest is BlueBaseTest {
         assertEq(borrowableAsset.balanceOf(address(this)), amountWithdrawnToReceiver, "this balance");
         assertEq(borrowableAsset.balanceOf(BORROWER), amountBorrowed + amountWithdrawn, "Borrower balance");
         assertEq(
-            borrowableAsset.balanceOf(address(blue)), amountSupplied - amountBorrowed - amountWithdrawn - amountWithdrawnToReceiver, "blue balance"
+            borrowableAsset.balanceOf(address(blue)),
+            amountSupplied - amountBorrowed - amountWithdrawn - amountWithdrawnToReceiver,
+            "blue balance"
         );
     }
 }

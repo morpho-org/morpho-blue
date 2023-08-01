@@ -4,8 +4,6 @@ pragma solidity 0.8.21;
 import "test/forge/BlueBase.t.sol";
 
 contract IntegrationRepayTest is BlueBaseTest {
-
-
     function testRepayUnknownMarket(Market memory marketFuzz) public {
         vm.assume(neq(marketFuzz, market));
 
@@ -30,7 +28,6 @@ contract IntegrationRepayTest is BlueBaseTest {
         blue.borrow(market, amountBorrowed, BORROWER, BORROWER);
         blue.repay(market, amountRepaid, BORROWER, hex"");
         vm.stopPrank();
-
 
         assertEq(blue.totalBorrow(id), amountBorrowed - amountRepaid, "total borrow");
         assertApproxEqAbs(

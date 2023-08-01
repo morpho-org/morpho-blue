@@ -21,7 +21,7 @@ contract IntegrationOnlyOwnerTest is BlueBaseTest {
         vm.prank(OWNER);
         blue.setOwner(newOwner);
 
-        assertEq(blue.owner(), newOwner, 'owner');
+        assertEq(blue.owner(), newOwner, "owner");
     }
 
     function testEnableIrmWhenNotOwner(address addressFuzz, Irm irmFuzz) public {
@@ -39,7 +39,7 @@ contract IntegrationOnlyOwnerTest is BlueBaseTest {
         vm.prank(OWNER);
         blue.enableIrm(irmFuzz);
 
-        assertTrue(blue.isIrmEnabled(irmFuzz), 'Irm is enabled');
+        assertTrue(blue.isIrmEnabled(irmFuzz), "Irm is enabled");
     }
 
     function testEnableLLTVWhenNotOwner(address addressFuzz, uint256 LLTVFuzz) public {
@@ -67,7 +67,7 @@ contract IntegrationOnlyOwnerTest is BlueBaseTest {
         vm.prank(OWNER);
         blue.enableLltv(LLTVFuzz);
 
-        assertTrue(blue.isLltvEnabled(LLTVFuzz), 'Lltv is enabled');
+        assertTrue(blue.isLltvEnabled(LLTVFuzz), "Lltv is enabled");
     }
 
     function testSetFeeWhenNotOwner(address addressFuzz, uint256 feeFuzz) public {

@@ -4,8 +4,6 @@ pragma solidity 0.8.21;
 import "test/forge/BlueBase.t.sol";
 
 contract IntegrationSupplyCollateralTest is BlueBaseTest {
-
-
     function testSupplyCollateralUnknownMarket(Market memory marketFuzz) public {
         vm.assume(neq(marketFuzz, market));
 

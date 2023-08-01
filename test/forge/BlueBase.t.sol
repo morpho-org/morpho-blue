@@ -95,8 +95,8 @@ contract BlueBaseTest is Test {
     }
 
     function neq(Market memory a, Market memory b) internal pure returns (bool) {
-    return a.borrowableAsset != b.borrowableAsset || a.collateralAsset != b.collateralAsset
-        || a.borrowableOracle != b.borrowableOracle || a.collateralOracle != b.collateralOracle || a.lltv != b.lltv
-        || a.irm != b.irm;
+        return a.borrowableAsset != b.borrowableAsset || a.collateralAsset != b.collateralAsset
+            || a.borrowableOracle != b.borrowableOracle || a.collateralOracle != b.collateralOracle || a.lltv != b.lltv
+            || a.irm != b.irm;
     }
 }

@@ -35,5 +35,4 @@ contract IntegrationCreateMarketTest is BlueBaseTest {
 
         assertGt(blue.lastUpdate(marketFuzzId), 0, "creation timestamp");
     }
-
 }
