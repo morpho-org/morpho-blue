@@ -122,7 +122,7 @@ contract Blue is IFlashLender {
         require(newFee <= MAX_FEE, Errors.MAX_FEE_EXCEEDED);
         fee[id] = newFee;
 
-        emit Events.FeeSet(Id.unwrap(id), newFee);
+        emit Events.FeeSet(id, newFee);
     }
 
     function setFeeRecipient(address recipient) external onlyOwner {
@@ -159,7 +159,7 @@ contract Blue is IFlashLender {
 
         totalSupply[id] += amount;
 
-        emit Events.Supply(Id.unwrap(id), msg.sender, onBehalf, amount, shares);
+        emit Events.Supply(id, msg.sender, onBehalf, amount, shares);
 
         if (data.length > 0) IBlueSupplyCallback(msg.sender).onBlueSupply(amount, data);
 
@@ -180,7 +180,7 @@ contract Blue is IFlashLender {
 
         totalSupply[id] -= amount;
 
-        emit Events.Withdraw(Id.unwrap(id), msg.sender, onBehalf, amount, shares);
+        emit Events.Withdraw(id, msg.sender, onBehalf, amount, shares);
 
         require(totalBorrow[id] <= totalSupply[id], Errors.INSUFFICIENT_LIQUIDITY);
 
@@ -203,7 +203,7 @@ contract Blue is IFlashLender {
 
         totalBorrow[id] += amount;
 
-        emit Events.Borrow(Id.unwrap(id), msg.sender, onBehalf, amount, shares);
+        emit Events.Borrow(id, msg.sender, onBehalf, amount, shares);
 
         require(_isHealthy(market, id, onBehalf), Errors.INSUFFICIENT_COLLATERAL);
         require(totalBorrow[id] <= totalSupply[id], Errors.INSUFFICIENT_LIQUIDITY);
@@ -224,7 +224,7 @@ contract Blue is IFlashLender {
 
         totalBorrow[id] -= amount;
 
-        emit Events.Repay(Id.unwrap(id), msg.sender, onBehalf, amount, shares);
+        emit Events.Repay(id, msg.sender, onBehalf, amount, shares);
 
         if (data.length > 0) IBlueRepayCallback(msg.sender).onBlueRepay(amount, data);
 
@@ -243,7 +243,7 @@ contract Blue is IFlashLender {
 
         collateral[id][onBehalf] += amount;
 
-        emit Events.CollateralSupply(Id.unwrap(id), msg.sender, onBehalf, amount);
+        emit Events.CollateralSupply(id, msg.sender, onBehalf, amount);
 
         if (data.length > 0) IBlueSupplyCollateralCallback(msg.sender).onBlueSupplyCollateral(amount, data);
 
@@ -260,7 +260,7 @@ contract Blue is IFlashLender {
 
         collateral[id][onBehalf] -= amount;
 
-        emit Events.CollateralWithdraw(Id.unwrap(id), msg.sender, onBehalf, amount);
+        emit Events.CollateralWithdraw(id, msg.sender, onBehalf, amount);
 
         require(_isHealthy(market, id, onBehalf), Errors.INSUFFICIENT_COLLATERAL);
 
@@ -293,7 +293,7 @@ contract Blue is IFlashLender {
 
         collateral[id][borrower] -= seized;
 
-        emit Events.Liquidation(Id.unwrap(id), msg.sender, borrower, repaid, repaidShares, seized);
+        emit Events.Liquidation(id, msg.sender, borrower, repaid, repaidShares, seized);
 
         // Realize the bad debt if needed.
         if (collateral[id][borrower] == 0) {
@@ -304,7 +304,7 @@ contract Blue is IFlashLender {
             totalBorrowShares[id] -= badDebtShares;
             borrowShare[id][borrower] = 0;
 
-            emit Events.BadDebtRealized(Id.unwrap(id), borrower, badDebt, badDebtShares);
+            emit Events.BadDebtRealized(id, borrower, badDebt, badDebtShares);
         }
 
         market.collateralAsset.safeTransfer(msg.sender, seized);
@@ -391,7 +391,7 @@ contract Blue is IFlashLender {
 
         lastUpdate[id] = block.timestamp;
 
-        emit Events.InterestsAccrued(Id.unwrap(id), accruedInterests);
+        emit Events.InterestsAccrued(id, accruedInterests);
     }
 
     // Health check.
