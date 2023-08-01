@@ -141,7 +141,7 @@ contract Blue is IFlashLender {
 
         emit Events.MarketCreated(id, market);
 
-        _accrueInterests(market, id);
+        _accrueInterests(id, market);
     }
 
     // Supply management.
@@ -151,7 +151,7 @@ contract Blue is IFlashLender {
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
 
-        _accrueInterests(market, id);
+        _accrueInterests(id, market);
 
         uint256 shares = amount.toSharesDown(totalSupply[id], totalSupplyShares[id]);
         supplyShare[id][onBehalf] += shares;
@@ -172,7 +172,7 @@ contract Blue is IFlashLender {
         require(amount != 0, Errors.ZERO_AMOUNT);
         require(_isSenderAuthorized(onBehalf), Errors.UNAUTHORIZED);
 
-        _accrueInterests(market, id);
+        _accrueInterests(id, market);
 
         uint256 shares = amount.toSharesUp(totalSupply[id], totalSupplyShares[id]);
         supplyShare[id][onBehalf] -= shares;
@@ -195,7 +195,7 @@ contract Blue is IFlashLender {
         require(amount != 0, Errors.ZERO_AMOUNT);
         require(_isSenderAuthorized(onBehalf), Errors.UNAUTHORIZED);
 
-        _accrueInterests(market, id);
+        _accrueInterests(id, market);
 
         uint256 shares = amount.toSharesUp(totalBorrow[id], totalBorrowShares[id]);
         borrowShare[id][onBehalf] += shares;
@@ -216,7 +216,7 @@ contract Blue is IFlashLender {
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
 
-        _accrueInterests(market, id);
+        _accrueInterests(id, market);
 
         uint256 shares = amount.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
         borrowShare[id][onBehalf] -= shares;
@@ -256,7 +256,7 @@ contract Blue is IFlashLender {
         require(amount != 0, Errors.ZERO_AMOUNT);
         require(_isSenderAuthorized(onBehalf), Errors.UNAUTHORIZED);
 
-        _accrueInterests(market, id);
+        _accrueInterests(id, market);
 
         collateral[id][onBehalf] -= amount;
 
@@ -274,7 +274,7 @@ contract Blue is IFlashLender {
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(seized != 0, Errors.ZERO_AMOUNT);
 
-        _accrueInterests(market, id);
+        _accrueInterests(id, market);
 
         uint256 collateralPrice = market.collateralOracle.price();
         uint256 borrowablePrice = market.borrowableOracle.price();
@@ -366,7 +366,7 @@ contract Blue is IFlashLender {
 
     // Interests management.
 
-    function _accrueInterests(Market memory market, Id id) internal {
+    function _accrueInterests(Id id, Market memory market) internal {
         uint256 elapsed = block.timestamp - lastUpdate[id];
 
         if (elapsed == 0) return;
