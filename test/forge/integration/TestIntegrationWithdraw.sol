@@ -9,7 +9,7 @@ contract IntegrationWithdrawTest is BlueBaseTest {
     function testWithdrawUnknownMarket(Market memory marketFuzz) public {
         vm.assume(neq(marketFuzz, market));
 
-        vm.expectRevert("unknown market");
+        vm.expectRevert("market not created");
         blue.withdraw(marketFuzz, 1, address(this), address(this));
     }
 
@@ -31,7 +31,7 @@ contract IntegrationWithdrawTest is BlueBaseTest {
         blue.supply(market, amount, address(this), hex"");
         
         vm.prank(attacker);
-        vm.expectRevert("not approved");
+        vm.expectRevert("unauthorized");
         blue.withdraw(market, amount, address(this), address(this));
     }
 
@@ -85,7 +85,7 @@ contract IntegrationWithdrawTest is BlueBaseTest {
 
         borrowableAsset.setBalance(address(this), amountSupplied);
         blue.supply(market, amountSupplied, address(this), hex"");
-        blue.setApproval(BORROWER, true);
+        blue.setAuthorization(BORROWER, true);
 
         vm.startPrank(BORROWER);
         blue.borrow(market, amountBorrowed, BORROWER, BORROWER);

@@ -9,7 +9,7 @@ contract IntegrationSupplyTest is BlueBaseTest {
     function testSupplyUnknownMarket(Market memory marketFuzz) public {
         vm.assume(neq(marketFuzz, market));
 
-        vm.expectRevert("unknown market");
+        vm.expectRevert("market not created");
         blue.supply(marketFuzz, 1, address(this), hex"");
     }
 
@@ -24,6 +24,7 @@ contract IntegrationSupplyTest is BlueBaseTest {
         borrowableAsset.setBalance(address(this), amount);
         blue.supply(market, amount, address(this), hex"");
 
+        assertEq(blue.totalSupply(id), amount, "total supply");
         assertEq(blue.supplyShare(id, address(this)), amount * SharesMath.VIRTUAL_SHARES, "supply share");
         assertEq(borrowableAsset.balanceOf(address(this)), 0, "lender balance");
         assertEq(borrowableAsset.balanceOf(address(blue)), amount, "blue balance");
@@ -36,6 +37,7 @@ contract IntegrationSupplyTest is BlueBaseTest {
         borrowableAsset.setBalance(address(this), amount);
         blue.supply(market, amount, onBehalf, hex"");
 
+        assertEq(blue.totalSupply(id), amount, "total supply");
         assertEq(blue.supplyShare(id, onBehalf), amount * SharesMath.VIRTUAL_SHARES, "supply share");
         assertEq(borrowableAsset.balanceOf(onBehalf), 0, "lender balance");
         assertEq(borrowableAsset.balanceOf(address(blue)), amount, "blue balance");
