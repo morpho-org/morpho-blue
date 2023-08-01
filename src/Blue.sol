@@ -99,7 +99,7 @@ contract Blue is IFlashLender {
     function setOwner(address newOwner) external onlyOwner {
         owner = newOwner;
 
-        emit Events.OwnershipTransferred(owner, newOwner);
+        emit Events.OwnerSet(newOwner);
     }
 
     function enableIrm(IIrm irm) external onlyOwner {
@@ -180,7 +180,7 @@ contract Blue is IFlashLender {
 
         totalSupply[id] -= amount;
 
-        emit Events.Withdraw(id, msg.sender, onBehalf, amount, shares);
+        emit Events.Withdraw(id, msg.sender, onBehalf, receiver, amount, shares);
 
         require(totalBorrow[id] <= totalSupply[id], Errors.INSUFFICIENT_LIQUIDITY);
 
@@ -203,7 +203,7 @@ contract Blue is IFlashLender {
 
         totalBorrow[id] += amount;
 
-        emit Events.Borrow(id, msg.sender, onBehalf, amount, shares);
+        emit Events.Borrow(id, msg.sender, onBehalf, receiver, amount, shares);
 
         require(_isHealthy(market, id, onBehalf), Errors.INSUFFICIENT_COLLATERAL);
         require(totalBorrow[id] <= totalSupply[id], Errors.INSUFFICIENT_LIQUIDITY);
@@ -260,7 +260,7 @@ contract Blue is IFlashLender {
 
         collateral[id][onBehalf] -= amount;
 
-        emit Events.CollateralWithdraw(id, msg.sender, onBehalf, amount);
+        emit Events.CollateralWithdraw(id, msg.sender, onBehalf, receiver, amount);
 
         require(_isHealthy(market, id, onBehalf), Errors.INSUFFICIENT_COLLATERAL);
 
@@ -361,7 +361,7 @@ contract Blue is IFlashLender {
     function _setAuthorization(address authorizer, address authorized, bool newIsAuthorized) internal {
         isAuthorized[authorizer][authorized] = newIsAuthorized;
 
-        emit Events.Approval(msg.sender, authorizer, authorized, newIsAuthorized);
+        emit Events.Authorization(msg.sender, authorizer, authorized, newIsAuthorized);
     }
 
     // Interests management.
@@ -376,7 +376,7 @@ contract Blue is IFlashLender {
         uint256 accruedInterests;
         if (marketTotalBorrow != 0) {
             uint256 borrowRate = market.irm.borrowRate(market);
-            uint256 accruedInterests = marketTotalBorrow.mulWadDown(borrowRate * elapsed);
+            accruedInterests = marketTotalBorrow.mulWadDown(borrowRate * elapsed);
             totalBorrow[id] = marketTotalBorrow + accruedInterests;
             totalSupply[id] += accruedInterests;
 

@@ -5,12 +5,28 @@ import {Id, Market} from "src/libraries/MarketLib.sol";
 
 library Events {
     event CollateralSupply(Id indexed id, address indexed caller, address indexed onBehalf, uint256 amount);
-    event CollateralWithdraw(Id indexed id, address caller, address indexed onBehalf, uint256 amount);
+    event CollateralWithdraw(
+        Id indexed id, address caller, address indexed onBehalf, address indexed receiver, uint256 amount
+    );
 
     event Supply(Id indexed id, address indexed caller, address indexed onBehalf, uint256 amount, uint256 shares);
-    event Withdraw(Id indexed id, address indexed caller, address indexed onBehalf, uint256 amount, uint256 shares);
+    event Withdraw(
+        Id indexed id,
+        address caller,
+        address indexed onBehalf,
+        address indexed receiver,
+        uint256 amount,
+        uint256 shares
+    );
 
-    event Borrow(Id indexed id, address indexed caller, address indexed onBehalf, uint256 amount, uint256 shares);
+    event Borrow(
+        Id indexed id,
+        address caller,
+        address indexed onBehalf,
+        address indexed receiver,
+        uint256 amount,
+        uint256 shares
+    );
     event Repay(Id indexed id, address indexed caller, address indexed onBehalf, uint256 amount, uint256 shares);
 
     event Liquidation(
@@ -24,7 +40,7 @@ library Events {
 
     event Flashloan(address indexed caller, address indexed token, address indexed receiver, uint256 amount);
 
-    event OwnershipTransferred(address indexed oldOwner, address indexed newOwner);
+    event OwnerSet(address indexed newOwner);
 
     event FeeSet(Id indexed id, uint256 fee);
 
@@ -34,7 +50,9 @@ library Events {
 
     event BadDebtRealized(Id indexed id, address indexed borrower, uint256 amount, uint256 shares);
 
-    event Approval(address indexed caller, address indexed delegator, address indexed manager, bool isApproved);
+    event Authorization(
+        address indexed caller, address indexed authorizer, address indexed authorized, bool isAuthorized
+    );
 
     event NonceIncremented(address indexed caller, address indexed signatory, uint256 usedNonce);
 
