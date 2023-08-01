@@ -5,12 +5,11 @@ import {
     IBlueLiquidateCallback,
     IBlueRepayCallback,
     IBlueSupplyCallback,
-    IBlueSupplyCollateralCallback
+    IBlueSupplyCollateralCallback,
+    IBlueFlashBorrower
 } from "src/interfaces/IBlueCallbacks.sol";
 import {IIrm} from "src/interfaces/IIrm.sol";
 import {IERC20} from "src/interfaces/IERC20.sol";
-import {IFlashLender} from "src/interfaces/IFlashLender.sol";
-import {IFlashBorrower} from "src/interfaces/IFlashBorrower.sol";
 
 import {Errors} from "./libraries/Errors.sol";
 import {SharesMath} from "src/libraries/SharesMath.sol";
@@ -35,7 +34,7 @@ struct Signature {
     bytes32 s;
 }
 
-contract Blue is IFlashLender {
+contract Blue {
     using SharesMath for uint256;
     using FixedPointMathLib for uint256;
     using SafeTransferLib for IERC20;
@@ -288,13 +287,12 @@ contract Blue is IFlashLender {
 
     // Flash Loans.
 
-    /// @inheritdoc IFlashLender
-    function flashLoan(IFlashBorrower receiver, address token, uint256 amount, bytes calldata data) external {
-        IERC20(token).safeTransfer(address(receiver), amount);
+    function flashLoan(address token, uint256 amount, bytes calldata data) external {
+        IERC20(token).safeTransfer(msg.sender, amount);
 
-        receiver.onBlueFlashLoan(msg.sender, token, amount, data);
+        IBlueFlashBorrower(msg.sender).onBlueFlashLoan(token, amount, data);
 
-        IERC20(token).safeTransferFrom(address(receiver), address(this), amount);
+        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
     }
 
     // Authorizations.
