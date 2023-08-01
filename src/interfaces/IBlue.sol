@@ -6,9 +6,15 @@ import {IFlashLender} from "./IFlashLender.sol";
 import {IFlashBorrower} from "./IFlashBorrower.sol";
 
 import {Id, Market} from "../libraries/MarketLib.sol";
-import {Signature} from "../libraries/AuthorizationLib.sol";
 
 interface IBlue is IFlashLender {
+    /// @notice Contains the `v`, `r` and `s` parameters of an ECDSA signature.
+    struct Signature {
+        uint8 v;
+        bytes32 r;
+        bytes32 s;
+    }
+
     function DOMAIN_SEPARATOR() external view returns (bytes32);
 
     function owner() external view returns (address);

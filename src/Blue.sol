@@ -14,13 +14,19 @@ import {IFlashBorrower} from "./interfaces/IFlashBorrower.sol";
 
 import {Errors} from "./libraries/Errors.sol";
 import {SharesMath} from "./libraries/SharesMath.sol";
-import {Signature, AuthorizationLib} from "./libraries/AuthorizationLib.sol";
 import {FixedPointMathLib} from "./libraries/FixedPointMathLib.sol";
 import {Id, Market, MarketLib} from "./libraries/MarketLib.sol";
 import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
 
 uint256 constant MAX_FEE = 0.25e18;
 uint256 constant ALPHA = 0.5e18;
+
+/// @dev The EIP-712 typeHash for EIP712Domain.
+bytes32 constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
+
+/// @dev The EIP-712 typeHash for Authorization.
+bytes32 constant AUTHORIZATION_TYPEHASH =
+    keccak256("Authorization(address authorizer,address authorized,bool isAuthorized,uint256 nonce,uint256 deadline)");
 
 contract Blue is IBlue {
     using SharesMath for uint256;
@@ -70,7 +76,7 @@ contract Blue is IBlue {
     constructor(address newOwner) {
         owner = newOwner;
 
-        DOMAIN_SEPARATOR = AuthorizationLib.domainSeparator();
+        DOMAIN_SEPARATOR = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256("Blue"), block.chainid, address(this)));
     }
 
     // Modifiers.
@@ -295,9 +301,10 @@ contract Blue is IBlue {
     ) external {
         require(block.timestamp < deadline, Errors.SIGNATURE_EXPIRED);
 
-        bytes32 digest = AuthorizationLib.hashAuthorization(
-            DOMAIN_SEPARATOR, authorizer, authorized, newIsAuthorized, nonce[authorizer]++, deadline
+        bytes32 hashStruct = keccak256(
+            abi.encode(AUTHORIZATION_TYPEHASH, authorizer, authorized, newIsAuthorized, nonce[authorizer]++, deadline)
         );
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, hashStruct));
         address signatory = ecrecover(digest, signature.v, signature.r, signature.s);
 
         require(signatory != address(0) && authorizer == signatory, Errors.INVALID_SIGNATURE);

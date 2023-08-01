@@ -4,6 +4,8 @@ pragma solidity ^0.8.0;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
+import {SigUtils} from "./helpers/SigUtils.sol";
+
 import "src/Blue.sol";
 import {
     IBlueLiquidateCallback,
@@ -15,14 +17,6 @@ import {ERC20Mock as ERC20} from "src/mocks/ERC20Mock.sol";
 import {OracleMock as Oracle} from "src/mocks/OracleMock.sol";
 import {IrmMock as Irm} from "src/mocks/IrmMock.sol";
 import {FlashBorrowerMock} from "src/mocks/FlashBorrowerMock.sol";
-
-struct Authorization {
-    address authorizer;
-    address authorized;
-    bool isAuthorized;
-    uint256 nonce;
-    uint256 deadline;
-}
 
 contract BlueTest is
     Test,
@@ -714,14 +708,22 @@ contract BlueTest is
         privateKey = bound(privateKey, 1, type(uint32).max); // "Private key must be less than the secp256k1 curve order (115792089237316195423570985008687907852837564279074904382605163141518161494337)."
         address authorizer = vm.addr(privateKey);
 
-        bytes32 digest = AuthorizationLib.hashAuthorization(
-            blue.DOMAIN_SEPARATOR(), authorizer, authorized, isAuthorized, blue.nonce(authorizer), deadline
-        );
+        SigUtils.Authorization memory authorization = SigUtils.Authorization({
+            authorizer: authorizer,
+            authorized: authorized,
+            isAuthorized: isAuthorized,
+            nonce: blue.nonce(authorizer),
+            deadline: block.timestamp + deadline
+        });
 
-        Signature memory sig;
+        bytes32 digest = SigUtils.getTypedDataHash(blue.DOMAIN_SEPARATOR(), authorization);
+
+        IBlue.Signature memory sig;
         (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
 
-        blue.setAuthorization(authorizer, authorized, isAuthorized, deadline, sig);
+        blue.setAuthorization(
+            authorization.authorizer, authorization.authorized, authorization.isAuthorized, authorization.deadline, sig
+        );
 
         assertEq(blue.isAuthorized(authorizer, authorized), isAuthorized);
         assertEq(blue.nonce(authorizer), 1);
