@@ -21,20 +21,6 @@ import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 uint256 constant MAX_FEE = 0.25e18;
 uint256 constant ALPHA = 0.5e18;
 
-/// @dev The EIP-712 typeHash for EIP712Domain.
-bytes32 constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
-
-/// @dev The EIP-712 typeHash for Authorization.
-bytes32 constant AUTHORIZATION_TYPEHASH =
-    keccak256("Authorization(address authorizer,address authorized,bool isAuthorized,uint256 nonce,uint256 deadline)");
-
-/// @notice Contains the `v`, `r` and `s` parameters of an ECDSA signature.
-struct Signature {
-    uint8 v;
-    bytes32 r;
-    bytes32 s;
-}
-
 contract Blue is IFlashLender {
     using SharesMath for uint256;
     using FixedPointMathLib for uint256;
@@ -43,7 +29,7 @@ contract Blue is IFlashLender {
 
     // Immutables.
 
-    bytes32 public immutable DOMAIN_SEPARATOR;
+    address private immutable _TRUSTED_FORWARDER;
 
     // Storage.
 
@@ -75,20 +61,19 @@ contract Blue is IFlashLender {
     mapping(uint256 => bool) public isLltvEnabled;
     // User's authorizations. Note that by default, msg.sender is authorized by themself.
     mapping(address => mapping(address => bool)) public isAuthorized;
-    // User's nonces. Used to prevent replay attacks with EIP-712 signatures.
-    mapping(address => uint256) public nonce;
 
     // Constructor.
 
-    constructor(address newOwner) {
+    constructor(address newOwner, address trustedForwarder) {
         owner = newOwner;
 
-        DOMAIN_SEPARATOR = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256("Blue"), block.chainid, address(this)));
+        _TRUSTED_FORWARDER = trustedForwarder;
     }
 
     // Modifiers.
 
     modifier onlyOwner() {
+        // Permissioned functions must be directly called by the owner so we don't use `_msgSender()`.
         require(msg.sender == owner, Errors.NOT_OWNER);
         _;
     }
@@ -146,9 +131,10 @@ contract Blue is IFlashLender {
 
         totalSupply[id] += amount;
 
+        // Sender must be a contract to implement a callback so we don't user `_msgSender()`.
         if (data.length > 0) IBlueSupplyCallback(msg.sender).onBlueSupply(amount, data);
 
-        market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
+        market.borrowableAsset.safeTransferFrom(_msgSender(), address(this), amount);
     }
 
     function withdraw(Market memory market, uint256 amount, address onBehalf, address receiver) external {
@@ -205,9 +191,10 @@ contract Blue is IFlashLender {
 
         totalBorrow[id] -= amount;
 
+        // Sender must be a contract to implement a callback so we don't user `_msgSender()`.
         if (data.length > 0) IBlueRepayCallback(msg.sender).onBlueRepay(amount, data);
 
-        market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
+        market.borrowableAsset.safeTransferFrom(_msgSender(), address(this), amount);
     }
 
     // Collateral management.
@@ -223,10 +210,11 @@ contract Blue is IFlashLender {
         collateral[id][onBehalf] += amount;
 
         if (data.length > 0) {
+            // Sender must be a contract to implement a callback so we don't user `_msgSender()`.
             IBlueSupplyCollateralCallback(msg.sender).onBlueSupplyCollateral(amount, data);
         }
 
-        market.collateralAsset.safeTransferFrom(msg.sender, address(this), amount);
+        market.collateralAsset.safeTransferFrom(_msgSender(), address(this), amount);
     }
 
     function withdrawCollateral(Market memory market, uint256 amount, address onBehalf, address receiver) external {
@@ -279,11 +267,12 @@ contract Blue is IFlashLender {
             borrowShare[id][borrower] = 0;
         }
 
-        market.collateralAsset.safeTransfer(msg.sender, seized);
+        market.collateralAsset.safeTransfer(_msgSender(), seized);
 
+        // Sender must be a contract to implement a callback so we don't user `_msgSender()`.
         if (data.length > 0) IBlueLiquidateCallback(msg.sender).onBlueLiquidate(seized, repaid, data);
 
-        market.borrowableAsset.safeTransferFrom(msg.sender, address(this), repaid);
+        market.borrowableAsset.safeTransferFrom(_msgSender(), address(this), repaid);
     }
 
     // Flash Loans.
@@ -292,6 +281,7 @@ contract Blue is IFlashLender {
     function flashLoan(IFlashBorrower receiver, address token, uint256 amount, bytes calldata data) external {
         IERC20(token).safeTransfer(address(receiver), amount);
 
+        // Sender must be a contract to implement a callback so we don't user `_msgSender()`.
         receiver.onBlueFlashLoan(msg.sender, token, amount, data);
 
         IERC20(token).safeTransferFrom(address(receiver), address(this), amount);
@@ -299,33 +289,14 @@ contract Blue is IFlashLender {
 
     // Authorizations.
 
-    /// @dev The signature is malleable, but it has no impact on the security here.
-    function setAuthorization(
-        address authorizer,
-        address authorized,
-        bool newIsAuthorized,
-        uint256 deadline,
-        Signature calldata signature
-    ) external {
-        require(block.timestamp < deadline, Errors.SIGNATURE_EXPIRED);
-
-        bytes32 hashStruct = keccak256(
-            abi.encode(AUTHORIZATION_TYPEHASH, authorizer, authorized, newIsAuthorized, nonce[authorizer]++, deadline)
-        );
-        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, hashStruct));
-        address signatory = ecrecover(digest, signature.v, signature.r, signature.s);
-
-        require(signatory != address(0) && authorizer == signatory, Errors.INVALID_SIGNATURE);
-
-        isAuthorized[signatory][authorized] = newIsAuthorized;
-    }
-
     function setAuthorization(address authorized, bool newIsAuthorized) external {
-        isAuthorized[msg.sender][authorized] = newIsAuthorized;
+        isAuthorized[_msgSender()][authorized] = newIsAuthorized;
     }
 
     function _isSenderAuthorized(address user) internal view returns (bool) {
-        return msg.sender == user || isAuthorized[user][msg.sender];
+        address sender = _msgSender();
+
+        return sender == user || isAuthorized[user][sender];
     }
 
     // Interests management.
@@ -392,6 +363,19 @@ contract Blue is IFlashLender {
             assembly {
                 mstore(add(res, mul(i, 32)), sload(slot))
             }
+        }
+    }
+
+    // Meta-tx management.
+
+    function _msgSender() internal view returns (address sender) {
+        if (msg.sender == _TRUSTED_FORWARDER && msg.data.length >= 20) {
+            /// @solidity memory-safe-assembly
+            assembly {
+                sender := shr(96, calldataload(sub(calldatasize(), 20)))
+            }
+        } else {
+            sender = msg.sender;
         }
     }
 }

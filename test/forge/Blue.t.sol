@@ -4,8 +4,6 @@ pragma solidity 0.8.21;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
-import {SigUtils} from "./helpers/SigUtils.sol";
-
 import "src/Blue.sol";
 import {
     IBlueLiquidateCallback,
@@ -707,33 +705,33 @@ contract BlueTest is
         vm.stopPrank();
     }
 
-    function testAuthorizationWithSig(uint128 deadline, address authorized, uint256 privateKey, bool isAuthorized)
-        public
-    {
-        vm.assume(deadline > block.timestamp);
-        privateKey = bound(privateKey, 1, type(uint32).max); // "Private key must be less than the secp256k1 curve order (115792089237316195423570985008687907852837564279074904382605163141518161494337)."
-        address authorizer = vm.addr(privateKey);
+    // function testAuthorizationWithSig(uint128 deadline, address authorized, uint256 privateKey, bool isAuthorized)
+    //     public
+    // {
+    //     vm.assume(deadline > block.timestamp);
+    //     privateKey = bound(privateKey, 1, type(uint32).max); // "Private key must be less than the secp256k1 curve order (115792089237316195423570985008687907852837564279074904382605163141518161494337)."
+    //     address authorizer = vm.addr(privateKey);
 
-        SigUtils.Authorization memory authorization = SigUtils.Authorization({
-            authorizer: authorizer,
-            authorized: authorized,
-            isAuthorized: isAuthorized,
-            nonce: blue.nonce(authorizer),
-            deadline: block.timestamp + deadline
-        });
+    //     SigUtils.Authorization memory authorization = SigUtils.Authorization({
+    //         authorizer: authorizer,
+    //         authorized: authorized,
+    //         isAuthorized: isAuthorized,
+    //         nonce: blue.nonce(authorizer),
+    //         deadline: block.timestamp + deadline
+    //     });
 
-        bytes32 digest = SigUtils.getTypedDataHash(blue.DOMAIN_SEPARATOR(), authorization);
+    //     bytes32 digest = SigUtils.getTypedDataHash(blue.DOMAIN_SEPARATOR(), authorization);
 
-        Signature memory sig;
-        (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
+    //     Signature memory sig;
+    //     (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
 
-        blue.setAuthorization(
-            authorization.authorizer, authorization.authorized, authorization.isAuthorized, authorization.deadline, sig
-        );
+    //     blue.setAuthorization(
+    //         authorization.authorizer, authorization.authorized, authorization.isAuthorized, authorization.deadline, sig
+    //     );
 
-        assertEq(blue.isAuthorized(authorizer, authorized), isAuthorized);
-        assertEq(blue.nonce(authorizer), 1);
-    }
+    //     assertEq(blue.isAuthorized(authorizer, authorized), isAuthorized);
+    //     assertEq(blue.nonce(authorizer), 1);
+    // }
 
     function testFlashLoan(uint256 amount) public {
         amount = bound(amount, 1, 2 ** 64);
