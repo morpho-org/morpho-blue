@@ -378,17 +378,18 @@ contract BlueTest is
         );
     }
 
-    function testWithdrawAll(uint256 amountLent, uint256 amountBorrowed) public {
+    function testWithdrawAll(uint256 amountLent, uint256 amountBorrowed, address receiver) public {
+        vm.assume(receiver != address(blue));
         amountLent = bound(amountLent, 1, 2 ** 64);
         amountBorrowed = bound(amountBorrowed, 1, 2 ** 64);
         vm.assume(amountLent >= amountBorrowed);
 
         borrowableAsset.setBalance(address(this), amountLent);
         blue.supply(market, amountLent, address(this), hex"");
-        blue.withdraw(market, blue.supplyShare(id, address(this)), address(this), address(this));
+        blue.withdraw(market, blue.supplyShare(id, address(this)), address(this), receiver);
 
         assertEq(blue.supplyShare(id, address(this)), 0, "supply share");
-        assertEq(borrowableAsset.balanceOf(address(this)), amountLent, "this balance");
+        assertEq(borrowableAsset.balanceOf(receiver), amountLent, "receiver balance");
         assertEq(borrowableAsset.balanceOf(address(blue)), 0, "blue balance");
     }
 
@@ -486,7 +487,7 @@ contract BlueTest is
         vm.stopPrank();
 
         assertEq(blue.borrowShare(id, BORROWER), 0, "borrow share");
-        assertEq(borrowableAsset.balanceOf(BORROWER), 0, "BORROWER balance");
+        assertEq(borrowableAsset.balanceOf(BORROWER), 0, "receiver balance");
         assertEq(borrowableAsset.balanceOf(address(blue)), amountLent, "blue balance");
     }
 
@@ -523,15 +524,16 @@ contract BlueTest is
         assertEq(collateralAsset.balanceOf(address(blue)), amountDeposited - amountWithdrawn, "blue balance");
     }
 
-    function testWithdrawCollateralAll(uint256 amountDeposited) public {
+    function testWithdrawCollateralAll(uint256 amountDeposited, address receiver) public {
+        vm.assume(receiver != address(blue));
         amountDeposited = bound(amountDeposited, 1, 2 ** 64);
 
         collateralAsset.setBalance(address(this), amountDeposited);
         blue.supplyCollateral(market, amountDeposited, address(this), hex"");
-        blue.withdrawCollateral(market, blue.collateral(id, address(this)), address(this), address(this));
+        blue.withdrawCollateral(market, blue.collateral(id, address(this)), address(this), receiver);
 
         assertEq(blue.collateral(id, address(this)), 0, "this collateral");
-        assertEq(collateralAsset.balanceOf(address(this)), amountDeposited, "this balance");
+        assertEq(collateralAsset.balanceOf(receiver), amountDeposited, "receiver balance");
         assertEq(collateralAsset.balanceOf(address(blue)), 0, "blue balance");
     }
 
