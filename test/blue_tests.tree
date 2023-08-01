@@ -194,7 +194,7 @@
         └── when signatory is authorizer and not zero address
             └── it should set isAuthorized[signatory][authorizee] to newIsAuthorized
 .
-└── setApproval(address manager, bool isAllowed) external
+└── setAuthorization(address manager, bool isAllowed) external
     └── should set isApproved[msg.sender][manager] to isAllowed
 .
 └── _accrueInterests(Market memory market, Id id) internal
