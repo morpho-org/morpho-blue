@@ -192,7 +192,7 @@ contract Blue is IFlashLender {
         market.borrowableAsset.safeTransfer(receiver, amount);
     }
 
-    function repay(Market calldata market, uint256 shares, address onBehalf, bytes calldata data) external {
+    function repay(Market memory market, uint256 shares, address onBehalf, bytes calldata data) external {
         Id id = market.id();
         require(shares != 0, Errors.ZERO_AMOUNT);
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
