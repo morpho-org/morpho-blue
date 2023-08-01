@@ -4,30 +4,35 @@ pragma solidity ^0.8.0;
 import {Id, Market} from "src/libraries/MarketLib.sol";
 
 library Events {
-    event CollateralSupply(Id id, address indexed caller, address indexed onBehalf, uint256 amount);
-    event CollateralWithdraw(Id id, address caller, address indexed onBehalf, uint256 amount);
+    event CollateralSupply(Id indexed id, address indexed caller, address indexed onBehalf, uint256 amount);
+    event CollateralWithdraw(Id indexed id, address caller, address indexed onBehalf, uint256 amount);
 
-    event Supply(Id id, address indexed caller, address indexed onBehalf, uint256 amount, uint256 shares);
-    event Withdraw(Id id, address indexed caller, address indexed onBehalf, uint256 amount, uint256 shares);
+    event Supply(Id indexed id, address indexed caller, address indexed onBehalf, uint256 amount, uint256 shares);
+    event Withdraw(Id indexed id, address indexed caller, address indexed onBehalf, uint256 amount, uint256 shares);
 
-    event Borrow(Id id, address indexed caller, address indexed onBehalf, uint256 amount, uint256 shares);
-    event Repay(Id id, address indexed caller, address indexed onBehalf, uint256 amount, uint256 shares);
+    event Borrow(Id indexed id, address indexed caller, address indexed onBehalf, uint256 amount, uint256 shares);
+    event Repay(Id indexed id, address indexed caller, address indexed onBehalf, uint256 amount, uint256 shares);
 
     event Liquidation(
-        Id id, address indexed caller, address indexed borrower, uint256 repaid, uint256 repaidShares, uint256 seized
+        Id indexed id,
+        address indexed caller,
+        address indexed borrower,
+        uint256 repaid,
+        uint256 repaidShares,
+        uint256 seized
     );
 
     event Flashloan(address indexed caller, address indexed token, address indexed receiver, uint256 amount);
 
     event OwnershipTransferred(address indexed oldOwner, address indexed newOwner);
 
-    event FeeSet(Id id, uint256 fee);
+    event FeeSet(Id indexed id, uint256 fee);
 
     event FeeRecipientSet(address indexed feeRecipient);
 
     event MarketCreated(Market market);
 
-    event BadDebtRealized(Id id, address indexed borrower, uint256 amount, uint256 shares);
+    event BadDebtRealized(Id indexed id, address indexed borrower, uint256 amount, uint256 shares);
 
     event Approval(address indexed caller, address indexed delegator, address indexed manager, bool isApproved);
 
@@ -37,5 +42,5 @@ library Events {
 
     event LltvEnabled(uint256 lltv);
 
-    event InterestsAccrued(Id id, uint256 accruedInterests);
+    event InterestsAccrued(Id indexed id, uint256 accruedInterests);
 }
