@@ -19,7 +19,11 @@ contract MathTest is Test {
         uint256 result = rate.wTaylorCompounded(timeElapsed, 3) + MathLib.WAD;
         uint256 toCompare = wPow(MathLib.WAD + rate, timeElapsed);
         assertLe(result, toCompare, "rate should be less than the compounded rate");
-        assertGe(result, MathLib.WAD + timeElapsed.wMul(rate), "rate should be greater than the simple interest rate");
+        assertGe(
+            result,
+            MathLib.WAD + timeElapsed * rate / MathLib.WAD,
+            "rate should be greater than the simple interest rate"
+        );
         assertLe((toCompare - result) * 100_00 / toCompare, 8_00, "The error should be less than or equal to 8%");
     }
 
