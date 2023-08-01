@@ -21,11 +21,29 @@ import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 uint256 constant MAX_FEE = 0.25e18;
 uint256 constant ALPHA = 0.5e18;
 
+/// @dev The EIP-712 typeHash for EIP712Domain.
+bytes32 constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
+
+/// @dev The EIP-712 typeHash for Authorization.
+bytes32 constant AUTHORIZATION_TYPEHASH =
+    keccak256("Authorization(address authorizer,address authorized,bool isAuthorized,uint256 nonce,uint256 deadline)");
+
+/// @notice Contains the `v`, `r` and `s` parameters of an ECDSA signature.
+struct Signature {
+    uint8 v;
+    bytes32 r;
+    bytes32 s;
+}
+
 contract Blue is IFlashLender {
     using SharesMath for uint256;
     using FixedPointMathLib for uint256;
     using SafeTransferLib for IERC20;
     using MarketLib for Market;
+
+    // Immutables.
+
+    bytes32 public immutable DOMAIN_SEPARATOR;
 
     // Storage.
 
@@ -55,13 +73,17 @@ contract Blue is IFlashLender {
     mapping(IIrm => bool) public isIrmEnabled;
     // Enabled LLTVs.
     mapping(uint256 => bool) public isLltvEnabled;
-    // User's managers.
-    mapping(address => mapping(address => bool)) public isApproved;
+    // User's authorizations. Note that by default, msg.sender is authorized by themself.
+    mapping(address => mapping(address => bool)) public isAuthorized;
+    // User's nonces. Used to prevent replay attacks with EIP-712 signatures.
+    mapping(address => uint256) public nonce;
 
     // Constructor.
 
     constructor(address newOwner) {
         owner = newOwner;
+
+        DOMAIN_SEPARATOR = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256("Blue"), block.chainid, address(this)));
     }
 
     // Modifiers.
@@ -133,7 +155,7 @@ contract Blue is IFlashLender {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
-        require(_isSenderOrIsApproved(onBehalf), Errors.MANAGER_NOT_APPROVED);
+        require(_isSenderAuthorized(onBehalf), Errors.UNAUTHORIZED);
 
         _accrueInterests(market, id);
 
@@ -154,7 +176,7 @@ contract Blue is IFlashLender {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
-        require(_isSenderOrIsApproved(onBehalf), Errors.MANAGER_NOT_APPROVED);
+        require(_isSenderAuthorized(onBehalf), Errors.UNAUTHORIZED);
 
         _accrueInterests(market, id);
 
@@ -211,7 +233,7 @@ contract Blue is IFlashLender {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
-        require(_isSenderOrIsApproved(onBehalf), Errors.MANAGER_NOT_APPROVED);
+        require(_isSenderAuthorized(onBehalf), Errors.UNAUTHORIZED);
 
         _accrueInterests(market, id);
 
@@ -275,14 +297,35 @@ contract Blue is IFlashLender {
         IERC20(token).safeTransferFrom(address(receiver), address(this), amount);
     }
 
-    // Position management.
+    // Authorizations.
 
-    function setApproval(address manager, bool isAllowed) external {
-        isApproved[msg.sender][manager] = isAllowed;
+    /// @dev The signature is malleable, but it has no impact on the security here.
+    function setAuthorization(
+        address authorizer,
+        address authorized,
+        bool newIsAuthorized,
+        uint256 deadline,
+        Signature calldata signature
+    ) external {
+        require(block.timestamp < deadline, Errors.SIGNATURE_EXPIRED);
+
+        bytes32 hashStruct = keccak256(
+            abi.encode(AUTHORIZATION_TYPEHASH, authorizer, authorized, newIsAuthorized, nonce[authorizer]++, deadline)
+        );
+        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, hashStruct));
+        address signatory = ecrecover(digest, signature.v, signature.r, signature.s);
+
+        require(signatory != address(0) && authorizer == signatory, Errors.INVALID_SIGNATURE);
+
+        isAuthorized[signatory][authorized] = newIsAuthorized;
     }
 
-    function _isSenderOrIsApproved(address user) internal view returns (bool) {
-        return msg.sender == user || isApproved[user][msg.sender];
+    function setAuthorization(address authorized, bool newIsAuthorized) external {
+        isAuthorized[msg.sender][authorized] = newIsAuthorized;
+    }
+
+    function _isSenderAuthorized(address user) internal view returns (bool) {
+        return msg.sender == user || isAuthorized[user][msg.sender];
     }
 
     // Interests management.
