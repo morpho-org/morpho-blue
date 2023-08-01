@@ -151,7 +151,7 @@ contract Blue is IFlashLender {
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
 
-    function withdraw(Market calldata market, uint256 shares, address onBehalf, address receiver) external {
+    function withdraw(Market memory market, uint256 shares, address onBehalf, address receiver) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(shares != 0, Errors.ZERO_AMOUNT);
