@@ -42,32 +42,32 @@ contract IntegrationOnlyOwnerTest is BlueBaseTest {
         assertTrue(blue.isIrmEnabled(irmFuzz), "Irm is enabled");
     }
 
-    function testEnableLLTVWhenNotOwner(address addressFuzz, uint256 LLTVFuzz) public {
+    function testEnableLLTVWhenNotOwner(address addressFuzz, uint256 lltvFuzz) public {
         vm.assume(addressFuzz != OWNER);
-        vm.assume(LLTVFuzz != LLTV);
+        vm.assume(lltvFuzz != LLTV);
 
         vm.prank(addressFuzz);
         vm.expectRevert(bytes(Errors.NOT_OWNER));
-        blue.enableLltv(LLTVFuzz);
+        blue.enableLltv(lltvFuzz);
     }
 
-    function testEnableTooHighLLTV(uint256 LLTVFuzz) public {
-        vm.assume(LLTVFuzz != LLTV);
-        vm.assume(LLTVFuzz >= FixedPointMathLib.WAD);
+    function testEnableTooHighLLTV(uint256 lltvFuzz) public {
+        vm.assume(lltvFuzz != LLTV);
+        vm.assume(lltvFuzz >= FixedPointMathLib.WAD);
 
         vm.prank(OWNER);
         vm.expectRevert(bytes(Errors.LLTV_TOO_HIGH));
-        blue.enableLltv(LLTVFuzz);
+        blue.enableLltv(lltvFuzz);
     }
 
-    function testEnableLLTV(uint256 LLTVFuzz) public {
-        vm.assume(LLTVFuzz != LLTV);
-        vm.assume(LLTVFuzz < FixedPointMathLib.WAD);
+    function testEnableLLTV(uint256 lltvFuzz) public {
+        vm.assume(lltvFuzz != LLTV);
+        vm.assume(lltvFuzz < FixedPointMathLib.WAD);
 
         vm.prank(OWNER);
-        blue.enableLltv(LLTVFuzz);
+        blue.enableLltv(lltvFuzz);
 
-        assertTrue(blue.isLltvEnabled(LLTVFuzz), "Lltv is enabled");
+        assertTrue(blue.isLltvEnabled(lltvFuzz), "Lltv is enabled");
     }
 
     function testSetFeeWhenNotOwner(address addressFuzz, uint256 feeFuzz) public {

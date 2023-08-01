@@ -7,12 +7,12 @@ contract IntegrationSupplyTest is BlueBaseTest {
     function testSupplyUnknownMarket(Market memory marketFuzz) public {
         vm.assume(neq(marketFuzz, market));
 
-        vm.expectRevert("market not created");
+        vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
         blue.supply(marketFuzz, 1, address(this), hex"");
     }
 
     function testSupplyZeroAmount() public {
-        vm.expectRevert("zero amount");
+        vm.expectRevert(bytes(Errors.ZERO_AMOUNT));
         blue.supply(market, 0, address(this), hex"");
     }
 

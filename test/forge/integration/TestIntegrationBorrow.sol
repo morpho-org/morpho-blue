@@ -9,14 +9,14 @@ contract IntegrationBorrowTest is BlueBaseTest {
     function testBorrowUnknownMarket(Market memory marketFuzz) public {
         vm.assume(neq(marketFuzz, market));
 
-        vm.expectRevert("market not created");
+        vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
         blue.borrow(marketFuzz, 1, address(this), address(this));
     }
 
     function testBorrowZeroAmount() public {
         vm.prank(BORROWER);
 
-        vm.expectRevert("zero amount");
+        vm.expectRevert(bytes(Errors.ZERO_AMOUNT));
         blue.borrow(market, 0, address(this), address(this));
     }
 
@@ -27,7 +27,7 @@ contract IntegrationBorrowTest is BlueBaseTest {
         blue.supply(market, amount, address(this), hex"");
 
         vm.prank(BORROWER);
-        vm.expectRevert("unauthorized");
+        vm.expectRevert(bytes(Errors.UNAUTHORIZED));
         blue.borrow(market, amount, address(this), BORROWER);
     }
 
@@ -57,7 +57,7 @@ contract IntegrationBorrowTest is BlueBaseTest {
 
         vm.startPrank(BORROWER);
         blue.supplyCollateral(market, amountCollateral, BORROWER, hex"");
-        vm.expectRevert("insufficient collateral");
+        vm.expectRevert(bytes(Errors.INSUFFICIENT_COLLATERAL));
         blue.borrow(market, amountBorrowed, BORROWER, BORROWER);
         vm.stopPrank();
     }
@@ -91,7 +91,7 @@ contract IntegrationBorrowTest is BlueBaseTest {
 
         vm.startPrank(BORROWER);
         blue.supplyCollateral(market, amountCollateral, BORROWER, hex"");
-        vm.expectRevert("insufficient liquidity");
+        vm.expectRevert(bytes(Errors.INSUFFICIENT_LIQUIDITY));
         blue.borrow(market, amountBorrowed, BORROWER, BORROWER);
         vm.stopPrank();
     }

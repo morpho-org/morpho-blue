@@ -9,7 +9,7 @@ contract IntegrationWithdrawCollateralTest is BlueBaseTest {
     function testWithdrawCollateralUnknownMarket(Market memory marketFuzz) public {
         vm.assume(neq(marketFuzz, market));
 
-        vm.expectRevert("market not created");
+        vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
         blue.withdrawCollateral(marketFuzz, 1, address(this), address(this));
     }
 
@@ -19,7 +19,7 @@ contract IntegrationWithdrawCollateralTest is BlueBaseTest {
         collateralAsset.setBalance(address(this), amount);
         blue.supplyCollateral(market, amount, address(this), hex"");
 
-        vm.expectRevert("zero amount");
+        vm.expectRevert(bytes(Errors.ZERO_AMOUNT));
         blue.withdrawCollateral(market, 0, address(this), address(this));
     }
 
@@ -31,7 +31,7 @@ contract IntegrationWithdrawCollateralTest is BlueBaseTest {
         blue.supplyCollateral(market, amount, address(this), hex"");
 
         vm.prank(attacker);
-        vm.expectRevert("unauthorized");
+        vm.expectRevert(bytes(Errors.UNAUTHORIZED));
         blue.withdrawCollateral(market, amount, address(this), address(this));
     }
 
@@ -65,7 +65,7 @@ contract IntegrationWithdrawCollateralTest is BlueBaseTest {
         vm.startPrank(BORROWER);
         blue.supplyCollateral(market, amountCollateral, BORROWER, hex"");
         blue.borrow(market, amountBorrowed, BORROWER, BORROWER);
-        vm.expectRevert("insufficient collateral");
+        vm.expectRevert(bytes(Errors.INSUFFICIENT_COLLATERAL));
         blue.withdrawCollateral(market, amountCollateral, BORROWER, BORROWER);
         vm.stopPrank();
     }
