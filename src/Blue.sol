@@ -10,6 +10,8 @@ import {
 } from "./interfaces/IBlueCallbacks.sol";
 import {IIrm} from "./interfaces/IIrm.sol";
 import {IERC20} from "./interfaces/IERC20.sol";
+import {IOracle} from "./interfaces/IOracle.sol";
+import {Id, Market, Signature, IBlue} from "./interfaces/IBlue.sol";
 
 import {Errors} from "./libraries/Errors.sol";
 import {SharesMath} from "./libraries/SharesMath.sol";

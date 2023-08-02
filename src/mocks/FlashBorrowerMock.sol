@@ -11,7 +11,7 @@ contract FlashBorrowerMock is IBlueFlashLoanCallback {
 
     IFlashLender private immutable BLUE;
 
-    constructor(Blue newBlue) {
+    constructor(IFlashLender newBlue) {
         BLUE = newBlue;
     }
 

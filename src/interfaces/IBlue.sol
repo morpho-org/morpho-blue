@@ -2,7 +2,6 @@
 pragma solidity >=0.5.0;
 
 import {IFlashLender} from "./IFlashLender.sol";
-import {IFlashBorrower} from "./IFlashBorrower.sol";
 
 type Id is bytes32;
 
@@ -28,8 +27,8 @@ interface IBlue is IFlashLender {
     function owner() external view returns (address);
     function feeRecipient() external view returns (address);
 
-    function supplyShare(Id, address) external view returns (uint256);
-    function borrowShare(Id, address) external view returns (uint256);
+    function supplyShares(Id, address) external view returns (uint256);
+    function borrowShares(Id, address) external view returns (uint256);
     function collateral(Id, address) external view returns (uint256);
     function totalSupply(Id) external view returns (uint256);
     function totalSupplyShares(Id) external view returns (uint256);
@@ -57,7 +56,7 @@ interface IBlue is IFlashLender {
     function supplyCollateral(Market memory market, uint256 amount, address onBehalf, bytes memory data) external;
     function withdrawCollateral(Market memory market, uint256 amount, address onBehalf, address receiver) external;
     function liquidate(Market memory market, address borrower, uint256 seized, bytes memory data) external;
-    function flashLoan(IFlashBorrower receiver, address token, uint256 amount, bytes calldata data) external;
+    function flashLoan(address token, uint256 amount, bytes calldata data) external;
 
     function setAuthorization(address manager, bool isAllowed) external;
     function setAuthorization(
