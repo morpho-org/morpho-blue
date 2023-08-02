@@ -16,7 +16,6 @@ import {
 import {ERC20Mock as ERC20} from "src/mocks/ERC20Mock.sol";
 import {OracleMock as Oracle} from "src/mocks/OracleMock.sol";
 import {IrmMock as Irm} from "src/mocks/IrmMock.sol";
-import {FlashBorrowerMock} from "src/mocks/FlashBorrowerMock.sol";
 
 contract BlueTest is
     Test,
@@ -41,7 +40,6 @@ contract BlueTest is
     Irm private irm;
     Market public market;
     Id public id;
-    FlashBorrowerMock internal flashBorrower;
 
     function setUp() public {
         // Create Blue.
@@ -52,7 +50,6 @@ contract BlueTest is
         collateralAsset = new ERC20("collateral", "C", 18);
         borrowableOracle = new Oracle();
         collateralOracle = new Oracle();
-        flashBorrower = new FlashBorrowerMock(blue);
 
         irm = new Irm(blue);
 
@@ -767,7 +764,7 @@ contract BlueTest is
         borrowableAsset.setBalance(address(this), amount);
         blue.supply(market, amount, address(this), hex"");
 
-        blue.flashLoan(flashBorrower, address(borrowableAsset), amount, bytes(""));
+        blue.flashLoan(address(borrowableAsset), amount, bytes(""));
 
         assertEq(borrowableAsset.balanceOf(address(blue)), amount, "balanceOf");
     }
@@ -860,6 +857,8 @@ contract BlueTest is
         assertEq(blue.collateral(market.id(), address(this)), 0, "no withdraw collateral");
     }
 
+    // Callback functions.
+
     function onBlueSupply(uint256 amount, bytes memory data) external {
         require(msg.sender == address(blue));
         bytes4 selector;
@@ -902,6 +901,10 @@ contract BlueTest is
         if (selector == this.testLiquidateCallback.selector) {
             borrowableAsset.approve(address(blue), repaid);
         }
+    }
+
+    function onBlueFlashLoan(address token, uint256 amount, bytes calldata) external {
+        ERC20(token).approve(address(blue), amount);
     }
 }
 
