@@ -99,20 +99,20 @@ contract Blue is IFlashLender {
     function setOwner(address newOwner) external onlyOwner {
         owner = newOwner;
 
-        emit Events.SetOwner(newOwner);
+        emit Events.OwnerSet(newOwner);
     }
 
     function enableIrm(IIrm irm) external onlyOwner {
         isIrmEnabled[irm] = true;
 
-        emit Events.EnableIrm(address(irm));
+        emit Events.IrmEnabled(address(irm));
     }
 
     function enableLltv(uint256 lltv) external onlyOwner {
         require(lltv < FixedPointMathLib.WAD, Errors.LLTV_TOO_HIGH);
         isLltvEnabled[lltv] = true;
 
-        emit Events.EnableLltv(lltv);
+        emit Events.LltvEnabled(lltv);
     }
 
     /// @notice It is the owner's responsibility to ensure a fee recipient is set before setting a non-zero fee.
@@ -122,13 +122,13 @@ contract Blue is IFlashLender {
         require(newFee <= MAX_FEE, Errors.MAX_FEE_EXCEEDED);
         fee[id] = newFee;
 
-        emit Events.SetFee(id, newFee);
+        emit Events.FeeSet(id, newFee);
     }
 
     function setFeeRecipient(address recipient) external onlyOwner {
         feeRecipient = recipient;
 
-        emit Events.SetFeeRecipient(recipient);
+        emit Events.FeeRecipientSet(recipient);
     }
 
     // Markets management.
@@ -139,7 +139,7 @@ contract Blue is IFlashLender {
         require(isLltvEnabled[market.lltv], Errors.LLTV_NOT_ENABLED);
         require(lastUpdate[id] == 0, Errors.MARKET_CREATED);
 
-        emit Events.CreateMarket(id, market);
+        emit Events.MarketCreated(id, market);
 
         _accrueInterests(market, id);
     }
@@ -159,7 +159,7 @@ contract Blue is IFlashLender {
 
         totalSupply[id] += amount;
 
-        emit Events.Supply(id, msg.sender, onBehalf, amount, shares);
+        emit Events.Supplied(id, msg.sender, onBehalf, amount, shares);
 
         if (data.length > 0) IBlueSupplyCallback(msg.sender).onBlueSupply(amount, data);
 
@@ -180,7 +180,7 @@ contract Blue is IFlashLender {
 
         totalSupply[id] -= amount;
 
-        emit Events.Withdraw(id, msg.sender, onBehalf, receiver, amount, shares);
+        emit Events.Withdrawn(id, msg.sender, onBehalf, receiver, amount, shares);
 
         require(totalBorrow[id] <= totalSupply[id], Errors.INSUFFICIENT_LIQUIDITY);
 
@@ -203,7 +203,7 @@ contract Blue is IFlashLender {
 
         totalBorrow[id] += amount;
 
-        emit Events.Borrow(id, msg.sender, onBehalf, receiver, amount, shares);
+        emit Events.Borrowed(id, msg.sender, onBehalf, receiver, amount, shares);
 
         require(_isHealthy(market, id, onBehalf), Errors.INSUFFICIENT_COLLATERAL);
         require(totalBorrow[id] <= totalSupply[id], Errors.INSUFFICIENT_LIQUIDITY);
@@ -224,7 +224,7 @@ contract Blue is IFlashLender {
 
         totalBorrow[id] -= amount;
 
-        emit Events.Repay(id, msg.sender, onBehalf, amount, shares);
+        emit Events.Repaid(id, msg.sender, onBehalf, amount, shares);
 
         if (data.length > 0) IBlueRepayCallback(msg.sender).onBlueRepay(amount, data);
 
@@ -243,7 +243,7 @@ contract Blue is IFlashLender {
 
         collateral[id][onBehalf] += amount;
 
-        emit Events.CollateralSupply(id, msg.sender, onBehalf, amount);
+        emit Events.SuppliedCollateral(id, msg.sender, onBehalf, amount);
 
         if (data.length > 0) IBlueSupplyCollateralCallback(msg.sender).onBlueSupplyCollateral(amount, data);
 
@@ -260,7 +260,7 @@ contract Blue is IFlashLender {
 
         collateral[id][onBehalf] -= amount;
 
-        emit Events.CollateralWithdraw(id, msg.sender, onBehalf, receiver, amount);
+        emit Events.WithdrawnCollateral(id, msg.sender, onBehalf, receiver, amount);
 
         require(_isHealthy(market, id, onBehalf), Errors.INSUFFICIENT_COLLATERAL);
 
@@ -293,7 +293,7 @@ contract Blue is IFlashLender {
 
         collateral[id][borrower] -= seized;
 
-        emit Events.Liquidate(id, msg.sender, borrower, repaid, repaidShares, seized);
+        emit Events.Liquidated(id, msg.sender, borrower, repaid, repaidShares, seized);
 
         // Realize the bad debt if needed.
         if (collateral[id][borrower] == 0) {
@@ -304,7 +304,7 @@ contract Blue is IFlashLender {
             totalBorrowShares[id] -= badDebtShares;
             borrowShare[id][borrower] = 0;
 
-            emit Events.RealizeBadDebt(id, borrower, badDebt, badDebtShares);
+            emit Events.BadDebtRealized(id, borrower, badDebt, badDebtShares);
         }
 
         market.collateralAsset.safeTransfer(msg.sender, seized);
@@ -347,7 +347,7 @@ contract Blue is IFlashLender {
 
         require(signatory != address(0) && authorizer == signatory, Errors.INVALID_SIGNATURE);
 
-        emit Events.IncrementNonce(msg.sender, signatory, usedNonce);
+        emit Events.NonceIncremented(msg.sender, signatory, usedNonce);
 
         _setAuthorization(signatory, authorized, newIsAuthorized);
     }
@@ -363,7 +363,7 @@ contract Blue is IFlashLender {
     function _setAuthorization(address authorizer, address authorized, bool newIsAuthorized) internal {
         isAuthorized[authorizer][authorized] = newIsAuthorized;
 
-        emit Events.Authorization(msg.sender, authorizer, authorized, newIsAuthorized);
+        emit Events.AuthorizationSet(msg.sender, authorizer, authorized, newIsAuthorized);
     }
 
     // Interests management.
@@ -390,7 +390,7 @@ contract Blue is IFlashLender {
                 totalSupplyShares[id] += feeShares;
             }
 
-            emit Events.AccrueInterests(id, accruedInterests, feeShares);
+            emit Events.InterestsAccrued(id, accruedInterests, feeShares);
         }
 
         lastUpdate[id] = block.timestamp;
