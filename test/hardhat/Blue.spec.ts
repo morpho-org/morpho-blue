@@ -201,7 +201,7 @@ describe("Blue", () => {
     }
   });
 
-  it("should simuate gas cost [flashloan]", async () => {
+  it("should simuate gas cost [flash loans]", async () => {
     const user = signers[0];
     const amount = BigNumber.WAD;
 
