@@ -301,19 +301,18 @@ contract Blue {
 
         collateral[id][borrower] -= seized;
 
-        emit Events.Liquidate(id, msg.sender, borrower, repaid, repaidShares, seized);
-
         // Realize the bad debt if needed.
+        uint256 badDebtShares;
         if (collateral[id][borrower] == 0) {
-            uint256 badDebtShares = borrowShares[id][borrower];
+            badDebtShares = borrowShares[id][borrower];
             uint256 badDebt = badDebtShares.toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
             totalSupply[id] -= badDebt;
             totalBorrow[id] -= badDebt;
             totalBorrowShares[id] -= badDebtShares;
             borrowShares[id][borrower] = 0;
-
-            emit Events.RealizeBadDebt(id, borrower, badDebt, badDebtShares);
         }
+
+        emit Events.Liquidate(id, msg.sender, borrower, repaid, repaidShares, seized, badDebtShares);
 
         market.collateralAsset.safeTransfer(msg.sender, seized);
 
@@ -356,21 +355,19 @@ contract Blue {
 
         emit Events.IncrementNonce(msg.sender, authorizer, usedNonce);
 
-        _setAuthorization(authorizer, authorized, newIsAuthorized);
+        isAuthorized[authorizer][authorized] = newIsAuthorized;
+
+        emit Events.SetAuthorization(msg.sender, authorizer, authorized, newIsAuthorized);
     }
 
     function setAuthorization(address authorized, bool newIsAuthorized) external {
-        _setAuthorization(msg.sender, authorized, newIsAuthorized);
+        isAuthorized[msg.sender][authorized] = newIsAuthorized;
+
+        emit Events.SetAuthorization(msg.sender, msg.sender, authorized, newIsAuthorized);
     }
 
     function _isSenderAuthorized(address user) internal view returns (bool) {
         return msg.sender == user || isAuthorized[user][msg.sender];
-    }
-
-    function _setAuthorization(address authorizer, address authorized, bool newIsAuthorized) internal {
-        isAuthorized[authorizer][authorized] = newIsAuthorized;
-
-        emit Events.SetAuthorization(msg.sender, authorizer, authorized, newIsAuthorized);
     }
 
     // Interests management.
@@ -397,7 +394,7 @@ contract Blue {
                 totalSupplyShares[id] += feeShares;
             }
 
-            emit Events.AccrueInterests(id, accruedInterests, feeShares);
+            emit Events.AccrueInterests(id, borrowRate, accruedInterests, feeShares);
         }
 
         lastUpdate[id] = block.timestamp;

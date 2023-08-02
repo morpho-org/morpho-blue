@@ -35,7 +35,8 @@ library Events {
         address indexed borrower,
         uint256 repaid,
         uint256 repaidShares,
-        uint256 seized
+        uint256 seized,
+        uint256 badDebtShares
     );
 
     event FlashLoan(address indexed caller, address indexed token, uint256 amount);
@@ -48,8 +49,6 @@ library Events {
 
     event CreateMarket(Id indexed id, Market market);
 
-    event RealizeBadDebt(Id indexed id, address indexed borrower, uint256 amount, uint256 shares);
-
     event SetAuthorization(
         address indexed caller, address indexed authorizer, address indexed authorized, bool isAuthorized
     );
@@ -60,5 +59,5 @@ library Events {
 
     event EnableLltv(uint256 lltv);
 
-    event AccrueInterests(Id indexed id, uint256 accruedInterests, uint256 feeShares);
+    event AccrueInterests(Id indexed id, uint256 borrowRate, uint256 accruedInterests, uint256 feeShares);
 }
