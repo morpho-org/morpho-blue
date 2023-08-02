@@ -156,7 +156,8 @@ contract Blue is IFlashLender {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
-        require(receiver != address(0), Errors.ZERO_ADDRESS); // Only receiver it's checked since if onBehalf == address(0), the check below will fail.
+        // No need to verify that onBehalf != address(0) thanks to the authorization check.
+        require(receiver != address(0), Errors.ZERO_ADDRESS);
         require(_isSenderAuthorized(onBehalf), Errors.UNAUTHORIZED);
 
         _accrueInterests(market, id);
@@ -178,7 +179,8 @@ contract Blue is IFlashLender {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
-        require(receiver != address(0), Errors.ZERO_ADDRESS); // Only receiver it's checked since if onBehalf == address(0), the check below will fail.
+        // No need to verify that onBehalf != address(0) thanks to the authorization check.
+        require(receiver != address(0), Errors.ZERO_ADDRESS);
         require(_isSenderAuthorized(onBehalf), Errors.UNAUTHORIZED);
 
         _accrueInterests(market, id);
@@ -238,7 +240,8 @@ contract Blue is IFlashLender {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
-        require(receiver != address(0), Errors.ZERO_ADDRESS); // Only receiver it's checked since if onBehalf == address(0), the check below will fail.
+        // No need to verify that onBehalf != address(0) thanks to the authorization check.
+        require(receiver != address(0), Errors.ZERO_ADDRESS);
         require(_isSenderAuthorized(onBehalf), Errors.UNAUTHORIZED);
 
         _accrueInterests(market, id);
