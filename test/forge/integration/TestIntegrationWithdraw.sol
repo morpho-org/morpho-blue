@@ -72,10 +72,10 @@ contract IntegrationWithdrawTest is BlueBaseTest {
         blue.withdraw(market, amountWithdrawn, address(this), address(this));
 
         assertApproxEqAbs(
-            blue.supplyShare(id, address(this)),
+            blue.supplyShares(id, address(this)),
             (amountSupplied - amountWithdrawn) * SharesMath.VIRTUAL_SHARES,
             100,
-            "supply share"
+            "supply shares"
         );
         assertEq(borrowableAsset.balanceOf(address(this)), amountWithdrawn, "this balance");
         assertEq(borrowableAsset.balanceOf(BORROWER), amountBorrowed, "Borrower balance");
@@ -110,10 +110,10 @@ contract IntegrationWithdrawTest is BlueBaseTest {
 
         assertEq(blue.totalSupply(id), amountSupplied - amountWithdrawn - amountWithdrawnToReceiver, "total supply");
         assertApproxEqAbs(
-            blue.supplyShare(id, address(this)),
+            blue.supplyShares(id, address(this)),
             (amountSupplied - amountWithdrawn - amountWithdrawnToReceiver) * SharesMath.VIRTUAL_SHARES,
             100,
-            "supply share"
+            "supply shares"
         );
         assertEq(borrowableAsset.balanceOf(address(this)), amountWithdrawnToReceiver, "this balance");
         assertEq(borrowableAsset.balanceOf(BORROWER), amountBorrowed + amountWithdrawn, "Borrower balance");

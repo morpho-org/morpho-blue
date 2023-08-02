@@ -77,7 +77,7 @@ contract BlueBaseTest is Test {
     }
 
     function supplyBalance(address user) internal view returns (uint256) {
-        uint256 supplyShares = blue.supplyShare(id, user);
+        uint256 supplyShares = blue.supplyShares(id, user);
         if (supplyShares == 0) return 0;
 
         uint256 totalShares = blue.totalSupplyShares(id);
@@ -86,7 +86,7 @@ contract BlueBaseTest is Test {
     }
 
     function borrowBalance(address user) internal view returns (uint256) {
-        uint256 borrowerShares = blue.borrowShare(id, user);
+        uint256 borrowerShares = blue.borrowShares(id, user);
         if (borrowerShares == 0) return 0;
 
         uint256 totalShares = blue.totalBorrowShares(id);

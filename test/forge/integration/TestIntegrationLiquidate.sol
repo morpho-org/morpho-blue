@@ -108,11 +108,11 @@ contract IntegrationLiquidateTest is BlueBaseTest {
         blue.liquidate(market, BORROWER, amountSeized, hex"");
 
         assertEq(
-            blue.borrowShare(id, BORROWER),
+            blue.borrowShares(id, BORROWER),
             amountBorrowed * SharesMath.VIRTUAL_SHARES - expectedRepaidShares,
             "borrow share"
         );
-        assertEq(blue.totalBorrow(id), amountBorrowed - expectedRepaid, "borrow share");
+        assertEq(blue.totalBorrow(id), amountBorrowed - expectedRepaid, "borrow shares");
         assertEq(blue.collateral(id, BORROWER), amountCollateral - amountSeized, "collateral");
         assertEq(borrowableAsset.balanceOf(BORROWER), amountBorrowed, "borrower balance");
         assertEq(borrowableAsset.balanceOf(LIQUIDATOR), amountBorrowed - expectedRepaid, "liquidator balance");
@@ -127,7 +127,7 @@ contract IntegrationLiquidateTest is BlueBaseTest {
         uint256 incentive;
         uint256 expectedRepaid;
         uint256 expectedRepaidShares;
-        uint256 borrowShareBeforeLiquidation;
+        uint256 borrowSharesBeforeLiquidation;
         uint256 totalBorrowSharesBeforeLiquidation;
         uint256 totalBorrowBeforeLiquidation;
         uint256 totalSupplyBeforeLiquidation;
@@ -177,11 +177,11 @@ contract IntegrationLiquidateTest is BlueBaseTest {
 
         params.expectedRepaidShares =
             params.expectedRepaid.toSharesDown(blue.totalBorrow(id), blue.totalBorrowShares(id));
-        params.borrowShareBeforeLiquidation = blue.borrowShare(id, BORROWER);
+        params.borrowSharesBeforeLiquidation = blue.borrowShares(id, BORROWER);
         params.totalBorrowSharesBeforeLiquidation = blue.totalBorrowShares(id);
         params.totalBorrowBeforeLiquidation = blue.totalBorrow(id);
         params.totalSupplyBeforeLiquidation = blue.totalSupply(id);
-        params.expectedBadDebt = (params.borrowShareBeforeLiquidation - params.expectedRepaidShares).toAssetsUp(
+        params.expectedBadDebt = (params.borrowSharesBeforeLiquidation - params.expectedRepaidShares).toAssetsUp(
             params.totalBorrowBeforeLiquidation - params.expectedRepaid,
             params.totalBorrowSharesBeforeLiquidation - params.expectedRepaidShares
         );
@@ -201,8 +201,8 @@ contract IntegrationLiquidateTest is BlueBaseTest {
         assertEq(collateralAsset.balanceOf(LIQUIDATOR), amountCollateral, "blue collateral balance");
 
         //bad debt realisation
-        assertEq(blue.borrowShare(id, BORROWER), 0, "borrow share");
-        assertEq(blue.totalBorrowShares(id), 0, "total borrow share");
+        assertEq(blue.borrowShares(id, BORROWER), 0, "borrow sharse");
+        assertEq(blue.totalBorrowShares(id), 0, "total borrow shares");
         assertEq(
             blue.totalBorrow(id),
             params.totalBorrowBeforeLiquidation - params.expectedRepaid - params.expectedBadDebt,

@@ -137,7 +137,7 @@ contract IntegrationBorrowTest is BlueBaseTest {
         vm.stopPrank();
 
         assertEq(blue.totalBorrow(id), amountBorrowed, "total borrow");
-        assertEq(blue.borrowShare(id, BORROWER), amountBorrowed * SharesMath.VIRTUAL_SHARES, "borrow share");
+        assertEq(blue.borrowShares(id, BORROWER), amountBorrowed * SharesMath.VIRTUAL_SHARES, "borrow shares");
         assertEq(borrowableAsset.balanceOf(BORROWER), amountBorrowed, "borrower balance");
         assertEq(borrowableAsset.balanceOf(address(this)), 0, "lender balance");
         assertEq(borrowableAsset.balanceOf(address(blue)), amountSupplied - amountBorrowed, "blue balance");
@@ -176,7 +176,7 @@ contract IntegrationBorrowTest is BlueBaseTest {
         blue.borrow(market, amountBorrowed, address(this), address(this));
 
         assertEq(blue.totalBorrow(id), amountBorrowed, "total borrow");
-        assertEq(blue.borrowShare(id, address(this)), amountBorrowed * SharesMath.VIRTUAL_SHARES, "borrow share");
+        assertEq(blue.borrowShares(id, address(this)), amountBorrowed * SharesMath.VIRTUAL_SHARES, "borrow shares");
         assertEq(borrowableAsset.balanceOf(BORROWER), 0, "borrower balance");
         assertEq(borrowableAsset.balanceOf(address(this)), amountBorrowed, "lender balance");
         assertEq(borrowableAsset.balanceOf(address(blue)), amountSupplied - amountBorrowed, "blue balance");

@@ -28,7 +28,7 @@ contract IntegrationSupplyTest is BlueBaseTest {
         blue.supply(market, amount, address(this), hex"");
 
         assertEq(blue.totalSupply(id), amount, "total supply");
-        assertEq(blue.supplyShare(id, address(this)), amount * SharesMath.VIRTUAL_SHARES, "supply share");
+        assertEq(blue.supplyShares(id, address(this)), amount * SharesMath.VIRTUAL_SHARES, "supply shares");
         assertEq(borrowableAsset.balanceOf(address(this)), 0, "lender balance");
         assertEq(borrowableAsset.balanceOf(address(blue)), amount, "blue balance");
     }
@@ -41,7 +41,7 @@ contract IntegrationSupplyTest is BlueBaseTest {
         blue.supply(market, amount, onBehalf, hex"");
 
         assertEq(blue.totalSupply(id), amount, "total supply");
-        assertEq(blue.supplyShare(id, onBehalf), amount * SharesMath.VIRTUAL_SHARES, "supply share");
+        assertEq(blue.supplyShares(id, onBehalf), amount * SharesMath.VIRTUAL_SHARES, "supply shares");
         assertEq(borrowableAsset.balanceOf(onBehalf), 0, "lender balance");
         assertEq(borrowableAsset.balanceOf(address(blue)), amount, "blue balance");
     }
