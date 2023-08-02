@@ -2,19 +2,29 @@
 pragma solidity >=0.5.0;
 
 import {IIrm} from "./IIrm.sol";
+import {IOracle} from "./IOracle.sol";
 import {IFlashLender} from "./IFlashLender.sol";
 import {IFlashBorrower} from "./IFlashBorrower.sol";
 
-import {Id, Market} from "../libraries/MarketLib.sol";
+type Id is bytes32;
+
+struct Market {
+    address borrowableAsset;
+    address collateralAsset;
+    IOracle borrowableOracle;
+    IOracle collateralOracle;
+    IIrm irm;
+    uint256 lltv;
+}
+
+/// @notice Contains the `v`, `r` and `s` parameters of an ECDSA signature.
+struct Signature {
+    uint8 v;
+    bytes32 r;
+    bytes32 s;
+}
 
 interface IBlue is IFlashLender {
-    /// @notice Contains the `v`, `r` and `s` parameters of an ECDSA signature.
-    struct Signature {
-        uint8 v;
-        bytes32 r;
-        bytes32 s;
-    }
-
     function DOMAIN_SEPARATOR() external view returns (bytes32);
 
     function owner() external view returns (address);

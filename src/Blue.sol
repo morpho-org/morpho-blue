@@ -7,7 +7,7 @@ import {
     IBlueSupplyCallback,
     IBlueSupplyCollateralCallback
 } from "./interfaces/IBlueCallbacks.sol";
-import {IBlue} from "./interfaces/IBlue.sol";
+import {Id, Market, Signature, IBlue} from "./interfaces/IBlue.sol";
 import {IIrm} from "./interfaces/IIrm.sol";
 import {IERC20} from "./interfaces/IERC20.sol";
 import {IFlashBorrower} from "./interfaces/IFlashBorrower.sol";
@@ -15,7 +15,7 @@ import {IFlashBorrower} from "./interfaces/IFlashBorrower.sol";
 import {Errors} from "./libraries/Errors.sol";
 import {SharesMath} from "./libraries/SharesMath.sol";
 import {FixedPointMathLib} from "./libraries/FixedPointMathLib.sol";
-import {Id, Market, MarketLib} from "./libraries/MarketLib.sol";
+import {MarketLib} from "./libraries/MarketLib.sol";
 import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
 
 uint256 constant MAX_FEE = 0.25e18;
