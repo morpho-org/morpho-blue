@@ -910,8 +910,9 @@ contract BlueTest is
         return hex"";
     }
 
-    function onBlueFlashLoan(address token, uint256 amount, bytes calldata) external {
+    function onBlueFlashLoan(address token, uint256 amount, bytes calldata) external returns (bytes memory) {
         ERC20(token).approve(address(blue), amount);
+        return hex"";
     }
 }
 

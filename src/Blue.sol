@@ -308,10 +308,10 @@ contract Blue {
 
     // Flash Loans.
 
-    function flashLoan(address token, uint256 amount, bytes calldata data) external {
+    function flashLoan(address token, uint256 amount, bytes calldata data) external returns (bytes memory returnData) {
         IERC20(token).safeTransfer(msg.sender, amount);
 
-        IBlueFlashLoanCallback(msg.sender).onBlueFlashLoan(token, amount, data);
+        returnData = IBlueFlashLoanCallback(msg.sender).onBlueFlashLoan(token, amount, data);
 
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
     }

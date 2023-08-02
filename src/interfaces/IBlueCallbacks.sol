@@ -18,5 +18,5 @@ interface IBlueSupplyCollateralCallback {
 }
 
 interface IBlueFlashLoanCallback {
-    function onBlueFlashLoan(address token, uint256 amount, bytes calldata data) external;
+    function onBlueFlashLoan(address token, uint256 amount, bytes calldata data) external returns (bytes memory);
 }
