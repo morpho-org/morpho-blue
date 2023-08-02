@@ -5,12 +5,11 @@ import {
     IBlueLiquidateCallback,
     IBlueRepayCallback,
     IBlueSupplyCallback,
-    IBlueSupplyCollateralCallback
+    IBlueSupplyCollateralCallback,
+    IBlueFlashLoanCallback
 } from "src/interfaces/IBlueCallbacks.sol";
 import {IIrm} from "src/interfaces/IIrm.sol";
 import {IERC20} from "src/interfaces/IERC20.sol";
-import {IFlashLender} from "src/interfaces/IFlashLender.sol";
-import {IFlashBorrower} from "src/interfaces/IFlashBorrower.sol";
 
 import {Errors} from "./libraries/Errors.sol";
 import {SharesMath} from "src/libraries/SharesMath.sol";
@@ -35,7 +34,7 @@ struct Signature {
     bytes32 s;
 }
 
-contract Blue is IFlashLender {
+contract Blue {
     using SharesMath for uint256;
     using FixedPointMathLib for uint256;
     using SafeTransferLib for IERC20;
@@ -52,9 +51,9 @@ contract Blue is IFlashLender {
     // Fee recipient.
     address public feeRecipient;
     // User' supply balances.
-    mapping(Id => mapping(address => uint256)) public supplyShare;
+    mapping(Id => mapping(address => uint256)) public supplyShares;
     // User' borrow balances.
-    mapping(Id => mapping(address => uint256)) public borrowShare;
+    mapping(Id => mapping(address => uint256)) public borrowShares;
     // User' collateral balance.
     mapping(Id => mapping(address => uint256)) public collateral;
     // Market total supply.
@@ -140,11 +139,12 @@ contract Blue is IFlashLender {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
+        require(onBehalf != address(0), Errors.ZERO_ADDRESS);
 
         _accrueInterests(market, id);
 
         uint256 shares = amount.toSharesDown(totalSupply[id], totalSupplyShares[id]);
-        supplyShare[id][onBehalf] += shares;
+        supplyShares[id][onBehalf] += shares;
         totalSupplyShares[id] += shares;
 
         totalSupply[id] += amount;
@@ -158,12 +158,14 @@ contract Blue is IFlashLender {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
+        // No need to verify that onBehalf != address(0) thanks to the authorization check.
+        require(receiver != address(0), Errors.ZERO_ADDRESS);
         require(_isSenderAuthorized(onBehalf), Errors.UNAUTHORIZED);
 
         _accrueInterests(market, id);
 
         uint256 shares = amount.toSharesUp(totalSupply[id], totalSupplyShares[id]);
-        supplyShare[id][onBehalf] -= shares;
+        supplyShares[id][onBehalf] -= shares;
         totalSupplyShares[id] -= shares;
 
         totalSupply[id] -= amount;
@@ -179,12 +181,14 @@ contract Blue is IFlashLender {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
+        // No need to verify that onBehalf != address(0) thanks to the authorization check.
+        require(receiver != address(0), Errors.ZERO_ADDRESS);
         require(_isSenderAuthorized(onBehalf), Errors.UNAUTHORIZED);
 
         _accrueInterests(market, id);
 
         uint256 shares = amount.toSharesUp(totalBorrow[id], totalBorrowShares[id]);
-        borrowShare[id][onBehalf] += shares;
+        borrowShares[id][onBehalf] += shares;
         totalBorrowShares[id] += shares;
 
         totalBorrow[id] += amount;
@@ -202,11 +206,12 @@ contract Blue is IFlashLender {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
+        require(onBehalf != address(0), Errors.ZERO_ADDRESS);
 
         _accrueInterests(market, id);
 
         uint256 shares = amount.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
-        borrowShare[id][onBehalf] -= shares;
+        borrowShares[id][onBehalf] -= shares;
         totalBorrowShares[id] -= shares;
 
         totalBorrow[id] -= amount;
@@ -226,6 +231,7 @@ contract Blue is IFlashLender {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
+        require(onBehalf != address(0), Errors.ZERO_ADDRESS);
 
         // Don't accrue interests because it's not required and it saves gas.
 
@@ -242,6 +248,8 @@ contract Blue is IFlashLender {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
+        // No need to verify that onBehalf != address(0) thanks to the authorization check.
+        require(receiver != address(0), Errors.ZERO_ADDRESS);
         require(_isSenderAuthorized(onBehalf), Errors.UNAUTHORIZED);
 
         _accrueInterests(market, id);
@@ -276,7 +284,7 @@ contract Blue is IFlashLender {
         uint256 repaid = seized.mulWadUp(collateralPrice).divWadUp(incentive).divWadUp(borrowablePrice);
         uint256 repaidShares = repaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
 
-        borrowShare[id][borrower] -= repaidShares;
+        borrowShares[id][borrower] -= repaidShares;
         totalBorrowShares[id] -= repaidShares;
         totalBorrow[id] -= repaid;
 
@@ -284,11 +292,11 @@ contract Blue is IFlashLender {
 
         // Realize the bad debt if needed.
         if (collateral[id][borrower] == 0) {
-            uint256 badDebt = borrowShare[id][borrower].toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
+            uint256 badDebt = borrowShares[id][borrower].toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
             totalSupply[id] -= badDebt;
             totalBorrow[id] -= badDebt;
-            totalBorrowShares[id] -= borrowShare[id][borrower];
-            borrowShare[id][borrower] = 0;
+            totalBorrowShares[id] -= borrowShares[id][borrower];
+            borrowShares[id][borrower] = 0;
         }
 
         market.collateralAsset.safeTransfer(msg.sender, seized);
@@ -300,13 +308,12 @@ contract Blue is IFlashLender {
 
     // Flash Loans.
 
-    /// @inheritdoc IFlashLender
-    function flashLoan(IFlashBorrower receiver, address token, uint256 amount, bytes calldata data) external {
-        IERC20(token).safeTransfer(address(receiver), amount);
+    function flashLoan(address token, uint256 amount, bytes calldata data) external {
+        IERC20(token).safeTransfer(msg.sender, amount);
 
-        receiver.onBlueFlashLoan(msg.sender, token, amount, data);
+        IBlueFlashLoanCallback(msg.sender).onBlueFlashLoan(token, amount, data);
 
-        IERC20(token).safeTransferFrom(address(receiver), address(this), amount);
+        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
     }
 
     // Authorizations.
@@ -359,7 +366,7 @@ contract Blue is IFlashLender {
                 uint256 feeAmount = accruedInterests.mulWadDown(fee[id]);
                 // The fee amount is subtracted from the total supply in this calculation to compensate for the fact that total supply is already updated.
                 uint256 feeShares = feeAmount.mulDivDown(totalSupplyShares[id], totalSupply[id] - feeAmount);
-                supplyShare[id][feeRecipient] += feeShares;
+                supplyShares[id][feeRecipient] += feeShares;
                 totalSupplyShares[id] += feeShares;
             }
         }
@@ -370,7 +377,7 @@ contract Blue is IFlashLender {
     // Health check.
 
     function _isHealthy(Market memory market, Id id, address user) internal view returns (bool) {
-        if (borrowShare[id][user] == 0) return true;
+        if (borrowShares[id][user] == 0) return true;
 
         uint256 collateralPrice = market.collateralOracle.price();
         uint256 borrowablePrice = market.borrowableOracle.price();
@@ -384,7 +391,7 @@ contract Blue is IFlashLender {
         returns (bool)
     {
         uint256 borrowValue =
-            borrowShare[id][user].toAssetsUp(totalBorrow[id], totalBorrowShares[id]).mulWadUp(borrowablePrice);
+            borrowShares[id][user].toAssetsUp(totalBorrow[id], totalBorrowShares[id]).mulWadUp(borrowablePrice);
         uint256 collateralValue = collateral[id][user].mulWadDown(collateralPrice);
 
         return collateralValue.mulWadDown(market.lltv) >= borrowValue;
