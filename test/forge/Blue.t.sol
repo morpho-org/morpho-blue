@@ -718,7 +718,7 @@ contract BlueTest is
 
         bytes32 digest = SigUtils.getTypedDataHash(blue.DOMAIN_SEPARATOR(), authorization);
 
-        IBlue.Signature memory sig;
+        Signature memory sig;
         (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
 
         blue.setAuthorization(

@@ -2,10 +2,10 @@
 pragma solidity ^0.8.0;
 
 import {IIrm} from "../interfaces/IIrm.sol";
-import {IBlue} from "../interfaces/IBlue.sol";
+import {Id, Market, IBlue} from "../interfaces/IBlue.sol";
 
 import {FixedPointMathLib} from "../libraries/FixedPointMathLib.sol";
-import {Id, Market, MarketLib} from "../libraries/MarketLib.sol";
+import {MarketLib} from "../libraries/MarketLib.sol";
 
 contract IrmMock is IIrm {
     using FixedPointMathLib for uint256;

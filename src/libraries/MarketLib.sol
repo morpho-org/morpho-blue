@@ -1,19 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import {IIrm} from "../interfaces/IIrm.sol";
-import {IOracle} from "../interfaces/IOracle.sol";
-
-type Id is bytes32;
-
-struct Market {
-    address borrowableAsset;
-    address collateralAsset;
-    IOracle borrowableOracle;
-    IOracle collateralOracle;
-    IIrm irm;
-    uint256 lltv;
-}
+import {Id, Market, IBlue} from "../interfaces/IBlue.sol";
 
 library MarketLib {
     function id(Market memory market) internal pure returns (Id) {
