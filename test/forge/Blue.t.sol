@@ -639,7 +639,7 @@ contract BlueTest is
         blue.liquidate(marketFuzz, address(0), 1, hex"");
     }
 
-    function testAmountZero() public {
+    function testZeroAmount() public {
         vm.expectRevert(bytes(Errors.ZERO_AMOUNT));
         blue.supply(market, 0, address(this), hex"");
 
@@ -660,6 +660,29 @@ contract BlueTest is
 
         vm.expectRevert(bytes(Errors.ZERO_AMOUNT));
         blue.liquidate(market, address(0), 0, hex"");
+    }
+
+    function testZeroAddress() public {
+        vm.expectRevert(bytes(Errors.ZERO_ADDRESS));
+        blue.supply(market, 1, address(0), hex"");
+
+        vm.expectRevert(bytes(Errors.ZERO_ADDRESS));
+        blue.withdraw(market, 1, address(this), address(0));
+
+        vm.expectRevert(bytes(Errors.ZERO_ADDRESS));
+        blue.borrow(market, 1, address(this), address(0));
+
+        vm.expectRevert(bytes(Errors.ZERO_ADDRESS));
+        blue.repay(market, 1, address(0), hex"");
+
+        vm.expectRevert(bytes(Errors.ZERO_ADDRESS));
+        blue.supplyCollateral(market, 1, address(0), hex"");
+
+        vm.expectRevert(bytes(Errors.ZERO_ADDRESS));
+        blue.withdrawCollateral(market, 1, address(this), address(0));
+
+        vm.expectRevert(bytes(Errors.ZERO_ADDRESS));
+        blue.liquidate(market, address(0), 1, hex"");
     }
 
     function testEmptyMarket(uint256 amount) public {
