@@ -322,7 +322,7 @@ contract Blue is IFlashLender {
 
         receiver.onBlueFlashLoan(msg.sender, token, amount, data);
 
-        emit Events.Flashloan(msg.sender, token, address(receiver), amount);
+        emit Events.FlashLoan(msg.sender, token, address(receiver), amount);
 
         IERC20(token).safeTransferFrom(address(receiver), address(this), amount);
     }
