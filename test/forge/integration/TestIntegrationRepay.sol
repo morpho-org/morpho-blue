@@ -16,6 +16,11 @@ contract IntegrationRepayTest is BlueBaseTest {
         blue.repay(market, 0, address(this), hex"");
     }
 
+    function testRepayOnBehalfZeroAddress() public {
+        vm.expectRevert(bytes(Errors.ZERO_ADDRESS));
+        blue.repay(market, 1, address(0), hex"");
+    }
+
     function testRepay(uint256 amountLent, uint256 amountBorrowed, uint256 amountRepaid) public {
         amountLent = bound(amountLent, 1, 2 ** 64);
         amountBorrowed = bound(amountBorrowed, 1, amountLent);

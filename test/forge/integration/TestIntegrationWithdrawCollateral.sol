@@ -23,6 +23,16 @@ contract IntegrationWithdrawCollateralTest is BlueBaseTest {
         blue.withdrawCollateral(market, 0, address(this), address(this));
     }
 
+    function testWithdrawCollateralToZeroAddress(uint256 amount) public {
+        amount = bound(amount, 1, 2 ** 64);
+
+        collateralAsset.setBalance(address(this), amount);
+        blue.supplyCollateral(market, amount, address(this), hex"");
+
+        vm.expectRevert(bytes(Errors.ZERO_ADDRESS));
+        blue.withdrawCollateral(market, amount, address(this), address(0));
+    }
+
     function testWithdrawCollateralUnauthorized(address attacker, uint256 amount) public {
         vm.assume(attacker != address(this));
         amount = bound(amount, 1, 2 ** 64);

@@ -16,6 +16,11 @@ contract IntegrationSupplyCollateralTest is BlueBaseTest {
         blue.supplyCollateral(market, 0, address(this), hex"");
     }
 
+    function testSupplyCollateralOnBehalfZeroAddress() public {
+        vm.expectRevert(bytes(Errors.ZERO_ADDRESS));
+        blue.supplyCollateral(market, 1, address(0), hex"");
+    }
+
     function testSupplyCollateral(uint256 amount) public {
         amount = bound(amount, 1, 2 ** 64);
 
@@ -28,7 +33,7 @@ contract IntegrationSupplyCollateralTest is BlueBaseTest {
     }
 
     function testSupplyCollateralOnBehalf(uint256 amount, address onBehalf) public {
-        vm.assume(onBehalf != address(blue));
+        vm.assume(onBehalf != address(blue) && onBehalf != address(0));
         amount = bound(amount, 1, 2 ** 64);
 
         collateralAsset.setBalance(address(this), amount);

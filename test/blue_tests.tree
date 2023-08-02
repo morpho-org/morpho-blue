@@ -58,13 +58,16 @@
         ├── when the amount to supply is zero
         │   └── revert with ZERO_AMOUNT
         └── when the amount to supply is not zero
-            ├── if data.length > 0
-            │   └── sender's onBlueSupply function should be called
-            ├── it should accrue the interests
-            ├── it should add amount.toSharesDown(totalSupply[id], totalSupplyShares[id]) to supplyShare[id][onBehalf] 
-            ├── it should add amount.toSharesDown(totalSupply[id], totalSupplyShares[id]) to totalSupplyShares[id]
-            ├── it should add amount to totalSupply[id]
-            └── it should transfer amount of the borrowable asset from the sender to Blue
+            ├── when onBehalf is the zero address
+            │   └── revert with ZERO_ADDRESS
+            └── when onBehalf is not the zero address
+                ├── if data.length > 0
+                │   └── sender's onBlueSupply function should be called
+                ├── it should accrue the interests
+                ├── it should add amount.toSharesDown(totalSupply[id], totalSupplyShares[id]) to supplyShare[id][onBehalf] 
+                ├── it should add amount.toSharesDown(totalSupply[id], totalSupplyShares[id]) to totalSupplyShares[id]
+                ├── it should add amount to totalSupply[id]
+                └── it should transfer amount of the borrowable asset from the sender to Blue
 .
 └── withdraw(Market memory market, uint256 amount, address onBehalf, address receiver) external
     ├── when market is not created
@@ -73,17 +76,20 @@
         ├── when the amount to withdraw is zero
         │   └── revert with ZERO_AMOUNT
         └── when the amount to withdraw is not zero
-            ├── when not sender and not approved
-            │   └── revert with MANAGER_NOT_APPROVED
-            └── when sender or approved
-                ├── it should accrue the interests
-                ├── when totalBorrow > totalSupply
-                │   └── revert with INSUFFICIENT_LIQUIDITY
-                └── when totalBorrow <= totalSupply
-                    ├── it should remove amount.toSharesUp(totalSupply[id], totalSupplyShares[id]) to supplyShare[id][onBehalf] 
-                    ├── it should remove amount.toSharesUp(totalSupply[id], totalSupplyShares[id]) to totalSupplyShares[id]
-                    ├── it should remove amount from totalSupply[id]
-                    └── it should transfer amount of the borrowable asset to the receiver
+            ├── when receiver is the zero address
+            │   └── revert with ZERO_ADDRESS
+            └── when receiver is not the zero address
+                ├── when not sender and not approved
+                │   └── revert with MANAGER_NOT_APPROVED
+                └── when sender or approved
+                    ├── it should accrue the interests
+                    ├── when totalBorrow > totalSupply
+                    │   └── revert with INSUFFICIENT_LIQUIDITY
+                    └── when totalBorrow <= totalSupply
+                        ├── it should remove amount.toSharesUp(totalSupply[id], totalSupplyShares[id]) to supplyShare[id][onBehalf] 
+                        ├── it should remove amount.toSharesUp(totalSupply[id], totalSupplyShares[id]) to totalSupplyShares[id]
+                        ├── it should remove amount from totalSupply[id]
+                        └── it should transfer amount of the borrowable asset to the receiver
 .
 └── borrow(Market memory market, uint256 amount, address onBehalf, address receiver) external
     ├── when market is not created
@@ -92,20 +98,23 @@
         ├── when the amount to borrow is zero
         │   └── revert with ZERO_AMOUNT
         └── when the amount to borrow is not zero
-            ├── when not sender and not approved
-            │   └── revert with MANAGER_NOT_APPROVED
-            └── when sender or approved
-                ├── it should accrue the interests
-                ├── when position not healthy
-                │   └── revert with INSUFFICIENT_COLLATERAL
-                └── when position healthy
-                    ├── when totalBorrow > totalSupply
-                    │   └── revert with INSUFFICIENT_LIQUIDITY
-                    └── when totalBorrow <= totalSupply
-                        ├── it should add amount.toSharesUp(totalBorrow[id], totalBorrowShares[id]) to borrowShare[id][onBehalf] 
-                        ├── it should add amount.toSharesUp(totalBorrow[id], totalBorrowShares[id]) to totalBorrowShares[id]
-                        ├── it should add amount to totalBorrow[id]
-                        └── it should transfer amount of the borrowable asset to the receiver
+            ├── when receiver is the zero address
+            │   └── revert with ZERO_ADDRESS
+            └── when receiver is not the zero address
+                ├── when not sender and not approved
+                │   └── revert with MANAGER_NOT_APPROVED
+                └── when sender or approved
+                    ├── it should accrue the interests
+                    ├── when position not healthy
+                    │   └── revert with INSUFFICIENT_COLLATERAL
+                    └── when position healthy
+                        ├── when totalBorrow > totalSupply
+                        │   └── revert with INSUFFICIENT_LIQUIDITY
+                        └── when totalBorrow <= totalSupply
+                            ├── it should add amount.toSharesUp(totalBorrow[id], totalBorrowShares[id]) to borrowShare[id][onBehalf] 
+                            ├── it should add amount.toSharesUp(totalBorrow[id], totalBorrowShares[id]) to totalBorrowShares[id]
+                            ├── it should add amount to totalBorrow[id]
+                            └── it should transfer amount of the borrowable asset to the receiver
 .
 └── repay(Market memory market, uint256 amount, address onBehalf, bytes calldata data) external
     ├── when market is not created
@@ -114,13 +123,16 @@
         ├── when the amount to repay is zero
         │   └── revert with ZERO_AMOUNT
         └── when the amount to repay is not zero
-            ├── if data.length > 0
-            │   └── sender's onBlueRepayCallback function should be called
-            ├── it should accrue the interests
-            ├── it should remove amount.toSharesDown(totalBorrow[id], totalBorrowShares[id]) from borrowShare[id][onBehalf]
-            ├── it should remove amount.toSharesDown(totalBorrow[id], totalBorrowShares[id]) from totalBorrowShares[id],
-            ├── it should remove amount from totalBorrow[id]
-            └── it should transfer amount of the borrowable asset from the sender to Blue
+            ├── when onBehalf is the zero address
+            │   └── revert with ZERO_ADDRESS
+            └── when onBehalf is not the zero address
+                ├── if data.length > 0
+                │   └── sender's onBlueRepayCallback function should be called
+                ├── it should accrue the interests
+                ├── it should remove amount.toSharesDown(totalBorrow[id], totalBorrowShares[id]) from borrowShare[id][onBehalf]
+                ├── it should remove amount.toSharesDown(totalBorrow[id], totalBorrowShares[id]) from totalBorrowShares[id],
+                ├── it should remove amount from totalBorrow[id]
+                └── it should transfer amount of the borrowable asset from the sender to Blue
 .
 └── supplyCollateral(Market memory market, uint256 amount, address onBehalf, bytes calldata data) external
     ├── when market is not created
@@ -129,10 +141,13 @@
         ├── when the amount to supply is zero
         │   └── revert with ZERO_AMOUNT
         └── when the amount to supply is not zero
-            ├── if data.length > 0
-            │   └── sender's onBlueSupplyCollateral function should be called
-            ├── it should add amount to collateral[id][onBehalf]
-            └── it should transfer amount of the collateral asset from the sender to Blue
+            ├── when onBehalf is the zero address
+            │   └── revert with ZERO_ADDRESS
+            └── when onBehalf is not the zero address
+                ├── if data.length > 0
+                │   └── sender's onBlueSupplyCollateral function should be called
+                ├── it should add amount to collateral[id][onBehalf]
+                └── it should transfer amount of the collateral asset from the sender to Blue
 .
 └── withdrawCollateral(Market memory market, uint256 amount, address onBehalf, address receiver) external
     ├── when market is not created
@@ -141,15 +156,18 @@
         ├── when the amount to withdraw is zero
         │   └── revert with ZERO_AMOUNT
         └── when the amount to withdraw is not zero
-            ├── when not sender and not approved
-            │   └── revert with MANAGER_NOT_APPROVED
-            └── when sender or approved
-                ├── it should accrue the interests
-                ├── when position not healthy
-                │   └── revert with INSUFFICIENT_COLLATERAL
-                └── when position healthy
-                    ├── it should remove amount from collateral[id][onBehalf]
-                    └── it should transfer amount of the collateral asset to the receiver
+            ├── when receiver is the zero address
+            │   └── revert with ZERO_ADDRESS
+            └── when receiver is not the zero address
+                ├── when not sender and not approved
+                │   └── revert with MANAGER_NOT_APPROVED
+                └── when sender or approved
+                    ├── it should accrue the interests
+                    ├── when position not healthy
+                    │   └── revert with INSUFFICIENT_COLLATERAL
+                    └── when position healthy
+                        ├── it should remove amount from collateral[id][onBehalf]
+                        └── it should transfer amount of the collateral asset to the receiver
 .
 └── liquidate(Market memory market, address borrower, address onBehalf) external
     ├── when market is not created

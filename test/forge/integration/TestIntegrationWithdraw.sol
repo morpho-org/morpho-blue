@@ -21,6 +21,16 @@ contract IntegrationWithdrawTest is BlueBaseTest {
         blue.withdraw(market, 0, address(this), address(this));
     }
 
+    function testWithdrawToZeroAddress(uint256 amount) public {
+        amount = bound(amount, 1, 2 ** 64);
+
+        borrowableAsset.setBalance(address(this), amount);
+        blue.supply(market, amount, address(this), hex"");
+
+        vm.expectRevert(bytes(Errors.ZERO_ADDRESS));
+        blue.withdraw(market, amount, address(this), address(0));
+    }
+
     function testWithdrawUnauthorized(address attacker, uint256 amount) public {
         vm.assume(attacker != address(this));
         amount = bound(amount, 1, 2 ** 64);

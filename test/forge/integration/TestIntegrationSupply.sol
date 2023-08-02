@@ -16,6 +16,11 @@ contract IntegrationSupplyTest is BlueBaseTest {
         blue.supply(market, 0, address(this), hex"");
     }
 
+    function testSupplyOnBehalfZeroAddress() public {
+        vm.expectRevert(bytes(Errors.ZERO_ADDRESS));
+        blue.supply(market, 1, address(0), hex"");
+    }
+
     function testSupply(uint256 amount) public {
         amount = bound(amount, 1, 2 ** 64);
 
@@ -29,7 +34,7 @@ contract IntegrationSupplyTest is BlueBaseTest {
     }
 
     function testSupplyOnBehalf(uint256 amount, address onBehalf) public {
-        vm.assume(onBehalf != address(blue));
+        vm.assume(onBehalf != address(blue) && onBehalf != address(0));
         amount = bound(amount, 1, 2 ** 64);
 
         borrowableAsset.setBalance(address(this), amount);

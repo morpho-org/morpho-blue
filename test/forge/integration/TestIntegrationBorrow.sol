@@ -20,6 +20,14 @@ contract IntegrationBorrowTest is BlueBaseTest {
         blue.borrow(market, 0, address(this), address(this));
     }
 
+    function testBorrowToZeroAddress() public {
+        vm.prank(BORROWER);
+
+        vm.expectRevert(bytes(Errors.ZERO_ADDRESS));
+        blue.borrow(market, 1, BORROWER, address(0));
+    }
+
+
     function testBorrowUnauthorized(uint256 amount) public {
         amount = bound(amount, 1, 2 ** 64);
 
