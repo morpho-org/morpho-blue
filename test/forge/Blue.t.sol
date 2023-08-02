@@ -95,7 +95,7 @@ contract BlueTest is
     }
 
     function supplyBalance(address user) internal view returns (uint256) {
-        uint256 supplyShares = blue.supplyShare(id, user);
+        uint256 supplyShares = blue.supplyShares(id, user);
         if (supplyShares == 0) return 0;
 
         uint256 totalShares = blue.totalSupplyShares(id);
@@ -104,7 +104,7 @@ contract BlueTest is
     }
 
     function borrowBalance(address user) internal view returns (uint256) {
-        uint256 borrowerShares = blue.borrowShare(id, user);
+        uint256 borrowerShares = blue.borrowShares(id, user);
         if (borrowerShares == 0) return 0;
 
         uint256 totalShares = blue.totalBorrowShares(id);
@@ -289,7 +289,7 @@ contract BlueTest is
         uint256 expectedFee = accrued.mulWadDown(fee);
         uint256 expectedFeeShares = expectedFee.mulDivDown(totalSupplySharesBefore, totalSupplyAfter - expectedFee);
 
-        assertEq(blue.supplyShare(id, recipient), expectedFeeShares);
+        assertEq(blue.supplyShares(id, recipient), expectedFeeShares);
     }
 
     function testCreateMarketWithNotEnabledLltv(Market memory marketFuzz) public {
@@ -309,7 +309,7 @@ contract BlueTest is
         borrowableAsset.setBalance(address(this), amount);
         blue.supply(market, amount, onBehalf, hex"");
 
-        assertEq(blue.supplyShare(id, onBehalf), amount * SharesMath.VIRTUAL_SHARES, "supply share");
+        assertEq(blue.supplyShares(id, onBehalf), amount * SharesMath.VIRTUAL_SHARES, "supply share");
         assertEq(borrowableAsset.balanceOf(onBehalf), 0, "lender balance");
         assertEq(borrowableAsset.balanceOf(address(blue)), amount, "blue balance");
     }
@@ -333,7 +333,7 @@ contract BlueTest is
         vm.prank(BORROWER);
         blue.borrow(market, amountBorrowed, BORROWER, receiver);
 
-        assertEq(blue.borrowShare(id, BORROWER), amountBorrowed * SharesMath.VIRTUAL_SHARES, "borrow share");
+        assertEq(blue.borrowShares(id, BORROWER), amountBorrowed * SharesMath.VIRTUAL_SHARES, "borrow share");
         assertEq(borrowableAsset.balanceOf(receiver), amountBorrowed, "receiver balance");
         assertEq(borrowableAsset.balanceOf(address(blue)), amountLent - amountBorrowed, "blue balance");
     }
@@ -367,7 +367,7 @@ contract BlueTest is
         blue.withdraw(market, amountWithdrawn, address(this), receiver);
 
         assertApproxEqAbs(
-            blue.supplyShare(id, address(this)),
+            blue.supplyShares(id, address(this)),
             (amountLent - amountWithdrawn) * SharesMath.VIRTUAL_SHARES,
             100,
             "supply share"
@@ -426,7 +426,7 @@ contract BlueTest is
         vm.stopPrank();
 
         assertApproxEqAbs(
-            blue.borrowShare(id, BORROWER),
+            blue.borrowShares(id, BORROWER),
             (amountBorrowed - amountRepaid) * SharesMath.VIRTUAL_SHARES,
             100,
             "borrow share"
@@ -454,7 +454,7 @@ contract BlueTest is
         blue.repay(market, amountRepaid, onBehalf, hex"");
 
         assertApproxEqAbs(
-            blue.borrowShare(id, onBehalf),
+            blue.borrowShares(id, onBehalf),
             (amountBorrowed - amountRepaid) * SharesMath.VIRTUAL_SHARES,
             100,
             "borrow share"
@@ -603,11 +603,14 @@ contract BlueTest is
 
         assertApproxEqAbs(supplyBalance(address(this)), firstAmount, 100, "same balance first user");
         assertEq(
-            blue.supplyShare(id, address(this)), firstAmount * SharesMath.VIRTUAL_SHARES, "expected shares first user"
+            blue.supplyShares(id, address(this)), firstAmount * SharesMath.VIRTUAL_SHARES, "expected shares first user"
         );
         assertApproxEqAbs(supplyBalance(BORROWER), secondAmount, 100, "same balance second user");
         assertApproxEqAbs(
-            blue.supplyShare(id, BORROWER), secondAmount * SharesMath.VIRTUAL_SHARES, 100, "expected shares second user"
+            blue.supplyShares(id, BORROWER),
+            secondAmount * SharesMath.VIRTUAL_SHARES,
+            100,
+            "expected shares second user"
         );
     }
 
@@ -851,7 +854,7 @@ contract BlueTest is
         blue.supplyCollateral(
             market, amount, address(this), abi.encode(this.testFlashActions.selector, abi.encode(toBorrow))
         );
-        assertGt(blue.borrowShare(market.id(), address(this)), 0, "no borrow");
+        assertGt(blue.borrowShares(market.id(), address(this)), 0, "no borrow");
 
         blue.repay(market, toBorrow, address(this), abi.encode(this.testFlashActions.selector, abi.encode(amount)));
         assertEq(blue.collateral(market.id(), address(this)), 0, "no withdraw collateral");

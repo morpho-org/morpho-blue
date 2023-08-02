@@ -51,9 +51,9 @@ contract Blue {
     // Fee recipient.
     address public feeRecipient;
     // User' supply balances.
-    mapping(Id => mapping(address => uint256)) public supplyShare;
+    mapping(Id => mapping(address => uint256)) public supplyShares;
     // User' borrow balances.
-    mapping(Id => mapping(address => uint256)) public borrowShare;
+    mapping(Id => mapping(address => uint256)) public borrowShares;
     // User' collateral balance.
     mapping(Id => mapping(address => uint256)) public collateral;
     // Market total supply.
@@ -141,7 +141,7 @@ contract Blue {
         _accrueInterests(market, id);
 
         uint256 shares = amount.toSharesDown(totalSupply[id], totalSupplyShares[id]);
-        supplyShare[id][onBehalf] += shares;
+        supplyShares[id][onBehalf] += shares;
         totalSupplyShares[id] += shares;
 
         totalSupply[id] += amount;
@@ -162,7 +162,7 @@ contract Blue {
         _accrueInterests(market, id);
 
         uint256 shares = amount.toSharesUp(totalSupply[id], totalSupplyShares[id]);
-        supplyShare[id][onBehalf] -= shares;
+        supplyShares[id][onBehalf] -= shares;
         totalSupplyShares[id] -= shares;
 
         totalSupply[id] -= amount;
@@ -185,7 +185,7 @@ contract Blue {
         _accrueInterests(market, id);
 
         uint256 shares = amount.toSharesUp(totalBorrow[id], totalBorrowShares[id]);
-        borrowShare[id][onBehalf] += shares;
+        borrowShares[id][onBehalf] += shares;
         totalBorrowShares[id] += shares;
 
         totalBorrow[id] += amount;
@@ -205,7 +205,7 @@ contract Blue {
         _accrueInterests(market, id);
 
         uint256 shares = amount.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
-        borrowShare[id][onBehalf] -= shares;
+        borrowShares[id][onBehalf] -= shares;
         totalBorrowShares[id] -= shares;
 
         totalBorrow[id] -= amount;
@@ -272,7 +272,7 @@ contract Blue {
         uint256 repaid = seized.mulWadUp(collateralPrice).divWadUp(incentive).divWadUp(borrowablePrice);
         uint256 repaidShares = repaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
 
-        borrowShare[id][borrower] -= repaidShares;
+        borrowShares[id][borrower] -= repaidShares;
         totalBorrowShares[id] -= repaidShares;
         totalBorrow[id] -= repaid;
 
@@ -280,11 +280,11 @@ contract Blue {
 
         // Realize the bad debt if needed.
         if (collateral[id][borrower] == 0) {
-            uint256 badDebt = borrowShare[id][borrower].toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
+            uint256 badDebt = borrowShares[id][borrower].toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
             totalSupply[id] -= badDebt;
             totalBorrow[id] -= badDebt;
-            totalBorrowShares[id] -= borrowShare[id][borrower];
-            borrowShare[id][borrower] = 0;
+            totalBorrowShares[id] -= borrowShares[id][borrower];
+            borrowShares[id][borrower] = 0;
         }
 
         market.collateralAsset.safeTransfer(msg.sender, seized);
@@ -354,7 +354,7 @@ contract Blue {
                 uint256 feeAmount = accruedInterests.mulWadDown(fee[id]);
                 // The fee amount is subtracted from the total supply in this calculation to compensate for the fact that total supply is already updated.
                 uint256 feeShares = feeAmount.mulDivDown(totalSupplyShares[id], totalSupply[id] - feeAmount);
-                supplyShare[id][feeRecipient] += feeShares;
+                supplyShares[id][feeRecipient] += feeShares;
                 totalSupplyShares[id] += feeShares;
             }
         }
@@ -365,7 +365,7 @@ contract Blue {
     // Health check.
 
     function _isHealthy(Market memory market, Id id, address user) internal view returns (bool) {
-        if (borrowShare[id][user] == 0) return true;
+        if (borrowShares[id][user] == 0) return true;
 
         uint256 collateralPrice = market.collateralOracle.price();
         uint256 borrowablePrice = market.borrowableOracle.price();
@@ -379,7 +379,7 @@ contract Blue {
         returns (bool)
     {
         uint256 borrowValue =
-            borrowShare[id][user].toAssetsUp(totalBorrow[id], totalBorrowShares[id]).mulWadUp(borrowablePrice);
+            borrowShares[id][user].toAssetsUp(totalBorrow[id], totalBorrowShares[id]).mulWadUp(borrowablePrice);
         uint256 collateralValue = collateral[id][user].mulWadDown(collateralPrice);
 
         return collateralValue.mulWadDown(market.lltv) >= borrowValue;
