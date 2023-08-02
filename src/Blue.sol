@@ -373,26 +373,25 @@ contract Blue is IFlashLender {
 
         uint256 marketTotalBorrow = totalBorrow[id];
 
-        uint256 accruedInterests;
-        uint256 feeShares;
         if (marketTotalBorrow != 0) {
             uint256 borrowRate = market.irm.borrowRate(market);
-            accruedInterests = marketTotalBorrow.mulWadDown(borrowRate * elapsed);
+            uint256 accruedInterests = marketTotalBorrow.mulWadDown(borrowRate * elapsed);
             totalBorrow[id] = marketTotalBorrow + accruedInterests;
             totalSupply[id] += accruedInterests;
 
+            uint256 feeShares;
             if (fee[id] != 0) {
                 uint256 feeAmount = accruedInterests.mulWadDown(fee[id]);
                 // The fee amount is subtracted from the total supply in this calculation to compensate for the fact that total supply is already updated.
-                uint256 feeShares = feeAmount.mulDivDown(totalSupplyShares[id], totalSupply[id] - feeAmount);
+                feeShares = feeAmount.mulDivDown(totalSupplyShares[id], totalSupply[id] - feeAmount);
                 supplyShare[id][feeRecipient] += feeShares;
                 totalSupplyShares[id] += feeShares;
             }
+
+            emit Events.InterestsAccrued(id, accruedInterests, feeShares);
         }
 
         lastUpdate[id] = block.timestamp;
-
-        emit Events.InterestsAccrued(id, accruedInterests, feeShares);
     }
 
     // Health check.
