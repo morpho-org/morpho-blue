@@ -18,6 +18,8 @@ library Errors {
 
     string internal constant ZERO_AMOUNT = "zero amount";
 
+    string internal constant ZERO_ADDRESS = "zero address";
+
     string internal constant UNAUTHORIZED = "unauthorized";
 
     string internal constant INSUFFICIENT_COLLATERAL = "insufficient collateral";

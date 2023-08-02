@@ -38,7 +38,7 @@ library Events {
         uint256 seized
     );
 
-    event FlashLoan(address indexed caller, address indexed token, address indexed receiver, uint256 amount);
+    event FlashLoan(address indexed caller, address indexed token, uint256 amount);
 
     event OwnerSet(address indexed newOwner);
 
