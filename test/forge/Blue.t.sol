@@ -680,9 +680,6 @@ contract BlueTest is
 
         vm.expectRevert(bytes(Errors.ZERO_ADDRESS));
         blue.withdrawCollateral(market, 1, address(this), address(0));
-
-        vm.expectRevert(bytes(Errors.ZERO_ADDRESS));
-        blue.liquidate(market, address(0), 1, hex"");
     }
 
     function testEmptyMarket(uint256 amount) public {

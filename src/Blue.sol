@@ -259,7 +259,6 @@ contract Blue is IFlashLender {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(seized != 0, Errors.ZERO_AMOUNT);
-        require(borrower != address(0), Errors.ZERO_ADDRESS);
 
         _accrueInterests(market, id);
 
