@@ -137,6 +137,7 @@ contract Blue is IFlashLender {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
+        require(onBehalf != address(0), Errors.ZERO_ADDRESS);
 
         _accrueInterests(market, id);
 
@@ -155,6 +156,8 @@ contract Blue is IFlashLender {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
+        // No need to verify that onBehalf != address(0) thanks to the authorization check.
+        require(receiver != address(0), Errors.ZERO_ADDRESS);
         require(_isSenderAuthorized(onBehalf), Errors.UNAUTHORIZED);
 
         _accrueInterests(market, id);
@@ -176,6 +179,8 @@ contract Blue is IFlashLender {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
+        // No need to verify that onBehalf != address(0) thanks to the authorization check.
+        require(receiver != address(0), Errors.ZERO_ADDRESS);
         require(_isSenderAuthorized(onBehalf), Errors.UNAUTHORIZED);
 
         _accrueInterests(market, id);
@@ -196,6 +201,7 @@ contract Blue is IFlashLender {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
+        require(onBehalf != address(0), Errors.ZERO_ADDRESS);
 
         _accrueInterests(market, id);
 
@@ -217,6 +223,7 @@ contract Blue is IFlashLender {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
+        require(onBehalf != address(0), Errors.ZERO_ADDRESS);
 
         // Don't accrue interests because it's not required and it saves gas.
 
@@ -233,6 +240,8 @@ contract Blue is IFlashLender {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
+        // No need to verify that onBehalf != address(0) thanks to the authorization check.
+        require(receiver != address(0), Errors.ZERO_ADDRESS);
         require(_isSenderAuthorized(onBehalf), Errors.UNAUTHORIZED);
 
         _accrueInterests(market, id);

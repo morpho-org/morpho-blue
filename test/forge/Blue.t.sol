@@ -305,6 +305,7 @@ contract BlueTest is
     }
 
     function testSupplyOnBehalf(uint256 amount, address onBehalf) public {
+        vm.assume(onBehalf != address(0));
         vm.assume(onBehalf != address(blue));
         amount = bound(amount, 1, 2 ** 64);
 
@@ -317,6 +318,7 @@ contract BlueTest is
     }
 
     function testBorrow(uint256 amountLent, uint256 amountBorrowed, address receiver) public {
+        vm.assume(receiver != address(0));
         vm.assume(receiver != address(blue));
         amountLent = bound(amountLent, 1, 2 ** 64);
         amountBorrowed = bound(amountBorrowed, 1, 2 ** 64);
@@ -342,6 +344,7 @@ contract BlueTest is
     function testWithdraw(uint256 amountLent, uint256 amountWithdrawn, uint256 amountBorrowed, address receiver)
         public
     {
+        vm.assume(receiver != address(0));
         vm.assume(receiver != address(blue));
         amountLent = bound(amountLent, 1, 2 ** 64);
         amountWithdrawn = bound(amountWithdrawn, 1, 2 ** 64);
@@ -438,6 +441,7 @@ contract BlueTest is
     function testRepayOnBehalf(uint256 amountLent, uint256 amountBorrowed, uint256 amountRepaid, address onBehalf)
         public
     {
+        vm.assume(onBehalf != address(0));
         vm.assume(onBehalf != address(blue));
         vm.assume(onBehalf != address(this));
         amountLent = bound(amountLent, 1, 2 ** 64);
@@ -463,6 +467,7 @@ contract BlueTest is
     }
 
     function testSupplyCollateralOnBehalf(uint256 amount, address onBehalf) public {
+        vm.assume(onBehalf != address(0));
         vm.assume(onBehalf != address(blue));
         amount = bound(amount, 1, 2 ** 64);
 
@@ -475,6 +480,7 @@ contract BlueTest is
     }
 
     function testWithdrawCollateral(uint256 amountDeposited, uint256 amountWithdrawn, address receiver) public {
+        vm.assume(receiver != address(0));
         vm.assume(receiver != address(blue));
         amountDeposited = bound(amountDeposited, 1, 2 ** 64);
         amountWithdrawn = bound(amountWithdrawn, 1, 2 ** 64);
@@ -633,7 +639,7 @@ contract BlueTest is
         blue.liquidate(marketFuzz, address(0), 1, hex"");
     }
 
-    function testAmountZero() public {
+    function testZeroAmount() public {
         vm.expectRevert(bytes(Errors.ZERO_AMOUNT));
         blue.supply(market, 0, address(this), hex"");
 
@@ -654,6 +660,26 @@ contract BlueTest is
 
         vm.expectRevert(bytes(Errors.ZERO_AMOUNT));
         blue.liquidate(market, address(0), 0, hex"");
+    }
+
+    function testZeroAddress() public {
+        vm.expectRevert(bytes(Errors.ZERO_ADDRESS));
+        blue.supply(market, 1, address(0), hex"");
+
+        vm.expectRevert(bytes(Errors.ZERO_ADDRESS));
+        blue.withdraw(market, 1, address(this), address(0));
+
+        vm.expectRevert(bytes(Errors.ZERO_ADDRESS));
+        blue.borrow(market, 1, address(this), address(0));
+
+        vm.expectRevert(bytes(Errors.ZERO_ADDRESS));
+        blue.repay(market, 1, address(0), hex"");
+
+        vm.expectRevert(bytes(Errors.ZERO_ADDRESS));
+        blue.supplyCollateral(market, 1, address(0), hex"");
+
+        vm.expectRevert(bytes(Errors.ZERO_ADDRESS));
+        blue.withdrawCollateral(market, 1, address(this), address(0));
     }
 
     function testEmptyMarket(uint256 amount) public {
