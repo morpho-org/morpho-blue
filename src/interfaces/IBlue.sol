@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.5.0;
 
-import {IIrm} from "./IIrm.sol";
-import {IOracle} from "./IOracle.sol";
 import {IFlashLender} from "./IFlashLender.sol";
 import {IFlashBorrower} from "./IFlashBorrower.sol";
 
@@ -11,9 +9,9 @@ type Id is bytes32;
 struct Market {
     address borrowableAsset;
     address collateralAsset;
-    IOracle borrowableOracle;
-    IOracle collateralOracle;
-    IIrm irm;
+    address borrowableOracle;
+    address collateralOracle;
+    address irm;
     uint256 lltv;
 }
 
@@ -40,13 +38,13 @@ interface IBlue is IFlashLender {
     function lastUpdate(Id) external view returns (uint256);
     function fee(Id) external view returns (uint256);
 
-    function isIrmEnabled(IIrm) external view returns (bool);
+    function isIrmEnabled(address) external view returns (bool);
     function isLltvEnabled(uint256) external view returns (bool);
     function isAuthorized(address, address) external view returns (bool);
     function nonce(address) external view returns (uint256);
 
     function setOwner(address newOwner) external;
-    function enableIrm(IIrm irm) external;
+    function enableIrm(address irm) external;
     function enableLltv(uint256 lltv) external;
     function setFee(Market memory market, uint256 newFee) external;
     function setFeeRecipient(address recipient) external;

@@ -10,6 +10,7 @@ import {
 import {Id, Market, Signature, IBlue} from "./interfaces/IBlue.sol";
 import {IIrm} from "./interfaces/IIrm.sol";
 import {IERC20} from "./interfaces/IERC20.sol";
+import {IOracle} from "./interfaces/IOracle.sol";
 import {IFlashBorrower} from "./interfaces/IFlashBorrower.sol";
 
 import {Errors} from "./libraries/Errors.sol";
@@ -63,7 +64,7 @@ contract Blue is IBlue {
     // Fee.
     mapping(Id => uint256) public fee;
     // Enabled IRMs.
-    mapping(IIrm => bool) public isIrmEnabled;
+    mapping(address => bool) public isIrmEnabled;
     // Enabled LLTVs.
     mapping(uint256 => bool) public isLltvEnabled;
     // User's authorizations. Note that by default, msg.sender is authorized by themself.
@@ -92,7 +93,7 @@ contract Blue is IBlue {
         owner = newOwner;
     }
 
-    function enableIrm(IIrm irm) external onlyOwner {
+    function enableIrm(address irm) external onlyOwner {
         isIrmEnabled[irm] = true;
     }
 
@@ -246,8 +247,8 @@ contract Blue is IBlue {
 
         _accrueInterests(market, id);
 
-        uint256 collateralPrice = market.collateralOracle.price();
-        uint256 borrowablePrice = market.borrowableOracle.price();
+        uint256 collateralPrice = IOracle(market.collateralOracle).price();
+        uint256 borrowablePrice = IOracle(market.borrowableOracle).price();
 
         require(!_isHealthy(market, id, borrower, collateralPrice, borrowablePrice), Errors.HEALTHY_POSITION);
 
@@ -330,7 +331,7 @@ contract Blue is IBlue {
         uint256 marketTotalBorrow = totalBorrow[id];
 
         if (marketTotalBorrow != 0) {
-            uint256 borrowRate = market.irm.borrowRate(market);
+            uint256 borrowRate = IIrm(market.irm).borrowRate(market);
             uint256 accruedInterests = marketTotalBorrow.mulWadDown(borrowRate * elapsed);
             totalBorrow[id] = marketTotalBorrow + accruedInterests;
             totalSupply[id] += accruedInterests;
@@ -352,8 +353,8 @@ contract Blue is IBlue {
     function _isHealthy(Market memory market, Id id, address user) internal view returns (bool) {
         if (borrowShare[id][user] == 0) return true;
 
-        uint256 collateralPrice = market.collateralOracle.price();
-        uint256 borrowablePrice = market.borrowableOracle.price();
+        uint256 collateralPrice = IOracle(market.collateralOracle).price();
+        uint256 borrowablePrice = IOracle(market.borrowableOracle).price();
 
         return _isHealthy(market, id, user, collateralPrice, borrowablePrice);
     }
