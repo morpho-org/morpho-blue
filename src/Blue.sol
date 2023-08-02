@@ -354,9 +354,9 @@ contract Blue {
 
         require(signatory != address(0) && authorizer == signatory, Errors.INVALID_SIGNATURE);
 
-        emit Events.NonceIncremented(msg.sender, signatory, usedNonce);
+        emit Events.NonceIncremented(msg.sender, authorizer, usedNonce);
 
-        _setAuthorization(signatory, authorized, newIsAuthorized);
+        _setAuthorization(authorizer, authorized, newIsAuthorized);
     }
 
     function setAuthorization(address authorized, bool newIsAuthorized) external {
