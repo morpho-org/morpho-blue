@@ -9,18 +9,18 @@ import {ERC20, SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 contract FlashBorrowerMock is IBlueFlashLoanCallback {
     using SafeTransferLib for ERC20;
 
-    Blue private immutable blue;
+    Blue private immutable BLUE;
 
     constructor(Blue newBlue) {
-        blue = newBlue;
+        BLUE = newBlue;
     }
 
     function flashLoan(address token, uint256 amount, bytes calldata data) external {
-        blue.flashLoan(token, amount, data);
+        BLUE.flashLoan(token, amount, data);
     }
 
     function onBlueFlashLoan(address token, uint256 amount, bytes calldata) external {
-        require(msg.sender == address(blue));
-        ERC20(token).safeApprove(address(blue), amount);
+        require(msg.sender == address(BLUE));
+        ERC20(token).safeApprove(address(BLUE), amount);
     }
 }
