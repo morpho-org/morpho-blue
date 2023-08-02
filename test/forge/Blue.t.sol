@@ -56,12 +56,18 @@ contract BlueTest is
 
         irm = new Irm(blue);
 
-        market =
-            Market(address(borrowableAsset), address(collateralAsset), borrowableOracle, collateralOracle, irm, LLTV);
+        market = Market(
+            address(borrowableAsset),
+            address(collateralAsset),
+            address(borrowableOracle),
+            address(collateralOracle),
+            address(irm),
+            LLTV
+        );
         id = market.id();
 
         vm.startPrank(OWNER);
-        blue.enableIrm(irm);
+        blue.enableIrm(address(irm));
         blue.enableLltv(LLTV);
         blue.createMarket(market);
         vm.stopPrank();
@@ -145,7 +151,7 @@ contract BlueTest is
         blue2.setOwner(newOwner);
     }
 
-    function testEnableIrmWhenNotOwner(address attacker, IIrm newIrm) public {
+    function testEnableIrmWhenNotOwner(address attacker, address newIrm) public {
         vm.assume(attacker != blue.owner());
 
         vm.prank(attacker);
@@ -153,7 +159,7 @@ contract BlueTest is
         blue.enableIrm(newIrm);
     }
 
-    function testEnableIrm(IIrm newIrm) public {
+    function testEnableIrm(address newIrm) public {
         vm.prank(OWNER);
         blue.enableIrm(newIrm);
 
@@ -170,7 +176,7 @@ contract BlueTest is
     }
 
     function testCreateMarketWithNotEnabledIrm(Market memory marketFuzz) public {
-        vm.assume(marketFuzz.irm != irm);
+        vm.assume(marketFuzz.irm != address(irm));
 
         vm.prank(OWNER);
         vm.expectRevert(bytes(Errors.IRM_NOT_ENABLED));
@@ -291,7 +297,7 @@ contract BlueTest is
 
     function testCreateMarketWithNotEnabledLltv(Market memory marketFuzz) public {
         vm.assume(marketFuzz.lltv != LLTV);
-        marketFuzz.irm = irm;
+        marketFuzz.irm = address(irm);
 
         vm.prank(OWNER);
         vm.expectRevert(bytes(Errors.LLTV_NOT_ENABLED));
