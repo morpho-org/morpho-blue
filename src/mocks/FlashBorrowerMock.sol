@@ -1,26 +1,26 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import {IFlashLender} from "src/interfaces/IFlashLender.sol";
-import {IFlashBorrower} from "src/interfaces/IFlashBorrower.sol";
+import {IBlueFlashLoanCallback} from "../interfaces/IBlueCallbacks.sol";
+import {Blue} from "../Blue.sol";
 
 import {ERC20, SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 
-contract FlashBorrowerMock is IFlashBorrower {
+contract FlashBorrowerMock is IBlueFlashLoanCallback {
     using SafeTransferLib for ERC20;
 
-    IFlashLender private immutable _LENDER;
+    Blue private immutable BLUE;
 
-    constructor(IFlashLender lender) {
-        _LENDER = lender;
+    constructor(Blue newBlue) {
+        BLUE = newBlue;
     }
 
-    /* EXTERNAL */
+    function flashLoan(address token, uint256 amount, bytes calldata data) external {
+        BLUE.flashLoan(token, amount, data);
+    }
 
-    /// @inheritdoc IFlashBorrower
-    function onBlueFlashLoan(address, address token, uint256 amount, bytes calldata) external {
-        require(msg.sender == address(_LENDER), "invalid lender");
-
-        ERC20(token).safeApprove(address(_LENDER), amount);
+    function onBlueFlashLoan(address token, uint256 amount, bytes calldata) external {
+        require(msg.sender == address(BLUE));
+        ERC20(token).safeApprove(address(BLUE), amount);
     }
 }
