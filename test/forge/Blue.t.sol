@@ -379,12 +379,12 @@ contract BlueTest is
         uint256 supplyShareBefore = blue.supplyShare(id, address(this));
         uint256 amountWithdrawn = sharesWithdrawn.toAssetsDown(blue.totalSupply(id), blue.totalSupplyShares(id));
 
-        if (amountWithdrawn > totalSupplyBefore - amountBorrowed) {
-            if (sharesWithdrawn > blue.supplyShare(id, address(this))) {
-                vm.expectRevert(stdError.arithmeticError);
-            } else {
-                vm.expectRevert(bytes(Errors.INSUFFICIENT_LIQUIDITY));
-            }
+        if (sharesWithdrawn > blue.supplyShare(id, address(this))) {
+            vm.expectRevert(stdError.arithmeticError);
+            blue.withdraw(market, sharesWithdrawn, address(this), receiver);
+            return;
+        } else if (amountWithdrawn > totalSupplyBefore - amountBorrowed) {
+            vm.expectRevert(bytes(Errors.INSUFFICIENT_LIQUIDITY));
             blue.withdraw(market, sharesWithdrawn, address(this), receiver);
             return;
         }
