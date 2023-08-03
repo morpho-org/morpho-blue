@@ -258,10 +258,13 @@ contract Blue is IFlashLender {
 
     // Liquidation.
 
-    function liquidate(Market memory market, address borrower, uint256 seized, bytes calldata data) external {
+    function liquidate(Market memory market, address borrower, uint256 shares, bytes calldata data)
+        external
+        returns (uint256 seized)
+    {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
-        require(seized != 0, Errors.ZERO_AMOUNT);
+        require(shares != 0, Errors.ZERO_AMOUNT);
 
         _accrueInterests(market, id);
 
@@ -270,15 +273,19 @@ contract Blue is IFlashLender {
 
         require(!_isHealthy(market, id, borrower, collateralPrice, borrowablePrice), Errors.HEALTHY_POSITION);
 
+        uint256 repaid = shares.toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
+
+        borrowShare[id][borrower] -= shares;
+        totalBorrowShares[id] -= shares;
+        totalBorrow[id] -= repaid;
+
         // The liquidation incentive is 1 + ALPHA * (1 / LLTV - 1).
         uint256 incentive = FixedPointMathLib.WAD
             + ALPHA.mulWadDown(FixedPointMathLib.WAD.divWadDown(market.lltv) - FixedPointMathLib.WAD);
-        uint256 repaid = seized.mulWadUp(collateralPrice).divWadUp(incentive).divWadUp(borrowablePrice);
-        uint256 repaidShares = repaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
+        seized = repaid.mulWadDown(borrowablePrice).mulWadDown(incentive).divWadDown(collateralPrice);
 
-        borrowShare[id][borrower] -= repaidShares;
-        totalBorrowShares[id] -= repaidShares;
-        totalBorrow[id] -= repaid;
+        // Liquidations are not guaranteed to be profitable: the collateral seized is capped to the borrower's collateral.
+        if (seized > collateral[id][borrower]) seized = collateral[id][borrower];
 
         collateral[id][borrower] -= seized;
 
