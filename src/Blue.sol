@@ -133,17 +133,20 @@ contract Blue is IFlashLender {
 
     // Supply management.
 
-    function supply(Market memory market, uint256 amount, address onBehalf, bytes calldata data) external {
+    function supply(Market memory market, uint256 amount, address onBehalf, bytes calldata data)
+        external
+        returns (uint256 shares)
+    {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
 
         _accrueInterests(market, id);
 
-        uint256 shares = amount.toSharesDown(totalSupply[id], totalSupplyShares[id]);
+        shares = amount.toSharesDown(totalSupply[id], totalSupplyShares[id]);
+
         supplyShare[id][onBehalf] += shares;
         totalSupplyShares[id] += shares;
-
         totalSupply[id] += amount;
 
         if (data.length > 0) IBlueSupplyCallback(msg.sender).onBlueSupply(amount, data);
@@ -151,7 +154,10 @@ contract Blue is IFlashLender {
         market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
     }
 
-    function withdraw(Market memory market, uint256 shares, address onBehalf, address receiver) external {
+    function withdraw(Market memory market, uint256 shares, address onBehalf, address receiver)
+        external
+        returns (uint256 amount)
+    {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(shares != 0, Errors.ZERO_AMOUNT);
@@ -159,7 +165,7 @@ contract Blue is IFlashLender {
 
         _accrueInterests(market, id);
 
-        uint256 amount = shares.toAssetsDown(totalSupply[id], totalSupplyShares[id]);
+        amount = shares.toAssetsDown(totalSupply[id], totalSupplyShares[id]);
 
         supplyShare[id][onBehalf] -= shares;
         totalSupplyShares[id] -= shares;
@@ -172,7 +178,10 @@ contract Blue is IFlashLender {
 
     // Borrow management.
 
-    function borrow(Market memory market, uint256 amount, address onBehalf, address receiver) external {
+    function borrow(Market memory market, uint256 amount, address onBehalf, address receiver)
+        external
+        returns (uint256 shares)
+    {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
@@ -180,10 +189,10 @@ contract Blue is IFlashLender {
 
         _accrueInterests(market, id);
 
-        uint256 shares = amount.toSharesUp(totalBorrow[id], totalBorrowShares[id]);
+        shares = amount.toSharesUp(totalBorrow[id], totalBorrowShares[id]);
+
         borrowShare[id][onBehalf] += shares;
         totalBorrowShares[id] += shares;
-
         totalBorrow[id] += amount;
 
         require(_isHealthy(market, id, onBehalf), Errors.INSUFFICIENT_COLLATERAL);
@@ -192,14 +201,17 @@ contract Blue is IFlashLender {
         market.borrowableAsset.safeTransfer(receiver, amount);
     }
 
-    function repay(Market memory market, uint256 shares, address onBehalf, bytes calldata data) external {
+    function repay(Market memory market, uint256 shares, address onBehalf, bytes calldata data)
+        external
+        returns (uint256 amount)
+    {
         Id id = market.id();
         require(shares != 0, Errors.ZERO_AMOUNT);
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
 
         _accrueInterests(market, id);
 
-        uint256 amount = shares.toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
+        amount = shares.toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
 
         borrowShare[id][onBehalf] -= shares;
         totalBorrowShares[id] -= shares;
