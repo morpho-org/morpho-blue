@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
+import {IFlashLender} from "../interfaces/IFlashLender.sol";
 import {IBlueFlashLoanCallback} from "../interfaces/IBlueCallbacks.sol";
-import {Blue} from "../Blue.sol";
 
 import {ERC20, SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 
 contract FlashBorrowerMock is IBlueFlashLoanCallback {
     using SafeTransferLib for ERC20;
 
-    Blue private immutable BLUE;
+    IFlashLender private immutable BLUE;
 
-    constructor(Blue newBlue) {
+    constructor(IFlashLender newBlue) {
         BLUE = newBlue;
     }
 

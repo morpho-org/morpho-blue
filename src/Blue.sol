@@ -7,16 +7,18 @@ import {
     IBlueSupplyCallback,
     IBlueSupplyCollateralCallback,
     IBlueFlashLoanCallback
-} from "src/interfaces/IBlueCallbacks.sol";
-import {IIrm} from "src/interfaces/IIrm.sol";
-import {IERC20} from "src/interfaces/IERC20.sol";
+} from "./interfaces/IBlueCallbacks.sol";
+import {IIrm} from "./interfaces/IIrm.sol";
+import {IERC20} from "./interfaces/IERC20.sol";
+import {IOracle} from "./interfaces/IOracle.sol";
+import {Id, Market, Signature, IBlue} from "./interfaces/IBlue.sol";
 
 import {Events} from "./libraries/Events.sol";
 import {Errors} from "./libraries/Errors.sol";
-import {SharesMath} from "src/libraries/SharesMath.sol";
-import {FixedPointMathLib} from "src/libraries/FixedPointMathLib.sol";
-import {Id, Market, MarketLib} from "src/libraries/MarketLib.sol";
-import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
+import {SharesMath} from "./libraries/SharesMath.sol";
+import {FixedPointMathLib} from "./libraries/FixedPointMathLib.sol";
+import {MarketLib} from "./libraries/MarketLib.sol";
+import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
 
 uint256 constant MAX_FEE = 0.25e18;
 uint256 constant ALPHA = 0.5e18;
@@ -28,14 +30,7 @@ bytes32 constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,uint256 c
 bytes32 constant AUTHORIZATION_TYPEHASH =
     keccak256("Authorization(address authorizer,address authorized,bool isAuthorized,uint256 nonce,uint256 deadline)");
 
-/// @notice Contains the `v`, `r` and `s` parameters of an ECDSA signature.
-struct Signature {
-    uint8 v;
-    bytes32 r;
-    bytes32 s;
-}
-
-contract Blue {
+contract Blue is IBlue {
     using SharesMath for uint256;
     using FixedPointMathLib for uint256;
     using SafeTransferLib for IERC20;
@@ -70,7 +65,7 @@ contract Blue {
     // Fee.
     mapping(Id => uint256) public fee;
     // Enabled IRMs.
-    mapping(IIrm => bool) public isIrmEnabled;
+    mapping(address => bool) public isIrmEnabled;
     // Enabled LLTVs.
     mapping(uint256 => bool) public isLltvEnabled;
     // User's authorizations. Note that by default, msg.sender is authorized by themself.
@@ -101,7 +96,7 @@ contract Blue {
         emit Events.SetOwner(newOwner);
     }
 
-    function enableIrm(IIrm irm) external onlyOwner {
+    function enableIrm(address irm) external onlyOwner {
         isIrmEnabled[irm] = true;
 
         emit Events.EnableIrm(address(irm));
@@ -163,7 +158,7 @@ contract Blue {
 
         if (data.length > 0) IBlueSupplyCallback(msg.sender).onBlueSupply(amount, data);
 
-        market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
+        IERC20(market.borrowableAsset).safeTransferFrom(msg.sender, address(this), amount);
     }
 
     function withdraw(Market memory market, uint256 amount, address onBehalf, address receiver) external {
@@ -186,7 +181,7 @@ contract Blue {
 
         require(totalBorrow[id] <= totalSupply[id], Errors.INSUFFICIENT_LIQUIDITY);
 
-        market.borrowableAsset.safeTransfer(receiver, amount);
+        IERC20(market.borrowableAsset).safeTransfer(receiver, amount);
     }
 
     // Borrow management.
@@ -212,7 +207,7 @@ contract Blue {
         require(_isHealthy(market, id, onBehalf), Errors.INSUFFICIENT_COLLATERAL);
         require(totalBorrow[id] <= totalSupply[id], Errors.INSUFFICIENT_LIQUIDITY);
 
-        market.borrowableAsset.safeTransfer(receiver, amount);
+        IERC20(market.borrowableAsset).safeTransfer(receiver, amount);
     }
 
     function repay(Market memory market, uint256 amount, address onBehalf, bytes calldata data) external {
@@ -233,7 +228,7 @@ contract Blue {
 
         if (data.length > 0) IBlueRepayCallback(msg.sender).onBlueRepay(amount, data);
 
-        market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
+        IERC20(market.borrowableAsset).safeTransferFrom(msg.sender, address(this), amount);
     }
 
     // Collateral management.
@@ -253,7 +248,7 @@ contract Blue {
 
         if (data.length > 0) IBlueSupplyCollateralCallback(msg.sender).onBlueSupplyCollateral(amount, data);
 
-        market.collateralAsset.safeTransferFrom(msg.sender, address(this), amount);
+        IERC20(market.collateralAsset).safeTransferFrom(msg.sender, address(this), amount);
     }
 
     function withdrawCollateral(Market memory market, uint256 amount, address onBehalf, address receiver) external {
@@ -272,7 +267,7 @@ contract Blue {
 
         require(_isHealthy(market, id, onBehalf), Errors.INSUFFICIENT_COLLATERAL);
 
-        market.collateralAsset.safeTransfer(receiver, amount);
+        IERC20(market.collateralAsset).safeTransfer(receiver, amount);
     }
 
     // Liquidation.
@@ -284,8 +279,8 @@ contract Blue {
 
         _accrueInterests(market, id);
 
-        uint256 collateralPrice = market.collateralOracle.price();
-        uint256 borrowablePrice = market.borrowableOracle.price();
+        uint256 collateralPrice = IOracle(market.collateralOracle).price();
+        uint256 borrowablePrice = IOracle(market.borrowableOracle).price();
 
         require(!_isHealthy(market, id, borrower, collateralPrice, borrowablePrice), Errors.HEALTHY_POSITION);
 
@@ -314,11 +309,11 @@ contract Blue {
 
         emit Events.Liquidate(id, msg.sender, borrower, repaid, repaidShares, seized, badDebtShares);
 
-        market.collateralAsset.safeTransfer(msg.sender, seized);
+        IERC20(market.collateralAsset).safeTransfer(msg.sender, seized);
 
         if (data.length > 0) IBlueLiquidateCallback(msg.sender).onBlueLiquidate(seized, repaid, data);
 
-        market.borrowableAsset.safeTransferFrom(msg.sender, address(this), repaid);
+        IERC20(market.borrowableAsset).safeTransferFrom(msg.sender, address(this), repaid);
     }
 
     // Flash Loans.
@@ -380,7 +375,7 @@ contract Blue {
         uint256 marketTotalBorrow = totalBorrow[id];
 
         if (marketTotalBorrow != 0) {
-            uint256 borrowRate = market.irm.borrowRate(market);
+            uint256 borrowRate = IIrm(market.irm).borrowRate(market);
             uint256 accruedInterests = marketTotalBorrow.mulWadDown(borrowRate * elapsed);
             totalBorrow[id] = marketTotalBorrow + accruedInterests;
             totalSupply[id] += accruedInterests;
@@ -405,8 +400,8 @@ contract Blue {
     function _isHealthy(Market memory market, Id id, address user) internal view returns (bool) {
         if (borrowShares[id][user] == 0) return true;
 
-        uint256 collateralPrice = market.collateralOracle.price();
-        uint256 borrowablePrice = market.borrowableOracle.price();
+        uint256 collateralPrice = IOracle(market.collateralOracle).price();
+        uint256 borrowablePrice = IOracle(market.borrowableOracle).price();
 
         return _isHealthy(market, id, user, collateralPrice, borrowablePrice);
     }
