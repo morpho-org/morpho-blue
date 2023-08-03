@@ -94,9 +94,18 @@ contract BlueBaseTest is Test {
         return borrowerShares.divWadUp(totalShares).mulWadUp(totalBorrow);
     }
 
+    function _provideLiquidity(uint256 amount) internal {
+        borrowableAsset.setBalance(address(this), amount);
+        blue.supply(market, amount, address(this), hex"");
+    }
+
     function neq(Market memory a, Market memory b) internal pure returns (bool) {
         return a.borrowableAsset != b.borrowableAsset || a.collateralAsset != b.collateralAsset
             || a.borrowableOracle != b.borrowableOracle || a.collateralOracle != b.collateralOracle || a.lltv != b.lltv
             || a.irm != b.irm;
+    }
+
+    function max(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a > b ? a : b;
     }
 }
