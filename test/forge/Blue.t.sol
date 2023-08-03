@@ -27,6 +27,8 @@ contract BlueTest is
     IBlueLiquidateCallback
 {
     using MarketLib for Market;
+    using SharesMath for uint256;
+    using stdStorage for StdStorage;
     using FixedPointMathLib for uint256;
 
     address private constant BORROWER = address(1234);
@@ -83,6 +85,7 @@ contract BlueTest is
         vm.startPrank(BORROWER);
         borrowableAsset.approve(address(blue), type(uint256).max);
         collateralAsset.approve(address(blue), type(uint256).max);
+        blue.setAuthorization(address(this), true);
         vm.stopPrank();
         vm.startPrank(LIQUIDATOR);
         borrowableAsset.approve(address(blue), type(uint256).max);
@@ -124,6 +127,14 @@ contract BlueTest is
 
     function invariantLltvEnabled() public {
         assertTrue(blue.isLltvEnabled(LLTV));
+    }
+
+    function invariantIrmEnabled() public {
+        assertTrue(blue.isIrmEnabled(irm));
+    }
+
+    function invariantMarketCreated() public {
+        assertGt(blue.lastUpdate(id), 0);
     }
 
     // Tests
@@ -356,8 +367,7 @@ contract BlueTest is
 
         uint256 supplyShareBefore = blue.supplyShare(id, address(this));
         sharesWithdrawn = bound(sharesWithdrawn, 1, 2 ** 64);
-        uint256 amountWithdrawn =
-            SharesMath.toAssetsDown(sharesWithdrawn, blue.totalSupply(id), blue.totalSupplyShares(id));
+        uint256 amountWithdrawn = sharesWithdrawn.toAssetsDown(blue.totalSupply(id), blue.totalSupplyShares(id));
 
         if (amountWithdrawn > amountLent - amountBorrowed) {
             if (sharesWithdrawn > blue.supplyShare(id, address(this))) {
@@ -378,19 +388,53 @@ contract BlueTest is
         );
     }
 
-    function testWithdrawAll(uint256 amountLent, uint256 amountBorrowed, address receiver) public {
-        vm.assume(receiver != address(blue));
+    function testWithdrawAmount(uint256 amountLent, uint256 amountWithdrawn) public {
         amountLent = bound(amountLent, 1, 2 ** 64);
-        amountBorrowed = bound(amountBorrowed, 1, 2 ** 64);
-        vm.assume(amountLent >= amountBorrowed);
 
         borrowableAsset.setBalance(address(this), amountLent);
         blue.supply(market, amountLent, address(this), hex"");
-        blue.withdraw(market, blue.supplyShare(id, address(this)), address(this), receiver);
+
+        // Accrue interests.
+        stdstore.target(address(blue)).sig("totalSupply(bytes32)").with_key(Id.unwrap(id)).checked_write(
+            blue.totalSupply(id) * 4 / 3
+        );
+        borrowableAsset.setBalance(address(blue), blue.totalSupply(id));
+
+        uint256 totalSupplyBefore = blue.totalSupply(id);
+        amountWithdrawn = bound(amountWithdrawn, 1, totalSupplyBefore);
+        uint256 supplyShareBefore = blue.supplyShare(id, address(this));
+        uint256 sharesWithdrawn = bound(
+            (amountWithdrawn + 1).toSharesUp(blue.totalSupply(id), blue.totalSupplyShares(id)), 0, supplyShareBefore
+        );
+        uint256 realAmountWithdrawn = sharesWithdrawn.toAssetsDown(blue.totalSupply(id), blue.totalSupplyShares(id));
+        blue.withdraw(market, sharesWithdrawn, address(this), address(this));
+
+        assertGe(realAmountWithdrawn, amountWithdrawn, "realAmountWithdrawn");
+        assertEq(blue.supplyShare(id, address(this)), supplyShareBefore - sharesWithdrawn, "supply share");
+        assertEq(borrowableAsset.balanceOf(address(this)), realAmountWithdrawn, "this balance");
+        assertEq(borrowableAsset.balanceOf(address(blue)), totalSupplyBefore - realAmountWithdrawn, "blue balance");
+    }
+
+    function testWithdrawAll(uint256 amountLent) public {
+        amountLent = bound(amountLent, 1, 2 ** 64);
+
+        borrowableAsset.setBalance(address(this), amountLent);
+        blue.supply(market, amountLent, address(this), hex"");
+
+        // Accrue interests.
+        stdstore.target(address(blue)).sig("totalSupply(bytes32)").with_key(Id.unwrap(id)).checked_write(
+            blue.totalSupply(id) * 4 / 3
+        );
+        borrowableAsset.setBalance(address(blue), blue.totalSupply(id));
+
+        uint256 totalSupplyBefore = blue.totalSupply(id);
+        uint256 amountWithdrawn =
+            blue.supplyShare(id, address(this)).toAssetsDown(blue.totalSupply(id), blue.totalSupplyShares(id));
+        blue.withdraw(market, blue.supplyShare(id, address(this)), address(this), address(this));
 
         assertEq(blue.supplyShare(id, address(this)), 0, "supply share");
-        assertEq(borrowableAsset.balanceOf(receiver), amountLent, "receiver balance");
-        assertEq(borrowableAsset.balanceOf(address(blue)), 0, "blue balance");
+        assertEq(borrowableAsset.balanceOf(address(this)), amountWithdrawn, "this balance");
+        assertEq(borrowableAsset.balanceOf(address(blue)), totalSupplyBefore - amountWithdrawn, "blue balance");
     }
 
     function testCollateralRequirements(
@@ -427,68 +471,75 @@ contract BlueTest is
         }
     }
 
-    function testRepay(uint256 amountLent, uint256 amountBorrowed, uint256 sharesRepaid) public {
+    function testRepay(uint256 amountLent, uint256 amountBorrowed, uint256 sharesRepaid, address onBehalf) public {
         amountLent = bound(amountLent, 1, 2 ** 64);
         amountBorrowed = bound(amountBorrowed, 1, amountLent);
 
-        borrowableAsset.setBalance(address(this), amountLent);
+        borrowableAsset.setBalance(address(this), amountLent + amountBorrowed);
         blue.supply(market, amountLent, address(this), hex"");
 
-        vm.prank(BORROWER);
-        blue.borrow(market, amountBorrowed, BORROWER, BORROWER);
-
-        uint256 borrowShareBefore = blue.borrowShare(id, BORROWER);
-        sharesRepaid = bound(sharesRepaid, 1, borrowShareBefore);
-        uint256 amountRepaid = SharesMath.toAssetsUp(sharesRepaid, blue.totalBorrow(id), blue.totalBorrowShares(id));
-        vm.prank(BORROWER);
-        blue.repay(market, sharesRepaid, BORROWER, hex"");
-
-        assertEq(blue.borrowShare(id, BORROWER), borrowShareBefore - sharesRepaid, "borrow share");
-        assertEq(borrowableAsset.balanceOf(BORROWER), amountBorrowed - amountRepaid, "BORROWER balance");
-        assertEq(borrowableAsset.balanceOf(address(blue)), amountLent - amountBorrowed + amountRepaid, "blue balance");
-    }
-
-    function testRepayOnBehalf(uint256 amountLent, uint256 amountBorrowed, uint256 sharesRepaid, address onBehalf)
-        public
-    {
-        vm.assume(onBehalf != address(blue));
-        vm.assume(onBehalf != address(this));
-        amountLent = bound(amountLent, 1, 2 ** 64);
-        amountBorrowed = bound(amountBorrowed, 1, amountLent);
-
-        borrowableAsset.setBalance(address(this), amountLent);
-        blue.supply(market, amountLent, address(this), hex"");
-
+        uint256 onBehalfBalanceBefore = borrowableAsset.balanceOf(onBehalf);
         vm.prank(onBehalf);
         blue.borrow(market, amountBorrowed, onBehalf, onBehalf);
 
         uint256 borrowShareBefore = blue.borrowShare(id, onBehalf);
         sharesRepaid = bound(sharesRepaid, 1, borrowShareBefore);
-        uint256 amountRepaid = SharesMath.toAssetsUp(sharesRepaid, blue.totalBorrow(id), blue.totalBorrowShares(id));
-        borrowableAsset.setBalance(address(this), amountRepaid);
-
+        uint256 amountRepaid = sharesRepaid.toAssetsUp(blue.totalBorrow(id), blue.totalBorrowShares(id));
+        uint256 thisBalanceBefore = borrowableAsset.balanceOf(address(this));
         blue.repay(market, sharesRepaid, onBehalf, hex"");
 
         assertEq(blue.borrowShare(id, onBehalf), borrowShareBefore - sharesRepaid, "borrow share");
-        assertEq(borrowableAsset.balanceOf(onBehalf), amountBorrowed, "onBehalf balance");
+        assertEq(borrowableAsset.balanceOf(onBehalf), onBehalfBalanceBefore + amountBorrowed, "onBehalf balance");
+        assertEq(borrowableAsset.balanceOf(address(this)), thisBalanceBefore - amountRepaid, "this balance");
         assertEq(borrowableAsset.balanceOf(address(blue)), amountLent - amountBorrowed + amountRepaid, "blue balance");
     }
 
-    function testRepayAll(uint256 amountLent, uint256 amountBorrowed) public {
-        amountLent = bound(amountLent, 1, 2 ** 64);
-        amountBorrowed = bound(amountBorrowed, 1, amountLent);
+    function testRepayAmount(uint256 amountBorrowed, uint256 amountRepaid) public {
+        amountBorrowed = bound(amountBorrowed, 1, 2 ** 64);
 
-        borrowableAsset.setBalance(address(this), amountLent);
-        blue.supply(market, amountLent, address(this), hex"");
+        borrowableAsset.setBalance(address(this), 2 ** 65);
+        blue.supply(market, amountBorrowed, address(this), hex"");
+        blue.borrow(market, amountBorrowed, address(this), address(this));
 
-        vm.startPrank(BORROWER);
+        // Accrue interests.
+        stdstore.target(address(blue)).sig("totalBorrow(bytes32)").with_key(Id.unwrap(id)).checked_write(
+            blue.totalBorrow(id) * 4 / 3
+        );
+
+        amountRepaid = bound(amountRepaid, 1, blue.totalBorrow(id));
+        uint256 borrowShareBefore = blue.borrowShare(id, address(this));
+        uint256 sharesRepaid = bound(
+            (amountRepaid - 1).toSharesDown(blue.totalBorrow(id), blue.totalBorrowShares(id)), 1, borrowShareBefore
+        );
+        uint256 realAmountRepaid = sharesRepaid.toAssetsUp(blue.totalBorrow(id), blue.totalBorrowShares(id));
+        blue.repay(market, sharesRepaid, address(this), hex"");
+
+        assertLe(realAmountRepaid, amountRepaid, "real amount repaid");
+        assertEq(blue.borrowShare(id, address(this)), borrowShareBefore - sharesRepaid, "borrow share");
+        assertEq(borrowableAsset.balanceOf(address(this)), 2 ** 65 - realAmountRepaid, "this balance");
+        assertEq(borrowableAsset.balanceOf(address(blue)), realAmountRepaid, "blue balance");
+    }
+
+    function testRepayAll(uint256 amountBorrowed) public {
+        amountBorrowed = bound(amountBorrowed, 1, 2 ** 64);
+
+        borrowableAsset.setBalance(address(this), amountBorrowed);
+        blue.supply(market, amountBorrowed, address(this), hex"");
         blue.borrow(market, amountBorrowed, BORROWER, BORROWER);
+
+        // Accrue interests.
+        stdstore.target(address(blue)).sig("totalBorrow(bytes32)").with_key(Id.unwrap(id)).checked_write(
+            blue.totalBorrow(id) * 4 / 3
+        );
+
+        uint256 amountRepaid =
+            blue.borrowShare(id, BORROWER).toAssetsUp(blue.totalBorrow(id), blue.totalBorrowShares(id));
+        borrowableAsset.setBalance(address(this), amountRepaid);
         blue.repay(market, blue.borrowShare(id, BORROWER), BORROWER, hex"");
-        vm.stopPrank();
 
         assertEq(blue.borrowShare(id, BORROWER), 0, "borrow share");
-        assertEq(borrowableAsset.balanceOf(BORROWER), 0, "receiver balance");
-        assertEq(borrowableAsset.balanceOf(address(blue)), amountLent, "blue balance");
+        assertEq(borrowableAsset.balanceOf(address(this)), 0, "this balance");
+        assertEq(borrowableAsset.balanceOf(address(blue)), amountRepaid, "blue balance");
     }
 
     function testSupplyCollateralOnBehalf(uint256 amount, address onBehalf) public {
