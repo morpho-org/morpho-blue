@@ -154,7 +154,7 @@ contract Blue is IFlashLender {
     function withdraw(Market memory market, uint256 shares, address onBehalf, address receiver) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
-        require(shares != 0, Errors.ZERO_AMOUNT);
+        require(shares != 0, Errors.ZERO_SHARES);
         require(_isSenderAuthorized(onBehalf), Errors.UNAUTHORIZED);
 
         _accrueInterests(market, id);
@@ -194,7 +194,7 @@ contract Blue is IFlashLender {
 
     function repay(Market memory market, uint256 shares, address onBehalf, bytes calldata data) external {
         Id id = market.id();
-        require(shares != 0, Errors.ZERO_AMOUNT);
+        require(shares != 0, Errors.ZERO_SHARES);
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
 
         _accrueInterests(market, id);
