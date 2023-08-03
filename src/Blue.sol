@@ -122,7 +122,7 @@ contract Blue is IBlue {
         require(isLltvEnabled[market.lltv], Errors.LLTV_NOT_ENABLED);
         require(lastUpdate[id] == 0, Errors.MARKET_CREATED);
 
-        _accrueInterests(market, id);
+        lastUpdate[id] = block.timestamp;
     }
 
     // Supply management.
