@@ -27,7 +27,6 @@ contract IntegrationBorrowTest is BlueBaseTest {
         blue.borrow(market, 1, BORROWER, address(0));
     }
 
-
     function testBorrowUnauthorized(uint256 amount) public {
         amount = bound(amount, 1, 2 ** 64);
 
