@@ -69,7 +69,10 @@ library FixedPointMathLib {
                     INTEGER OPERATIONS
     //////////////////////////////////////////////////////////////*/
 
+    /// @dev Returns max(x - y, 0).
     function zeroFloorSub(uint256 x, uint256 y) internal pure returns (uint256 z) {
-        z = x > y ? x - y : 0;
+        assembly {
+            z := mul(gt(x, y), sub(x, y))
+        }
     }
 }
