@@ -24,7 +24,7 @@ contract IntegrationAccrueInterestsTest is BlueBaseTest {
         uint256 totalSupplyBeforeAccrued = blue.totalSupply(id);
         uint256 totalSupplySharesBeforeAccrued = blue.totalSupplyShares(id);
 
-        //Supply then withdraw collateral to triger accrueInterests function
+        // Supply then withdraw collateral to triger accrueInterests function
         collateralAsset.setBalance(address(this), 1);
         blue.supplyCollateral(market, 1, address(this), hex"");
         blue.withdrawCollateral(market, 1, address(this), address(this));
