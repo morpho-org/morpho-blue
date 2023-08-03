@@ -33,6 +33,11 @@ contract IntegrationCreateMarketTest is BlueBaseTest {
         blue.enableIrm(marketFuzz.irm);
         blue.createMarket(marketFuzz);
 
-        assertGt(blue.lastUpdate(marketFuzzId), 0, "creation timestamp");
+        assertGt(blue.lastUpdate(marketFuzzId), 0, "lastUpdate == 0");
+        assertEq(blue.totalSupply(marketFuzzId), 0, "totalSupply != 0");
+        assertEq(blue.totalSupplyShares(marketFuzzId), 0, "totalSupplyShares != 0");
+        assertEq(blue.totalBorrow(marketFuzzId), 0, "totalBorrow != 0");
+        assertEq(blue.totalBorrowShares(marketFuzzId), 0, "totalBorrowShares != 0");
+        assertEq(blue.fee(marketFuzzId), 0, "fee != 0");
     }
 }
