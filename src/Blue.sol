@@ -307,9 +307,9 @@ contract Blue is IBlue {
             borrowShares[id][borrower] = 0;
         }
 
-        emit Events.Liquidate(id, msg.sender, borrower, repaid, repaidShares, seized, badDebtShares);
-
         IERC20(market.collateralAsset).safeTransfer(msg.sender, seized);
+
+        emit Events.Liquidate(id, msg.sender, borrower, repaid, repaidShares, seized, badDebtShares);
 
         if (data.length > 0) IBlueLiquidateCallback(msg.sender).onBlueLiquidate(seized, repaid, data);
 
