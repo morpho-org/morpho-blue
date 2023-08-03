@@ -24,17 +24,17 @@ contract IntegrationOnlyOwnerTest is BlueBaseTest {
         assertEq(blue.owner(), newOwner, "owner is not set");
     }
 
-    function testEnableIrmWhenNotOwner(address addressFuzz, Irm irmFuzz) public {
+    function testEnableIrmWhenNotOwner(address addressFuzz, address irmFuzz) public {
         vm.assume(addressFuzz != OWNER);
-        vm.assume(irmFuzz != irm);
+        vm.assume(irmFuzz != address(irm));
 
         vm.prank(addressFuzz);
         vm.expectRevert(bytes(Errors.NOT_OWNER));
         blue.enableIrm(irmFuzz);
     }
 
-    function testEnableIrm(Irm irmFuzz) public {
-        vm.assume(irmFuzz != irm);
+    function testEnableIrm(address irmFuzz) public {
+        vm.assume(irmFuzz != address(irm));
 
         vm.prank(OWNER);
         blue.enableIrm(irmFuzz);

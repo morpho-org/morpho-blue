@@ -38,17 +38,17 @@ contract BlueBaseTest is Test {
 
         irm = new Irm(blue);
         market = Market(
-            IERC20(address(borrowableAsset)),
-            IERC20(address(collateralAsset)),
-            borrowableOracle,
-            collateralOracle,
-            irm,
+            address(borrowableAsset),
+            address(collateralAsset),
+            address(borrowableOracle),
+            address(collateralOracle),
+            address(irm),
             LLTV
         );
         id = Id.wrap(keccak256(abi.encode(market)));
 
         vm.startPrank(OWNER);
-        blue.enableIrm(irm);
+        blue.enableIrm(address(irm));
         blue.enableLltv(LLTV);
         blue.createMarket(market);
         vm.stopPrank();

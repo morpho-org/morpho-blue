@@ -8,7 +8,7 @@ contract IntegrationCreateMarketTest is BlueBaseTest {
     using FixedPointMathLib for uint256;
 
     function testCreateMarketWithNotEnabledIrm(Market memory marketFuzz) public {
-        vm.assume(marketFuzz.irm != irm);
+        vm.assume(marketFuzz.irm != address(irm));
 
         vm.prank(OWNER);
         vm.expectRevert(bytes(Errors.IRM_NOT_ENABLED));
