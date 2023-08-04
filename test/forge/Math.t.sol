@@ -8,7 +8,8 @@ import "src/libraries/FixedPointMathLib.sol";
 contract MathTest is Test {
     using FixedPointMathLib for uint256;
 
-    function testTaylorSeriesExpansion(uint256 rate, uint256 timeElapsed) public {
+    function testWTaylorCompounded(uint256 rate, uint256 timeElapsed) public {
+
         // Assume rate is less than a ~500% APY. (~180% APR)
         vm.assume(rate < (FixedPointMathLib.WAD / 20_000_000) && timeElapsed < 365 days);
         uint256 result = rate.wTaylorCompounded(timeElapsed) + FixedPointMathLib.WAD;
