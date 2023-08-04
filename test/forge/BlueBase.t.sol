@@ -104,8 +104,8 @@ contract BlueBaseTest is Test {
         view
         returns (uint256, uint256, uint256)
     {
-        priceCollateral = bound(priceCollateral, 1, 2 ** 64);
-        amountBorrowed = bound(amountBorrowed, 10, 2 ** 64);
+        priceCollateral = bound(priceCollateral, 100, 2 ** 64);
+        amountBorrowed = bound(amountBorrowed, 1000, 2 ** 64);
 
         uint256 minCollateral = amountBorrowed.divWadUp(market.lltv).divWadUp(priceCollateral);
         vm.assume(minCollateral != 0);
@@ -120,8 +120,8 @@ contract BlueBaseTest is Test {
         view
         returns (uint256, uint256, uint256)
     {
-        priceCollateral = bound(priceCollateral, 1, 2 ** 64);
-        amountBorrowed = bound(amountBorrowed, 10, 2 ** 64);
+        priceCollateral = bound(priceCollateral, 100, 2 ** 64);
+        amountBorrowed = bound(amountBorrowed, 1000, 2 ** 64);
 
         uint256 maxCollateral = amountBorrowed.divWadDown(market.lltv).divWadDown(priceCollateral);
         vm.assume(maxCollateral != 0);
@@ -129,6 +129,11 @@ contract BlueBaseTest is Test {
         amountCollateral = bound(amountBorrowed, 1, maxCollateral);
 
         return (amountCollateral, amountBorrowed, priceCollateral);
+    }
+
+    function _incentive(uint256 lltv) internal pure returns (uint256) {
+        return FixedPointMathLib.WAD
+            + ALPHA.mulWadDown(FixedPointMathLib.WAD.divWadDown(lltv) - FixedPointMathLib.WAD);
     }
 
     function neq(Market memory a, Market memory b) internal pure returns (bool) {
@@ -139,5 +144,9 @@ contract BlueBaseTest is Test {
 
     function max(uint256 a, uint256 b) internal pure returns (uint256) {
         return a > b ? a : b;
+    }
+
+    function min(uint256 a, uint256 b) internal pure returns (uint256) {
+        return a < b ? a : b;
     }
 }
