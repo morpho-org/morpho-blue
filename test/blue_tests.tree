@@ -34,7 +34,7 @@
             │   └── revert with MAX_FEE_EXCEEDED
             └── when newFee <= MAX_FEE
                 ├── it should set fee[id] to newFee
-                └── it should emit SetFee(newFee)
+                └── it should emit SetFee(id, newFee)
 .
 └── setFeeRecipient(address recipient) external
     ├── when msg.sender not owner
@@ -67,7 +67,7 @@
             │   └── revert with ZERO_ADDRESS
             └── when onBehalf is not the zero address
                 ├── it should accrue the interests
-                ├── it should add amount.toSharesDown(totalSupply[id], totalSupplyShares[id]) to supplyShare[id][onBehalf] 
+                ├── it should add amount.toSharesDown(totalSupply[id], totalSupplyShares[id]) to supplyShares[id][onBehalf] 
                 ├── it should add amount.toSharesDown(totalSupply[id], totalSupplyShares[id]) to totalSupplyShares[id]
                 ├── it should add amount to totalSupply[id]
                 ├── it should emit Supply(id, msg.sender, onBehalf, amount, shares)
@@ -86,7 +86,7 @@
             │   └── revert with ZERO_ADDRESS
             └── when receiver is not the zero address
                 ├── when not sender and not approved
-                │   └── revert with MANAGER_NOT_APPROVED
+                │   └── revert with UNAUTHORIZED
                 └── when sender or approved
                     ├── it should accrue the interests
                     ├── when totalBorrow > totalSupply
@@ -109,7 +109,7 @@
             │   └── revert with ZERO_ADDRESS
             └── when receiver is not the zero address
                 ├── when not sender and not approved
-                │   └── revert with MANAGER_NOT_APPROVED
+                │   └── revert with UNAUTHORIZED
                 └── when sender or approved
                     ├── it should accrue the interests
                     ├── when position not healthy
@@ -118,7 +118,7 @@
                         ├── when totalBorrow > totalSupply
                         │   └── revert with INSUFFICIENT_LIQUIDITY
                         └── when totalBorrow <= totalSupply
-                            ├── it should add amount.toSharesUp(totalBorrow[id], totalBorrowShares[id]) to borrowShare[id][onBehalf] 
+                            ├── it should add amount.toSharesUp(totalBorrow[id], totalBorrowShares[id]) to borrowShares[id][onBehalf] 
                             ├── it should add amount.toSharesUp(totalBorrow[id], totalBorrowShares[id]) to totalBorrowShares[id]
                             ├── it should add amount to totalBorrow[id]
                             ├── it should emit Borrow(id, msg.sender, onBehalf, receiver, amount, shares)
@@ -135,7 +135,7 @@
             │   └── revert with ZERO_ADDRESS
             └── when onBehalf is not the zero address
                 ├── it should accrue the interests
-                ├── it should remove amount.toSharesDown(totalBorrow[id], totalBorrowShares[id]) from borrowShare[id][onBehalf]
+                ├── it should remove amount.toSharesDown(totalBorrow[id], totalBorrowShares[id]) from borrowShares[id][onBehalf]
                 ├── it should remove amount.toSharesDown(totalBorrow[id], totalBorrowShares[id]) from totalBorrowShares[id],
                 ├── it should remove amount from totalBorrow[id]
                 ├── it should emit Repay(id, msg.sender, onBehalf, amount, shares)
@@ -190,18 +190,18 @@
             ├── it should accrue the interests
             ├── when position is healthy
             │   └── revert with HEALTHY_POSITION
-            └── when the position not healthy
+            └── when the position is not healthy
                 ├── it should compute repaid = seized.mulWadUp(collateralPrice).divWadUp(incentive).divWadUp(borrowablePrice);
                 ├── it should remove repaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]) from borrowShare[id][borrower]
                 ├── it should remove repaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]) from totalBorrowShares[id]
                 ├── it should remove repaid from totalBorrow[id]
                 ├── it should remove seized from collateral[id][borrower]
                 ├── if after the liquidation the borrower's collateral is 0
-                │   └── it should realise bad debt
+                │   └── it should realize bad debt
                 │       ├── it should compute badDebt = borrowShare[id][borrower].toAssetsUp(totalBorrow[id], totalBorrowShares[id])
                 │       ├── it should remove bad debt from totalSupply[id]
                 │       ├── it should remove bad debt from totalBorrow[id]
-                │       ├── it should remove borrowShare[id][borrower] from totalBorrowShares[id]
+                │       ├── it should remove borrowShares[id][borrower] from totalBorrowShares[id]
                 │       └── it should set borrowShare[id][borrower] to 0
                 ├── it should transfer seized of collateral asset to the sender
                 ├── it should emit Liquidate(id, msg.sender, borrower, repaid, repaidShares, seized, badDebtShares)
@@ -240,6 +240,6 @@
             ├── it should add accruedInterests to totalSupply
             └── when fee[id] != 0
             │   ├── it should add accruedInterests.mulWadDown(fee[id]) to feeAmount
-            │   ├── it should add feeAmount.mulDivDown(totalSupplyShares[id], totalSupply[id] - feeAmount) to supplyShare[id][feeRecipient]
+            │   ├── it should add feeAmount.mulDivDown(totalSupplyShares[id], totalSupply[id] - feeAmount) to supplyShares[id][feeRecipient]
             │   └── it should add feeAmount.mulDivDown(totalSupplyShares[id], totalSupply[id] - feeAmount) to totalSupplyShares[id]
             └── it should emit AccrueInterests(id, borrowRate, accruedInterests, feeShares)
