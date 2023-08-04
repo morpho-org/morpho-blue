@@ -16,7 +16,7 @@ library Errors {
 
     string internal constant MARKET_NOT_CREATED = "market not created";
 
-    string internal constant ZERO_AMOUNT = "zero amount";
+    string internal constant ZERO_ASSETS = "zero assets";
 
     string internal constant ZERO_SHARES = "zero shares";
 
