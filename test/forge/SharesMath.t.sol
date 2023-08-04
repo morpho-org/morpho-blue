@@ -20,7 +20,7 @@ contract SharesMathTest is Test {
         amount = bound(amount, 0, supplyShares.toAssetsDown(totalSupply, totalSupplyShares));
 
         assertEq(
-            amount, amount.toSupplyShares(totalSupply, totalSupplyShares).toAssetsDown(totalSupply, totalSupplyShares)
+            amount, amount.toWithdrawShares(totalSupply, totalSupplyShares).toAssetsDown(totalSupply, totalSupplyShares)
         );
     }
 
@@ -35,7 +35,7 @@ contract SharesMathTest is Test {
         amount = bound(amount, 0, borrowShares.toAssetsDown(totalBorrow, totalBorrowShares));
 
         assertEq(
-            amount, amount.toBorrowShares(totalBorrow, totalBorrowShares).toAssetsUp(totalBorrow, totalBorrowShares)
+            amount, amount.toRepayShares(totalBorrow, totalBorrowShares).toAssetsUp(totalBorrow, totalBorrowShares)
         );
     }
 }

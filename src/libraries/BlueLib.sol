@@ -15,7 +15,7 @@ library BlueLib {
         returns (uint256 shares)
     {
         Id id = market.id();
-        shares = amount.toSupplyShares(blue.totalSupply(id), blue.totalSupplyShares(id));
+        shares = amount.toWithdrawShares(blue.totalSupply(id), blue.totalSupplyShares(id));
 
         uint256 maxShares = blue.supplyShares(id, address(this));
         if (shares > maxShares) shares = maxShares;
@@ -28,7 +28,7 @@ library BlueLib {
         returns (uint256 shares)
     {
         Id id = market.id();
-        shares = amount.toBorrowShares(blue.totalBorrow(id), blue.totalBorrowShares(id));
+        shares = amount.toRepayShares(blue.totalBorrow(id), blue.totalBorrowShares(id));
 
         uint256 maxShares = blue.borrowShares(id, address(this));
         if (shares > maxShares) shares = maxShares;
