@@ -204,12 +204,12 @@ describe("Blue", () => {
     }
   });
 
-  it("should simuate gas cost [flashloan]", async () => {
+  it("should simuate gas cost [flashLoans]", async () => {
     const user = signers[0];
     const amount = BigNumber.WAD;
 
     await blue.connect(user).supply(market, amount, user.address, "0x");
 
-    await blue.flashLoan(flashBorrower.address, borrowable.address, amount.div(2), []);
+    await flashBorrower.flashLoan(borrowable.address, amount.div(2), []);
   });
 });
