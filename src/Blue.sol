@@ -211,8 +211,8 @@ contract Blue is IBlue {
 
     function repay(Market memory market, uint256 shares, address onBehalf, bytes calldata data) external {
         Id id = market.id();
-        require(shares != 0, Errors.ZERO_SHARES);
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
+        require(shares != 0, Errors.ZERO_SHARES);
         require(onBehalf != address(0), Errors.ZERO_ADDRESS);
 
         _accrueInterests(market, id);

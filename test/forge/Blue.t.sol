@@ -603,6 +603,7 @@ contract BlueTest is
     }
 
     function testWithdrawCollateralAll(uint256 amountDeposited, address receiver) public {
+        vm.assume(receiver != address(0));
         vm.assume(receiver != address(blue));
         amountDeposited = bound(amountDeposited, 1, 2 ** 64);
 
