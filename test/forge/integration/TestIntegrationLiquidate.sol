@@ -101,7 +101,7 @@ contract IntegrationLiquidateTest is BlueBaseTest {
             borrowableAsset.balanceOf(address(blue)), amountSupplied - amountBorrowed + expectedRepaid, "blue balance"
         );
         assertEq(collateralAsset.balanceOf(address(blue)), amountCollateral - amountSeized, "blue collateral balance");
-        assertEq(collateralAsset.balanceOf(LIQUIDATOR), amountSeized, "blue collateral balance");
+        assertEq(collateralAsset.balanceOf(LIQUIDATOR), amountSeized, "liquidator collateral balance");
     }
 
     struct LiquidateBadDebtTestParams {
@@ -171,16 +171,16 @@ contract IntegrationLiquidateTest is BlueBaseTest {
             "blue balance"
         );
         assertEq(collateralAsset.balanceOf(address(blue)), 0, "blue collateral balance");
-        assertEq(collateralAsset.balanceOf(LIQUIDATOR), amountCollateral, "blue collateral balance");
+        assertEq(collateralAsset.balanceOf(LIQUIDATOR), amountCollateral, "liquidator collateral balance");
 
         // Bad debt realization.
-        assertEq(blue.borrowShares(id, BORROWER), 0, "borrow sharse");
+        assertEq(blue.borrowShares(id, BORROWER), 0, "borrow shares");
         assertEq(blue.totalBorrowShares(id), 0, "total borrow shares");
         assertEq(
             blue.totalBorrow(id),
             params.totalBorrowBeforeLiquidation - params.expectedRepaid - params.expectedBadDebt,
             "total borrow"
         );
-        assertEq(blue.totalSupply(id), params.totalSupplyBeforeLiquidation - params.expectedBadDebt, "total borrow");
+        assertEq(blue.totalSupply(id), params.totalSupplyBeforeLiquidation - params.expectedBadDebt, "total supply");
     }
 }
