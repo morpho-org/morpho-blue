@@ -8,7 +8,7 @@ import {IERC20} from "../interfaces/IERC20.sol";
 /// @dev Use with caution! Some functions in this library knowingly create dirty bits at the destination of the free memory pointer.
 /// @dev Note that none of the functions in this library check that a token has code at all! That responsibility is delegated to the caller.
 library SafeTransferLib {
-    function safeTransferFrom(IERC20 token, address from, address to, uint256 amount) internal {
+    function safeTransferFrom(IERC20 token, address from, address to, uint256 assets) internal {
         bool success;
 
         /// @solidity memory-safe-assembly
@@ -20,7 +20,7 @@ library SafeTransferLib {
             mstore(freeMemoryPointer, 0x23b872dd00000000000000000000000000000000000000000000000000000000)
             mstore(add(freeMemoryPointer, 4), and(from, 0xffffffffffffffffffffffffffffffffffffffff)) // Append and mask the "from" argument.
             mstore(add(freeMemoryPointer, 36), and(to, 0xffffffffffffffffffffffffffffffffffffffff)) // Append and mask the "to" argument.
-            mstore(add(freeMemoryPointer, 68), amount) // Append the "amount" argument. Masking not required as it's a full 32 byte type.
+            mstore(add(freeMemoryPointer, 68), assets) // Append the "assets" argument. Masking not required as it's a full 32 byte type.
 
             success :=
                 and(
@@ -38,7 +38,7 @@ library SafeTransferLib {
         require(success, "TRANSFER_FROM_FAILED");
     }
 
-    function safeTransfer(IERC20 token, address to, uint256 amount) internal {
+    function safeTransfer(IERC20 token, address to, uint256 assets) internal {
         bool success;
 
         /// @solidity memory-safe-assembly
@@ -49,7 +49,7 @@ library SafeTransferLib {
             // Write the abi-encoded calldata into memory, beginning with the function selector.
             mstore(freeMemoryPointer, 0xa9059cbb00000000000000000000000000000000000000000000000000000000)
             mstore(add(freeMemoryPointer, 4), and(to, 0xffffffffffffffffffffffffffffffffffffffff)) // Append and mask the "to" argument.
-            mstore(add(freeMemoryPointer, 36), amount) // Append the "amount" argument. Masking not required as it's a full 32 byte type.
+            mstore(add(freeMemoryPointer, 36), assets) // Append the "assets" argument. Masking not required as it's a full 32 byte type.
 
             success :=
                 and(

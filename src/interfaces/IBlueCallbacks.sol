@@ -6,17 +6,17 @@ interface IBlueLiquidateCallback {
 }
 
 interface IBlueRepayCallback {
-    function onBlueRepay(uint256 amount, bytes calldata data) external;
+    function onBlueRepay(uint256 assets, bytes calldata data) external;
 }
 
 interface IBlueSupplyCallback {
-    function onBlueSupply(uint256 amount, bytes calldata data) external;
+    function onBlueSupply(uint256 assets, bytes calldata data) external;
 }
 
 interface IBlueSupplyCollateralCallback {
-    function onBlueSupplyCollateral(uint256 amount, bytes calldata data) external;
+    function onBlueSupplyCollateral(uint256 assets, bytes calldata data) external;
 }
 
 interface IBlueFlashLoanCallback {
-    function onBlueFlashLoan(address token, uint256 amount, bytes calldata data) external;
+    function onBlueFlashLoan(address token, uint256 assets, bytes calldata data) external;
 }

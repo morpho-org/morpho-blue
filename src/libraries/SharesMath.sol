@@ -35,30 +35,30 @@ library SharesMath {
         return shares.mulDivUp(totalAssets + VIRTUAL_ASSETS, totalShares + VIRTUAL_SHARES);
     }
 
-    /// @dev Calculates the amount of shares corresponding to an exact amount of supply to withdraw.
+    /// @dev Calculates the assets of shares corresponding to an exact assets of supply to withdraw.
     /// Note: only works as long as totalSupplyShares + VIRTUAL_SHARES >= totalSupply + VIRTUAL_ASSETS.
-    function toWithdrawShares(uint256 amount, uint256 totalSupply, uint256 totalSupplyShares)
+    function toWithdrawShares(uint256 assets, uint256 totalSupply, uint256 totalSupplyShares)
         internal
         pure
         returns (uint256)
     {
-        uint256 sharesMin = toSharesDown(amount, totalSupply, totalSupplyShares);
-        uint256 sharesMax = toSharesUp(amount + 1, totalSupply, totalSupplyShares);
+        uint256 sharesMin = toSharesDown(assets, totalSupply, totalSupplyShares);
+        uint256 sharesMax = toSharesUp(assets + 1, totalSupply, totalSupplyShares);
 
         return (sharesMin + sharesMax) / 2;
     }
 
-    /// @dev Calculates the amount of shares corresponding to an exact amount of debt to repay.
+    /// @dev Calculates the assets of shares corresponding to an exact assets of debt to repay.
     /// Note: only works as long as totalBorrowShares + VIRTUAL_SHARES >= totalBorrow + VIRTUAL_ASSETS.
-    function toRepayShares(uint256 amount, uint256 totalBorrow, uint256 totalBorrowShares)
+    function toRepayShares(uint256 assets, uint256 totalBorrow, uint256 totalBorrowShares)
         internal
         pure
         returns (uint256)
     {
-        if (amount == 0) return 0;
+        if (assets == 0) return 0;
 
-        uint256 sharesMin = toSharesDown(amount - 1, totalBorrow, totalBorrowShares);
-        uint256 sharesMax = toSharesUp(amount, totalBorrow, totalBorrowShares);
+        uint256 sharesMin = toSharesDown(assets - 1, totalBorrow, totalBorrowShares);
+        uint256 sharesMax = toSharesUp(assets, totalBorrow, totalBorrowShares);
 
         return (sharesMin + sharesMax) / 2;
     }

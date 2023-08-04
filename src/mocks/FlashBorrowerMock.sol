@@ -15,12 +15,12 @@ contract FlashBorrowerMock is IBlueFlashLoanCallback {
         BLUE = newBlue;
     }
 
-    function flashLoan(address token, uint256 amount, bytes calldata data) external {
-        BLUE.flashLoan(token, amount, data);
+    function flashLoan(address token, uint256 assets, bytes calldata data) external {
+        BLUE.flashLoan(token, assets, data);
     }
 
-    function onBlueFlashLoan(address token, uint256 amount, bytes calldata) external {
+    function onBlueFlashLoan(address token, uint256 assets, bytes calldata) external {
         require(msg.sender == address(BLUE));
-        ERC20(token).safeApprove(address(BLUE), amount);
+        ERC20(token).safeApprove(address(BLUE), assets);
     }
 }

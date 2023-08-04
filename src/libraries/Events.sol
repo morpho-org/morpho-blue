@@ -4,18 +4,18 @@ pragma solidity ^0.8.0;
 import {Id, Market} from "src/libraries/MarketLib.sol";
 
 library Events {
-    event SupplyCollateral(Id indexed id, address indexed caller, address indexed onBehalf, uint256 amount);
+    event SupplyCollateral(Id indexed id, address indexed caller, address indexed onBehalf, uint256 assets);
     event WithdrawCollateral(
-        Id indexed id, address caller, address indexed onBehalf, address indexed receiver, uint256 amount
+        Id indexed id, address caller, address indexed onBehalf, address indexed receiver, uint256 assets
     );
 
-    event Supply(Id indexed id, address indexed caller, address indexed onBehalf, uint256 amount, uint256 shares);
+    event Supply(Id indexed id, address indexed caller, address indexed onBehalf, uint256 assets, uint256 shares);
     event Withdraw(
         Id indexed id,
         address caller,
         address indexed onBehalf,
         address indexed receiver,
-        uint256 amount,
+        uint256 assets,
         uint256 shares
     );
 
@@ -24,10 +24,10 @@ library Events {
         address caller,
         address indexed onBehalf,
         address indexed receiver,
-        uint256 amount,
+        uint256 assets,
         uint256 shares
     );
-    event Repay(Id indexed id, address indexed caller, address indexed onBehalf, uint256 amount, uint256 shares);
+    event Repay(Id indexed id, address indexed caller, address indexed onBehalf, uint256 assets, uint256 shares);
 
     event Liquidate(
         Id indexed id,
@@ -39,7 +39,7 @@ library Events {
         uint256 badDebtShares
     );
 
-    event FlashLoan(address indexed caller, address indexed token, uint256 amount);
+    event FlashLoan(address indexed caller, address indexed token, uint256 assets);
 
     event SetOwner(address indexed newOwner);
 

@@ -9,7 +9,7 @@ import {SharesMath} from "src/libraries/SharesMath.sol";
 contract SharesMathTest is Test {
     using SharesMath for uint256;
 
-    function testToSupplyShares(uint256 amount, uint256 supplyShares, uint256 totalSupply, uint256 totalSupplyShares)
+    function testToSupplyShares(uint256 assets, uint256 supplyShares, uint256 totalSupply, uint256 totalSupplyShares)
         public
     {
         totalSupplyShares = bound(totalSupplyShares, SharesMath.VIRTUAL_SHARES, type(uint128).max);
@@ -17,14 +17,14 @@ contract SharesMathTest is Test {
 
         supplyShares = bound(supplyShares, 0, totalSupplyShares);
 
-        amount = bound(amount, 0, supplyShares.toAssetsDown(totalSupply, totalSupplyShares));
+        assets = bound(assets, 0, supplyShares.toAssetsDown(totalSupply, totalSupplyShares));
 
         assertEq(
-            amount, amount.toWithdrawShares(totalSupply, totalSupplyShares).toAssetsDown(totalSupply, totalSupplyShares)
+            assets, assets.toWithdrawShares(totalSupply, totalSupplyShares).toAssetsDown(totalSupply, totalSupplyShares)
         );
     }
 
-    function testToBorrowShares(uint256 amount, uint256 borrowShares, uint256 totalBorrow, uint256 totalBorrowShares)
+    function testToBorrowShares(uint256 assets, uint256 borrowShares, uint256 totalBorrow, uint256 totalBorrowShares)
         public
     {
         totalBorrowShares = bound(totalBorrowShares, SharesMath.VIRTUAL_SHARES, type(uint128).max);
@@ -32,10 +32,10 @@ contract SharesMathTest is Test {
 
         borrowShares = bound(borrowShares, 0, totalBorrowShares);
 
-        amount = bound(amount, 0, borrowShares.toAssetsDown(totalBorrow, totalBorrowShares));
+        assets = bound(assets, 0, borrowShares.toAssetsDown(totalBorrow, totalBorrowShares));
 
         assertEq(
-            amount, amount.toRepayShares(totalBorrow, totalBorrowShares).toAssetsUp(totalBorrow, totalBorrowShares)
+            assets, assets.toRepayShares(totalBorrow, totalBorrowShares).toAssetsUp(totalBorrow, totalBorrowShares)
         );
     }
 }
