@@ -57,11 +57,17 @@ contract IntegrationWithdrawTest is BlueBaseTest {
         blue.withdraw(market, amountSupplied, address(this), address(this));
     }
 
-    function testWithdraw(uint256 amountSupplied, uint256 amountBorrowed, uint256 amountWithdrawn) public {
-        amountSupplied = bound(amountSupplied, 1, 2 ** 64);
-        amountBorrowed = bound(amountBorrowed, 1, amountSupplied);
-        amountWithdrawn = bound(amountWithdrawn, 1, amountSupplied);
-        vm.assume(amountWithdrawn <= amountSupplied - amountBorrowed);
+    function testWithdraw(
+        uint256 amountSupplied,
+        uint256 amountBorrowed,
+        uint256 amountWithdrawn,
+        address receiver
+    ) public {
+        vm.assume(receiver != address(0) && receiver != address(blue));
+
+        amountSupplied = bound(amountSupplied, 2, 2 ** 64);
+        amountBorrowed = bound(amountBorrowed, 1, amountSupplied - 1);
+        amountWithdrawn = bound(amountWithdrawn, 1, amountSupplied - amountBorrowed);
 
         borrowableAsset.setBalance(address(this), amountSupplied);
         blue.supply(market, amountSupplied, address(this), hex"");
@@ -69,7 +75,7 @@ contract IntegrationWithdrawTest is BlueBaseTest {
         vm.prank(BORROWER);
         blue.borrow(market, amountBorrowed, BORROWER, BORROWER);
 
-        blue.withdraw(market, amountWithdrawn, address(this), address(this));
+        blue.withdraw(market, amountWithdrawn, address(this), receiver);
 
         assertApproxEqAbs(
             blue.supplyShares(id, address(this)),
@@ -77,8 +83,8 @@ contract IntegrationWithdrawTest is BlueBaseTest {
             100,
             "supply shares"
         );
-        assertEq(borrowableAsset.balanceOf(address(this)), amountWithdrawn, "this balance");
-        assertEq(borrowableAsset.balanceOf(BORROWER), amountBorrowed, "Borrower balance");
+        assertEq(borrowableAsset.balanceOf(receiver), amountWithdrawn, "receiver balance");
+        assertEq(borrowableAsset.balanceOf(BORROWER), amountBorrowed, "borrower balance");
         assertEq(
             borrowableAsset.balanceOf(address(blue)), amountSupplied - amountBorrowed - amountWithdrawn, "blue balance"
         );
@@ -88,38 +94,41 @@ contract IntegrationWithdrawTest is BlueBaseTest {
         uint256 amountSupplied,
         uint256 amountBorrowed,
         uint256 amountWithdrawn,
-        uint256 amountWithdrawnToReceiver
+        address onBehalf,
+        address receiver
     ) public {
-        amountSupplied = bound(amountSupplied, 1, 2 ** 64);
-        amountBorrowed = bound(amountBorrowed, 1, amountSupplied);
-        amountWithdrawn = bound(amountWithdrawn, 1, amountSupplied);
-        amountWithdrawnToReceiver = bound(amountWithdrawnToReceiver, 1, amountSupplied);
-        vm.assume(amountWithdrawn + amountWithdrawnToReceiver <= amountSupplied - amountBorrowed);
+        vm.assume(onBehalf != address(0) && onBehalf != address(blue));
+        vm.assume(receiver != address(0) && receiver != address(blue));
 
-        borrowableAsset.setBalance(address(this), amountSupplied);
-        blue.supply(market, amountSupplied, address(this), hex"");
+        amountSupplied = bound(amountSupplied, 2, 2 ** 64);
+        amountBorrowed = bound(amountBorrowed, 1, amountSupplied - 1);
+        amountWithdrawn = bound(amountWithdrawn, 1, amountSupplied - amountBorrowed);
+
+        borrowableAsset.setBalance(onBehalf, amountSupplied);
+
+        vm.startPrank(onBehalf);
+        borrowableAsset.approve(address(blue), amountSupplied);
+        blue.supply(market, amountSupplied, onBehalf, hex"");
+        blue.borrow(market, amountBorrowed, onBehalf, onBehalf);
         blue.setAuthorization(BORROWER, true);
-
-        vm.startPrank(BORROWER);
-        blue.borrow(market, amountBorrowed, BORROWER, BORROWER);
-
-        blue.withdraw(market, amountWithdrawn, address(this), BORROWER);
-        blue.withdraw(market, amountWithdrawnToReceiver, address(this), address(this));
-
         vm.stopPrank();
 
-        assertEq(blue.totalSupply(id), amountSupplied - amountWithdrawn - amountWithdrawnToReceiver, "total supply");
+        uint256 receiverBalanceBefore = borrowableAsset.balanceOf(receiver);
+
+        vm.startPrank(BORROWER);
+        blue.withdraw(market, amountWithdrawn, onBehalf, receiver);
+
+        assertEq(blue.totalSupply(id), amountSupplied - amountWithdrawn, "total supply");
         assertApproxEqAbs(
-            blue.supplyShares(id, address(this)),
-            (amountSupplied - amountWithdrawn - amountWithdrawnToReceiver) * SharesMath.VIRTUAL_SHARES,
+            blue.supplyShares(id, onBehalf),
+            (amountSupplied - amountWithdrawn) * SharesMath.VIRTUAL_SHARES,
             100,
             "supply shares"
         );
-        assertEq(borrowableAsset.balanceOf(address(this)), amountWithdrawnToReceiver, "this balance");
-        assertEq(borrowableAsset.balanceOf(BORROWER), amountBorrowed + amountWithdrawn, "Borrower balance");
+        assertEq(borrowableAsset.balanceOf(receiver) - receiverBalanceBefore, amountWithdrawn, "receiver balance");
         assertEq(
             borrowableAsset.balanceOf(address(blue)),
-            amountSupplied - amountBorrowed - amountWithdrawn - amountWithdrawnToReceiver,
+            amountSupplied - amountBorrowed - amountWithdrawn,
             "blue balance"
         );
     }
