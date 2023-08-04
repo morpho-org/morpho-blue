@@ -11,7 +11,7 @@ library BlueLib {
     using SharesMath for uint256;
 
     function withdrawAmount(IBlue blue, Market memory market, uint256 amount, address onBehalf, address receiver)
-        external
+        internal
         returns (uint256 shares)
     {
         Id id = market.id();
@@ -24,7 +24,7 @@ library BlueLib {
     }
 
     function repayAmount(IBlue blue, Market memory market, uint256 amount, address onBehalf, bytes calldata data)
-        external
+        internal
         returns (uint256 shares)
     {
         Id id = market.id();
