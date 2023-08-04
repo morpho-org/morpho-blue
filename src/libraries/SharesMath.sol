@@ -42,13 +42,10 @@ library SharesMath {
         pure
         returns (uint256)
     {
-        uint256 shares = toSharesUp(amount, totalSupply, totalSupplyShares);
+        uint256 sharesMin = toSharesDown(amount, totalSupply, totalSupplyShares);
+        uint256 sharesMax = toSharesUp(amount + 1, totalSupply, totalSupplyShares);
 
-        if (amount != toAssetsDown(shares, totalSupply, totalSupplyShares)) {
-            return toSharesDown(amount + 1, totalSupply, totalSupplyShares);
-        }
-
-        return shares;
+        return (sharesMin + sharesMax) / 2;
     }
 
     /// @dev Calculates the amount of shares corresponding to a given amount of borrow.
@@ -58,12 +55,11 @@ library SharesMath {
         pure
         returns (uint256)
     {
-        uint256 shares = toSharesDown(amount, totalBorrow, totalBorrowShares);
+        if (amount == 0) return 0;
 
-        if (amount != 0 && amount != toAssetsUp(shares, totalBorrow, totalBorrowShares)) {
-            return toSharesUp(amount - 1, totalBorrow, totalBorrowShares);
-        }
+        uint256 sharesMin = toSharesDown(amount - 1, totalBorrow, totalBorrowShares);
+        uint256 sharesMax = toSharesUp(amount, totalBorrow, totalBorrowShares);
 
-        return shares;
+        return (sharesMin + sharesMax) / 2;
     }
 }
