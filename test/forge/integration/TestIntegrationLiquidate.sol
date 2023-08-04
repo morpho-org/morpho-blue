@@ -26,31 +26,21 @@ contract IntegrationLiquidateTest is BlueBaseTest {
         uint256 amountSupplied,
         uint256 amountBorrowed,
         uint256 amountSeized,
-        uint256 priceCollateral,
-        uint256 priceBorrowable
+        uint256 priceCollateral
     ) public {
-        amountSupplied = bound(amountSupplied, 1, 2 ** 64);
-        amountBorrowed = bound(amountBorrowed, 1, 2 ** 64);
-        amountSeized = bound(amountSeized, 1, 2 ** 64);
-        amountCollateral = bound(amountCollateral, 1, 2 ** 64);
-        priceCollateral = bound(priceCollateral, 0, 2 ** 64);
-        priceBorrowable = bound(priceBorrowable, 0, 2 ** 64);
+        (amountCollateral, amountBorrowed, priceCollateral) =
+            _boundHealthyPosition(amountCollateral, amountBorrowed, priceCollateral);
 
-        vm.assume(
-            amountCollateral.mulWadDown(priceCollateral).mulWadDown(market.lltv)
-                >= amountBorrowed.mulWadUp(priceBorrowable)
-        );
-        vm.assume(amountSupplied >= amountBorrowed);
-        vm.assume(amountCollateral >= amountSeized);
+        amountSupplied = bound(amountSupplied, amountBorrowed, 2 ** 64);
+        _provideLiquidity(amountSupplied);
 
-        borrowableOracle.setPrice(priceBorrowable);
+        amountSeized = bound(amountSeized, 1, amountCollateral);
+
+        borrowableOracle.setPrice(FixedPointMathLib.WAD);
         collateralOracle.setPrice(priceCollateral);
 
-        borrowableAsset.setBalance(address(this), amountSupplied);
         borrowableAsset.setBalance(LIQUIDATOR, amountBorrowed);
         collateralAsset.setBalance(BORROWER, amountCollateral);
-
-        blue.supply(market, amountSupplied, address(this), hex"");
 
         vm.startPrank(BORROWER);
         blue.supplyCollateral(market, amountCollateral, BORROWER, hex"");
