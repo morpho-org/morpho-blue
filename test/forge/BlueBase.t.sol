@@ -99,6 +99,36 @@ contract BlueBaseTest is Test {
         blue.supply(market, amount, address(this), hex"");
     }
 
+    function _boundHealthyPosition(uint256 amountCollateral, uint256 amountBorrowed, uint256 priceCollateral)
+        internal view
+        returns (uint256, uint256, uint256)
+    {
+        priceCollateral = bound(priceCollateral, 1, 2 ** 64);
+        amountBorrowed = bound(amountBorrowed, 10, 2 ** 64);
+
+        uint256 minCollateral = amountBorrowed.divWadUp(market.lltv).divWadUp(priceCollateral);
+        vm.assume(minCollateral != 0);
+
+        amountCollateral = bound(amountCollateral, minCollateral, max(minCollateral, 2 ** 64));
+
+        return (amountCollateral, amountBorrowed, priceCollateral);
+    }
+
+    function _boundUnhealthyPosition(uint256 amountCollateral, uint256 amountBorrowed, uint256 priceCollateral)
+        internal view
+        returns (uint256, uint256, uint256)
+    {
+        priceCollateral = bound(priceCollateral, 1, 2 ** 64);
+        amountBorrowed = bound(amountBorrowed, 10, 2 ** 64);
+
+        uint256 maxCollateral = amountBorrowed.divWadDown(market.lltv).divWadDown(priceCollateral);
+        vm.assume(maxCollateral != 0);
+
+        amountCollateral = bound(amountBorrowed, 1, maxCollateral);
+
+        return (amountCollateral, amountBorrowed, priceCollateral);
+    }
+
     function neq(Market memory a, Market memory b) internal pure returns (bool) {
         return a.borrowableAsset != b.borrowableAsset || a.collateralAsset != b.collateralAsset
             || a.borrowableOracle != b.borrowableOracle || a.collateralOracle != b.collateralOracle || a.lltv != b.lltv

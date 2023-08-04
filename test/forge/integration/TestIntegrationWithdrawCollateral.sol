@@ -49,28 +49,18 @@ contract IntegrationWithdrawCollateralTest is BlueBaseTest {
         uint256 amountCollateral,
         uint256 amountSupplied,
         uint256 amountBorrowed,
-        uint256 priceCollateral,
-        uint256 priceBorrowable
+        uint256 priceCollateral
     ) public {
-        amountSupplied = bound(amountSupplied, 1, 2 ** 64);
-        amountBorrowed = bound(amountBorrowed, 1, 2 ** 64);
-        priceBorrowable = bound(priceBorrowable, 1, 2 ** 64);
-        amountCollateral = bound(amountCollateral, 1, 2 ** 64);
-        priceCollateral = bound(priceCollateral, 1, 2 ** 64);
+        (amountCollateral, amountBorrowed, priceCollateral) =
+            _boundHealthyPosition(amountCollateral, amountBorrowed, priceCollateral);
 
-        vm.assume(
-            amountCollateral.mulWadDown(priceCollateral).mulWadDown(market.lltv)
-                >= amountBorrowed.mulWadUp(priceBorrowable)
-        );
-        vm.assume(amountSupplied >= amountBorrowed);
+        amountSupplied = bound(amountSupplied, amountBorrowed, 2 ** 64);
+        _provideLiquidity(amountSupplied);
 
-        borrowableOracle.setPrice(priceBorrowable);
+        borrowableOracle.setPrice(FixedPointMathLib.WAD);
         collateralOracle.setPrice(priceCollateral);
 
-        borrowableAsset.setBalance(address(this), amountSupplied);
         collateralAsset.setBalance(BORROWER, amountCollateral);
-
-        blue.supply(market, amountSupplied, address(this), hex"");
 
         vm.startPrank(BORROWER);
         blue.supplyCollateral(market, amountCollateral, BORROWER, hex"");
@@ -86,37 +76,31 @@ contract IntegrationWithdrawCollateralTest is BlueBaseTest {
         uint256 amountSupplied,
         uint256 amountBorrowed,
         uint256 priceCollateral,
-        uint256 priceBorrowable
+        address receiver
     ) public {
-        amountSupplied = bound(amountSupplied, 1, 2 ** 64);
-        amountBorrowed = bound(amountBorrowed, 1, 2 ** 64);
-        priceBorrowable = bound(priceBorrowable, 1, 2 ** 64);
-        amountCollateral = bound(amountCollateral, 1, 2 ** 64);
+        vm.assume(receiver != address(0) && receiver != address(blue));
+
+        (amountCollateral, amountBorrowed, priceCollateral) =
+            _boundHealthyPosition(amountCollateral, amountBorrowed, priceCollateral);
+
+        amountSupplied = bound(amountSupplied, amountBorrowed, 2 ** 64);
+        _provideLiquidity(amountSupplied);
+
         amountCollateralExcess = bound(amountCollateralExcess, 1, 2 ** 64);
-        priceCollateral = bound(priceCollateral, 1, 2 ** 64);
 
-        vm.assume(
-            amountCollateral.mulWadDown(priceCollateral).mulWadDown(market.lltv)
-                >= amountBorrowed.mulWadUp(priceBorrowable)
-        );
-        vm.assume(amountSupplied >= amountBorrowed);
-
-        borrowableOracle.setPrice(priceBorrowable);
+        borrowableOracle.setPrice(FixedPointMathLib.WAD);
         collateralOracle.setPrice(priceCollateral);
 
-        borrowableAsset.setBalance(address(this), amountSupplied);
         collateralAsset.setBalance(BORROWER, amountCollateral + amountCollateralExcess);
-
-        blue.supply(market, amountSupplied, address(this), hex"");
 
         vm.startPrank(BORROWER);
         blue.supplyCollateral(market, amountCollateral + amountCollateralExcess, BORROWER, hex"");
         blue.borrow(market, amountBorrowed, BORROWER, BORROWER);
-        blue.withdrawCollateral(market, amountCollateralExcess, BORROWER, BORROWER);
+        blue.withdrawCollateral(market, amountCollateralExcess, BORROWER, receiver);
         vm.stopPrank();
 
         assertEq(blue.collateral(id, BORROWER), amountCollateral, "collateral balance");
-        assertEq(collateralAsset.balanceOf(BORROWER), amountCollateralExcess, "lender balance");
+        assertEq(collateralAsset.balanceOf(receiver), amountCollateralExcess, "lender balance");
         assertEq(collateralAsset.balanceOf(address(blue)), amountCollateral, "blue balance");
     }
 
@@ -126,38 +110,34 @@ contract IntegrationWithdrawCollateralTest is BlueBaseTest {
         uint256 amountSupplied,
         uint256 amountBorrowed,
         uint256 priceCollateral,
-        uint256 priceBorrowable
+        address onBehalf,
+        address receiver
     ) public {
-        amountSupplied = bound(amountSupplied, 1, 2 ** 64);
-        amountBorrowed = bound(amountBorrowed, 1, 2 ** 64);
-        priceBorrowable = bound(priceBorrowable, 1, 2 ** 64);
-        amountCollateral = bound(amountCollateral, 1, 2 ** 64);
+        vm.assume(onBehalf != address(0) && onBehalf != address(blue));
+        vm.assume(receiver != address(0) && receiver != address(blue));
+
+        (amountCollateral, amountBorrowed, priceCollateral) =
+            _boundHealthyPosition(amountCollateral, amountBorrowed, priceCollateral);
+
+        amountSupplied = bound(amountSupplied, amountBorrowed, 2 ** 64);
+        _provideLiquidity(amountSupplied);
+
         amountCollateralExcess = bound(amountCollateralExcess, 1, 2 ** 64);
-        priceCollateral = bound(priceCollateral, 1, 2 ** 64);
 
-        vm.assume(
-            amountCollateral.mulWadDown(priceCollateral).mulWadDown(market.lltv)
-                >= amountBorrowed.mulWadUp(priceBorrowable)
-        );
-        vm.assume(amountSupplied >= amountBorrowed);
+        collateralAsset.setBalance(onBehalf, amountCollateral + amountCollateralExcess);
 
-        borrowableOracle.setPrice(priceBorrowable);
-        collateralOracle.setPrice(priceCollateral);
-
-        borrowableAsset.setBalance(address(this), amountSupplied);
-        collateralAsset.setBalance(address(this), amountCollateral + amountCollateralExcess);
-
-        blue.supply(market, amountSupplied, address(this), hex"");
-        blue.supplyCollateral(market, amountCollateral + amountCollateralExcess, address(this), hex"");
-        blue.borrow(market, amountBorrowed, address(this), address(this));
+        vm.startPrank(onBehalf);
+        collateralAsset.approve(address(blue), amountCollateral + amountCollateralExcess);
+        blue.supplyCollateral(market, amountCollateral + amountCollateralExcess, onBehalf, hex"");
         blue.setAuthorization(BORROWER, true);
+        blue.borrow(market, amountBorrowed, onBehalf, onBehalf);
+        vm.stopPrank();
 
         vm.prank(BORROWER);
-        blue.withdrawCollateral(market, amountCollateralExcess, address(this), address(this));
+        blue.withdrawCollateral(market, amountCollateralExcess, onBehalf, receiver);
 
-        assertEq(blue.collateral(id, address(this)), amountCollateral, "collateral balance");
-        assertEq(collateralAsset.balanceOf(address(this)), amountCollateralExcess, "lender balance");
-        assertEq(collateralAsset.balanceOf(BORROWER), 0, "lender balance");
+        assertEq(blue.collateral(id, onBehalf), amountCollateral, "collateral balance");
+        assertEq(collateralAsset.balanceOf(receiver), amountCollateralExcess, "lender balance");
         assertEq(collateralAsset.balanceOf(address(blue)), amountCollateral, "blue balance");
     }
 }
