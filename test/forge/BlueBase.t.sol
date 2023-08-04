@@ -100,7 +100,8 @@ contract BlueBaseTest is Test {
     }
 
     function _boundHealthyPosition(uint256 amountCollateral, uint256 amountBorrowed, uint256 priceCollateral)
-        internal view
+        internal
+        view
         returns (uint256, uint256, uint256)
     {
         priceCollateral = bound(priceCollateral, 1, 2 ** 64);
@@ -115,7 +116,8 @@ contract BlueBaseTest is Test {
     }
 
     function _boundUnhealthyPosition(uint256 amountCollateral, uint256 amountBorrowed, uint256 priceCollateral)
-        internal view
+        internal
+        view
         returns (uint256, uint256, uint256)
     {
         priceCollateral = bound(priceCollateral, 1, 2 ** 64);

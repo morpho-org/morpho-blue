@@ -38,13 +38,17 @@ contract IntegrationBorrowTest is BlueBaseTest {
         blue.borrow(market, amount, address(this), BORROWER);
     }
 
-    function testBorrowUnhealthyPosition(uint256 amountCollateral, uint256 amountBorrowed, uint256 priceCollateral)
-        public
-    {
+    function testBorrowUnhealthyPosition(
+        uint256 amountCollateral,
+        uint256 amountSupplied,
+        uint256 amountBorrowed,
+        uint256 priceCollateral
+    ) public {
         (amountCollateral, amountBorrowed, priceCollateral) =
             _boundUnhealthyPosition(amountCollateral, amountBorrowed, priceCollateral);
 
-        _provideLiquidity(amountBorrowed);
+        amountSupplied = bound(amountSupplied, 1, amountBorrowed - 1);
+        _provideLiquidity(amountSupplied);
 
         borrowableOracle.setPrice(FixedPointMathLib.WAD);
         collateralOracle.setPrice(priceCollateral);

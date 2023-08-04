@@ -57,12 +57,9 @@ contract IntegrationWithdrawTest is BlueBaseTest {
         blue.withdraw(market, amountSupplied, address(this), address(this));
     }
 
-    function testWithdraw(
-        uint256 amountSupplied,
-        uint256 amountBorrowed,
-        uint256 amountWithdrawn,
-        address receiver
-    ) public {
+    function testWithdraw(uint256 amountSupplied, uint256 amountBorrowed, uint256 amountWithdrawn, address receiver)
+        public
+    {
         vm.assume(receiver != address(0) && receiver != address(blue));
 
         amountSupplied = bound(amountSupplied, 2, 2 ** 64);
@@ -127,9 +124,7 @@ contract IntegrationWithdrawTest is BlueBaseTest {
         );
         assertEq(borrowableAsset.balanceOf(receiver) - receiverBalanceBefore, amountWithdrawn, "receiver balance");
         assertEq(
-            borrowableAsset.balanceOf(address(blue)),
-            amountSupplied - amountBorrowed - amountWithdrawn,
-            "blue balance"
+            borrowableAsset.balanceOf(address(blue)), amountSupplied - amountBorrowed - amountWithdrawn, "blue balance"
         );
     }
 }
