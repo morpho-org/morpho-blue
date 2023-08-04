@@ -5,18 +5,20 @@ import {
     IBlueLiquidateCallback,
     IBlueRepayCallback,
     IBlueSupplyCallback,
-    IBlueSupplyCollateralCallback
-} from "src/interfaces/IBlueCallbacks.sol";
-import {IIrm} from "src/interfaces/IIrm.sol";
-import {IERC20} from "src/interfaces/IERC20.sol";
-import {IFlashLender} from "src/interfaces/IFlashLender.sol";
-import {IFlashBorrower} from "src/interfaces/IFlashBorrower.sol";
+    IBlueSupplyCollateralCallback,
+    IBlueFlashLoanCallback
+} from "./interfaces/IBlueCallbacks.sol";
+import {IIrm} from "./interfaces/IIrm.sol";
+import {IERC20} from "./interfaces/IERC20.sol";
+import {IOracle} from "./interfaces/IOracle.sol";
+import {Id, Market, Signature, IBlue} from "./interfaces/IBlue.sol";
 
+import {Events} from "./libraries/Events.sol";
 import {Errors} from "./libraries/Errors.sol";
-import {SharesMath} from "src/libraries/SharesMath.sol";
-import {FixedPointMathLib} from "src/libraries/FixedPointMathLib.sol";
-import {Id, Market, MarketLib} from "src/libraries/MarketLib.sol";
-import {SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
+import {SharesMath} from "./libraries/SharesMath.sol";
+import {FixedPointMathLib} from "./libraries/FixedPointMathLib.sol";
+import {MarketLib} from "./libraries/MarketLib.sol";
+import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
 
 uint256 constant MAX_FEE = 0.25e18;
 uint256 constant ALPHA = 0.5e18;
@@ -28,14 +30,7 @@ bytes32 constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,uint256 c
 bytes32 constant AUTHORIZATION_TYPEHASH =
     keccak256("Authorization(address authorizer,address authorized,bool isAuthorized,uint256 nonce,uint256 deadline)");
 
-/// @notice Contains the `v`, `r` and `s` parameters of an ECDSA signature.
-struct Signature {
-    uint8 v;
-    bytes32 r;
-    bytes32 s;
-}
-
-contract Blue is IFlashLender {
+contract Blue is IBlue {
     using SharesMath for uint256;
     using FixedPointMathLib for uint256;
     using SafeTransferLib for IERC20;
@@ -52,9 +47,9 @@ contract Blue is IFlashLender {
     // Fee recipient.
     address public feeRecipient;
     // User' supply balances.
-    mapping(Id => mapping(address => uint256)) public supplyShare;
+    mapping(Id => mapping(address => uint256)) public supplyShares;
     // User' borrow balances.
-    mapping(Id => mapping(address => uint256)) public borrowShare;
+    mapping(Id => mapping(address => uint256)) public borrowShares;
     // User' collateral balance.
     mapping(Id => mapping(address => uint256)) public collateral;
     // Market total supply.
@@ -70,7 +65,7 @@ contract Blue is IFlashLender {
     // Fee.
     mapping(Id => uint256) public fee;
     // Enabled IRMs.
-    mapping(IIrm => bool) public isIrmEnabled;
+    mapping(address => bool) public isIrmEnabled;
     // Enabled LLTVs.
     mapping(uint256 => bool) public isLltvEnabled;
     // User's authorizations. Note that by default, msg.sender is authorized by themself.
@@ -97,15 +92,21 @@ contract Blue is IFlashLender {
 
     function setOwner(address newOwner) external onlyOwner {
         owner = newOwner;
+
+        emit Events.SetOwner(newOwner);
     }
 
-    function enableIrm(IIrm irm) external onlyOwner {
+    function enableIrm(address irm) external onlyOwner {
         isIrmEnabled[irm] = true;
+
+        emit Events.EnableIrm(address(irm));
     }
 
     function enableLltv(uint256 lltv) external onlyOwner {
         require(lltv < FixedPointMathLib.WAD, Errors.LLTV_TOO_HIGH);
         isLltvEnabled[lltv] = true;
+
+        emit Events.EnableLltv(lltv);
     }
 
     /// @notice It is the owner's responsibility to ensure a fee recipient is set before setting a non-zero fee.
@@ -114,10 +115,14 @@ contract Blue is IFlashLender {
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(newFee <= MAX_FEE, Errors.MAX_FEE_EXCEEDED);
         fee[id] = newFee;
+
+        emit Events.SetFee(id, newFee);
     }
 
     function setFeeRecipient(address recipient) external onlyOwner {
         feeRecipient = recipient;
+
+        emit Events.SetFeeRecipient(recipient);
     }
 
     // Markets management.
@@ -127,8 +132,9 @@ contract Blue is IFlashLender {
         require(isIrmEnabled[market.irm], Errors.IRM_NOT_ENABLED);
         require(isLltvEnabled[market.lltv], Errors.LLTV_NOT_ENABLED);
         require(lastUpdate[id] == 0, Errors.MARKET_CREATED);
+        lastUpdate[id] = block.timestamp;
 
-        _accrueInterests(market, id);
+        emit Events.CreateMarket(id, market);
     }
 
     // Supply management.
@@ -137,44 +143,52 @@ contract Blue is IFlashLender {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
+        require(onBehalf != address(0), Errors.ZERO_ADDRESS);
 
         _accrueInterests(market, id);
 
         uint256 shares = amount.toSharesDown(totalSupply[id], totalSupplyShares[id]);
-        supplyShare[id][onBehalf] += shares;
+        supplyShares[id][onBehalf] += shares;
         totalSupplyShares[id] += shares;
 
         totalSupply[id] += amount;
 
+        emit Events.Supply(id, msg.sender, onBehalf, amount, shares);
+
         if (data.length > 0) IBlueSupplyCallback(msg.sender).onBlueSupply(amount, data);
 
-        market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
+        IERC20(market.borrowableAsset).safeTransferFrom(msg.sender, address(this), amount);
     }
 
     function withdraw(Market memory market, uint256 amount, address onBehalf, address receiver) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
+        require(amount != 0, Errors.ZERO_AMOUNT);
+        // No need to verify that onBehalf != address(0) thanks to the authorization check.
+        require(receiver != address(0), Errors.ZERO_ADDRESS);
         require(_isSenderAuthorized(onBehalf), Errors.UNAUTHORIZED);
 
         _accrueInterests(market, id);
 
         uint256 shares;
         if (amount == type(uint256).max) {
-            amount = supplyShare[id][onBehalf].toAssetsDown(totalSupply[id], totalSupplyShares[id]);
-            shares = supplyShare[id][onBehalf];
+            amount = supplyShares[id][onBehalf].toAssetsDown(totalSupply[id], totalSupplyShares[id]);
+            shares = supplyShares[id][onBehalf];
         } else {
             shares = amount.toSharesUp(totalSupply[id], totalSupplyShares[id]);
         }
 
         require(amount != 0, Errors.ZERO_AMOUNT);
 
-        supplyShare[id][onBehalf] -= shares;
+        supplyShares[id][onBehalf] -= shares;
         totalSupplyShares[id] -= shares;
         totalSupply[id] -= amount;
 
+        emit Events.Withdraw(id, msg.sender, onBehalf, receiver, amount, shares);
+
         require(totalBorrow[id] <= totalSupply[id], Errors.INSUFFICIENT_LIQUIDITY);
 
-        market.borrowableAsset.safeTransfer(receiver, amount);
+        IERC20(market.borrowableAsset).safeTransfer(receiver, amount);
     }
 
     // Borrow management.
@@ -183,45 +197,53 @@ contract Blue is IFlashLender {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
+        // No need to verify that onBehalf != address(0) thanks to the authorization check.
+        require(receiver != address(0), Errors.ZERO_ADDRESS);
         require(_isSenderAuthorized(onBehalf), Errors.UNAUTHORIZED);
 
         _accrueInterests(market, id);
 
         uint256 shares = amount.toSharesUp(totalBorrow[id], totalBorrowShares[id]);
-        borrowShare[id][onBehalf] += shares;
+        borrowShares[id][onBehalf] += shares;
         totalBorrowShares[id] += shares;
 
         totalBorrow[id] += amount;
 
+        emit Events.Borrow(id, msg.sender, onBehalf, receiver, amount, shares);
+
         require(_isHealthy(market, id, onBehalf), Errors.INSUFFICIENT_COLLATERAL);
         require(totalBorrow[id] <= totalSupply[id], Errors.INSUFFICIENT_LIQUIDITY);
 
-        market.borrowableAsset.safeTransfer(receiver, amount);
+        IERC20(market.borrowableAsset).safeTransfer(receiver, amount);
     }
 
     function repay(Market memory market, uint256 amount, address onBehalf, bytes calldata data) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
+        require(amount != 0, Errors.ZERO_AMOUNT);
+        require(onBehalf != address(0), Errors.ZERO_ADDRESS);
 
         _accrueInterests(market, id);
 
         uint256 shares;
         if (amount == type(uint256).max) {
-            amount = borrowShare[id][onBehalf].toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
-            shares = borrowShare[id][onBehalf];
+            amount = borrowShares[id][onBehalf].toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
+            shares = borrowShares[id][onBehalf];
         } else {
             shares = amount.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
         }
 
         require(amount != 0, Errors.ZERO_AMOUNT);
 
-        borrowShare[id][onBehalf] -= shares;
+        borrowShares[id][onBehalf] -= shares;
         totalBorrowShares[id] -= shares;
         totalBorrow[id] -= amount;
 
+        emit Events.Repay(id, msg.sender, onBehalf, amount, shares);
+
         if (data.length > 0) IBlueRepayCallback(msg.sender).onBlueRepay(amount, data);
 
-        market.borrowableAsset.safeTransferFrom(msg.sender, address(this), amount);
+        IERC20(market.borrowableAsset).safeTransferFrom(msg.sender, address(this), amount);
     }
 
     // Collateral management.
@@ -231,16 +253,17 @@ contract Blue is IFlashLender {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
+        require(onBehalf != address(0), Errors.ZERO_ADDRESS);
 
         // Don't accrue interests because it's not required and it saves gas.
 
         collateral[id][onBehalf] += amount;
 
-        if (data.length > 0) {
-            IBlueSupplyCollateralCallback(msg.sender).onBlueSupplyCollateral(amount, data);
-        }
+        emit Events.SupplyCollateral(id, msg.sender, onBehalf, amount);
 
-        market.collateralAsset.safeTransferFrom(msg.sender, address(this), amount);
+        if (data.length > 0) IBlueSupplyCollateralCallback(msg.sender).onBlueSupplyCollateral(amount, data);
+
+        IERC20(market.collateralAsset).safeTransferFrom(msg.sender, address(this), amount);
     }
 
     function withdrawCollateral(Market memory market, uint256 amount, address onBehalf, address receiver) external {
@@ -248,15 +271,19 @@ contract Blue is IFlashLender {
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         if (amount == type(uint256).max) amount = collateral[id][msg.sender];
         require(amount != 0, Errors.ZERO_AMOUNT);
+        // No need to verify that onBehalf != address(0) thanks to the authorization check.
+        require(receiver != address(0), Errors.ZERO_ADDRESS);
         require(_isSenderAuthorized(onBehalf), Errors.UNAUTHORIZED);
 
         _accrueInterests(market, id);
 
         collateral[id][onBehalf] -= amount;
 
+        emit Events.WithdrawCollateral(id, msg.sender, onBehalf, receiver, amount);
+
         require(_isHealthy(market, id, onBehalf), Errors.INSUFFICIENT_COLLATERAL);
 
-        market.collateralAsset.safeTransfer(receiver, amount);
+        IERC20(market.collateralAsset).safeTransfer(receiver, amount);
     }
 
     // Liquidation.
@@ -268,8 +295,8 @@ contract Blue is IFlashLender {
 
         _accrueInterests(market, id);
 
-        uint256 collateralPrice = market.collateralOracle.price();
-        uint256 borrowablePrice = market.borrowableOracle.price();
+        uint256 collateralPrice = IOracle(market.collateralOracle).price();
+        uint256 borrowablePrice = IOracle(market.borrowableOracle).price();
 
         require(!_isHealthy(market, id, borrower, collateralPrice, borrowablePrice), Errors.HEALTHY_POSITION);
 
@@ -279,37 +306,42 @@ contract Blue is IFlashLender {
         uint256 repaid = seized.mulWadUp(collateralPrice).divWadUp(incentive).divWadUp(borrowablePrice);
         uint256 repaidShares = repaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
 
-        borrowShare[id][borrower] -= repaidShares;
+        borrowShares[id][borrower] -= repaidShares;
         totalBorrowShares[id] -= repaidShares;
         totalBorrow[id] -= repaid;
 
         collateral[id][borrower] -= seized;
 
         // Realize the bad debt if needed.
+        uint256 badDebtShares;
         if (collateral[id][borrower] == 0) {
-            uint256 badDebt = borrowShare[id][borrower].toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
+            badDebtShares = borrowShares[id][borrower];
+            uint256 badDebt = badDebtShares.toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
             totalSupply[id] -= badDebt;
             totalBorrow[id] -= badDebt;
-            totalBorrowShares[id] -= borrowShare[id][borrower];
-            borrowShare[id][borrower] = 0;
+            totalBorrowShares[id] -= badDebtShares;
+            borrowShares[id][borrower] = 0;
         }
 
-        market.collateralAsset.safeTransfer(msg.sender, seized);
+        IERC20(market.collateralAsset).safeTransfer(msg.sender, seized);
+
+        emit Events.Liquidate(id, msg.sender, borrower, repaid, repaidShares, seized, badDebtShares);
 
         if (data.length > 0) IBlueLiquidateCallback(msg.sender).onBlueLiquidate(seized, repaid, data);
 
-        market.borrowableAsset.safeTransferFrom(msg.sender, address(this), repaid);
+        IERC20(market.borrowableAsset).safeTransferFrom(msg.sender, address(this), repaid);
     }
 
     // Flash Loans.
 
-    /// @inheritdoc IFlashLender
-    function flashLoan(IFlashBorrower receiver, address token, uint256 amount, bytes calldata data) external {
-        IERC20(token).safeTransfer(address(receiver), amount);
+    function flashLoan(address token, uint256 amount, bytes calldata data) external {
+        IERC20(token).safeTransfer(msg.sender, amount);
 
-        receiver.onBlueFlashLoan(msg.sender, token, amount, data);
+        emit Events.FlashLoan(msg.sender, token, amount);
 
-        IERC20(token).safeTransferFrom(address(receiver), address(this), amount);
+        IBlueFlashLoanCallback(msg.sender).onBlueFlashLoan(token, amount, data);
+
+        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
     }
 
     // Authorizations.
@@ -324,19 +356,25 @@ contract Blue is IFlashLender {
     ) external {
         require(block.timestamp < deadline, Errors.SIGNATURE_EXPIRED);
 
-        bytes32 hashStruct = keccak256(
-            abi.encode(AUTHORIZATION_TYPEHASH, authorizer, authorized, newIsAuthorized, nonce[authorizer]++, deadline)
-        );
+        uint256 usedNonce = nonce[authorizer]++;
+        bytes32 hashStruct =
+            keccak256(abi.encode(AUTHORIZATION_TYPEHASH, authorizer, authorized, newIsAuthorized, usedNonce, deadline));
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, hashStruct));
         address signatory = ecrecover(digest, signature.v, signature.r, signature.s);
 
         require(signatory != address(0) && authorizer == signatory, Errors.INVALID_SIGNATURE);
 
-        isAuthorized[signatory][authorized] = newIsAuthorized;
+        emit Events.IncrementNonce(msg.sender, authorizer, usedNonce);
+
+        isAuthorized[authorizer][authorized] = newIsAuthorized;
+
+        emit Events.SetAuthorization(msg.sender, authorizer, authorized, newIsAuthorized);
     }
 
     function setAuthorization(address authorized, bool newIsAuthorized) external {
         isAuthorized[msg.sender][authorized] = newIsAuthorized;
+
+        emit Events.SetAuthorization(msg.sender, msg.sender, authorized, newIsAuthorized);
     }
 
     function _isSenderAuthorized(address user) internal view returns (bool) {
@@ -353,18 +391,21 @@ contract Blue is IFlashLender {
         uint256 marketTotalBorrow = totalBorrow[id];
 
         if (marketTotalBorrow != 0) {
-            uint256 borrowRate = market.irm.borrowRate(market);
+            uint256 borrowRate = IIrm(market.irm).borrowRate(market);
             uint256 accruedInterests = marketTotalBorrow.mulWadDown(borrowRate * elapsed);
             totalBorrow[id] = marketTotalBorrow + accruedInterests;
             totalSupply[id] += accruedInterests;
 
+            uint256 feeShares;
             if (fee[id] != 0) {
                 uint256 feeAmount = accruedInterests.mulWadDown(fee[id]);
                 // The fee amount is subtracted from the total supply in this calculation to compensate for the fact that total supply is already updated.
-                uint256 feeShares = feeAmount.mulDivDown(totalSupplyShares[id], totalSupply[id] - feeAmount);
-                supplyShare[id][feeRecipient] += feeShares;
+                feeShares = feeAmount.mulDivDown(totalSupplyShares[id], totalSupply[id] - feeAmount);
+                supplyShares[id][feeRecipient] += feeShares;
                 totalSupplyShares[id] += feeShares;
             }
+
+            emit Events.AccrueInterests(id, borrowRate, accruedInterests, feeShares);
         }
 
         lastUpdate[id] = block.timestamp;
@@ -373,10 +414,10 @@ contract Blue is IFlashLender {
     // Health check.
 
     function _isHealthy(Market memory market, Id id, address user) internal view returns (bool) {
-        if (borrowShare[id][user] == 0) return true;
+        if (borrowShares[id][user] == 0) return true;
 
-        uint256 collateralPrice = market.collateralOracle.price();
-        uint256 borrowablePrice = market.borrowableOracle.price();
+        uint256 collateralPrice = IOracle(market.collateralOracle).price();
+        uint256 borrowablePrice = IOracle(market.borrowableOracle).price();
 
         return _isHealthy(market, id, user, collateralPrice, borrowablePrice);
     }
@@ -387,7 +428,7 @@ contract Blue is IFlashLender {
         returns (bool)
     {
         uint256 borrowValue =
-            borrowShare[id][user].toAssetsUp(totalBorrow[id], totalBorrowShares[id]).mulWadUp(borrowablePrice);
+            borrowShares[id][user].toAssetsUp(totalBorrow[id], totalBorrowShares[id]).mulWadUp(borrowablePrice);
         uint256 collateralValue = collateral[id][user].mulWadDown(collateralPrice);
 
         return collateralValue.mulWadDown(market.lltv) >= borrowValue;
