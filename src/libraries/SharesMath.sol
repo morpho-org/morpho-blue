@@ -36,7 +36,7 @@ library SharesMath {
     }
 
     /// @dev Calculates the amount of shares corresponding to a given amount of supply.
-    /// Note: only works as long as totalSupplyShares >= totalSupply.
+    /// Note: only works as long as totalSupplyShares + VIRTUAL_SHARES >= totalSupply + VIRTUAL_ASSETS.
     function toSupplyShares(uint256 amount, uint256 totalSupply, uint256 totalSupplyShares)
         internal
         pure
@@ -49,7 +49,7 @@ library SharesMath {
     }
 
     /// @dev Calculates the amount of shares corresponding to a given amount of borrow.
-    /// Note: only works as long as totalBorrowShares >= totalBorrow.
+    /// Note: only works as long as totalBorrowShares + VIRTUAL_SHARES >= totalBorrow + VIRTUAL_ASSETS.
     function toBorrowShares(uint256 amount, uint256 totalBorrow, uint256 totalBorrowShares)
         internal
         pure
