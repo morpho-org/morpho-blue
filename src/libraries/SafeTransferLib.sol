@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import {IERC20} from "src/interfaces/IERC20.sol";
+import {IERC20} from "../interfaces/IERC20.sol";
 
 /// @notice Safe ERC20 transfer library that gracefully handles missing return values.
 /// @dev Greatly inspired by Solmate (https://github.com/transmissions11/solmate/blob/main/src/utils/SafeTransferLib.sol).
