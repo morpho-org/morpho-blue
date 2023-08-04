@@ -8,6 +8,7 @@ import {SigUtils} from "./helpers/SigUtils.sol";
 
 import "src/Blue.sol";
 import {SharesMath} from "src/libraries/SharesMath.sol";
+import {BlueLib} from "src/libraries/BlueLib.sol";
 import {
     IBlueLiquidateCallback,
     IBlueRepayCallback,
@@ -25,6 +26,7 @@ contract BlueTest is
     IBlueRepayCallback,
     IBlueLiquidateCallback
 {
+    using BlueLib for IBlue;
     using MarketLib for Market;
     using SharesMath for uint256;
     using stdStorage for StdStorage;
@@ -400,44 +402,7 @@ contract BlueTest is
         );
     }
 
-    function testWithdrawMinAmount(uint256 amountLent, uint256 minAmountWithdrawn) public {
-        _testWithdrawCommon(amountLent);
-
-        uint256 totalSupplyBefore = blue.totalSupply(id);
-        uint256 supplySharesBefore = blue.supplyShares(id, address(this));
-        minAmountWithdrawn = bound(
-            minAmountWithdrawn, 1, supplySharesBefore.toAssetsDown(blue.totalSupply(id), blue.totalSupplyShares(id))
-        );
-        uint256 sharesWithdrawn = (minAmountWithdrawn + 1).toSharesUp(blue.totalSupply(id), blue.totalSupplyShares(id));
-        sharesWithdrawn = sharesWithdrawn > supplySharesBefore ? supplySharesBefore : sharesWithdrawn;
-        uint256 realAmountWithdrawn = sharesWithdrawn.toAssetsDown(blue.totalSupply(id), blue.totalSupplyShares(id));
-        if (sharesWithdrawn > 0) blue.withdraw(market, sharesWithdrawn, address(this), address(this));
-
-        assertGe(realAmountWithdrawn, minAmountWithdrawn, "realAmountWithdrawn");
-        assertEq(blue.supplyShares(id, address(this)), supplySharesBefore - sharesWithdrawn, "supply share");
-        assertEq(borrowableAsset.balanceOf(address(this)), realAmountWithdrawn, "this balance");
-        assertEq(borrowableAsset.balanceOf(address(blue)), totalSupplyBefore - realAmountWithdrawn, "blue balance");
-    }
-
-    function testWithdrawMaxAmount(uint256 amountLent, uint256 maxAmountWithdrawn) public {
-        _testWithdrawCommon(amountLent);
-
-        uint256 totalSupplyBefore = blue.totalSupply(id);
-        uint256 supplySharesBefore = blue.supplyShares(id, address(this));
-        maxAmountWithdrawn = bound(
-            maxAmountWithdrawn, 1, supplySharesBefore.toAssetsDown(blue.totalSupply(id), blue.totalSupplyShares(id))
-        );
-        uint256 sharesWithdrawn = maxAmountWithdrawn.toSharesDown(blue.totalSupply(id), blue.totalSupplyShares(id));
-        uint256 realAmountWithdrawn = sharesWithdrawn.toAssetsDown(blue.totalSupply(id), blue.totalSupplyShares(id));
-        if (sharesWithdrawn > 0) blue.withdraw(market, sharesWithdrawn, address(this), address(this));
-
-        assertLe(realAmountWithdrawn, maxAmountWithdrawn, "realAmountWithdrawn");
-        assertEq(blue.supplyShares(id, address(this)), supplySharesBefore - sharesWithdrawn, "supply share");
-        assertEq(borrowableAsset.balanceOf(address(this)), realAmountWithdrawn, "this balance");
-        assertEq(borrowableAsset.balanceOf(address(blue)), totalSupplyBefore - realAmountWithdrawn, "blue balance");
-    }
-
-    function testWithdrawExactAmount(uint256 amountLent, uint256 exactAmountWithdrawn) public {
+    function testWithdrawAmount(uint256 amountLent, uint256 exactAmountWithdrawn) public {
         _testWithdrawCommon(amountLent);
 
         uint256 totalSupplyBefore = blue.totalSupply(id);
@@ -445,12 +410,7 @@ contract BlueTest is
         exactAmountWithdrawn = bound(
             exactAmountWithdrawn, 1, supplySharesBefore.toAssetsDown(blue.totalSupply(id), blue.totalSupplyShares(id))
         );
-        uint256 sharesWithdrawnMin = exactAmountWithdrawn.toSharesDown(blue.totalSupply(id), blue.totalSupplyShares(id));
-        uint256 sharesWithdrawnMax =
-            (exactAmountWithdrawn + 1).toSharesUp(blue.totalSupply(id), blue.totalSupplyShares(id));
-        uint256 sharesWithdrawn = (sharesWithdrawnMin + sharesWithdrawnMax) / 2;
-        sharesWithdrawn = sharesWithdrawn > supplySharesBefore ? supplySharesBefore : sharesWithdrawn;
-        blue.withdraw(market, sharesWithdrawn, address(this), address(this));
+        uint256 sharesWithdrawn = blue.withdrawAmount(market, exactAmountWithdrawn, address(this), address(this));
 
         assertEq(blue.supplyShares(id, address(this)), supplySharesBefore - sharesWithdrawn, "supply share");
         assertEq(borrowableAsset.balanceOf(address(this)), exactAmountWithdrawn, "this balance");
@@ -501,53 +461,14 @@ contract BlueTest is
         assertEq(borrowableAsset.balanceOf(address(blue)), amountRepaid, "blue balance");
     }
 
-    function testRepayMinAmount(uint256 amountBorrowed, uint256 minAmountRepaid) public {
-        _testRepayCommon(amountBorrowed, address(this));
-
-        uint256 thisBalanceBefore = borrowableAsset.balanceOf(address(this));
-        uint256 borrowSharesBefore = blue.borrowShares(id, address(this));
-        minAmountRepaid =
-            bound(minAmountRepaid, 1, borrowSharesBefore.toAssetsUp(blue.totalBorrow(id), blue.totalBorrowShares(id)));
-        uint256 sharesRepaid = (minAmountRepaid - 1).toSharesDown(blue.totalBorrow(id), blue.totalBorrowShares(id));
-        uint256 realAmountRepaid = sharesRepaid.toAssetsUp(blue.totalBorrow(id), blue.totalBorrowShares(id));
-        if (sharesRepaid > 0) blue.repay(market, sharesRepaid, address(this), hex"");
-
-        assertLe(realAmountRepaid, minAmountRepaid, "real amount repaid");
-        assertEq(blue.borrowShares(id, address(this)), borrowSharesBefore - sharesRepaid, "borrow share");
-        assertEq(borrowableAsset.balanceOf(address(this)), thisBalanceBefore - realAmountRepaid, "this balance");
-        assertEq(borrowableAsset.balanceOf(address(blue)), realAmountRepaid, "blue balance");
-    }
-
-    function testRepayMaxAmount(uint256 amountBorrowed, uint256 maxAmountRepaid) public {
-        _testRepayCommon(amountBorrowed, address(this));
-
-        uint256 thisBalanceBefore = borrowableAsset.balanceOf(address(this));
-        uint256 borrowSharesBefore = blue.borrowShares(id, address(this));
-        maxAmountRepaid =
-            bound(maxAmountRepaid, 1, borrowSharesBefore.toAssetsUp(blue.totalBorrow(id), blue.totalBorrowShares(id)));
-        uint256 sharesRepaid = maxAmountRepaid.toSharesUp(blue.totalBorrow(id), blue.totalBorrowShares(id));
-        sharesRepaid = sharesRepaid > borrowSharesBefore ? borrowSharesBefore : sharesRepaid;
-        uint256 realAmountRepaid = sharesRepaid.toAssetsUp(blue.totalBorrow(id), blue.totalBorrowShares(id));
-        if (sharesRepaid > 0) blue.repay(market, sharesRepaid, address(this), hex"");
-
-        assertGe(realAmountRepaid, maxAmountRepaid, "real amount repaid");
-        assertEq(blue.borrowShares(id, address(this)), borrowSharesBefore - sharesRepaid, "borrow share");
-        assertEq(borrowableAsset.balanceOf(address(this)), thisBalanceBefore - realAmountRepaid, "this balance");
-        assertEq(borrowableAsset.balanceOf(address(blue)), realAmountRepaid, "blue balance");
-    }
-
-    function testRepayExactAmount(uint256 amountBorrowed, uint256 exactAmountRepaid) public {
+    function testRepayAmount(uint256 amountBorrowed, uint256 exactAmountRepaid) public {
         _testRepayCommon(amountBorrowed, address(this));
 
         uint256 thisBalanceBefore = borrowableAsset.balanceOf(address(this));
         uint256 borrowSharesBefore = blue.borrowShares(id, address(this));
         exactAmountRepaid =
             bound(exactAmountRepaid, 1, borrowSharesBefore.toAssetsUp(blue.totalBorrow(id), blue.totalBorrowShares(id)));
-        uint256 sharesRepaidMin = (exactAmountRepaid - 1).toSharesDown(blue.totalBorrow(id), blue.totalBorrowShares(id));
-        uint256 sharesRepaidMax = exactAmountRepaid.toSharesUp(blue.totalBorrow(id), blue.totalBorrowShares(id));
-        uint256 sharesRepaid = (sharesRepaidMin + sharesRepaidMax + 1) / 2;
-        sharesRepaid = sharesRepaid > borrowSharesBefore ? borrowSharesBefore : sharesRepaid;
-        blue.repay(market, sharesRepaid, address(this), hex"");
+        uint256 sharesRepaid = blue.repayAmount(market, exactAmountRepaid, address(this), hex"");
 
         assertEq(blue.borrowShares(id, address(this)), borrowSharesBefore - sharesRepaid, "borrow share");
         assertEq(borrowableAsset.balanceOf(address(this)), thisBalanceBefore - exactAmountRepaid, "this balance");
