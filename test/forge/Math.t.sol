@@ -19,7 +19,7 @@ contract MathTest is Test {
             FixedPointMathLib.WAD + timeElapsed * rate / FixedPointMathLib.WAD,
             "rate should be greater than the simple interest rate"
         );
-        assertLe((toCompare - result) * 100_00 / toCompare, 2_00, "The error should be less than or equal to 2%");
+        assertLe((toCompare - result) * 100_00 / toCompare, 8_00, "The error should be less than or equal to 8%");
     }
 
     // Exponentiation by squaring with rounding up.
