@@ -18,8 +18,6 @@ contract IntegrationAuthorization is BlueBaseTest {
         assertFalse(blue.isAuthorized(address(this), addressFuzz));
     }
 
-    //set authorization with signature
-
     function testSetAuthorizationWithSignatureDeadlineOutdated(
         uint32 deadline,
         address authorized,
@@ -60,7 +58,8 @@ contract IntegrationAuthorization is BlueBaseTest {
         bool isAuthorized
     ) public {
         deadline = uint32(bound(deadline, block.timestamp + 1, type(uint32).max));
-        privateKey = bound(privateKey, 1, type(uint32).max); // "Private key must be less than the secp256k1 curve order (115792089237316195423570985008687907852837564279074904382605163141518161494337)."
+        // Private key must be less than the secp256k1 curve order.
+        privateKey = bound(privateKey, 1, type(uint32).max);
         address authorizer = vm.addr(privateKey);
         vm.assume(authorizer != address(this));
 

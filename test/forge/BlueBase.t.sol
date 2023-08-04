@@ -132,8 +132,7 @@ contract BlueBaseTest is Test {
     }
 
     function _incentive(uint256 lltv) internal pure returns (uint256) {
-        return FixedPointMathLib.WAD
-            + ALPHA.mulWadDown(FixedPointMathLib.WAD.divWadDown(lltv) - FixedPointMathLib.WAD);
+        return FixedPointMathLib.WAD + ALPHA.mulWadDown(FixedPointMathLib.WAD.divWadDown(lltv) - FixedPointMathLib.WAD);
     }
 
     function neq(Market memory a, Market memory b) internal pure returns (bool) {

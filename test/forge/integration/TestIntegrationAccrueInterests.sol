@@ -39,14 +39,14 @@ contract IntegrationAccrueInterestsTest is BlueBaseTest {
         amountSupplied = bound(amountSupplied, 2, 2 ** 64);
         timeElapsed = uint32(bound(timeElapsed, 1, type(uint32).max));
 
-        //set fee parameters
+        // Set fee parameters.
         vm.prank(OWNER);
         blue.setFeeRecipient(OWNER);
 
         borrowableAsset.setBalance(address(this), amountSupplied);
         blue.supply(market, amountSupplied, address(this), hex"");
 
-        //new block
+        // New block.
         vm.roll(block.number + 1);
         vm.warp(block.timestamp + timeElapsed);
 
@@ -54,7 +54,7 @@ contract IntegrationAccrueInterestsTest is BlueBaseTest {
         uint256 totalSupplyBeforeAccrued = blue.totalSupply(id);
         uint256 totalSupplySharesBeforeAccrued = blue.totalSupplyShares(id);
 
-        //Supply then withdraw collateral to triger accrueInterests function
+        // Supply then withdraw collateral to trigger `_accrueInterests` function.
         collateralAsset.setBalance(address(this), 1);
         blue.supplyCollateral(market, 1, address(this), hex"");
         blue.withdrawCollateral(market, 1, address(this), address(this));
@@ -71,7 +71,7 @@ contract IntegrationAccrueInterestsTest is BlueBaseTest {
         amountBorrowed = bound(amountBorrowed, 1, amountSupplied);
         timeElapsed = uint32(bound(timeElapsed, 1, type(uint32).max));
 
-        //set fee parameters
+        // Set fee parameters.
         vm.prank(OWNER);
         blue.setFeeRecipient(OWNER);
 
@@ -81,7 +81,7 @@ contract IntegrationAccrueInterestsTest is BlueBaseTest {
         vm.prank(BORROWER);
         blue.borrow(market, amountBorrowed, BORROWER, BORROWER);
 
-        //new block
+        // New block.
         vm.roll(block.number + 1);
         vm.warp(block.timestamp + timeElapsed);
 
@@ -91,7 +91,7 @@ contract IntegrationAccrueInterestsTest is BlueBaseTest {
         uint256 totalSupplySharesBeforeAccrued = blue.totalSupplyShares(id);
         uint256 expectedAccruedInterests = totalBorrowBeforeAccrued.mulWadDown(borrowRate * timeElapsed);
 
-        //Supply then withdraw collateral to triger accrueInterests function
+        // Supply then withdraw collateral to trigger `_accrueInterests` function.
         collateralAsset.setBalance(address(this), 1);
         blue.supplyCollateral(market, 1, address(this), hex"");
         blue.withdrawCollateral(market, 1, address(this), address(this));
@@ -126,7 +126,7 @@ contract IntegrationAccrueInterestsTest is BlueBaseTest {
         timeElapsed = uint32(bound(timeElapsed, 1, type(uint32).max));
         fee = bound(fee, 1, MAX_FEE);
 
-        //set fee parameters
+        // Set fee parameters.
         vm.startPrank(OWNER);
         blue.setFeeRecipient(OWNER);
         blue.setFee(market, fee);
@@ -138,7 +138,7 @@ contract IntegrationAccrueInterestsTest is BlueBaseTest {
         vm.prank(BORROWER);
         blue.borrow(market, amountBorrowed, BORROWER, BORROWER);
 
-        //new block
+        // New block.
         vm.roll(block.number + 1);
         vm.warp(block.timestamp + timeElapsed);
 
@@ -153,7 +153,7 @@ contract IntegrationAccrueInterestsTest is BlueBaseTest {
             params.totalSupplyBeforeAccrued + params.expectedAccruedInterests - params.feeAmount
         );
 
-        //Supply then withdraw collateral to triger accrueInterests function
+        // Supply then withdraw collateral to trigger `_accrueInterests` function.
         collateralAsset.setBalance(address(this), 1);
         blue.supplyCollateral(market, 1, address(this), hex"");
         blue.withdrawCollateral(market, 1, address(this), address(this));

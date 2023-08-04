@@ -132,7 +132,7 @@ contract IntegrationLiquidateTest is BlueBaseTest {
         params.expectedRepaid = amountCollateral.mulWadUp(priceCollateral).divWadUp(params.incentive);
 
         uint256 minBorrowed = max(params.expectedRepaid, amountBorrowed);
-        amountBorrowed = bound(amountBorrowed, minBorrowed, max(minBorrowed, 2**64));
+        amountBorrowed = bound(amountBorrowed, minBorrowed, max(minBorrowed, 2 ** 64));
 
         amountSupplied = bound(amountSupplied, amountBorrowed, max(amountBorrowed, 2 ** 64));
         _provideLiquidity(amountSupplied);
