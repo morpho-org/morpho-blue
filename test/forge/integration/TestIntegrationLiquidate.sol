@@ -119,41 +119,33 @@ contract IntegrationLiquidateTest is BlueBaseTest {
         uint256 amountCollateral,
         uint256 amountSupplied,
         uint256 amountBorrowed,
-        uint256 priceCollateral,
-        uint256 priceBorrowable
+        uint256 priceCollateral
     ) public {
         LiquidateBadDebtTestParams memory params;
 
-        amountSupplied = bound(amountSupplied, 1, 2 ** 64);
-        amountBorrowed = bound(amountBorrowed, 1, 2 ** 64);
-        amountCollateral = bound(amountCollateral, 1, 2 ** 64);
-        priceCollateral = bound(priceCollateral, 1, 2 ** 64);
-        priceBorrowable = bound(priceBorrowable, 1, 2 ** 64);
+        (amountCollateral, amountBorrowed, priceCollateral) =
+            _boundUnhealthyPosition(amountCollateral, amountBorrowed, priceCollateral);
 
-        params.incentive = FixedPointMathLib.WAD
-            + ALPHA.mulWadDown(FixedPointMathLib.WAD.divWadDown(market.lltv) - FixedPointMathLib.WAD);
-        params.expectedRepaid =
-            amountCollateral.mulWadUp(priceCollateral).divWadUp(params.incentive).divWadUp(priceBorrowable);
+        vm.assume(amountCollateral > 1);
 
-        vm.assume(
-            amountCollateral.mulWadDown(priceCollateral).mulWadDown(market.lltv) + 2
-                < amountBorrowed.mulWadUp(priceBorrowable)
-        );
-        vm.assume(amountSupplied >= amountBorrowed);
-        vm.assume(params.expectedRepaid < amountBorrowed);
+        params.incentive = _incentive(market.lltv);
+        params.expectedRepaid = amountCollateral.mulWadUp(priceCollateral).divWadUp(params.incentive);
 
-        borrowableAsset.setBalance(address(this), amountSupplied);
+        uint256 minBorrowed = max(params.expectedRepaid, amountBorrowed);
+        amountBorrowed = bound(amountBorrowed, minBorrowed, max(minBorrowed, 2**64));
+
+        amountSupplied = bound(amountSupplied, amountBorrowed, max(amountBorrowed, 2 ** 64));
+        _provideLiquidity(amountSupplied);
+
         borrowableAsset.setBalance(LIQUIDATOR, amountBorrowed);
         collateralAsset.setBalance(BORROWER, amountCollateral);
-
-        blue.supply(market, amountSupplied, address(this), hex"");
 
         vm.startPrank(BORROWER);
         blue.supplyCollateral(market, amountCollateral, BORROWER, hex"");
         blue.borrow(market, amountBorrowed, BORROWER, BORROWER);
         vm.stopPrank();
 
-        borrowableOracle.setPrice(priceBorrowable);
+        borrowableOracle.setPrice(FixedPointMathLib.WAD);
         collateralOracle.setPrice(priceCollateral);
 
         params.expectedRepaidShares =
@@ -181,7 +173,7 @@ contract IntegrationLiquidateTest is BlueBaseTest {
         assertEq(collateralAsset.balanceOf(address(blue)), 0, "blue collateral balance");
         assertEq(collateralAsset.balanceOf(LIQUIDATOR), amountCollateral, "blue collateral balance");
 
-        //bad debt realisation
+        // Bad debt realization.
         assertEq(blue.borrowShares(id, BORROWER), 0, "borrow sharse");
         assertEq(blue.totalBorrowShares(id), 0, "total borrow shares");
         assertEq(
