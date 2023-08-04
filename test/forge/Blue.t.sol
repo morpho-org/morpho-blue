@@ -445,10 +445,11 @@ contract BlueTest is
         exactAmountWithdrawn = bound(
             exactAmountWithdrawn, 1, supplyShareBefore.toAssetsDown(blue.totalSupply(id), blue.totalSupplyShares(id))
         );
-        uint256 sharesWithdrawn = exactAmountWithdrawn.toSharesDown(blue.totalSupply(id), blue.totalSupplyShares(id));
-        while (sharesWithdrawn.toAssetsDown(blue.totalSupply(id), blue.totalSupplyShares(id)) != exactAmountWithdrawn) {
-            sharesWithdrawn++;
-        }
+        uint256 sharesWithdrawnMin = exactAmountWithdrawn.toSharesDown(blue.totalSupply(id), blue.totalSupplyShares(id));
+        uint256 sharesWithdrawnMax =
+            (exactAmountWithdrawn + 1).toSharesUp(blue.totalSupply(id), blue.totalSupplyShares(id));
+        uint256 sharesWithdrawn = (sharesWithdrawnMin + sharesWithdrawnMax) / 2;
+        sharesWithdrawn = sharesWithdrawn > supplyShareBefore ? supplyShareBefore : sharesWithdrawn;
         blue.withdraw(market, sharesWithdrawn, address(this), address(this));
 
         assertEq(blue.supplyShare(id, address(this)), supplyShareBefore - sharesWithdrawn, "supply share");
@@ -484,6 +485,7 @@ contract BlueTest is
     }
 
     function testRepayShares(uint256 amountBorrowed, uint256 sharesRepaid, address onBehalf) public {
+        vm.assume(onBehalf != address(blue));
         _testRepayCommon(amountBorrowed, onBehalf);
 
         uint256 thisBalanceBefore = borrowableAsset.balanceOf(address(this));
@@ -539,10 +541,10 @@ contract BlueTest is
         uint256 borrowShareBefore = blue.borrowShare(id, address(this));
         exactAmountRepaid =
             bound(exactAmountRepaid, 1, borrowShareBefore.toAssetsUp(blue.totalBorrow(id), blue.totalBorrowShares(id)));
-        uint256 sharesRepaid = (exactAmountRepaid - 1).toSharesDown(blue.totalBorrow(id), blue.totalBorrowShares(id));
-        while (sharesRepaid.toAssetsUp(blue.totalBorrow(id), blue.totalBorrowShares(id)) != exactAmountRepaid) {
-            sharesRepaid++;
-        }
+        uint256 sharesRepaidMin = (exactAmountRepaid - 1).toSharesDown(blue.totalBorrow(id), blue.totalBorrowShares(id));
+        uint256 sharesRepaidMax = exactAmountRepaid.toSharesUp(blue.totalBorrow(id), blue.totalBorrowShares(id));
+        uint256 sharesRepaid = (sharesRepaidMin + sharesRepaidMax + 1) / 2;
+        sharesRepaid = sharesRepaid > borrowShareBefore ? borrowShareBefore : sharesRepaid;
         blue.repay(market, sharesRepaid, address(this), hex"");
 
         assertEq(blue.borrowShare(id, address(this)), borrowShareBefore - sharesRepaid, "borrow share");
