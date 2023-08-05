@@ -129,8 +129,8 @@ describe("Blue", () => {
 
       const user = signers[i];
 
-      let amount = BigNumber.WAD.mul(1 + Math.floor(random() * 100));      
-      
+      let amount = BigNumber.WAD.mul(1 + Math.floor(random() * 100));
+
       if (random() < 2 / 3) {
         const totalSupply = await blue.totalSupply(id);
         const totalSupplyShares = await blue.totalSupplyShares(id);
@@ -143,9 +143,9 @@ describe("Blue", () => {
         const totalBorrow = await blue.totalBorrow(id);
         const totalBorrowShares = await blue.totalBorrowShares(id);
         const liquidity = BigNumber.from(totalSupply).sub(BigNumber.from(totalBorrow));
-        
+
         amount = BigNumber.min(amount, BigNumber.from(liquidity).div(2));
-        
+
         if (amount > BigNumber.from(0)) {
           Promise.all([
             blue.connect(user).supplyCollateral(market, amount, user.address, []),
