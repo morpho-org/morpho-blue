@@ -358,7 +358,7 @@ contract BlueTest is
         borrowableAsset.setBalance(address(this), assetsLent);
         blue.supplyAssets(market, assetsLent, address(this), hex"");
 
-        // Accrue interests.
+        // Accrue interest.
         stdstore.target(address(blue)).sig("totalSupply(bytes32)").with_key(Id.unwrap(id)).checked_write(
             blue.totalSupply(id) * 4 / 3
         );
@@ -438,7 +438,7 @@ contract BlueTest is
         vm.prank(borrower);
         blue.borrowAssets(market, assetsBorrowed, borrower, borrower);
 
-        // Accrue interests.
+        // Accrue interest.
         stdstore.target(address(blue)).sig("totalBorrow(bytes32)").with_key(Id.unwrap(id)).checked_write(
             blue.totalBorrow(id) * 4 / 3
         );

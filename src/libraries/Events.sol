@@ -59,5 +59,5 @@ library Events {
 
     event EnableLltv(uint256 lltv);
 
-    event AccrueInterests(Id indexed id, uint256 borrowRate, uint256 accruedInterests, uint256 feeShares);
+    event AccrueInterest(Id indexed id, uint256 borrowRate, uint256 accruedInterest, uint256 feeShares);
 }

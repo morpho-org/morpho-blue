@@ -35,7 +35,7 @@ library SharesMath {
         return shares.mulDivUp(totalAssets + VIRTUAL_ASSETS, totalShares + VIRTUAL_SHARES);
     }
 
-    /// @dev Calculates the assets of shares corresponding to an exact assets of supply to withdraw.
+    /// @dev Calculates the amount of shares corresponding to an exact amount of assets to withdraw.
     /// Note: only works as long as totalSupplyShares + VIRTUAL_SHARES >= totalSupply + VIRTUAL_ASSETS.
     function toWithdrawShares(uint256 assets, uint256 totalSupply, uint256 totalSupplyShares)
         internal
@@ -48,7 +48,7 @@ library SharesMath {
         return (sharesMin + sharesMax) / 2;
     }
 
-    /// @dev Calculates the assets of shares corresponding to an exact assets of debt to repay.
+    /// @dev Calculates the amount of shares corresponding to an exact amount of assets to repay.
     /// Note: only works as long as totalBorrowShares + VIRTUAL_SHARES >= totalBorrow + VIRTUAL_ASSETS.
     function toRepayShares(uint256 assets, uint256 totalBorrow, uint256 totalBorrowShares)
         internal
