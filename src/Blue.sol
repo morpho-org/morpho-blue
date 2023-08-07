@@ -351,7 +351,7 @@ contract Blue is IBlue {
             isAuthorized[authorizer][authorized] = newIsAuthorized;
             emit SetAuthorization(msg.sender, authorizer, authorized, newIsAuthorized);
         } else {
-            // To avoid potential frontrun attacks, only prevent changes when the signature is not verified.
+            // To avoid potential frontrun attacks, when the signature is not verified, only prevent attempts that actually change the authorization.
             require(isAuthorized[authorizer][authorized] == newIsAuthorized, Errors.INVALID_SIGNATURE);
         }
     }
