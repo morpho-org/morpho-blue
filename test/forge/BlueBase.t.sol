@@ -26,7 +26,7 @@ contract BlueBaseTest is Test {
     Market public market;
     Id public id;
 
-    function setUp() public {
+    function setUp() public virtual {
         // Create Blue.
         blue = new Blue(OWNER);
 
