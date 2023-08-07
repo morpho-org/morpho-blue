@@ -20,7 +20,7 @@ const random = () => {
 
 const identifier = (market: MarketStruct) => {
   const encodedMarket = defaultAbiCoder.encode(
-    ["address", "address", "address", "address", "address", "uint256"],
+    ["address", "address", "address", "address", "uint256"],
     Object.values(market),
   );
 
@@ -124,7 +124,14 @@ describe("Blue", () => {
         const totalSupplyShares = await blue.totalSupplyShares(id);
         Promise.all([
           blue.connect(user).supply(market, amount, user.address, []),
-          blue.connect(user).withdraw(market, amount.mul(totalSupplyShares.add(BigNumber.WAD)).div(totalSupply.add(1)).div(2), user.address, user.address),
+          blue
+            .connect(user)
+            .withdraw(
+              market,
+              amount.mul(totalSupplyShares.add(BigNumber.WAD)).div(totalSupply.add(1)).div(2),
+              user.address,
+              user.address,
+            ),
         ]);
       } else {
         const totalSupply = await blue.totalSupply(id);
@@ -138,7 +145,14 @@ describe("Blue", () => {
           Promise.all([
             blue.connect(user).supplyCollateral(market, amount, user.address, []),
             blue.connect(user).borrow(market, amount.div(2), user.address, user.address),
-            blue.connect(user).repay(market, amount.mul(totalBorrowShares.add(BigNumber.WAD)).div(totalBorrow.add(1)).div(4), user.address, []),
+            blue
+              .connect(user)
+              .repay(
+                market,
+                amount.mul(totalBorrowShares.add(BigNumber.WAD)).div(totalBorrow.add(1)).div(4),
+                user.address,
+                [],
+              ),
             blue.connect(user).withdrawCollateral(market, amount.div(8), user.address, user.address),
           ]);
         }
