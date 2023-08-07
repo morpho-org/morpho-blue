@@ -43,15 +43,7 @@ library BlueLib {
     function accruedInterests(IBlue blue, Market memory market)
         internal
         view
-        returns (
-            uint256 interests,
-            uint256 totalSupply,
-            uint256 totalBorrow,
-            uint256 totalSupplyShares,
-            uint256 fee,
-            uint256 feeShares,
-            uint256 lastUpdate
-        )
+        returns (uint256 totalSupply, uint256 totalBorrow, uint256 totalSupplyShares)
     {
         Id id = market.id();
 
@@ -66,12 +58,12 @@ library BlueLib {
         totalSupply = uint256(values[0]);
         totalBorrow = uint256(values[1]);
         totalSupplyShares = uint256(values[2]);
-        fee = uint256(values[3]);
-        lastUpdate = uint256(values[4]);
+        uint256 fee = uint256(values[3]);
+        uint256 lastUpdate = uint256(values[4]);
 
         if (totalBorrow != 0) {
             uint256 borrowRate = IIrm(market.irm).borrowRate(market);
-            interests = totalBorrow.mulWadDown(borrowRate * (block.timestamp - lastUpdate));
+            uint256 interests = totalBorrow.mulWadDown(borrowRate * (block.timestamp - lastUpdate));
 
             totalBorrow += interests;
             totalSupply += interests;
@@ -79,7 +71,7 @@ library BlueLib {
             if (fee != 0) {
                 uint256 feeAmount = interests.mulWadDown(fee);
                 // The fee amount is subtracted from the total supply in this calculation to compensate for the fact that total supply is already updated.
-                feeShares = feeAmount.mulDivDown(totalSupplyShares, totalSupply - feeAmount);
+                uint256 feeShares = feeAmount.mulDivDown(totalSupplyShares, totalSupply - feeAmount);
 
                 totalSupplyShares += feeShares;
             }
