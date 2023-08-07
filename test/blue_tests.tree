@@ -33,8 +33,8 @@
             ├── when newFee > MAX_FEE
             │   └── revert with MAX_FEE_EXCEEDED
             └── when newFee <= MAX_FEE
-                ├── it should set fee[id] to newFee
-                └── it should emit SetFee(id, newFee)
+                ├── it should set fee[market.id] to newFee
+                └── it should emit SetFee(market.id, newFee)
 .
 └── setFeeRecipient(address recipient) external
     ├── when msg.sender not owner
@@ -53,8 +53,8 @@
             ├── when market is already created
             │   └── revert with MARKET_CREATED
             └── when market is not already created
-                ├── it should set lastUpdate[id] to block.timestamp
-                └── it should emit CreateMarket(id, market)
+                ├── it should set lastUpdate[market.id] to block.timestamp
+                └── it should emit CreateMarket(market.id, market)
 .
 └── supply(Market calldata market, uint256 amount, address onBehalf, bytes calldata data) external
     ├── when market is not created
@@ -67,10 +67,10 @@
             │   └── revert with ZERO_ADDRESS
             └── when onBehalf is not the zero address
                 ├── it should accrue the interests
-                ├── it should add amount.toSharesDown(totalSupply[id], totalSupplyShares[id]) to supplyShares[id][onBehalf] 
-                ├── it should add amount.toSharesDown(totalSupply[id], totalSupplyShares[id]) to totalSupplyShares[id]
-                ├── it should add amount to totalSupply[id]
-                ├── it should emit Supply(id, msg.sender, onBehalf, amount, shares)
+                ├── it should add amount.toSharesDown(totalSupply[market.id], totalSupplyShares[market.id]) to supplyShares[market.id][onBehalf] 
+                ├── it should add amount.toSharesDown(totalSupply[market.id], totalSupplyShares[market.id]) to totalSupplyShares[market.id]
+                ├── it should add amount to totalSupply[market.id]
+                ├── it should emit Supply(market.id, msg.sender, onBehalf, amount, shares)
                 ├── if data.length > 0
                 │   └── it should call sender's onBlueSupply callback
                 └── it should transfer amount of the borrowable asset from the sender to Blue
@@ -92,11 +92,11 @@
                     ├── when totalBorrow > totalSupply
                     │   └── revert with INSUFFICIENT_LIQUIDITY
                     └── when totalBorrow <= totalSupply
-                        ├── it should remove shares from supplyShares[id][onBehalf] 
-                        ├── it should remove shares from totalSupplyShares[id]
-                        ├── it should set amount to shares.toAssetsDown(totalSupply[id], totalSupplyShares[id])
-                        ├── it should remove amount from totalSupply[id]
-                        ├── it should emit Withdraw(id, msg.sender, onBehalf, receiver, amount, shares)
+                        ├── it should remove shares from supplyShares[market.id][onBehalf] 
+                        ├── it should remove shares from totalSupplyShares[market.id]
+                        ├── it should set amount to shares.toAssetsDown(totalSupply[market.id], totalSupplyShares[market.id])
+                        ├── it should remove amount from totalSupply[market.id]
+                        ├── it should emit Withdraw(market.id, msg.sender, onBehalf, receiver, amount, shares)
                         └── it should transfer amount of the borrowable asset to the receiver
 .
 └── borrow(Market memory market, uint256 amount, address onBehalf, address receiver) external
@@ -119,10 +119,10 @@
                         ├── when totalBorrow > totalSupply
                         │   └── revert with INSUFFICIENT_LIQUIDITY
                         └── when totalBorrow <= totalSupply
-                            ├── it should add amount.toSharesUp(totalBorrow[id], totalBorrowShares[id]) to borrowShares[id][onBehalf] 
-                            ├── it should add amount.toSharesUp(totalBorrow[id], totalBorrowShares[id]) to totalBorrowShares[id]
-                            ├── it should add amount to totalBorrow[id]
-                            ├── it should emit Borrow(id, msg.sender, onBehalf, receiver, amount, shares)
+                            ├── it should add amount.toSharesUp(totalBorrow[market.id], totalBorrowShares[market.id]) to borrowShares[market.id][onBehalf] 
+                            ├── it should add amount.toSharesUp(totalBorrow[market.id], totalBorrowShares[market.id]) to totalBorrowShares[market.id]
+                            ├── it should add amount to totalBorrow[market.id]
+                            ├── it should emit Borrow(market.id, msg.sender, onBehalf, receiver, amount, shares)
                             └── it should transfer amount of the borrowable asset to the receiver
 .
 └── repay(Market memory market, uint256 shares, address onBehalf, bytes calldata data) external
@@ -136,11 +136,11 @@
             │   └── revert with ZERO_ADDRESS
             └── when onBehalf is not the zero address
                 ├── it should accrue the interests
-                ├── it should remove shares from borrowShares[id][onBehalf]
-                ├── it should remove shares from totalBorrowShares[id]
-                ├── it should set amount to shares.toAssetsUp(totalBorrow[id], totalBorrowShares[id])
-                ├── it should remove amount from totalBorrow[id]
-                ├── it should emit Repay(id, msg.sender, onBehalf, amount, shares)
+                ├── it should remove shares from borrowShares[market.id][onBehalf]
+                ├── it should remove shares from totalBorrowShares[market.id]
+                ├── it should set amount to shares.toAssetsUp(totalBorrow[market.id], totalBorrowShares[market.id])
+                ├── it should remove amount from totalBorrow[market.id]
+                ├── it should emit Repay(market.id, msg.sender, onBehalf, amount, shares)
                 ├── if data.length > 0
                 │   └── it should call sender's onBlueRepay callback
                 └── it should transfer amount of the borrowable asset from the sender to Blue
@@ -155,8 +155,8 @@
             ├── when onBehalf is the zero address
             │   └── revert with ZERO_ADDRESS
             └── when onBehalf is not the zero address
-                ├── it should add amount to collateral[id][onBehalf]
-                ├── it should emit SupplyCollateral(id, msg.sender, onBehalf, amount)
+                ├── it should add amount to collateral[market.id][onBehalf]
+                ├── it should emit SupplyCollateral(market.id, msg.sender, onBehalf, amount)
                 ├── if data.length > 0
                 │   └── it should call sender's onBlueSupplyCollateral callback
                 └── it should transfer amount of the collateral asset from the sender to Blue
@@ -178,8 +178,8 @@
                     ├── when position not healthy
                     │   └── revert with INSUFFICIENT_COLLATERAL
                     └── when position healthy
-                        ├── it should remove amount from collateral[id][onBehalf]
-                        ├── it should emit WithdrawCollateral(id, msg.sender, onBehalf, receiver, amount)
+                        ├── it should remove amount from collateral[market.id][onBehalf]
+                        ├── it should emit WithdrawCollateral(market.id, msg.sender, onBehalf, receiver, amount)
                         └── it should transfer amount of the collateral asset to the receiver
 .
 └── liquidate(Market memory market, address borrower, uint256 seized, bytes calldata data) external
@@ -194,19 +194,19 @@
             │   └── revert with HEALTHY_POSITION
             └── when the position is not healthy
                 ├── it should compute repaid = seized.mulWadUp(collateralPrice).divWadUp(incentive).divWadUp(borrowablePrice);
-                ├── it should remove repaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]) from borrowShares[id][borrower]
-                ├── it should remove repaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]) from totalBorrowShares[id]
-                ├── it should remove repaid from totalBorrow[id]
-                ├── it should remove seized from collateral[id][borrower]
+                ├── it should remove repaid.toSharesDown(totalBorrow[market.id], totalBorrowShares[market.id]) from borrowShares[market.id][borrower]
+                ├── it should remove repaid.toSharesDown(totalBorrow[market.id], totalBorrowShares[market.id]) from totalBorrowShares[market.id]
+                ├── it should remove repaid from totalBorrow[market.id]
+                ├── it should remove seized from collateral[market.id][borrower]
                 ├── if after the liquidation the borrower's collateral is 0
                 │   └── it should realize bad debt
-                │       ├── it should compute badDebt = borrowShares[id][borrower].toAssetsUp(totalBorrow[id], totalBorrowShares[id])
-                │       ├── it should remove bad debt from totalSupply[id]
-                │       ├── it should remove bad debt from totalBorrow[id]
-                │       ├── it should remove borrowShares[id][borrower] from totalBorrowShares[id]
-                │       └── it should set borrowShares[id][borrower] to 0
+                │       ├── it should compute badDebt = borrowShares[market.id][borrower].toAssetsUp(totalBorrow[market.id], totalBorrowShares[market.id])
+                │       ├── it should remove bad debt from totalSupply[market.id]
+                │       ├── it should remove bad debt from totalBorrow[market.id]
+                │       ├── it should remove borrowShares[market.id][borrower] from totalBorrowShares[market.id]
+                │       └── it should set borrowShares[market.id][borrower] to 0
                 ├── it should transfer seized of collateral asset to the sender
-                ├── it should emit Liquidate(id, msg.sender, borrower, repaid, repaidShares, seized, badDebtShares)
+                ├── it should emit Liquidate(market.id, msg.sender, borrower, repaid, repaidShares, seized, badDebtShares)
                 ├── if data.length > 0
                 │   └── it should call sender's onBlueLiquidate callback
                 └── it should transfer repaid of borrowable asset from the sender the Blue
