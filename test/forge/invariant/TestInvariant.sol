@@ -20,6 +20,7 @@ contract InvariantTest is InvariantBaseTest {
         _weightSelector(this.withdrawOnBlue.selector, 20);
         _weightSelector(this.supplyCollateralOnBlue.selector, 20);
         _weightSelector(this.withdrawCollateralOnBlue.selector, 20);
+        _weightSelector(this.newBlock.selector, 1);
 
         targetSelector(FuzzSelector({addr: address(this), selectors: selectors}));
     }
@@ -33,6 +34,11 @@ contract InvariantTest is InvariantBaseTest {
         }
     }
 
+    function newBlock(uint8 elapsed) public {
+        vm.roll(block.number + 1);
+        vm.warp(block.timestamp + elapsed);
+    }
+
     function supplyOnBlue(uint256 amount) public {
         amount = bound(amount, 1, 2 ** 64);
         borrowableAsset.setBalance(msg.sender, amount);
@@ -42,7 +48,9 @@ contract InvariantTest is InvariantBaseTest {
 
     function withdrawOnBlue(uint256 amount) public {
         if (blue.supplyShares(id, msg.sender) == 0) return;
-        amount = bound(amount, 1, blue.supplyShares(id, msg.sender).toAssetsDown(blue.totalSupply(id),blue.totalSupplyShares(id)));
+        amount = bound(
+            amount, 1, blue.supplyShares(id, msg.sender).toAssetsDown(blue.totalSupply(id), blue.totalSupplyShares(id))
+        );
         vm.prank(msg.sender);
         blue.withdraw(market, amount, msg.sender, msg.sender);
     }
@@ -55,9 +63,11 @@ contract InvariantTest is InvariantBaseTest {
     }
 
     function repayOnBlue(uint256 amount) public {
-        if (blue.borrowShares(id, msg.sender)== 0) return;
+        if (blue.borrowShares(id, msg.sender) == 0) return;
         borrowableAsset.setBalance(msg.sender, amount);
-        amount = bound(amount, 1, blue.borrowShares(id, msg.sender).toAssetsDown(blue.totalBorrow(id),blue.totalBorrowShares(id)));
+        amount = bound(
+            amount, 1, blue.borrowShares(id, msg.sender).toAssetsDown(blue.totalBorrow(id), blue.totalBorrowShares(id))
+        );
         vm.prank(msg.sender);
         blue.repay(market, amount, msg.sender, hex"");
     }
@@ -84,5 +94,33 @@ contract InvariantTest is InvariantBaseTest {
     function invariantBorrowShares() public {
         address[] memory senders = targetSenders();
         assertEq(sumUsersBorrowShares(senders), blue.totalBorrowShares(id));
+    }
+
+    function invariantTotalSupply() public {
+        address[] memory senders = targetSenders();
+        assertLe(sumUsersSuppliedAmounts(senders), blue.totalSupply(id));
+    }
+
+    function invariantTotalBorrow() public {
+        address[] memory senders = targetSenders();
+        assertGe(sumUsersBorrowedAmounts(senders), blue.totalBorrow(id));
+    }
+
+    function invariantTotalBorrowLessThanTotalSupply() public {
+        assertGe(blue.totalSupply(id), blue.totalBorrow(id));
+    }
+
+    function invariantBlueBalance() public {
+        assertEq(blue.totalSupply(id) - blue.totalBorrow(id), borrowableAsset.balanceOf(address(blue)));
+    }
+
+    function invariantSupplySharesRatio() public {
+        if (blue.totalSupply(id) == 0) return;
+        assertGe(blue.totalSupplyShares(id) / blue.totalSupply(id), SharesMath.VIRTUAL_SHARES);
+    }
+
+    function invariantBorrowSharesRatio() public {
+        if (blue.totalBorrow(id) == 0) return;
+        assertGe(blue.totalBorrowShares(id) / blue.totalBorrow(id), SharesMath.VIRTUAL_SHARES);
     }
 }

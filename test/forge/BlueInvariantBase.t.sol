@@ -5,6 +5,7 @@ import "test/forge/BlueBase.t.sol";
 
 contract InvariantBaseTest is BlueBaseTest {
     using FixedPointMathLib for uint256;
+    using SharesMath for uint256;
 
     bytes4[] internal selectors;
 
@@ -31,7 +32,7 @@ contract InvariantBaseTest is BlueBaseTest {
         }
     }
 
-    function sumUsersSupplyShares(address[] memory addresses) internal view returns(uint256) {
+    function sumUsersSupplyShares(address[] memory addresses) internal view returns (uint256) {
         uint256 sum;
         for (uint256 i; i < addresses.length; ++i) {
             sum += blue.supplyShares(id, addresses[i]);
@@ -39,10 +40,26 @@ contract InvariantBaseTest is BlueBaseTest {
         return sum;
     }
 
-    function sumUsersBorrowShares(address[] memory addresses) internal view returns(uint256) {
+    function sumUsersBorrowShares(address[] memory addresses) internal view returns (uint256) {
         uint256 sum;
         for (uint256 i; i < addresses.length; ++i) {
             sum += blue.borrowShares(id, addresses[i]);
+        }
+        return sum;
+    }
+
+    function sumUsersSuppliedAmounts(address[] memory addresses) internal view returns (uint256) {
+        uint256 sum;
+        for (uint256 i; i < addresses.length; ++i) {
+            sum += blue.supplyShares(id, addresses[i]).toAssetsDown(blue.totalSupply(id), blue.totalSupplyShares(id));
+        }
+        return sum;
+    }
+
+    function sumUsersBorrowedAmounts(address[] memory addresses) internal view returns (uint256) {
+        uint256 sum;
+        for (uint256 i; i < addresses.length; ++i) {
+            sum += blue.borrowShares(id, addresses[i]).toAssetsUp(blue.totalBorrow(id), blue.totalBorrowShares(id));
         }
         return sum;
     }
