@@ -75,13 +75,13 @@
                 │   └── it should call sender's onBlueSupply callback
                 └── it should transfer amount of the borrowable asset from the sender to Blue
 .
-└── withdraw(Market memory market, uint256 amount, address onBehalf, address receiver) external
+└── withdraw(Market memory market, uint256 shares, address onBehalf, address receiver) external
     ├── when market is not created
     │   └── revert with MARKET_NOT_CREATED
     └── when market is created
-        ├── when the amount to withdraw is zero
-        │   └── revert with ZERO_AMOUNT
-        └── when the amount to withdraw is not zero
+        ├── when the shares to withdraw are zero
+        │   └── revert with ZERO_SHARES
+        └── when the shares to withdraw are not zero
             ├── when receiver is the zero address
             │   └── revert with ZERO_ADDRESS
             └── when receiver is not the zero address
@@ -92,8 +92,9 @@
                     ├── when totalBorrow > totalSupply
                     │   └── revert with INSUFFICIENT_LIQUIDITY
                     └── when totalBorrow <= totalSupply
-                        ├── it should remove amount.toSharesUp(totalSupply[id], totalSupplyShares[id]) to supplyShares[id][onBehalf] 
-                        ├── it should remove amount.toSharesUp(totalSupply[id], totalSupplyShares[id]) to totalSupplyShares[id]
+                        ├── it should remove shares from supplyShares[id][onBehalf] 
+                        ├── it should remove shares from totalSupplyShares[id]
+                        ├── it should set amount to shares.toAssetsDown(totalSupply[id], totalSupplyShares[id])
                         ├── it should remove amount from totalSupply[id]
                         ├── it should emit Withdraw(id, msg.sender, onBehalf, receiver, amount, shares)
                         └── it should transfer amount of the borrowable asset to the receiver
@@ -124,19 +125,20 @@
                             ├── it should emit Borrow(id, msg.sender, onBehalf, receiver, amount, shares)
                             └── it should transfer amount of the borrowable asset to the receiver
 .
-└── repay(Market memory market, uint256 amount, address onBehalf, bytes calldata data) external
+└── repay(Market memory market, uint256 shares, address onBehalf, bytes calldata data) external
     ├── when market is not created
     │   └── revert with MARKET_NOT_CREATED
     └── when market is created
-        ├── when the amount to repay is zero
-        │   └── revert with ZERO_AMOUNT
-        └── when the amount to repay is not zero
+        ├── when the shares to repay are zero
+        │   └── revert with ZERO_SHARES
+        └── when the shares to repay are not zero
             ├── when onBehalf is the zero address
             │   └── revert with ZERO_ADDRESS
             └── when onBehalf is not the zero address
                 ├── it should accrue the interests
-                ├── it should remove amount.toSharesDown(totalBorrow[id], totalBorrowShares[id]) from borrowShares[id][onBehalf]
-                ├── it should remove amount.toSharesDown(totalBorrow[id], totalBorrowShares[id]) from totalBorrowShares[id],
+                ├── it should remove shares from borrowShares[id][onBehalf]
+                ├── it should remove shares from totalBorrowShares[id]
+                ├── it should set amount to shares.toAssetsUp(totalBorrow[id], totalBorrowShares[id])
                 ├── it should remove amount from totalBorrow[id]
                 ├── it should emit Repay(id, msg.sender, onBehalf, amount, shares)
                 ├── if data.length > 0
