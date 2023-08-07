@@ -29,8 +29,8 @@ contract BlueTest is
     using BlueLib for IBlue;
     using MarketLib for Market;
     using SharesMath for uint256;
-    using stdStorage for StdStorage;
     using FixedPointMathLib for uint256;
+    using stdStorage for StdStorage;
 
     address private constant BORROWER = address(1234);
     address private constant LIQUIDATOR = address(5678);
@@ -321,9 +321,10 @@ contract BlueTest is
         amount = bound(amount, 1, 2 ** 64);
 
         borrowableAsset.setBalance(address(this), amount);
-        blue.supply(market, amount, onBehalf, hex"");
+        uint256 shares = blue.supply(market, amount, onBehalf, hex"");
 
-        assertEq(blue.supplyShares(id, onBehalf), amount * SharesMath.VIRTUAL_SHARES, "supply share");
+        assertEq(shares, amount * SharesMath.VIRTUAL_SHARES, "shares");
+        assertEq(blue.supplyShares(id, onBehalf), amount * SharesMath.VIRTUAL_SHARES, "supplyShares");
         assertEq(borrowableAsset.balanceOf(onBehalf), 0, "lender balance");
         assertEq(borrowableAsset.balanceOf(address(blue)), amount, "blue balance");
     }
@@ -345,9 +346,10 @@ contract BlueTest is
         }
 
         vm.prank(BORROWER);
-        blue.borrow(market, amountBorrowed, BORROWER, receiver);
+        uint256 shares = blue.borrow(market, amountBorrowed, BORROWER, receiver);
 
-        assertEq(blue.borrowShares(id, BORROWER), amountBorrowed * SharesMath.VIRTUAL_SHARES, "borrow share");
+        assertEq(shares, amountBorrowed * SharesMath.VIRTUAL_SHARES, "shares");
+        assertEq(blue.borrowShares(id, BORROWER), amountBorrowed * SharesMath.VIRTUAL_SHARES, "borrowShares");
         assertEq(borrowableAsset.balanceOf(receiver), amountBorrowed, "receiver balance");
         assertEq(borrowableAsset.balanceOf(address(blue)), amountLent - amountBorrowed, "blue balance");
     }
@@ -391,9 +393,10 @@ contract BlueTest is
             return;
         }
 
-        blue.withdraw(market, sharesWithdrawn, address(this), receiver);
+        uint256 withdrawn = blue.withdraw(market, sharesWithdrawn, address(this), receiver);
 
-        assertEq(blue.supplyShares(id, address(this)), supplySharesBefore - sharesWithdrawn, "supply share");
+        assertEq(withdrawn, amountWithdrawn, "withdrawn");
+        assertEq(blue.supplyShares(id, address(this)), supplySharesBefore - sharesWithdrawn, "supplyShares");
         assertEq(borrowableAsset.balanceOf(receiver), amountWithdrawn, "receiver balance");
         assertEq(
             borrowableAsset.balanceOf(address(blue)),
