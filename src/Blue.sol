@@ -338,19 +338,21 @@ contract Blue is IBlue {
     ) external {
         require(block.timestamp < deadline, Errors.SIGNATURE_EXPIRED);
 
-        uint256 usedNonce = nonce[authorizer]++;
+        uint256 usedNonce = nonce[authorizer];
         bytes32 hashStruct =
             keccak256(abi.encode(AUTHORIZATION_TYPEHASH, authorizer, authorized, newIsAuthorized, usedNonce, deadline));
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, hashStruct));
         address signatory = ecrecover(digest, signature.v, signature.r, signature.s);
 
-        require(signatory != address(0) && authorizer == signatory, Errors.INVALID_SIGNATURE);
+        if (signatory != address(0) && authorizer == signatory) {
+            nonce[authorizer]++;
+            emit IncrementNonce(msg.sender, authorizer, usedNonce);
 
-        emit IncrementNonce(msg.sender, authorizer, usedNonce);
+            isAuthorized[authorizer][authorized] = newIsAuthorized;
+            emit SetAuthorization(msg.sender, authorizer, authorized, newIsAuthorized);
+        }
 
-        isAuthorized[authorizer][authorized] = newIsAuthorized;
-
-        emit SetAuthorization(msg.sender, authorizer, authorized, newIsAuthorized);
+        require(isAuthorized[authorizer][authorized] == newIsAuthorized, Errors.INVALID_SIGNATURE);
     }
 
     function setAuthorization(address authorized, bool newIsAuthorized) external {
