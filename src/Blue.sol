@@ -408,9 +408,9 @@ contract Blue is IBlue {
         returns (bool)
     {
         uint256 borrowed = borrowShares[id][user].toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
-        uint256 collateralPower = collateral[id][user].mulWadDown(collateralPrice).mulWadDown(market.lltv);
+        uint256 maxBorrow = collateral[id][user].mulWadDown(collateralPrice).mulWadDown(market.lltv);
 
-        return collateralPower >= borrowed;
+        return maxBorrow >= borrowed;
     }
 
     // Storage view.

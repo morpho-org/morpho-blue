@@ -560,10 +560,10 @@ contract BlueTest is
         vm.prank(BORROWER);
         blue.supplyCollateral(market, amountCollateral, BORROWER, hex"");
 
-        uint256 collateralPower = amountCollateral.mulWadDown(collateralPrice).mulWadDown(LLTV);
+        uint256 maxBorrow = amountCollateral.mulWadDown(collateralPrice).mulWadDown(LLTV);
 
         vm.prank(BORROWER);
-        if (collateralPower < amountBorrowed) vm.expectRevert(bytes(Errors.INSUFFICIENT_COLLATERAL));
+        if (maxBorrow < amountBorrowed) vm.expectRevert(bytes(Errors.INSUFFICIENT_COLLATERAL));
         blue.borrow(market, amountBorrowed, BORROWER, BORROWER);
     }
 
