@@ -94,9 +94,14 @@ contract IntegrationWithdrawCollateralTest is BlueBaseTest {
         collateralAsset.setBalance(BORROWER, amountCollateral + amountCollateralExcess);
 
         vm.startPrank(BORROWER);
+
         blue.supplyCollateral(market, amountCollateral + amountCollateralExcess, BORROWER, hex"");
         blue.borrow(market, amountBorrowed, BORROWER, BORROWER);
+
+        vm.expectEmit(true, true, true, true, address(blue));
+        emit Events.WithdrawCollateral(id, BORROWER, BORROWER, receiver, amountCollateralExcess);
         blue.withdrawCollateral(market, amountCollateralExcess, BORROWER, receiver);
+
         vm.stopPrank();
 
         assertEq(blue.collateral(id, BORROWER), amountCollateral, "collateral balance");
@@ -127,6 +132,7 @@ contract IntegrationWithdrawCollateralTest is BlueBaseTest {
         collateralAsset.setBalance(onBehalf, amountCollateral + amountCollateralExcess);
 
         vm.startPrank(onBehalf);
+
         collateralAsset.approve(address(blue), amountCollateral + amountCollateralExcess);
         blue.supplyCollateral(market, amountCollateral + amountCollateralExcess, onBehalf, hex"");
         blue.setAuthorization(BORROWER, true);
@@ -134,6 +140,9 @@ contract IntegrationWithdrawCollateralTest is BlueBaseTest {
         vm.stopPrank();
 
         vm.prank(BORROWER);
+
+        vm.expectEmit(true, true, true, true, address(blue));
+        emit Events.WithdrawCollateral(id, BORROWER, onBehalf, receiver, amountCollateralExcess);
         blue.withdrawCollateral(market, amountCollateralExcess, onBehalf, receiver);
 
         assertEq(blue.collateral(id, onBehalf), amountCollateral, "collateral balance");

@@ -25,6 +25,9 @@ contract IntegrationSupplyCollateralTest is BlueBaseTest {
         amount = bound(amount, 1, 2 ** 64);
 
         collateralAsset.setBalance(address(this), amount);
+
+        vm.expectEmit(true, true, true, true, address(blue));
+        emit Events.SupplyCollateral(id, address(this), address(this), amount);
         blue.supplyCollateral(market, amount, address(this), hex"");
 
         assertEq(blue.collateral(id, address(this)), amount, "collateral balance");
@@ -37,6 +40,9 @@ contract IntegrationSupplyCollateralTest is BlueBaseTest {
         amount = bound(amount, 1, 2 ** 64);
 
         collateralAsset.setBalance(address(this), amount);
+
+        vm.expectEmit(true, true, true, true, address(blue));
+        emit Events.SupplyCollateral(id, address(this), onBehalf, amount);
         blue.supplyCollateral(market, amount, onBehalf, hex"");
 
         assertEq(blue.collateral(id, onBehalf), amount, "collateral balance");

@@ -44,8 +44,8 @@ contract IntegrationAuthorization is BlueBaseTest {
         (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
 
         vm.warp(block.timestamp + timeElapsed);
-        vm.expectRevert(bytes(Errors.SIGNATURE_EXPIRED));
 
+        vm.expectRevert(bytes(Errors.SIGNATURE_EXPIRED));
         blue.setAuthorization(
             authorization.authorizer, authorization.authorized, authorization.isAuthorized, authorization.deadline, sig
         );
@@ -77,7 +77,6 @@ contract IntegrationAuthorization is BlueBaseTest {
         (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
 
         vm.expectRevert(bytes(Errors.INVALID_SIGNATURE));
-
         blue.setAuthorization(
             address(this), authorization.authorized, authorization.isAuthorized, authorization.deadline, sig
         );
@@ -106,6 +105,8 @@ contract IntegrationAuthorization is BlueBaseTest {
         Signature memory sig;
         (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
 
+        vm.expectEmit(true, true, true, true, address(blue));
+        emit Events.SetAuthorization(address(this), authorization.authorizer, authorization.authorized, authorization.isAuthorized);
         blue.setAuthorization(
             authorization.authorizer, authorization.authorized, authorization.isAuthorized, authorization.deadline, sig
         );

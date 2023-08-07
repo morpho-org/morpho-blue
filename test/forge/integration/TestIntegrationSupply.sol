@@ -25,6 +25,9 @@ contract IntegrationSupplyTest is BlueBaseTest {
         amount = bound(amount, 1, 2 ** 64);
 
         borrowableAsset.setBalance(address(this), amount);
+
+        vm.expectEmit(true, true, true, true, address(blue));
+        emit Events.Supply(id, address(this), address(this), amount, amount * SharesMath.VIRTUAL_SHARES);
         blue.supply(market, amount, address(this), hex"");
 
         assertEq(blue.totalSupply(id), amount, "total supply");
@@ -38,6 +41,9 @@ contract IntegrationSupplyTest is BlueBaseTest {
         amount = bound(amount, 1, 2 ** 64);
 
         borrowableAsset.setBalance(address(this), amount);
+
+        vm.expectEmit(true, true, true, true, address(blue));
+        emit Events.Supply(id, address(this), onBehalf, amount, amount * SharesMath.VIRTUAL_SHARES);
         blue.supply(market, amount, onBehalf, hex"");
 
         assertEq(blue.totalSupply(id), amount, "total supply");

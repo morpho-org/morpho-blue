@@ -31,7 +31,11 @@ contract IntegrationRepayTest is BlueBaseTest {
 
         vm.startPrank(BORROWER);
         blue.borrow(market, amountBorrowed, BORROWER, BORROWER);
+
+        vm.expectEmit(true, true, true, true, address(blue));
+        emit Events.Repay(id, BORROWER, BORROWER, amountRepaid, amountRepaid * SharesMath.VIRTUAL_SHARES);
         blue.repay(market, amountRepaid, BORROWER, hex"");
+
         vm.stopPrank();
 
         assertEq(blue.totalBorrow(id), amountBorrowed - amountRepaid, "total borrow");
@@ -45,17 +49,26 @@ contract IntegrationRepayTest is BlueBaseTest {
         assertEq(borrowableAsset.balanceOf(address(blue)), amountLent - amountBorrowed + amountRepaid, "blue balance");
     }
 
-    function testRepayOnBehalf(uint256 amountLent, uint256 amountBorrowed, uint256 amountRepaid) public {
+    function testRepayOnBehalf(uint256 amountLent, uint256 amountBorrowed, uint256 amountRepaid, address onBehalf) public {
         amountLent = bound(amountLent, 1, 2 ** 64);
         amountBorrowed = bound(amountBorrowed, 1, amountLent);
         amountRepaid = bound(amountRepaid, 1, amountBorrowed);
 
-        borrowableAsset.setBalance(address(this), amountLent + amountRepaid);
+        borrowableAsset.setBalance(address(this), amountLent);
+        borrowableAsset.setBalance(onBehalf, amountRepaid);
         blue.supply(market, amountLent, address(this), hex"");
 
         vm.prank(BORROWER);
         blue.borrow(market, amountBorrowed, BORROWER, BORROWER);
+
+        vm.startPrank(onBehalf);
+        borrowableAsset.approve(address(blue), amountRepaid);
+
+        vm.expectEmit(true, true, true, true, address(blue));
+        emit Events.Repay(id, onBehalf, BORROWER, amountRepaid, amountRepaid * SharesMath.VIRTUAL_SHARES);
         blue.repay(market, amountRepaid, BORROWER, hex"");
+
+        vm.stopPrank();
 
         assertEq(blue.totalBorrow(id), amountBorrowed - amountRepaid, "total borrow");
         assertApproxEqAbs(

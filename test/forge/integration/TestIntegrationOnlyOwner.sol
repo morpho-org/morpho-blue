@@ -19,6 +19,8 @@ contract IntegrationOnlyOwnerTest is BlueBaseTest {
         vm.assume(newOwner != OWNER);
 
         vm.prank(OWNER);
+        vm.expectEmit(true, true, true, true, address(blue));
+        emit Events.SetOwner(newOwner);
         blue.setOwner(newOwner);
 
         assertEq(blue.owner(), newOwner, "owner is not set");
@@ -37,6 +39,8 @@ contract IntegrationOnlyOwnerTest is BlueBaseTest {
         vm.assume(irmFuzz != address(irm));
 
         vm.prank(OWNER);
+        vm.expectEmit(true, true, true, true, address(blue));
+        emit Events.EnableIrm(irmFuzz);
         blue.enableIrm(irmFuzz);
 
         assertTrue(blue.isIrmEnabled(irmFuzz), "IRM is not enabled");
@@ -63,6 +67,8 @@ contract IntegrationOnlyOwnerTest is BlueBaseTest {
         lltvFuzz = bound(lltvFuzz, 0, FixedPointMathLib.WAD - 1);
 
         vm.prank(OWNER);
+        vm.expectEmit(true, true, true, true, address(blue));
+        emit Events.EnableLltv(lltvFuzz);
         blue.enableLltv(lltvFuzz);
 
         assertTrue(blue.isLltvEnabled(lltvFuzz), "LLTV is not enabled");
@@ -96,6 +102,8 @@ contract IntegrationOnlyOwnerTest is BlueBaseTest {
         feeFuzz = bound(feeFuzz, 0, MAX_FEE);
 
         vm.prank(OWNER);
+        vm.expectEmit(true, true, true, true, address(blue));
+        emit Events.SetFee(id, feeFuzz);
         blue.setFee(market, feeFuzz);
 
         assertEq(blue.fee(id), feeFuzz);
@@ -113,6 +121,8 @@ contract IntegrationOnlyOwnerTest is BlueBaseTest {
         vm.assume(newFeeRecipient != OWNER);
 
         vm.prank(OWNER);
+        vm.expectEmit(true, true, true, true, address(blue));
+        emit Events.SetFeeRecipient(newFeeRecipient);
         blue.setFeeRecipient(newFeeRecipient);
 
         assertEq(blue.feeRecipient(), newFeeRecipient);
