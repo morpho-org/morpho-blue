@@ -69,22 +69,27 @@ contract BlueTest is
 
         borrowableAsset.approve(address(blue), type(uint256).max);
         collateralAsset.approve(address(blue), type(uint256).max);
+
         vm.startPrank(BORROWER);
         borrowableAsset.approve(address(blue), type(uint256).max);
         collateralAsset.approve(address(blue), type(uint256).max);
         blue.setAuthorization(address(this), true);
         vm.stopPrank();
+
         vm.startPrank(LIQUIDATOR);
         borrowableAsset.approve(address(blue), type(uint256).max);
         collateralAsset.approve(address(blue), type(uint256).max);
         vm.stopPrank();
     }
 
-    // To move to a test utils file later.
-
+    /// @dev Calculates the net worth of the given user quoted in borrowable asset.
+    // TODO: To move to a test utils file later.
     function netWorth(address user) internal view returns (uint256) {
-        uint256 collateralAssetValue = collateralAsset.balanceOf(user).mulWadDown(oracle.price());
+        (uint256 collateralPrice, uint256 priceScale) = market.oracle.price();
+
+        uint256 collateralAssetValue = collateralAsset.balanceOf(user).mulDivDown(collateralPrice, priceScale);
         uint256 borrowableAssetValue = borrowableAsset.balanceOf(user);
+
         return collateralAssetValue + borrowableAssetValue;
     }
 
@@ -601,9 +606,11 @@ contract BlueTest is
         blue.liquidate(market, BORROWER, toSeize, hex"");
 
         uint256 liquidatorNetWorthAfter = netWorth(LIQUIDATOR);
+        (uint256 collateralPrice, uint256 priceScale) = market.oracle.price();
 
-        uint256 expectedRepaid = toSeize.mulWadUp(oracle.price()).divWadUp(incentive);
-        uint256 expectedNetWorthAfter = liquidatorNetWorthBefore + toSeize.mulWadDown(oracle.price()) - expectedRepaid;
+        uint256 expectedRepaid = toSeize.mulDivUp(collateralPrice, priceScale).divWadUp(incentive);
+        uint256 expectedNetWorthAfter =
+            liquidatorNetWorthBefore + toSeize.mulDivDown(collateralPrice, priceScale) - expectedRepaid;
         assertEq(liquidatorNetWorthAfter, expectedNetWorthAfter, "LIQUIDATOR net worth");
         assertApproxEqAbs(borrowBalance(BORROWER), amountBorrowed - expectedRepaid, 100, "BORROWER balance");
         assertEq(blue.collateral(id, BORROWER), amountCollateral - toSeize, "BORROWER collateral");
@@ -643,9 +650,11 @@ contract BlueTest is
         blue.liquidate(market, BORROWER, toSeize, hex"");
 
         uint256 liquidatorNetWorthAfter = netWorth(LIQUIDATOR);
+        (uint256 collateralPrice, uint256 priceScale) = market.oracle.price();
 
-        uint256 expectedRepaid = toSeize.mulWadUp(oracle.price()).divWadUp(incentive);
-        uint256 expectedNetWorthAfter = liquidatorNetWorthBefore + toSeize.mulWadDown(oracle.price()) - expectedRepaid;
+        uint256 expectedRepaid = toSeize.mulDivUp(collateralPrice, priceScale).divWadUp(incentive);
+        uint256 expectedNetWorthAfter =
+            liquidatorNetWorthBefore + toSeize.mulDivDown(collateralPrice, priceScale) - expectedRepaid;
         assertEq(liquidatorNetWorthAfter, expectedNetWorthAfter, "LIQUIDATOR net worth");
         assertEq(borrowBalance(BORROWER), 0, "BORROWER balance");
         assertEq(blue.collateral(id, BORROWER), 0, "BORROWER collateral");
