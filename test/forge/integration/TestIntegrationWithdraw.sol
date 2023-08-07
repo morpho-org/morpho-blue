@@ -73,7 +73,9 @@ contract IntegrationWithdrawTest is BlueBaseTest {
         blue.borrow(market, amountBorrowed, BORROWER, BORROWER);
 
         vm.expectEmit(true, true, true, true, address(blue));
-        emit Events.Withdraw(id, address(this), address(this), receiver, amountWithdrawn, amountWithdrawn * SharesMath.VIRTUAL_SHARES);
+        emit Events.Withdraw(
+            id, address(this), address(this), receiver, amountWithdrawn, amountWithdrawn * SharesMath.VIRTUAL_SHARES
+        );
         blue.withdraw(market, amountWithdrawn, address(this), receiver);
 
         assertApproxEqAbs(
@@ -117,7 +119,9 @@ contract IntegrationWithdrawTest is BlueBaseTest {
         vm.startPrank(BORROWER);
 
         vm.expectEmit(true, true, true, true, address(blue));
-        emit Events.Withdraw(id, BORROWER, onBehalf, receiver, amountWithdrawn, amountWithdrawn * SharesMath.VIRTUAL_SHARES);
+        emit Events.Withdraw(
+            id, BORROWER, onBehalf, receiver, amountWithdrawn, amountWithdrawn * SharesMath.VIRTUAL_SHARES
+        );
         blue.withdraw(market, amountWithdrawn, onBehalf, receiver);
 
         assertEq(blue.totalSupply(id), amountSupplied - amountWithdrawn, "total supply");

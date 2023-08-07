@@ -86,6 +86,9 @@ contract IntegrationLiquidateTest is BlueBaseTest {
         uint256 expectedRepaidShares = expectedRepaid.toSharesDown(blue.totalBorrow(id), blue.totalBorrowShares(id));
 
         vm.prank(LIQUIDATOR);
+
+        vm.expectEmit(true, true, true, true, address(blue));
+        emit Events.Liquidate(id, LIQUIDATOR, BORROWER, expectedRepaid, expectedRepaidShares, amountSeized, 0);
         blue.liquidate(market, BORROWER, amountSeized, hex"");
 
         assertEq(
@@ -160,6 +163,17 @@ contract IntegrationLiquidateTest is BlueBaseTest {
         );
 
         vm.prank(LIQUIDATOR);
+
+        vm.expectEmit(true, true, true, true, address(blue));
+        emit Events.Liquidate(
+            id,
+            LIQUIDATOR,
+            BORROWER,
+            params.expectedRepaid,
+            params.expectedRepaidShares,
+            amountCollateral,
+            params.expectedBadDebt * SharesMath.VIRTUAL_SHARES
+        );
         blue.liquidate(market, BORROWER, amountCollateral, hex"");
 
         assertEq(blue.collateral(id, BORROWER), 0, "collateral");

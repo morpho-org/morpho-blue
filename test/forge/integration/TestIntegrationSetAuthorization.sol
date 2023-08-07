@@ -106,7 +106,9 @@ contract IntegrationAuthorization is BlueBaseTest {
         (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
 
         vm.expectEmit(true, true, true, true, address(blue));
-        emit Events.SetAuthorization(address(this), authorization.authorizer, authorization.authorized, authorization.isAuthorized);
+        emit Events.SetAuthorization(
+            address(this), authorization.authorizer, authorization.authorized, authorization.isAuthorized
+        );
         blue.setAuthorization(
             authorization.authorizer, authorization.authorized, authorization.isAuthorized, authorization.deadline, sig
         );
