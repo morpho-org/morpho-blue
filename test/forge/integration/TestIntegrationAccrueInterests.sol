@@ -93,7 +93,11 @@ contract IntegrationAccrueInterestsTest is BlueBaseTest {
 
         // Supply then withdraw collateral to trigger `_accrueInterests` function.
         collateralAsset.setBalance(address(this), 1);
+
         blue.supplyCollateral(market, 1, address(this), hex"");
+
+        vm.expectEmit(true, true, true, true, address(blue));
+        emit Events.AccrueInterests(id, borrowRate, expectedAccruedInterests, 0);
         blue.withdrawCollateral(market, 1, address(this), address(this));
 
         assertEq(blue.totalBorrow(id), totalBorrowBeforeAccrued + expectedAccruedInterests, "total borrow");
@@ -156,6 +160,9 @@ contract IntegrationAccrueInterestsTest is BlueBaseTest {
         // Supply then withdraw collateral to trigger `_accrueInterests` function.
         collateralAsset.setBalance(address(this), 1);
         blue.supplyCollateral(market, 1, address(this), hex"");
+
+        vm.expectEmit(true, true, true, true, address(blue));
+        emit Events.AccrueInterests(id, params.borrowRate, params.expectedAccruedInterests, params.feeShares);
         blue.withdrawCollateral(market, 1, address(this), address(this));
 
         assertEq(

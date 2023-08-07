@@ -109,6 +109,8 @@ contract IntegrationBorrowTest is BlueBaseTest {
         vm.startPrank(BORROWER);
         blue.supplyCollateral(market, amountCollateral, BORROWER, hex"");
 
+        vm.expectEmit(true, true, true, true, address(blue));
+        emit Events.Borrow(id, BORROWER, BORROWER, receiver, amountBorrowed, amountBorrowed * SharesMath.VIRTUAL_SHARES);
         blue.borrow(market, amountBorrowed, BORROWER, receiver);
         vm.stopPrank();
 
@@ -147,6 +149,8 @@ contract IntegrationBorrowTest is BlueBaseTest {
         vm.stopPrank();
 
         vm.prank(BORROWER);
+        vm.expectEmit(true, true, true, true, address(blue));
+        emit Events.Borrow(id, BORROWER, onBehalf, receiver, amountBorrowed, amountBorrowed * SharesMath.VIRTUAL_SHARES);
         blue.borrow(market, amountBorrowed, onBehalf, receiver);
 
         assertEq(blue.totalBorrow(id), amountBorrowed, "total borrow");

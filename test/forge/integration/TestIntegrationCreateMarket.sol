@@ -19,7 +19,11 @@ contract IntegrationCreateMarketTest is BlueBaseTest {
         vm.assume(marketFuzz.lltv != LLTV);
 
         vm.startPrank(OWNER);
+
+        vm.expectEmit(true, true, true, true, address(blue));
+        emit Events.EnableIrm(marketFuzz.irm);
         blue.enableIrm(marketFuzz.irm);
+
         vm.expectRevert(bytes(Errors.LLTV_NOT_ENABLED));
         blue.createMarket(marketFuzz);
         vm.stopPrank();
@@ -30,7 +34,12 @@ contract IntegrationCreateMarketTest is BlueBaseTest {
         Id marketFuzzId = marketFuzz.id();
 
         vm.prank(OWNER);
+        vm.expectEmit(true, true, true, true, address(blue));
+        emit Events.EnableIrm(marketFuzz.irm);
         blue.enableIrm(marketFuzz.irm);
+
+        vm.expectEmit(true, true, true, true, address(blue));
+        emit Events.CreateMarket(marketFuzz.id(), marketFuzz);
         blue.createMarket(marketFuzz);
 
         assertGt(blue.lastUpdate(marketFuzzId), 0, "lastUpdate == 0");
