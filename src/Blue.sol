@@ -371,26 +371,25 @@ contract Blue is IBlue {
         if (elapsed == 0) return;
 
         uint256 marketTotalBorrow = totalBorrow[id];
+        lastUpdate[id] = block.timestamp;
 
-        if (marketTotalBorrow != 0) {
-            uint256 borrowRate = IIrm(market.irm).borrowRate(market);
-            uint256 accruedInterests = marketTotalBorrow.mulWadDown(borrowRate * elapsed);
-            totalBorrow[id] = marketTotalBorrow + accruedInterests;
-            totalSupply[id] += accruedInterests;
+        if (marketTotalBorrow == 0) return;
 
-            uint256 feeShares;
-            if (fee[id] != 0) {
-                uint256 feeAmount = accruedInterests.mulWadDown(fee[id]);
-                // The fee amount is subtracted from the total supply in this calculation to compensate for the fact that total supply is already updated.
-                feeShares = feeAmount.mulDivDown(totalSupplyShares[id], totalSupply[id] - feeAmount);
-                supplyShares[id][feeRecipient] += feeShares;
-                totalSupplyShares[id] += feeShares;
-            }
+        uint256 borrowRate = IIrm(market.irm).borrowRate(market);
+        uint256 accruedInterests = marketTotalBorrow.mulWadDown(borrowRate * elapsed);
+        totalBorrow[id] = marketTotalBorrow + accruedInterests;
+        totalSupply[id] += accruedInterests;
 
-            emit AccrueInterests(id, borrowRate, accruedInterests, feeShares);
+        uint256 feeShares;
+        if (fee[id] != 0) {
+            uint256 feeAmount = accruedInterests.mulWadDown(fee[id]);
+            // The fee amount is subtracted from the total supply in this calculation to compensate for the fact that total supply is already updated.
+            feeShares = feeAmount.mulDivDown(totalSupplyShares[id], totalSupply[id] - feeAmount);
+            supplyShares[id][feeRecipient] += feeShares;
+            totalSupplyShares[id] += feeShares;
         }
 
-        lastUpdate[id] = block.timestamp;
+        emit AccrueInterests(id, borrowRate, accruedInterests, feeShares);
     }
 
     // Health check.
