@@ -1,17 +1,46 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import {Id, Market, MarketLib} from "src/libraries/MarketLib.sol";
-import {BlueStorageSlots} from "src/libraries/BlueStorageSlots.sol";
-import {FixedPointMathLib} from "src/libraries/FixedPointMathLib.sol";
+import {Id, Market, IBlue} from "../interfaces/IBlue.sol";
+import {IIrm} from "../interfaces/IIrm.sol";
 
-import {Blue} from "src/Blue.sol";
+import {MarketLib} from "./MarketLib.sol";
+import {SharesMath} from "./SharesMath.sol";
+import {BlueStorageSlots} from "./BlueStorageSlots.sol";
+import {FixedPointMathLib} from "./FixedPointMathLib.sol";
 
 library BlueLib {
     using MarketLib for Market;
+    using SharesMath for uint256;
     using FixedPointMathLib for uint256;
 
-    function accruedInterests(Blue blue, Market calldata market)
+    function withdrawAmount(IBlue blue, Market memory market, uint256 amount, address onBehalf, address receiver)
+        internal
+        returns (uint256 shares)
+    {
+        Id id = market.id();
+        shares = amount.toWithdrawShares(blue.totalSupply(id), blue.totalSupplyShares(id));
+
+        uint256 maxShares = blue.supplyShares(id, address(this));
+        if (shares > maxShares) shares = maxShares;
+
+        blue.withdraw(market, shares, onBehalf, receiver);
+    }
+
+    function repayAmount(IBlue blue, Market memory market, uint256 amount, address onBehalf, bytes memory data)
+        internal
+        returns (uint256 shares)
+    {
+        Id id = market.id();
+        shares = amount.toRepayShares(blue.totalBorrow(id), blue.totalBorrowShares(id));
+
+        uint256 maxShares = blue.borrowShares(id, address(this));
+        if (shares > maxShares) shares = maxShares;
+
+        blue.repay(market, shares, onBehalf, data);
+    }
+
+    function accruedInterests(IBlue blue, Market memory market)
         internal
         view
         returns (
@@ -41,7 +70,7 @@ library BlueLib {
         lastUpdate = uint256(values[4]);
 
         if (totalBorrow != 0) {
-            uint256 borrowRate = market.irm.borrowRate(market);
+            uint256 borrowRate = IIrm(market.irm).borrowRate(market);
             interests = totalBorrow.mulWadDown(borrowRate * (block.timestamp - lastUpdate));
 
             totalBorrow += interests;
