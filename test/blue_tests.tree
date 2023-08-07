@@ -67,8 +67,9 @@
             │   └── revert with ZERO_ADDRESS
             └── when onBehalf is not the zero address
                 ├── it should accrue the interests
-                ├── it should add amount.toSharesDown(totalSupply[market.id], totalSupplyShares[market.id]) to supplyShares[market.id][onBehalf] 
-                ├── it should add amount.toSharesDown(totalSupply[market.id], totalSupplyShares[market.id]) to totalSupplyShares[market.id]
+                ├── it should set shares to amount.toSharesDown(totalSupply[market.id], totalSupplyShares[market.id])
+                ├── it should add shares to supplyShares[market.id][onBehalf] 
+                ├── it should add shares to totalSupplyShares[market.id]
                 ├── it should add amount to totalSupply[market.id]
                 ├── it should emit Supply(market.id, msg.sender, onBehalf, amount, shares)
                 ├── if data.length > 0
@@ -119,8 +120,9 @@
                         ├── when totalBorrow > totalSupply
                         │   └── revert with INSUFFICIENT_LIQUIDITY
                         └── when totalBorrow <= totalSupply
-                            ├── it should add amount.toSharesUp(totalBorrow[market.id], totalBorrowShares[market.id]) to borrowShares[market.id][onBehalf] 
-                            ├── it should add amount.toSharesUp(totalBorrow[market.id], totalBorrowShares[market.id]) to totalBorrowShares[market.id]
+                            ├── it should set shares to amount.toSharesUp(totalBorrow[market.id], totalBorrowShares[market.id])
+                            ├── it should add shares to borrowShares[market.id][onBehalf] 
+                            ├── it should add shares to totalBorrowShares[market.id]
                             ├── it should add amount to totalBorrow[market.id]
                             ├── it should emit Borrow(market.id, msg.sender, onBehalf, receiver, amount, shares)
                             └── it should transfer amount of the borrowable asset to the receiver
