@@ -85,7 +85,7 @@ contract BlueTest is
     /// @dev Calculates the net worth of the given user quoted in borrowable asset.
     // TODO: To move to a test utils file later.
     function netWorth(address user) internal view returns (uint256) {
-        (uint256 collateralPrice, uint256 priceScale) = market.oracle.price();
+        (uint256 collateralPrice, uint256 priceScale) = IOracle(market.oracle).price();
 
         uint256 collateralAssetValue = collateralAsset.balanceOf(user).mulDivDown(collateralPrice, priceScale);
         uint256 borrowableAssetValue = borrowableAsset.balanceOf(user);
@@ -606,7 +606,7 @@ contract BlueTest is
         blue.liquidate(market, BORROWER, toSeize, hex"");
 
         uint256 liquidatorNetWorthAfter = netWorth(LIQUIDATOR);
-        (uint256 collateralPrice, uint256 priceScale) = market.oracle.price();
+        (uint256 collateralPrice, uint256 priceScale) = IOracle(market.oracle).price();
 
         uint256 expectedRepaid = toSeize.mulDivUp(collateralPrice, priceScale).divWadUp(incentive);
         uint256 expectedNetWorthAfter =
@@ -650,7 +650,7 @@ contract BlueTest is
         blue.liquidate(market, BORROWER, toSeize, hex"");
 
         uint256 liquidatorNetWorthAfter = netWorth(LIQUIDATOR);
-        (uint256 collateralPrice, uint256 priceScale) = market.oracle.price();
+        (uint256 collateralPrice, uint256 priceScale) = IOracle(market.oracle).price();
 
         uint256 expectedRepaid = toSeize.mulDivUp(collateralPrice, priceScale).divWadUp(incentive);
         uint256 expectedNetWorthAfter =
