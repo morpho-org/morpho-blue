@@ -65,7 +65,7 @@ contract IntegrationCallbacksTest is
         ERC20(token).approve(address(blue), amount);
     }
 
-    // Tests
+    // Tests.
 
     function testFlashLoan(uint256 amount) public {
         amount = bound(amount, 1, 2 ** 64);

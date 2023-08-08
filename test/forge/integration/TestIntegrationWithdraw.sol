@@ -43,7 +43,7 @@ contract IntegrationWithdrawTest is BlueBaseTest {
         blue.withdraw(market, amount, address(this), address(this));
     }
 
-    function testWithdrawUnsufficientLiquidity(uint256 amountSupplied, uint256 amountBorrowed) public {
+    function testWithdrawInsufficientLiquidity(uint256 amountSupplied, uint256 amountBorrowed) public {
         amountSupplied = bound(amountSupplied, 1, 2 ** 64);
         amountBorrowed = bound(amountBorrowed, 1, amountSupplied);
 

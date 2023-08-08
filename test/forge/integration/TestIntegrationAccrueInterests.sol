@@ -10,7 +10,7 @@ contract IntegrationAccrueInterestsTest is BlueBaseTest {
         amountSupplied = bound(amountSupplied, 2, 2 ** 64);
         amountBorrowed = bound(amountBorrowed, 1, amountSupplied);
 
-        // Set fee parameters
+        // Set fee parameters.
         vm.prank(OWNER);
         blue.setFeeRecipient(OWNER);
 
@@ -24,7 +24,7 @@ contract IntegrationAccrueInterestsTest is BlueBaseTest {
         uint256 totalSupplyBeforeAccrued = blue.totalSupply(id);
         uint256 totalSupplySharesBeforeAccrued = blue.totalSupplyShares(id);
 
-        // Supply then withdraw collateral to trigger accrueInterests function
+        // Supply then withdraw collateral to trigger accrueInterests function.
         collateralAsset.setBalance(address(this), 1);
         blue.supplyCollateral(market, 1, address(this), hex"");
         blue.withdrawCollateral(market, 1, address(this), address(this));

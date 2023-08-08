@@ -27,7 +27,8 @@ contract IntegrationAuthorization is BlueBaseTest {
     ) public {
         deadline = uint32(bound(deadline, block.timestamp + 1, type(uint32).max) - 1);
         timeElapsed = uint32(bound(timeElapsed, deadline + 1, type(uint32).max));
-        privateKey = bound(privateKey, 1, type(uint32).max); // "Private key must be less than the secp256k1 curve order (115792089237316195423570985008687907852837564279074904382605163141518161494337)."
+        // Private key must be less than the secp256k1 curve order.
+        privateKey = bound(privateKey, 1, type(uint32).max);
         address authorizer = vm.addr(privateKey);
 
         SigUtils.Authorization memory authorization = SigUtils.Authorization({
@@ -89,7 +90,8 @@ contract IntegrationAuthorization is BlueBaseTest {
         bool isAuthorized
     ) public {
         deadline = uint32(bound(deadline, block.timestamp + 1, type(uint32).max));
-        privateKey = bound(privateKey, 1, type(uint32).max); // "Private key must be less than the secp256k1 curve order (115792089237316195423570985008687907852837564279074904382605163141518161494337)."
+        // Private key must be less than the secp256k1 curve order.
+        privateKey = bound(privateKey, 1, type(uint32).max);
         address authorizer = vm.addr(privateKey);
 
         SigUtils.Authorization memory authorization = SigUtils.Authorization({
