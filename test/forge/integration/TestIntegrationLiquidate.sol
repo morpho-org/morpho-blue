@@ -91,17 +91,11 @@ contract IntegrationLiquidateTest is BlueBaseTest {
         emit Events.Liquidate(id, LIQUIDATOR, BORROWER, expectedRepaid, expectedRepaidShares, amountSeized, 0);
         blue.liquidate(market, BORROWER, amountSeized, hex"");
 
-        assertEq(
-            blue.borrowShares(id, BORROWER),
-            amountBorrowed * SharesMath.VIRTUAL_SHARES - expectedRepaidShares,
-            "borrow shares"
-        );
-        assertEq(
-            blue.totalBorrowShares(id),
-            amountBorrowed * SharesMath.VIRTUAL_SHARES - expectedRepaidShares,
-            "total borrow shares"
-        );
+        uint256 expectedBorrowShares = amountBorrowed * SharesMath.VIRTUAL_SHARES - expectedRepaidShares;
+
+        assertEq(blue.borrowShares(id, BORROWER), expectedBorrowShares, "borrow shares");
         assertEq(blue.totalBorrow(id), amountBorrowed - expectedRepaid, "total borrow");
+        assertEq(blue.totalBorrowShares(id), expectedBorrowShares, "total borrow shares");
         assertEq(blue.collateral(id, BORROWER), amountCollateral - amountSeized, "collateral");
         assertEq(borrowableAsset.balanceOf(BORROWER), amountBorrowed, "borrower balance");
         assertEq(borrowableAsset.balanceOf(LIQUIDATOR), amountBorrowed - expectedRepaid, "liquidator balance");

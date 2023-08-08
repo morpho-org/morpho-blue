@@ -28,16 +28,30 @@ contract BlueBaseTest is Test {
     Id public id;
 
     function setUp() public {
+        vm.label(OWNER, "Owner");
+        vm.label(BORROWER, "Borrower");
+        vm.label(LIQUIDATOR, "Liquidator");
+
         // Create Blue.
         blue = new Blue(OWNER);
+        vm.label(address(blue), "Blue");
 
         // List a market.
         borrowableAsset = new ERC20("borrowable", "B", 18);
+        vm.label(address(borrowableAsset), "Borrowable asset");
+
         collateralAsset = new ERC20("collateral", "C", 18);
+        vm.label(address(collateralAsset), "Collateral asset");
+
         borrowableOracle = new Oracle();
+        vm.label(address(borrowableOracle), "Borrowable oracle");
+
         collateralOracle = new Oracle();
+        vm.label(address(collateralOracle), "Collateral oracle");
 
         irm = new Irm(blue);
+        vm.label(address(irm), "IRM");
+
         market = Market(
             address(borrowableAsset),
             address(collateralAsset),
