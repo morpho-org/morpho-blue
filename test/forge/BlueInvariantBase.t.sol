@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.21;
+pragma solidity ^0.8.0;
 
-import "test/forge/BlueBase.t.sol";
+import "test/forge/BaseTest.sol";
 
-contract InvariantBaseTest is BlueBaseTest {
+contract InvariantBaseTest is BaseTest {
     using FixedPointMathLib for uint256;
     using SharesMath for uint256;
 

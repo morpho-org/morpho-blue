@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.21;
+pragma solidity ^0.8.0;
 
 import "test/forge/BlueInvariantBase.t.sol";
 

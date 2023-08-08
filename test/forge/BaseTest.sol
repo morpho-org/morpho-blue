@@ -30,7 +30,7 @@ contract BaseTest is Test {
     Market public market;
     Id public id;
 
-    function setUp() public {
+    function setUp() virtual public {
         vm.label(OWNER, "Owner");
         vm.label(BORROWER, "Borrower");
         vm.label(LIQUIDATOR, "Liquidator");
