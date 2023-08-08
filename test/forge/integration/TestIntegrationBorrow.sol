@@ -13,29 +13,31 @@ contract IntegrationBorrowTest is BlueBaseTest {
         blue.borrow(marketFuzz, 1, address(this), address(this));
     }
 
-    function testBorrowZeroAmount() public {
-        vm.prank(BORROWER);
-
+    function testBorrowZeroAmount(address borrowerFuzz, address receiver) public {
+        vm.prank(borrowerFuzz);
         vm.expectRevert(bytes(Errors.ZERO_AMOUNT));
-        blue.borrow(market, 0, address(this), address(this));
+        blue.borrow(market, 0, borrowerFuzz, receiver);
     }
 
-    function testBorrowToZeroAddress() public {
-        vm.prank(BORROWER);
-
-        vm.expectRevert(bytes(Errors.ZERO_ADDRESS));
-        blue.borrow(market, 1, BORROWER, address(0));
-    }
-
-    function testBorrowUnauthorized(uint256 amount) public {
+    function testBorrowToZeroAddress(address borrowerFuzz, uint256 amount) public {
         amount = bound(amount, 1, 2 ** 64);
 
-        borrowableAsset.setBalance(address(this), amount);
-        blue.supply(market, amount, address(this), hex"");
+        _provideLiquidity(amount);
 
-        vm.prank(BORROWER);
+        vm.prank(borrowerFuzz);
+        vm.expectRevert(bytes(Errors.ZERO_ADDRESS));
+        blue.borrow(market, amount, borrowerFuzz, address(0));
+    }
+
+    function testBorrowUnauthorized(address borrowerFuzz, address onBehalf, address receiver, uint256 amount) public {
+        vm.assume(borrowerFuzz != onBehalf && receiver != address(0));
+        amount = bound(amount, 1, 2 ** 64);
+
+        _provideLiquidity(amount);
+
+        vm.prank(borrowerFuzz);
         vm.expectRevert(bytes(Errors.UNAUTHORIZED));
-        blue.borrow(market, amount, address(this), BORROWER);
+        blue.borrow(market, amount, onBehalf, receiver);
     }
 
     function testBorrowUnhealthyPosition(
@@ -47,7 +49,7 @@ contract IntegrationBorrowTest is BlueBaseTest {
         (amountCollateral, amountBorrowed, priceCollateral) =
             _boundUnhealthyPosition(amountCollateral, amountBorrowed, priceCollateral);
 
-        amountSupplied = bound(amountSupplied, 1, amountBorrowed - 1);
+        amountSupplied = bound(amountSupplied, amountBorrowed, 2 ** 64);
         _provideLiquidity(amountSupplied);
 
         borrowableOracle.setPrice(FixedPointMathLib.WAD);
