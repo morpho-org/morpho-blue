@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.21;
+pragma solidity ^0.8.0;
 
-import "test/forge/BlueBase.t.sol";
+import "../BaseTest.sol";
 
-contract IntegrationOnlyOwnerTest is BlueBaseTest {
+contract IntegrationOnlyOwnerTest is BaseTest {
     using MarketLib for Market;
     using FixedPointMathLib for uint256;
 
@@ -56,7 +56,7 @@ contract IntegrationOnlyOwnerTest is BlueBaseTest {
     }
 
     function testEnableTooHighLltv(uint256 lltvFuzz) public {
-        lltvFuzz = bound(lltvFuzz, FixedPointMathLib.WAD, type(uint256).max);
+        lltvFuzz = _boundInvalidLltv(lltvFuzz);
 
         vm.prank(OWNER);
         vm.expectRevert(bytes(Errors.LLTV_TOO_HIGH));
@@ -64,7 +64,7 @@ contract IntegrationOnlyOwnerTest is BlueBaseTest {
     }
 
     function testEnableLltv(uint256 lltvFuzz) public {
-        lltvFuzz = bound(lltvFuzz, 0, FixedPointMathLib.WAD - 1);
+        lltvFuzz = _boundValidLltv(lltvFuzz);
 
         vm.prank(OWNER);
         vm.expectEmit(true, true, true, true, address(blue));

@@ -1,41 +1,53 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.21;
+pragma solidity ^0.8.0;
 
-import "test/forge/BlueBase.t.sol";
+import "../BaseTest.sol";
 
-contract IntegrationBorrowTest is BlueBaseTest {
+contract IntegrationBorrowTest is BaseTest {
     using FixedPointMathLib for uint256;
 
-    function testBorrowUnknownMarket(Market memory marketFuzz) public {
-        vm.assume(neq(marketFuzz, market));
+    function testBorrowUnknownMarket(Market memory marketFuzz, address borrowerFuzz, address receiver, uint256 amount)
+        public
+    {
+        vm.assume(neq(marketFuzz, market) && receiver != address(0));
 
+        vm.prank(borrowerFuzz);
         vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
-        blue.borrow(marketFuzz, 1, address(this), address(this));
+        blue.borrow(marketFuzz, amount, borrowerFuzz, receiver);
     }
 
-    function testBorrowZeroAmount() public {
-        vm.prank(BORROWER);
-
+    function testBorrowZeroAmount(address borrowerFuzz, address receiver) public {
+        vm.prank(borrowerFuzz);
         vm.expectRevert(bytes(Errors.ZERO_AMOUNT));
-        blue.borrow(market, 0, address(this), address(this));
+        blue.borrow(market, 0, borrowerFuzz, receiver);
     }
 
-    function testBorrowToZeroAddress() public {
-        vm.prank(BORROWER);
+    function testBorrowToZeroAddress(address borrowerFuzz, uint256 amount) public {
+        amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
+        _provideLiquidity(amount);
+
+        vm.prank(borrowerFuzz);
         vm.expectRevert(bytes(Errors.ZERO_ADDRESS));
-        blue.borrow(market, 1, BORROWER, address(0));
+        blue.borrow(market, amount, borrowerFuzz, address(0));
     }
 
-    function testBorrowUnauthorized(uint256 amount) public {
-        amount = bound(amount, 1, 2 ** 64);
+    function testBorrowUnauthorized(address supplier, address attacker, address receiver, uint256 amount) public {
+        vm.assume(supplier != attacker && supplier != address(0) && receiver != address(0));
+        amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
-        borrowableAsset.setBalance(address(this), amount);
-        blue.supply(market, amount, address(this), hex"");
+        _provideLiquidity(amount);
 
-        vm.prank(BORROWER);
+        collateralAsset.setBalance(supplier, amount);
+
+        vm.startPrank(supplier);
+        collateralAsset.approve(address(blue), amount);
+        blue.supplyCollateral(market, amount, supplier, hex"");
+        vm.stopPrank();
+
+        vm.prank(attacker);
         vm.expectRevert(bytes(Errors.UNAUTHORIZED));
-        blue.borrow(market, amount, address(this), BORROWER);
+        blue.borrow(market, amount, supplier, receiver);
     }
 
     function testBorrowUnhealthyPosition(
@@ -47,7 +59,7 @@ contract IntegrationBorrowTest is BlueBaseTest {
         (amountCollateral, amountBorrowed, priceCollateral) =
             _boundUnhealthyPosition(amountCollateral, amountBorrowed, priceCollateral);
 
-        amountSupplied = bound(amountSupplied, 1, amountBorrowed - 1);
+        amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
         _provideLiquidity(amountSupplied);
 
         borrowableOracle.setPrice(FixedPointMathLib.WAD);
@@ -98,7 +110,7 @@ contract IntegrationBorrowTest is BlueBaseTest {
         (amountCollateral, amountBorrowed, priceCollateral) =
             _boundHealthyPosition(amountCollateral, amountBorrowed, priceCollateral);
 
-        amountSupplied = bound(amountSupplied, amountBorrowed, 2 ** 64);
+        amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
         _provideLiquidity(amountSupplied);
 
         borrowableOracle.setPrice(FixedPointMathLib.WAD);
@@ -109,13 +121,16 @@ contract IntegrationBorrowTest is BlueBaseTest {
         vm.startPrank(BORROWER);
         blue.supplyCollateral(market, amountCollateral, BORROWER, hex"");
 
+        uint256 expectedBorrowShares = amountBorrowed * SharesMath.VIRTUAL_SHARES;
+
         vm.expectEmit(true, true, true, true, address(blue));
-        emit Events.Borrow(id, BORROWER, BORROWER, receiver, amountBorrowed, amountBorrowed * SharesMath.VIRTUAL_SHARES);
+        emit Events.Borrow(id, BORROWER, BORROWER, receiver, amountBorrowed, expectedBorrowShares);
         blue.borrow(market, amountBorrowed, BORROWER, receiver);
         vm.stopPrank();
 
         assertEq(blue.totalBorrow(id), amountBorrowed, "total borrow");
-        assertEq(blue.borrowShares(id, BORROWER), amountBorrowed * SharesMath.VIRTUAL_SHARES, "borrow shares");
+        assertEq(blue.borrowShares(id, BORROWER), expectedBorrowShares, "borrow shares");
+        assertEq(blue.borrowShares(id, BORROWER), expectedBorrowShares, "total borrow shares");
         assertEq(borrowableAsset.balanceOf(receiver), amountBorrowed, "borrower balance");
         assertEq(borrowableAsset.balanceOf(address(blue)), amountSupplied - amountBorrowed, "blue balance");
     }
@@ -134,7 +149,7 @@ contract IntegrationBorrowTest is BlueBaseTest {
         (amountCollateral, amountBorrowed, priceCollateral) =
             _boundHealthyPosition(amountCollateral, amountBorrowed, priceCollateral);
 
-        amountSupplied = bound(amountSupplied, amountBorrowed, 2 ** 64);
+        amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
         _provideLiquidity(amountSupplied);
 
         borrowableOracle.setPrice(FixedPointMathLib.WAD);
@@ -148,13 +163,16 @@ contract IntegrationBorrowTest is BlueBaseTest {
         blue.setAuthorization(BORROWER, true);
         vm.stopPrank();
 
+        uint256 expectedBorrowShares = amountBorrowed * SharesMath.VIRTUAL_SHARES;
+
         vm.prank(BORROWER);
         vm.expectEmit(true, true, true, true, address(blue));
-        emit Events.Borrow(id, BORROWER, onBehalf, receiver, amountBorrowed, amountBorrowed * SharesMath.VIRTUAL_SHARES);
+        emit Events.Borrow(id, BORROWER, onBehalf, receiver, amountBorrowed, expectedBorrowShares);
         blue.borrow(market, amountBorrowed, onBehalf, receiver);
 
+        assertEq(blue.borrowShares(id, onBehalf), expectedBorrowShares, "borrow shares");
         assertEq(blue.totalBorrow(id), amountBorrowed, "total borrow");
-        assertEq(blue.borrowShares(id, onBehalf), amountBorrowed * SharesMath.VIRTUAL_SHARES, "borrow shares");
+        assertEq(blue.totalBorrowShares(id), expectedBorrowShares, "total borrow shares");
         assertEq(borrowableAsset.balanceOf(receiver), amountBorrowed, "borrower balance");
         assertEq(borrowableAsset.balanceOf(address(blue)), amountSupplied - amountBorrowed, "blue balance");
     }

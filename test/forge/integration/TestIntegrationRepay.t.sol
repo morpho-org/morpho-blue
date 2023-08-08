@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.21;
+pragma solidity ^0.8.0;
 
-import "test/forge/BlueBase.t.sol";
+import "../BaseTest.sol";
 
-contract IntegrationRepayTest is BlueBaseTest {
+contract IntegrationRepayTest is BaseTest {
     function testRepayMarketNotCreated(Market memory marketFuzz) public {
         vm.assume(neq(marketFuzz, market));
 
@@ -22,7 +22,7 @@ contract IntegrationRepayTest is BlueBaseTest {
     }
 
     function testRepay(uint256 amountLent, uint256 amountBorrowed, uint256 amountRepaid) public {
-        amountLent = bound(amountLent, 1, 2 ** 64);
+        amountLent = bound(amountLent, 1, MAX_TEST_AMOUNT);
         amountBorrowed = bound(amountBorrowed, 1, amountLent);
         amountRepaid = bound(amountRepaid, 1, amountBorrowed);
 
@@ -38,21 +38,19 @@ contract IntegrationRepayTest is BlueBaseTest {
 
         vm.stopPrank();
 
+        uint256 expectedBorrowShares = (amountBorrowed - amountRepaid) * SharesMath.VIRTUAL_SHARES;
+
+        assertEq(blue.borrowShares(id, BORROWER), expectedBorrowShares, "borrow shares");
         assertEq(blue.totalBorrow(id), amountBorrowed - amountRepaid, "total borrow");
-        assertApproxEqAbs(
-            blue.borrowShares(id, BORROWER),
-            (amountBorrowed - amountRepaid) * SharesMath.VIRTUAL_SHARES,
-            100,
-            "borrow shares"
-        );
-        assertEq(borrowableAsset.balanceOf(BORROWER), amountBorrowed - amountRepaid, "BORROWER balance");
+        assertEq(blue.totalBorrowShares(id), expectedBorrowShares, "total borrow shares");
+        assertEq(borrowableAsset.balanceOf(BORROWER), amountBorrowed - amountRepaid, "borrower balance");
         assertEq(borrowableAsset.balanceOf(address(blue)), amountLent - amountBorrowed + amountRepaid, "blue balance");
     }
 
     function testRepayOnBehalf(uint256 amountLent, uint256 amountBorrowed, uint256 amountRepaid, address onBehalf)
         public
     {
-        amountLent = bound(amountLent, 1, 2 ** 64);
+        amountLent = bound(amountLent, 1, MAX_TEST_AMOUNT);
         amountBorrowed = bound(amountBorrowed, 1, amountLent);
         amountRepaid = bound(amountRepaid, 1, amountBorrowed);
 
@@ -72,13 +70,11 @@ contract IntegrationRepayTest is BlueBaseTest {
 
         vm.stopPrank();
 
+        uint256 expectedBorrowShares = (amountBorrowed - amountRepaid) * SharesMath.VIRTUAL_SHARES;
+
+        assertEq(blue.borrowShares(id, BORROWER), expectedBorrowShares, "borrow shares");
         assertEq(blue.totalBorrow(id), amountBorrowed - amountRepaid, "total borrow");
-        assertApproxEqAbs(
-            blue.borrowShares(id, BORROWER),
-            (amountBorrowed - amountRepaid) * SharesMath.VIRTUAL_SHARES,
-            100,
-            "borrow shares"
-        );
+        assertEq(blue.totalBorrowShares(id), expectedBorrowShares, "total borrow shares");
         assertEq(borrowableAsset.balanceOf(BORROWER), amountBorrowed, "BORROWER balance");
         assertEq(borrowableAsset.balanceOf(address(blue)), amountLent - amountBorrowed + amountRepaid, "blue balance");
     }

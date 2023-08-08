@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.21;
+pragma solidity ^0.8.0;
 
-import "test/forge/BlueBase.t.sol";
+import "../BaseTest.sol";
 
-contract IntegrationGetterTest is BlueBaseTest {
+contract IntegrationGetterTest is BaseTest {
     function testExtsLoad(uint256 slot, bytes32 value0) public {
         bytes32[] memory slots = new bytes32[](2);
         slots[0] = bytes32(slot);

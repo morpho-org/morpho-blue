@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.21;
+pragma solidity ^0.8.0;
 
-import "test/forge/BlueBase.t.sol";
+import "../BaseTest.sol";
 
-contract IntegrationWithdrawTest is BlueBaseTest {
+contract IntegrationWithdrawTest is BaseTest {
     function testWithdrawUnknownMarket(Market memory marketFuzz) public {
         vm.assume(neq(marketFuzz, market));
 
@@ -12,7 +12,7 @@ contract IntegrationWithdrawTest is BlueBaseTest {
     }
 
     function testWithdrawZeroAmount(uint256 amount) public {
-        amount = bound(amount, 1, 2 ** 64);
+        amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
         borrowableAsset.setBalance(address(this), amount);
         blue.supply(market, amount, address(this), hex"");
@@ -22,7 +22,7 @@ contract IntegrationWithdrawTest is BlueBaseTest {
     }
 
     function testWithdrawToZeroAddress(uint256 amount) public {
-        amount = bound(amount, 1, 2 ** 64);
+        amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
         borrowableAsset.setBalance(address(this), amount);
         blue.supply(market, amount, address(this), hex"");
@@ -33,7 +33,7 @@ contract IntegrationWithdrawTest is BlueBaseTest {
 
     function testWithdrawUnauthorized(address attacker, uint256 amount) public {
         vm.assume(attacker != address(this));
-        amount = bound(amount, 1, 2 ** 64);
+        amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
         borrowableAsset.setBalance(address(this), amount);
         blue.supply(market, amount, address(this), hex"");
@@ -44,7 +44,7 @@ contract IntegrationWithdrawTest is BlueBaseTest {
     }
 
     function testWithdrawInsufficientLiquidity(uint256 amountSupplied, uint256 amountBorrowed) public {
-        amountSupplied = bound(amountSupplied, 1, 2 ** 64);
+        amountSupplied = bound(amountSupplied, 1, MAX_TEST_AMOUNT);
         amountBorrowed = bound(amountBorrowed, 1, amountSupplied);
 
         borrowableAsset.setBalance(address(this), amountSupplied);
@@ -62,7 +62,7 @@ contract IntegrationWithdrawTest is BlueBaseTest {
     {
         vm.assume(receiver != address(0) && receiver != address(blue));
 
-        amountSupplied = bound(amountSupplied, 2, 2 ** 64);
+        amountSupplied = bound(amountSupplied, 2, MAX_TEST_AMOUNT);
         amountBorrowed = bound(amountBorrowed, 1, amountSupplied - 1);
         amountWithdrawn = bound(amountWithdrawn, 1, amountSupplied - amountBorrowed);
 
@@ -78,12 +78,10 @@ contract IntegrationWithdrawTest is BlueBaseTest {
         );
         blue.withdraw(market, amountWithdrawn, address(this), receiver);
 
-        assertApproxEqAbs(
-            blue.supplyShares(id, address(this)),
-            (amountSupplied - amountWithdrawn) * SharesMath.VIRTUAL_SHARES,
-            100,
-            "supply shares"
-        );
+        uint256 expectedSupplyShares = (amountSupplied - amountWithdrawn) * SharesMath.VIRTUAL_SHARES;
+        assertEq(blue.supplyShares(id, address(this)), expectedSupplyShares, "supply shares");
+        assertEq(blue.totalSupplyShares(id), expectedSupplyShares, "total supply shares");
+        assertEq(blue.totalSupply(id), amountSupplied - amountWithdrawn, "total supply");
         assertEq(borrowableAsset.balanceOf(receiver), amountWithdrawn, "receiver balance");
         assertEq(borrowableAsset.balanceOf(BORROWER), amountBorrowed, "borrower balance");
         assertEq(
@@ -101,7 +99,7 @@ contract IntegrationWithdrawTest is BlueBaseTest {
         vm.assume(onBehalf != address(0) && onBehalf != address(blue));
         vm.assume(receiver != address(0) && receiver != address(blue));
 
-        amountSupplied = bound(amountSupplied, 2, 2 ** 64);
+        amountSupplied = bound(amountSupplied, 2, MAX_TEST_AMOUNT);
         amountBorrowed = bound(amountBorrowed, 1, amountSupplied - 1);
         amountWithdrawn = bound(amountWithdrawn, 1, amountSupplied - amountBorrowed);
 
@@ -124,13 +122,11 @@ contract IntegrationWithdrawTest is BlueBaseTest {
         );
         blue.withdraw(market, amountWithdrawn, onBehalf, receiver);
 
+        uint256 expectedSupplyShares = (amountSupplied - amountWithdrawn) * SharesMath.VIRTUAL_SHARES;
+
+        assertEq(blue.supplyShares(id, onBehalf), expectedSupplyShares, "supply shares");
         assertEq(blue.totalSupply(id), amountSupplied - amountWithdrawn, "total supply");
-        assertApproxEqAbs(
-            blue.supplyShares(id, onBehalf),
-            (amountSupplied - amountWithdrawn) * SharesMath.VIRTUAL_SHARES,
-            100,
-            "supply shares"
-        );
+        assertEq(blue.totalSupplyShares(id), expectedSupplyShares, "total supply shares");
         assertEq(borrowableAsset.balanceOf(receiver) - receiverBalanceBefore, amountWithdrawn, "receiver balance");
         assertEq(
             borrowableAsset.balanceOf(address(blue)), amountSupplied - amountBorrowed - amountWithdrawn, "blue balance"

@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.21;
+pragma solidity ^0.8.0;
 
-import "test/forge/BlueBase.t.sol";
+import "../BaseTest.sol";
 import "src/interfaces/IBlueCallbacks.sol";
 
 contract IntegrationCallbacksTest is
-    BlueBaseTest,
+    BaseTest,
     IBlueLiquidateCallback,
     IBlueRepayCallback,
     IBlueSupplyCallback,
@@ -35,7 +35,6 @@ contract IntegrationCallbacksTest is
         } else if (selector == this.testFlashActions.selector) {
             uint256 toBorrow = abi.decode(data, (uint256));
             collateralAsset.setBalance(address(this), amount);
-            borrowableAsset.setBalance(address(this), toBorrow);
             blue.borrow(market, toBorrow, address(this), address(this));
         }
     }
@@ -68,7 +67,7 @@ contract IntegrationCallbacksTest is
     // Tests.
 
     function testFlashLoan(uint256 amount) public {
-        amount = bound(amount, 1, 2 ** 64);
+        amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
         borrowableAsset.setBalance(address(this), amount);
         blue.supply(market, amount, address(this), hex"");
@@ -79,7 +78,7 @@ contract IntegrationCallbacksTest is
     }
 
     function testSupplyCallback(uint256 amount) public {
-        amount = bound(amount, 1, 2 ** 64);
+        amount = bound(amount, 1, MAX_TEST_AMOUNT);
         borrowableAsset.setBalance(address(this), amount);
         borrowableAsset.approve(address(blue), 0);
 
@@ -89,7 +88,7 @@ contract IntegrationCallbacksTest is
     }
 
     function testSupplyCollateralCallback(uint256 amount) public {
-        amount = bound(amount, 1, 2 ** 64);
+        amount = bound(amount, 1, MAX_TEST_AMOUNT);
         collateralAsset.setBalance(address(this), amount);
         collateralAsset.approve(address(blue), 0);
 
@@ -101,7 +100,7 @@ contract IntegrationCallbacksTest is
     }
 
     function testRepayCallback(uint256 amount) public {
-        amount = bound(amount, 1, 2 ** 64);
+        amount = bound(amount, 1, MAX_TEST_AMOUNT);
         borrowableAsset.setBalance(address(this), amount);
         blue.supply(market, amount, address(this), hex"");
         blue.borrow(market, amount, address(this), address(this));
@@ -114,7 +113,7 @@ contract IntegrationCallbacksTest is
     }
 
     function testLiquidateCallback(uint256 amount) public {
-        amount = bound(amount, 10, 2 ** 64);
+        amount = bound(amount, 10, MAX_TEST_AMOUNT);
         borrowableOracle.setPrice(1e18);
         borrowableAsset.setBalance(address(this), amount);
         collateralAsset.setBalance(address(this), amount);
@@ -134,11 +133,11 @@ contract IntegrationCallbacksTest is
     }
 
     function testFlashActions(uint256 amount) public {
-        amount = bound(amount, 10, 2 ** 64);
+        amount = bound(amount, 10, MAX_TEST_AMOUNT);
         borrowableOracle.setPrice(1e18);
         uint256 toBorrow = amount.mulWadDown(LLTV);
 
-        borrowableAsset.setBalance(address(this), 2 * toBorrow);
+        borrowableAsset.setBalance(address(this), toBorrow);
         blue.supply(market, toBorrow, address(this), hex"");
 
         blue.supplyCollateral(

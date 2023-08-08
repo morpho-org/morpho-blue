@@ -1,48 +1,67 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.21;
+pragma solidity ^0.8.0;
 
-import "test/forge/BlueBase.t.sol";
+import "../BaseTest.sol";
 
-contract IntegrationWithdrawCollateralTest is BlueBaseTest {
+contract IntegrationWithdrawCollateralTest is BaseTest {
     using FixedPointMathLib for uint256;
 
-    function testWithdrawCollateralMarketNotCreated(Market memory marketFuzz) public {
-        vm.assume(neq(marketFuzz, market));
+    function testWithdrawCollateralMarketNotCreated(Market memory marketFuzz, address supplier, address receiver)
+        public
+    {
+        vm.assume(neq(marketFuzz, market) && receiver != address(0));
 
+        vm.prank(supplier);
         vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
-        blue.withdrawCollateral(marketFuzz, 1, address(this), address(this));
+        blue.withdrawCollateral(marketFuzz, 1, supplier, receiver);
     }
 
-    function testWithdrawCollateralZeroAmount(uint256 amount) public {
-        amount = bound(amount, 1, 2 ** 64);
+    function testWithdrawCollateralZeroAmount(address supplier, address receiver, uint256 amount) public {
+        vm.assume(supplier != address(0));
+        amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
-        collateralAsset.setBalance(address(this), amount);
-        blue.supplyCollateral(market, amount, address(this), hex"");
+        collateralAsset.setBalance(supplier, amount);
+
+        vm.startPrank(supplier);
+        collateralAsset.approve(address(blue), amount);
+        blue.supplyCollateral(market, amount, supplier, hex"");
 
         vm.expectRevert(bytes(Errors.ZERO_AMOUNT));
-        blue.withdrawCollateral(market, 0, address(this), address(this));
+        blue.withdrawCollateral(market, 0, supplier, receiver);
+        vm.stopPrank();
     }
 
-    function testWithdrawCollateralToZeroAddress(uint256 amount) public {
-        amount = bound(amount, 1, 2 ** 64);
+    function testWithdrawCollateralToZeroAddress(address supplier, uint256 amount) public {
+        vm.assume(supplier != address(0));
+        amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
-        collateralAsset.setBalance(address(this), amount);
-        blue.supplyCollateral(market, amount, address(this), hex"");
+        collateralAsset.setBalance(supplier, amount);
+
+        vm.startPrank(supplier);
+        collateralAsset.approve(address(blue), type(uint256).max);
+        blue.supplyCollateral(market, amount, supplier, hex"");
 
         vm.expectRevert(bytes(Errors.ZERO_ADDRESS));
-        blue.withdrawCollateral(market, amount, address(this), address(0));
+        blue.withdrawCollateral(market, amount, supplier, address(0));
+        vm.stopPrank();
     }
 
-    function testWithdrawCollateralUnauthorized(address attacker, uint256 amount) public {
-        vm.assume(attacker != address(this));
-        amount = bound(amount, 1, 2 ** 64);
+    function testWithdrawCollateralUnauthorized(address supplier, address attacker, address receiver, uint256 amount)
+        public
+    {
+        vm.assume(supplier != attacker && supplier != address(0) && receiver != address(0));
+        amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
-        collateralAsset.setBalance(address(this), amount);
-        blue.supplyCollateral(market, amount, address(this), hex"");
+        collateralAsset.setBalance(supplier, amount);
+
+        vm.startPrank(supplier);
+        collateralAsset.approve(address(blue), amount);
+        blue.supplyCollateral(market, amount, supplier, hex"");
+        vm.stopPrank();
 
         vm.prank(attacker);
         vm.expectRevert(bytes(Errors.UNAUTHORIZED));
-        blue.withdrawCollateral(market, amount, address(this), address(this));
+        blue.withdrawCollateral(market, amount, supplier, receiver);
     }
 
     function testWithdrawCollateralUnhealthyPosition(
@@ -54,7 +73,7 @@ contract IntegrationWithdrawCollateralTest is BlueBaseTest {
         (amountCollateral, amountBorrowed, priceCollateral) =
             _boundHealthyPosition(amountCollateral, amountBorrowed, priceCollateral);
 
-        amountSupplied = bound(amountSupplied, amountBorrowed, 2 ** 64);
+        amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
         _provideLiquidity(amountSupplied);
 
         borrowableOracle.setPrice(FixedPointMathLib.WAD);
@@ -83,10 +102,10 @@ contract IntegrationWithdrawCollateralTest is BlueBaseTest {
         (amountCollateral, amountBorrowed, priceCollateral) =
             _boundHealthyPosition(amountCollateral, amountBorrowed, priceCollateral);
 
-        amountSupplied = bound(amountSupplied, amountBorrowed, 2 ** 64);
+        amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
         _provideLiquidity(amountSupplied);
 
-        amountCollateralExcess = bound(amountCollateralExcess, 1, 2 ** 64);
+        amountCollateralExcess = bound(amountCollateralExcess, 1, MAX_TEST_AMOUNT);
 
         borrowableOracle.setPrice(FixedPointMathLib.WAD);
         collateralOracle.setPrice(priceCollateral);
@@ -124,10 +143,10 @@ contract IntegrationWithdrawCollateralTest is BlueBaseTest {
         (amountCollateral, amountBorrowed, priceCollateral) =
             _boundHealthyPosition(amountCollateral, amountBorrowed, priceCollateral);
 
-        amountSupplied = bound(amountSupplied, amountBorrowed, 2 ** 64);
+        amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
         _provideLiquidity(amountSupplied);
 
-        amountCollateralExcess = bound(amountCollateralExcess, 1, 2 ** 64);
+        amountCollateralExcess = bound(amountCollateralExcess, 1, MAX_TEST_AMOUNT);
 
         collateralAsset.setBalance(onBehalf, amountCollateral + amountCollateralExcess);
 

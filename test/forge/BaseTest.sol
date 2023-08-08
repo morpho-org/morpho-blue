@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.21;
+pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
@@ -9,9 +9,14 @@ import {ERC20Mock as ERC20} from "src/mocks/ERC20Mock.sol";
 import {OracleMock as Oracle} from "src/mocks/OracleMock.sol";
 import {IrmMock as Irm} from "src/mocks/IrmMock.sol";
 
-contract BlueBaseTest is Test {
+contract BaseTest is Test {
     using FixedPointMathLib for uint256;
+    using MarketLib for Market;
 
+    uint256 internal constant MIN_TEST_AMOUNT = 1000;
+    uint256 internal constant MAX_TEST_AMOUNT = 2 ** 64;
+    uint256 internal constant MIN_COLLATERAL_PRICE = 100;
+    uint256 internal constant MAX_COLLATERAL_PRICE = 2 ** 64;
     address internal constant BORROWER = address(uint160(uint256(keccak256("Morpho Blue Borrower"))));
     address internal constant LIQUIDATOR = address(uint160(uint256(keccak256("Morpho Blue Liquidator"))));
     uint256 internal constant LLTV = 0.8 ether;
@@ -25,17 +30,31 @@ contract BlueBaseTest is Test {
     Market public market;
     Id public id;
 
-    function setUp() public virtual {
+    function setUp() public {
+        vm.label(OWNER, "Owner");
+        vm.label(BORROWER, "Borrower");
+        vm.label(LIQUIDATOR, "Liquidator");
+
         // Create Blue.
         blue = new Blue(OWNER);
+        vm.label(address(blue), "Blue");
 
         // List a market.
         borrowableAsset = new ERC20("borrowable", "B", 18);
+        vm.label(address(borrowableAsset), "Borrowable asset");
+
         collateralAsset = new ERC20("collateral", "C", 18);
+        vm.label(address(collateralAsset), "Collateral asset");
+
         borrowableOracle = new Oracle();
+        vm.label(address(borrowableOracle), "Borrowable oracle");
+
         collateralOracle = new Oracle();
+        vm.label(address(collateralOracle), "Collateral oracle");
 
         irm = new Irm(blue);
+        vm.label(address(irm), "IRM");
+
         market = Market(
             address(borrowableAsset),
             address(collateralAsset),
@@ -44,7 +63,7 @@ contract BlueBaseTest is Test {
             address(irm),
             LLTV
         );
-        id = Id.wrap(keccak256(abi.encode(market)));
+        id = market.id();
 
         vm.startPrank(OWNER);
         blue.enableIrm(address(irm));
@@ -69,24 +88,6 @@ contract BlueBaseTest is Test {
         vm.stopPrank();
     }
 
-    function supplyBalance(address user) internal view returns (uint256) {
-        uint256 supplyShares = blue.supplyShares(id, user);
-        if (supplyShares == 0) return 0;
-
-        uint256 totalShares = blue.totalSupplyShares(id);
-        uint256 totalSupply = blue.totalSupply(id);
-        return supplyShares.divWadDown(totalShares).mulWadDown(totalSupply);
-    }
-
-    function borrowBalance(address user) internal view returns (uint256) {
-        uint256 borrowerShares = blue.borrowShares(id, user);
-        if (borrowerShares == 0) return 0;
-
-        uint256 totalShares = blue.totalBorrowShares(id);
-        uint256 totalBorrow = blue.totalBorrow(id);
-        return borrowerShares.divWadUp(totalShares).mulWadUp(totalBorrow);
-    }
-
     function _provideLiquidity(uint256 amount) internal {
         borrowableAsset.setBalance(address(this), amount);
         blue.supply(market, amount, address(this), hex"");
@@ -97,13 +98,13 @@ contract BlueBaseTest is Test {
         view
         returns (uint256, uint256, uint256)
     {
-        priceCollateral = bound(priceCollateral, 100, 2 ** 64);
-        amountBorrowed = bound(amountBorrowed, 1000, 2 ** 64);
+        priceCollateral = bound(priceCollateral, MIN_COLLATERAL_PRICE, MAX_COLLATERAL_PRICE);
+        amountBorrowed = bound(amountBorrowed, MIN_TEST_AMOUNT, MAX_TEST_AMOUNT);
 
         uint256 minCollateral = amountBorrowed.divWadUp(market.lltv).divWadUp(priceCollateral);
         vm.assume(minCollateral != 0);
 
-        amountCollateral = bound(amountCollateral, minCollateral, max(minCollateral, 2 ** 64));
+        amountCollateral = bound(amountCollateral, minCollateral, max(minCollateral, MAX_TEST_AMOUNT));
 
         return (amountCollateral, amountBorrowed, priceCollateral);
     }
@@ -113,8 +114,8 @@ contract BlueBaseTest is Test {
         view
         returns (uint256, uint256, uint256)
     {
-        priceCollateral = bound(priceCollateral, 100, 2 ** 64);
-        amountBorrowed = bound(amountBorrowed, 1000, 2 ** 64);
+        priceCollateral = bound(priceCollateral, MIN_COLLATERAL_PRICE, MAX_COLLATERAL_PRICE);
+        amountBorrowed = bound(amountBorrowed, MIN_TEST_AMOUNT, MAX_TEST_AMOUNT);
 
         uint256 maxCollateral = amountBorrowed.divWadDown(market.lltv).divWadDown(priceCollateral);
         vm.assume(maxCollateral != 0);
@@ -124,12 +125,20 @@ contract BlueBaseTest is Test {
         return (amountCollateral, amountBorrowed, priceCollateral);
     }
 
-    function _incentive(uint256 lltv) internal pure returns (uint256) {
+    function _boundValidLltv(uint256 lltv) internal view returns (uint256) {
+        return bound(lltv, 0, FixedPointMathLib.WAD - 1);
+    }
+
+    function _boundInvalidLltv(uint256 lltv) internal view returns (uint256) {
+        return bound(lltv, FixedPointMathLib.WAD, type(uint256).max);
+    }
+
+    function _liquidationIncentive(uint256 lltv) internal pure returns (uint256) {
         return FixedPointMathLib.WAD + ALPHA.mulWadDown(FixedPointMathLib.WAD.divWadDown(lltv) - FixedPointMathLib.WAD);
     }
 
     function neq(Market memory a, Market memory b) internal pure returns (bool) {
-        return (keccak256(abi.encode(a)) != keccak256(abi.encode(b))) ;
+        return (Id.unwrap(a.id()) != Id.unwrap(b.id()));
     }
 
     function max(uint256 a, uint256 b) internal pure returns (uint256) {
