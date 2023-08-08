@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import "../BaseTest.sol";
 
 contract IntegrationWithdrawTest is BaseTest {
-    function testWithdrawUnknownMarket(Market memory marketFuzz) public {
+    function testWithdrawMarketNotCreated(Market memory marketFuzz) public {
         vm.assume(neq(marketFuzz, market));
 
         vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));

@@ -6,7 +6,7 @@ import "../BaseTest.sol";
 contract IntegrationBorrowTest is BaseTest {
     using FixedPointMathLib for uint256;
 
-    function testBorrowUnknownMarket(Market memory marketFuzz, address borrowerFuzz, address receiver, uint256 amount)
+    function testBorrowMarketNotCreated(Market memory marketFuzz, address borrowerFuzz, address receiver, uint256 amount)
         public
     {
         vm.assume(neq(marketFuzz, market) && receiver != address(0));
