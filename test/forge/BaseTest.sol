@@ -9,7 +9,7 @@ import {ERC20Mock as ERC20} from "src/mocks/ERC20Mock.sol";
 import {OracleMock as Oracle} from "src/mocks/OracleMock.sol";
 import {IrmMock as Irm} from "src/mocks/IrmMock.sol";
 
-contract BlueBaseTest is Test {
+contract BaseTest is Test {
     using FixedPointMathLib for uint256;
     using MarketLib for Market;
 

@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import "test/forge/BlueBase.t.sol";
+import "../BaseTest.sol";
 import "src/interfaces/IBlueCallbacks.sol";
 
 contract IntegrationCallbacksTest is
-    BlueBaseTest,
+    BaseTest,
     IBlueLiquidateCallback,
     IBlueRepayCallback,
     IBlueSupplyCallback,

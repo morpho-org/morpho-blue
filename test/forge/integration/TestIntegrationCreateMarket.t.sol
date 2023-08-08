@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import "test/forge/BlueBase.t.sol";
+import "../BaseTest.sol";
 
-contract IntegrationCreateMarketTest is BlueBaseTest {
+contract IntegrationCreateMarketTest is BaseTest {
     using MarketLib for Market;
     using FixedPointMathLib for uint256;
 

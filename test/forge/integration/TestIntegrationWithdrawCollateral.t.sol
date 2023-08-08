@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import "test/forge/BlueBase.t.sol";
+import "../BaseTest.sol";
 
-contract IntegrationWithdrawCollateralTest is BlueBaseTest {
+contract IntegrationWithdrawCollateralTest is BaseTest {
     using FixedPointMathLib for uint256;
 
     function testWithdrawCollateralMarketNotCreated(Market memory marketFuzz, address supplier, address receiver)

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import "test/forge/BlueBase.t.sol";
+import "../BaseTest.sol";
 
-contract IntegrationWithdrawTest is BlueBaseTest {
+contract IntegrationWithdrawTest is BaseTest {
     function testWithdrawUnknownMarket(Market memory marketFuzz) public {
         vm.assume(neq(marketFuzz, market));
 

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import "test/forge/BlueBase.t.sol";
+import "../BaseTest.sol";
 
-contract IntegrationAccrueInterestsTest is BlueBaseTest {
+contract IntegrationAccrueInterestsTest is BaseTest {
     using FixedPointMathLib for uint256;
 
     function testAccrueInterestsNoTimeElapsed(uint256 amountSupplied, uint256 amountBorrowed) public {

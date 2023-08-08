@@ -3,9 +3,9 @@ pragma solidity ^0.8.0;
 
 import {SigUtils} from "../helpers/SigUtils.sol";
 
-import "test/forge/BlueBase.t.sol";
+import "../BaseTest.sol";
 
-contract IntegrationAuthorization is BlueBaseTest {
+contract IntegrationAuthorization is BaseTest {
     function testSetAuthorization(address addressFuzz) public {
         vm.assume(addressFuzz != address(this));
 
