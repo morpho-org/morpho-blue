@@ -116,7 +116,7 @@ interface IBlue is IFlashLender {
     function flashLoan(address token, uint256 amount, bytes calldata data) external;
 
     function setAuthorization(address authorized, bool newIsAuthorized) external;
-    function setAuthorization(
+    function setAuthorizationWithSig(
         address authorizer,
         address authorized,
         bool newIsAuthorized,
