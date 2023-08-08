@@ -13,11 +13,11 @@ import {IERC20} from "./interfaces/IERC20.sol";
 import {IOracle} from "./interfaces/IOracle.sol";
 import {Id, Market, Signature, IBlue} from "./interfaces/IBlue.sol";
 
-import {Errors} from "./libraries/Errors.sol";
-import {SharesMath} from "./libraries/SharesMath.sol";
-import {FixedPointMathLib} from "./libraries/FixedPointMathLib.sol";
+import {ErrorsLib} from "./libraries/ErrorsLib.sol";
 import {MarketLib} from "./libraries/MarketLib.sol";
+import {SharesMathLib} from "./libraries/SharesMathLib.sol";
 import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
+import {FixedPointMathLib, WAD} from "./libraries/FixedPointMathLib.sol";
 
 uint256 constant MAX_FEE = 0.25e18;
 uint256 constant ALPHA = 0.5e18;
@@ -30,10 +30,10 @@ bytes32 constant AUTHORIZATION_TYPEHASH =
     keccak256("Authorization(address authorizer,address authorized,bool isAuthorized,uint256 nonce,uint256 deadline)");
 
 contract Blue is IBlue {
-    using SharesMath for uint256;
-    using FixedPointMathLib for uint256;
-    using SafeTransferLib for IERC20;
     using MarketLib for Market;
+    using SharesMathLib for uint256;
+    using SafeTransferLib for IERC20;
+    using FixedPointMathLib for uint256;
 
     // Immutables.
 
@@ -83,7 +83,7 @@ contract Blue is IBlue {
     // Modifiers.
 
     modifier onlyOwner() {
-        require(msg.sender == owner, Errors.NOT_OWNER);
+        require(msg.sender == owner, ErrorsLib.NOT_OWNER);
         _;
     }
 
@@ -102,7 +102,7 @@ contract Blue is IBlue {
     }
 
     function enableLltv(uint256 lltv) external onlyOwner {
-        require(lltv < FixedPointMathLib.WAD, Errors.LLTV_TOO_HIGH);
+        require(lltv < WAD, ErrorsLib.LLTV_TOO_HIGH);
         isLltvEnabled[lltv] = true;
 
         emit EnableLltv(lltv);
@@ -111,8 +111,8 @@ contract Blue is IBlue {
     /// @notice It is the owner's responsibility to ensure a fee recipient is set before setting a non-zero fee.
     function setFee(Market memory market, uint256 newFee) external onlyOwner {
         Id id = market.id();
-        require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
-        require(newFee <= MAX_FEE, Errors.MAX_FEE_EXCEEDED);
+        require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
+        require(newFee <= MAX_FEE, ErrorsLib.MAX_FEE_EXCEEDED);
         fee[id] = newFee;
 
         emit SetFee(id, newFee);
@@ -128,9 +128,9 @@ contract Blue is IBlue {
 
     function createMarket(Market memory market) external {
         Id id = market.id();
-        require(isIrmEnabled[market.irm], Errors.IRM_NOT_ENABLED);
-        require(isLltvEnabled[market.lltv], Errors.LLTV_NOT_ENABLED);
-        require(lastUpdate[id] == 0, Errors.MARKET_CREATED);
+        require(isIrmEnabled[market.irm], ErrorsLib.IRM_NOT_ENABLED);
+        require(isLltvEnabled[market.lltv], ErrorsLib.LLTV_NOT_ENABLED);
+        require(lastUpdate[id] == 0, ErrorsLib.MARKET_CREATED);
         lastUpdate[id] = block.timestamp;
 
         emit CreateMarket(id, market);
@@ -140,9 +140,9 @@ contract Blue is IBlue {
 
     function supply(Market memory market, uint256 amount, address onBehalf, bytes calldata data) external {
         Id id = market.id();
-        require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
-        require(amount != 0, Errors.ZERO_AMOUNT);
-        require(onBehalf != address(0), Errors.ZERO_ADDRESS);
+        require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
+        require(amount != 0, ErrorsLib.ZERO_AMOUNT);
+        require(onBehalf != address(0), ErrorsLib.ZERO_ADDRESS);
 
         _accrueInterests(market, id);
 
@@ -161,11 +161,11 @@ contract Blue is IBlue {
 
     function withdraw(Market memory market, uint256 shares, address onBehalf, address receiver) external {
         Id id = market.id();
-        require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
-        require(shares != 0, Errors.ZERO_SHARES);
+        require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
+        require(shares != 0, ErrorsLib.ZERO_SHARES);
         // No need to verify that onBehalf != address(0) thanks to the authorization check.
-        require(receiver != address(0), Errors.ZERO_ADDRESS);
-        require(_isSenderAuthorized(onBehalf), Errors.UNAUTHORIZED);
+        require(receiver != address(0), ErrorsLib.ZERO_ADDRESS);
+        require(_isSenderAuthorized(onBehalf), ErrorsLib.UNAUTHORIZED);
 
         _accrueInterests(market, id);
 
@@ -177,7 +177,7 @@ contract Blue is IBlue {
 
         emit Withdraw(id, msg.sender, onBehalf, receiver, amount, shares);
 
-        require(totalBorrow[id] <= totalSupply[id], Errors.INSUFFICIENT_LIQUIDITY);
+        require(totalBorrow[id] <= totalSupply[id], ErrorsLib.INSUFFICIENT_LIQUIDITY);
 
         IERC20(market.borrowableAsset).safeTransfer(receiver, amount);
     }
@@ -186,11 +186,11 @@ contract Blue is IBlue {
 
     function borrow(Market memory market, uint256 amount, address onBehalf, address receiver) external {
         Id id = market.id();
-        require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
-        require(amount != 0, Errors.ZERO_AMOUNT);
+        require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
+        require(amount != 0, ErrorsLib.ZERO_AMOUNT);
         // No need to verify that onBehalf != address(0) thanks to the authorization check.
-        require(receiver != address(0), Errors.ZERO_ADDRESS);
-        require(_isSenderAuthorized(onBehalf), Errors.UNAUTHORIZED);
+        require(receiver != address(0), ErrorsLib.ZERO_ADDRESS);
+        require(_isSenderAuthorized(onBehalf), ErrorsLib.UNAUTHORIZED);
 
         _accrueInterests(market, id);
 
@@ -202,17 +202,17 @@ contract Blue is IBlue {
 
         emit Borrow(id, msg.sender, onBehalf, receiver, amount, shares);
 
-        require(_isHealthy(market, id, onBehalf), Errors.INSUFFICIENT_COLLATERAL);
-        require(totalBorrow[id] <= totalSupply[id], Errors.INSUFFICIENT_LIQUIDITY);
+        require(_isHealthy(market, id, onBehalf), ErrorsLib.INSUFFICIENT_COLLATERAL);
+        require(totalBorrow[id] <= totalSupply[id], ErrorsLib.INSUFFICIENT_LIQUIDITY);
 
         IERC20(market.borrowableAsset).safeTransfer(receiver, amount);
     }
 
     function repay(Market memory market, uint256 shares, address onBehalf, bytes calldata data) external {
         Id id = market.id();
-        require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
-        require(shares != 0, Errors.ZERO_SHARES);
-        require(onBehalf != address(0), Errors.ZERO_ADDRESS);
+        require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
+        require(shares != 0, ErrorsLib.ZERO_SHARES);
+        require(onBehalf != address(0), ErrorsLib.ZERO_ADDRESS);
 
         _accrueInterests(market, id);
 
@@ -234,9 +234,9 @@ contract Blue is IBlue {
     /// @dev Don't accrue interests because it's not required and it saves gas.
     function supplyCollateral(Market memory market, uint256 amount, address onBehalf, bytes calldata data) external {
         Id id = market.id();
-        require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
-        require(amount != 0, Errors.ZERO_AMOUNT);
-        require(onBehalf != address(0), Errors.ZERO_ADDRESS);
+        require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
+        require(amount != 0, ErrorsLib.ZERO_AMOUNT);
+        require(onBehalf != address(0), ErrorsLib.ZERO_ADDRESS);
 
         // Don't accrue interests because it's not required and it saves gas.
 
@@ -251,11 +251,11 @@ contract Blue is IBlue {
 
     function withdrawCollateral(Market memory market, uint256 amount, address onBehalf, address receiver) external {
         Id id = market.id();
-        require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
-        require(amount != 0, Errors.ZERO_AMOUNT);
+        require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
+        require(amount != 0, ErrorsLib.ZERO_AMOUNT);
         // No need to verify that onBehalf != address(0) thanks to the authorization check.
-        require(receiver != address(0), Errors.ZERO_ADDRESS);
-        require(_isSenderAuthorized(onBehalf), Errors.UNAUTHORIZED);
+        require(receiver != address(0), ErrorsLib.ZERO_ADDRESS);
+        require(_isSenderAuthorized(onBehalf), ErrorsLib.UNAUTHORIZED);
 
         _accrueInterests(market, id);
 
@@ -263,7 +263,7 @@ contract Blue is IBlue {
 
         emit WithdrawCollateral(id, msg.sender, onBehalf, receiver, amount);
 
-        require(_isHealthy(market, id, onBehalf), Errors.INSUFFICIENT_COLLATERAL);
+        require(_isHealthy(market, id, onBehalf), ErrorsLib.INSUFFICIENT_COLLATERAL);
 
         IERC20(market.collateralAsset).safeTransfer(receiver, amount);
     }
@@ -272,19 +272,18 @@ contract Blue is IBlue {
 
     function liquidate(Market memory market, address borrower, uint256 seized, bytes calldata data) external {
         Id id = market.id();
-        require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
-        require(seized != 0, Errors.ZERO_AMOUNT);
+        require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
+        require(seized != 0, ErrorsLib.ZERO_AMOUNT);
 
         _accrueInterests(market, id);
 
         uint256 collateralPrice = IOracle(market.collateralOracle).price();
         uint256 borrowablePrice = IOracle(market.borrowableOracle).price();
 
-        require(!_isHealthy(market, id, borrower, collateralPrice, borrowablePrice), Errors.HEALTHY_POSITION);
+        require(!_isHealthy(market, id, borrower, collateralPrice, borrowablePrice), ErrorsLib.HEALTHY_POSITION);
 
         // The liquidation incentive is 1 + ALPHA * (1 / LLTV - 1).
-        uint256 incentive = FixedPointMathLib.WAD
-            + ALPHA.mulWadDown(FixedPointMathLib.WAD.divWadDown(market.lltv) - FixedPointMathLib.WAD);
+        uint256 incentive = WAD + ALPHA.mulWadDown(WAD.divWadDown(market.lltv) - WAD);
         uint256 repaid = seized.mulWadUp(collateralPrice).divWadUp(incentive).divWadUp(borrowablePrice);
         uint256 repaidShares = repaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
 
@@ -336,7 +335,7 @@ contract Blue is IBlue {
         uint256 deadline,
         Signature calldata signature
     ) external {
-        require(block.timestamp < deadline, Errors.SIGNATURE_EXPIRED);
+        require(block.timestamp < deadline, ErrorsLib.SIGNATURE_EXPIRED);
 
         uint256 usedNonce = nonce[authorizer]++;
         bytes32 hashStruct =
@@ -344,7 +343,7 @@ contract Blue is IBlue {
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, hashStruct));
         address signatory = ecrecover(digest, signature.v, signature.r, signature.s);
 
-        require(signatory != address(0) && authorizer == signatory, Errors.INVALID_SIGNATURE);
+        require(signatory != address(0) && authorizer == signatory, ErrorsLib.INVALID_SIGNATURE);
 
         emit IncrementNonce(msg.sender, authorizer, usedNonce);
 

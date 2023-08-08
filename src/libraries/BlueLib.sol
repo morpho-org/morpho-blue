@@ -4,11 +4,11 @@ pragma solidity ^0.8.0;
 import {Id, Market, IBlue} from "../interfaces/IBlue.sol";
 
 import {MarketLib} from "./MarketLib.sol";
-import {SharesMath} from "./SharesMath.sol";
+import {SharesMathLib} from "./SharesMathLib.sol";
 
 library BlueLib {
     using MarketLib for Market;
-    using SharesMath for uint256;
+    using SharesMathLib for uint256;
 
     function withdrawAmount(IBlue blue, Market memory market, uint256 amount, address onBehalf, address receiver)
         internal

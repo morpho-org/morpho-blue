@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-library Errors {
+library ErrorsLib {
     string internal constant NOT_OWNER = "not owner";
 
     string internal constant LLTV_TOO_HIGH = "LLTV too high";

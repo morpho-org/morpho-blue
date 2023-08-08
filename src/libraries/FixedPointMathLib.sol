@@ -1,38 +1,35 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-/// @notice Arithmetic library with operations for fixed-point numbers.
-/// @author Solmate (https://github.com/transmissions11/solmate/blob/main/src/utils/FixedPointMathLib.sol)
-/// @author Inspired by USM (https://github.com/usmfum/USM/blob/master/contracts/WadMath.sol)
+uint256 constant WAD = 1e18;
+
+/// @notice Fixed-point arithmetic library.
+/// @dev Greatly inspired by Solmate (https://github.com/transmissions11/solmate/blob/main/src/utils/FixedPointMathLib.sol)
+/// and by USM (https://github.com/usmfum/USM/blob/master/contracts/WadMath.sol)
 library FixedPointMathLib {
-    /*//////////////////////////////////////////////////////////////
-                    SIMPLIFIED FIXED POINT OPERATIONS
-    //////////////////////////////////////////////////////////////*/
+    uint256 private constant MAX_UINT256 = 2 ** 256 - 1;
 
-    uint256 internal constant MAX_UINT256 = 2 ** 256 - 1;
-
-    uint256 internal constant WAD = 1e18; // The scalar of ETH and most ERC20s.
-
+    /// @dev (x * y) / WAD rounded down.
     function mulWadDown(uint256 x, uint256 y) internal pure returns (uint256) {
-        return mulDivDown(x, y, WAD); // Equivalent to (x * y) / WAD rounded down.
+        return mulDivDown(x, y, WAD);
     }
 
+    /// @dev (x * y) / WAD rounded up.
     function mulWadUp(uint256 x, uint256 y) internal pure returns (uint256) {
-        return mulDivUp(x, y, WAD); // Equivalent to (x * y) / WAD rounded up.
+        return mulDivUp(x, y, WAD);
     }
 
+    /// @dev (x * WAD) / y rounded down.
     function divWadDown(uint256 x, uint256 y) internal pure returns (uint256) {
-        return mulDivDown(x, WAD, y); // Equivalent to (x * WAD) / y rounded down.
+        return mulDivDown(x, WAD, y);
     }
 
+    /// @dev (x * WAD) / y rounded up.
     function divWadUp(uint256 x, uint256 y) internal pure returns (uint256) {
-        return mulDivUp(x, WAD, y); // Equivalent to (x * WAD) / y rounded up.
+        return mulDivUp(x, WAD, y);
     }
 
-    /*//////////////////////////////////////////////////////////////
-                    LOW LEVEL FIXED POINT OPERATIONS
-    //////////////////////////////////////////////////////////////*/
-
+    /// @dev (x * y) / denominator rounded down.
     function mulDivDown(uint256 x, uint256 y, uint256 denominator) internal pure returns (uint256 z) {
         /// @solidity memory-safe-assembly
         assembly {
@@ -44,6 +41,7 @@ library FixedPointMathLib {
         }
     }
 
+    /// @dev (x * y) / denominator rounded up.
     function mulDivUp(uint256 x, uint256 y, uint256 denominator) internal pure returns (uint256 z) {
         /// @solidity memory-safe-assembly
         assembly {
