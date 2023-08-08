@@ -159,17 +159,23 @@ contract Blue is IBlue {
         IERC20(market.borrowableAsset).safeTransferFrom(msg.sender, address(this), amount);
     }
 
-    function withdraw(Market memory market, uint256 shares, address onBehalf, address receiver) external {
+    function withdraw(Market memory market, uint256 amount, address onBehalf, address receiver) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
-        require(shares != 0, Errors.ZERO_SHARES);
+        require(amount != 0, Errors.ZERO_AMOUNT);
         // No need to verify that onBehalf != address(0) thanks to the authorization check.
         require(receiver != address(0), Errors.ZERO_ADDRESS);
         require(_isSenderAuthorized(onBehalf), Errors.UNAUTHORIZED);
 
         _accrueInterests(market, id);
 
-        uint256 amount = shares.toAssetsDown(totalSupply[id], totalSupplyShares[id]);
+        uint256 shares;
+        if (amount == type(uint256).max) {
+            shares = supplyShares[id][onBehalf];
+            amount = shares.toAssetsDown(totalSupply[id], totalSupplyShares[id]);
+        } else {
+            shares = amount.toSharesUp(totalSupply[id], totalSupplyShares[id]);
+        }
 
         supplyShares[id][onBehalf] -= shares;
         totalSupplyShares[id] -= shares;
@@ -208,15 +214,21 @@ contract Blue is IBlue {
         IERC20(market.borrowableAsset).safeTransfer(receiver, amount);
     }
 
-    function repay(Market memory market, uint256 shares, address onBehalf, bytes calldata data) external {
+    function repay(Market memory market, uint256 amount, address onBehalf, bytes calldata data) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
-        require(shares != 0, Errors.ZERO_SHARES);
+        require(amount != 0, Errors.ZERO_AMOUNT);
         require(onBehalf != address(0), Errors.ZERO_ADDRESS);
 
         _accrueInterests(market, id);
 
-        uint256 amount = shares.toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
+        uint256 shares;
+        if (amount == type(uint256).max) {
+            shares = borrowShares[id][onBehalf];
+            amount = shares.toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
+        } else {
+            shares = amount.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
+        }
 
         borrowShares[id][onBehalf] -= shares;
         totalBorrowShares[id] -= shares;
