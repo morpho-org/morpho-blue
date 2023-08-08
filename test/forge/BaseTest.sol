@@ -102,7 +102,6 @@ contract BaseTest is Test {
         amountBorrowed = bound(amountBorrowed, MIN_TEST_AMOUNT, MAX_TEST_AMOUNT);
 
         uint256 minCollateral = amountBorrowed.divWadUp(market.lltv).divWadUp(priceCollateral);
-        vm.assume(minCollateral != 0);
 
         amountCollateral = bound(amountCollateral, minCollateral, max(minCollateral, MAX_TEST_AMOUNT));
 
