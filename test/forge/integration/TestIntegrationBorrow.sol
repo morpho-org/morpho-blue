@@ -6,11 +6,12 @@ import "test/forge/BlueBase.t.sol";
 contract IntegrationBorrowTest is BlueBaseTest {
     using FixedPointMathLib for uint256;
 
-    function testBorrowUnknownMarket(Market memory marketFuzz) public {
-        vm.assume(neq(marketFuzz, market));
+    function testBorrowUnknownMarket(Market memory marketFuzz, address borrowerFuzz, address receiver, uint256 amount) public {
+        vm.assume(neq(marketFuzz, market) && receiver != address(0));
 
+        vm.prank(borrowerFuzz);
         vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
-        blue.borrow(marketFuzz, 1, address(this), address(this));
+        blue.borrow(marketFuzz, amount, borrowerFuzz, receiver);
     }
 
     function testBorrowZeroAmount(address borrowerFuzz, address receiver) public {
@@ -29,15 +30,22 @@ contract IntegrationBorrowTest is BlueBaseTest {
         blue.borrow(market, amount, borrowerFuzz, address(0));
     }
 
-    function testBorrowUnauthorized(address borrowerFuzz, address onBehalf, address receiver, uint256 amount) public {
-        vm.assume(borrowerFuzz != onBehalf && receiver != address(0));
+    function testBorrowUnauthorized(address supplier, address attacker, address receiver, uint256 amount) public {
+        vm.assume(supplier != attacker && supplier != address(0) && receiver != address(0));
         amount = bound(amount, 1, 2 ** 64);
 
         _provideLiquidity(amount);
 
-        vm.prank(borrowerFuzz);
+        collateralAsset.setBalance(supplier, amount);
+
+        vm.startPrank(supplier);
+        collateralAsset.approve(address(blue), amount);
+        blue.supplyCollateral(market, amount, supplier, hex"");
+        vm.stopPrank();
+
+        vm.prank(attacker);
         vm.expectRevert(bytes(Errors.UNAUTHORIZED));
-        blue.borrow(market, amount, onBehalf, receiver);
+        blue.borrow(market, amount, supplier, receiver);
     }
 
     function testBorrowUnhealthyPosition(

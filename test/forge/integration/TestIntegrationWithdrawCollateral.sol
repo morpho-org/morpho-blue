@@ -6,43 +6,58 @@ import "test/forge/BlueBase.t.sol";
 contract IntegrationWithdrawCollateralTest is BlueBaseTest {
     using FixedPointMathLib for uint256;
 
-    function testWithdrawCollateralMarketNotCreated(Market memory marketFuzz) public {
-        vm.assume(neq(marketFuzz, market));
+    function testWithdrawCollateralMarketNotCreated(Market memory marketFuzz, address supplier, address receiver) public {
+        vm.assume(neq(marketFuzz, market) && receiver != address(0));
 
+        vm.prank(supplier);
         vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
-        blue.withdrawCollateral(marketFuzz, 1, address(this), address(this));
+        blue.withdrawCollateral(marketFuzz, 1, supplier, receiver);
     }
 
-    function testWithdrawCollateralZeroAmount(uint256 amount) public {
+    function testWithdrawCollateralZeroAmount(address supplier, address receiver, uint256 amount) public {
+        vm.assume(supplier != address(0));
         amount = bound(amount, 1, 2 ** 64);
 
-        collateralAsset.setBalance(address(this), amount);
-        blue.supplyCollateral(market, amount, address(this), hex"");
+        collateralAsset.setBalance(supplier, amount);
+
+        vm.startPrank(supplier);
+        collateralAsset.approve(address(blue), amount);
+        blue.supplyCollateral(market, amount, supplier, hex"");
 
         vm.expectRevert(bytes(Errors.ZERO_AMOUNT));
-        blue.withdrawCollateral(market, 0, address(this), address(this));
+        blue.withdrawCollateral(market, 0, supplier, receiver);
+        vm.stopPrank();
     }
 
-    function testWithdrawCollateralToZeroAddress(uint256 amount) public {
+    function testWithdrawCollateralToZeroAddress(address supplier, uint256 amount) public {
+        vm.assume(supplier != address(0));
         amount = bound(amount, 1, 2 ** 64);
 
-        collateralAsset.setBalance(address(this), amount);
-        blue.supplyCollateral(market, amount, address(this), hex"");
+        collateralAsset.setBalance(supplier, amount);
+
+        vm.startPrank(supplier);
+        collateralAsset.approve(address(blue), type(uint256).max);
+        blue.supplyCollateral(market, amount, supplier, hex"");
 
         vm.expectRevert(bytes(Errors.ZERO_ADDRESS));
-        blue.withdrawCollateral(market, amount, address(this), address(0));
+        blue.withdrawCollateral(market, amount, supplier, address(0));
+        vm.stopPrank();
     }
 
-    function testWithdrawCollateralUnauthorized(address attacker, uint256 amount) public {
-        vm.assume(attacker != address(this));
+    function testWithdrawCollateralUnauthorized(address supplier, address attacker, address receiver, uint256 amount) public {
+        vm.assume(supplier != attacker && supplier != address(0) && receiver != address(0));
         amount = bound(amount, 1, 2 ** 64);
 
-        collateralAsset.setBalance(address(this), amount);
-        blue.supplyCollateral(market, amount, address(this), hex"");
+        collateralAsset.setBalance(supplier, amount);
+
+        vm.startPrank(supplier);
+        collateralAsset.approve(address(blue), amount);
+        blue.supplyCollateral(market, amount, supplier, hex"");
+        vm.stopPrank();
 
         vm.prank(attacker);
         vm.expectRevert(bytes(Errors.UNAUTHORIZED));
-        blue.withdrawCollateral(market, amount, address(this), address(this));
+        blue.withdrawCollateral(market, amount, supplier, receiver);
     }
 
     function testWithdrawCollateralUnhealthyPosition(
