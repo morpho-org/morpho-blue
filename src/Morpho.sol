@@ -2,16 +2,16 @@
 pragma solidity 0.8.21;
 
 import {
-    IBlueLiquidateCallback,
-    IBlueRepayCallback,
-    IBlueSupplyCallback,
-    IBlueSupplyCollateralCallback,
-    IBlueFlashLoanCallback
-} from "./interfaces/IBlueCallbacks.sol";
+    IMorphoLiquidateCallback,
+    IMorphoRepayCallback,
+    IMorphoSupplyCallback,
+    IMorphoSupplyCollateralCallback,
+    IMorphoFlashLoanCallback
+} from "./interfaces/IMorphoCallbacks.sol";
 import {IIrm} from "./interfaces/IIrm.sol";
 import {IERC20} from "./interfaces/IERC20.sol";
 import {IOracle} from "./interfaces/IOracle.sol";
-import {Id, Market, Signature, IBlue, IFlashLender} from "./interfaces/IBlue.sol";
+import {Id, Market, Signature, IMorpho, IFlashLender} from "./interfaces/IMorpho.sol";
 
 import {Errors} from "./libraries/Errors.sol";
 import {MarketLib} from "./libraries/MarketLib.sol";
@@ -29,11 +29,11 @@ bytes32 constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,uint256 c
 bytes32 constant AUTHORIZATION_TYPEHASH =
     keccak256("Authorization(address authorizer,address authorized,bool isAuthorized,uint256 nonce,uint256 deadline)");
 
-/// @title Blue
+/// @title Morpho
 /// @author Morpho Labs
 /// @custom:contact security@morpho.xyz
-/// @notice The Blue contract.
-contract Blue is IBlue {
+/// @notice The Morpho contract.
+contract Morpho is IMorpho {
     using FixedPointMathLib for uint256;
     using SafeTransferLib for IERC20;
     using SharesMath for uint256;
@@ -41,40 +41,40 @@ contract Blue is IBlue {
 
     /* IMMUTABLES */
 
-    /// @inheritdoc IBlue
+    /// @inheritdoc IMorpho
     bytes32 public immutable DOMAIN_SEPARATOR;
 
     /* STORAGE */
 
-    /// @inheritdoc IBlue
+    /// @inheritdoc IMorpho
     address public owner;
-    /// @inheritdoc IBlue
+    /// @inheritdoc IMorpho
     address public feeRecipient;
-    /// @inheritdoc IBlue
+    /// @inheritdoc IMorpho
     mapping(Id => mapping(address => uint256)) public supplyShares;
-    /// @inheritdoc IBlue
+    /// @inheritdoc IMorpho
     mapping(Id => mapping(address => uint256)) public borrowShares;
-    /// @inheritdoc IBlue
+    /// @inheritdoc IMorpho
     mapping(Id => mapping(address => uint256)) public collateral;
-    /// @inheritdoc IBlue
+    /// @inheritdoc IMorpho
     mapping(Id => uint256) public totalSupply;
-    /// @inheritdoc IBlue
+    /// @inheritdoc IMorpho
     mapping(Id => uint256) public totalSupplyShares;
-    /// @inheritdoc IBlue
+    /// @inheritdoc IMorpho
     mapping(Id => uint256) public totalBorrow;
-    /// @inheritdoc IBlue
+    /// @inheritdoc IMorpho
     mapping(Id => uint256) public totalBorrowShares;
-    /// @inheritdoc IBlue
+    /// @inheritdoc IMorpho
     mapping(Id => uint256) public lastUpdate;
-    /// @inheritdoc IBlue
+    /// @inheritdoc IMorpho
     mapping(Id => uint256) public fee;
-    /// @inheritdoc IBlue
+    /// @inheritdoc IMorpho
     mapping(address => bool) public isIrmEnabled;
-    /// @inheritdoc IBlue
+    /// @inheritdoc IMorpho
     mapping(uint256 => bool) public isLltvEnabled;
-    /// @inheritdoc IBlue
+    /// @inheritdoc IMorpho
     mapping(address => mapping(address => bool)) public isAuthorized;
-    /// @inheritdoc IBlue
+    /// @inheritdoc IMorpho
     mapping(address => uint256) public nonce;
 
     /* CONSTRUCTOR */
@@ -84,7 +84,7 @@ contract Blue is IBlue {
     constructor(address newOwner) {
         owner = newOwner;
 
-        DOMAIN_SEPARATOR = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256("Blue"), block.chainid, address(this)));
+        DOMAIN_SEPARATOR = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256("Morpho"), block.chainid, address(this)));
     }
 
     /* MODIFIERS */
@@ -97,21 +97,21 @@ contract Blue is IBlue {
 
     /* ADMIN FUNCTIONS */
 
-    /// @inheritdoc IBlue
+    /// @inheritdoc IMorpho
     function setOwner(address newOwner) external onlyOwner {
         owner = newOwner;
 
         emit SetOwner(newOwner);
     }
 
-    /// @inheritdoc IBlue
+    /// @inheritdoc IMorpho
     function enableIrm(address irm) external onlyOwner {
         isIrmEnabled[irm] = true;
 
         emit EnableIrm(address(irm));
     }
 
-    /// @inheritdoc IBlue
+    /// @inheritdoc IMorpho
     function enableLltv(uint256 lltv) external onlyOwner {
         require(lltv < FixedPointMathLib.WAD, Errors.LLTV_TOO_HIGH);
         isLltvEnabled[lltv] = true;
@@ -119,7 +119,7 @@ contract Blue is IBlue {
         emit EnableLltv(lltv);
     }
 
-    /// @inheritdoc IBlue
+    /// @inheritdoc IMorpho
     function setFee(Market memory market, uint256 newFee) external onlyOwner {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
@@ -129,7 +129,7 @@ contract Blue is IBlue {
         emit SetFee(id, newFee);
     }
 
-    /// @inheritdoc IBlue
+    /// @inheritdoc IMorpho
     function setFeeRecipient(address recipient) external onlyOwner {
         feeRecipient = recipient;
 
@@ -138,7 +138,7 @@ contract Blue is IBlue {
 
     /* MARKET CREATION */
 
-    /// @inheritdoc IBlue
+    /// @inheritdoc IMorpho
     function createMarket(Market memory market) external {
         Id id = market.id();
         require(isIrmEnabled[market.irm], Errors.IRM_NOT_ENABLED);
@@ -151,7 +151,7 @@ contract Blue is IBlue {
 
     /* SUPPLY MANAGEMENT */
 
-    /// @inheritdoc IBlue
+    /// @inheritdoc IMorpho
     function supply(Market memory market, uint256 amount, address onBehalf, bytes calldata data) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
@@ -168,12 +168,12 @@ contract Blue is IBlue {
 
         emit Supply(id, msg.sender, onBehalf, amount, shares);
 
-        if (data.length > 0) IBlueSupplyCallback(msg.sender).onBlueSupply(amount, data);
+        if (data.length > 0) IMorphoSupplyCallback(msg.sender).onMorphoSupply(amount, data);
 
         IERC20(market.borrowableAsset).safeTransferFrom(msg.sender, address(this), amount);
     }
 
-    /// @inheritdoc IBlue
+    /// @inheritdoc IMorpho
     function withdraw(Market memory market, uint256 shares, address onBehalf, address receiver) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
@@ -199,7 +199,7 @@ contract Blue is IBlue {
 
     /* BORROW MANAGEMENT */
 
-    /// @inheritdoc IBlue
+    /// @inheritdoc IMorpho
     function borrow(Market memory market, uint256 amount, address onBehalf, address receiver) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
@@ -224,7 +224,7 @@ contract Blue is IBlue {
         IERC20(market.borrowableAsset).safeTransfer(receiver, amount);
     }
 
-    /// @inheritdoc IBlue
+    /// @inheritdoc IMorpho
     function repay(Market memory market, uint256 shares, address onBehalf, bytes calldata data) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
@@ -241,14 +241,14 @@ contract Blue is IBlue {
 
         emit Repay(id, msg.sender, onBehalf, amount, shares);
 
-        if (data.length > 0) IBlueRepayCallback(msg.sender).onBlueRepay(amount, data);
+        if (data.length > 0) IMorphoRepayCallback(msg.sender).onMorphoRepay(amount, data);
 
         IERC20(market.borrowableAsset).safeTransferFrom(msg.sender, address(this), amount);
     }
 
     /* COLLATERAL MANAGEMENT */
 
-    /// @inheritdoc IBlue
+    /// @inheritdoc IMorpho
     function supplyCollateral(Market memory market, uint256 amount, address onBehalf, bytes calldata data) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
@@ -261,12 +261,12 @@ contract Blue is IBlue {
 
         emit SupplyCollateral(id, msg.sender, onBehalf, amount);
 
-        if (data.length > 0) IBlueSupplyCollateralCallback(msg.sender).onBlueSupplyCollateral(amount, data);
+        if (data.length > 0) IMorphoSupplyCollateralCallback(msg.sender).onMorphoSupplyCollateral(amount, data);
 
         IERC20(market.collateralAsset).safeTransferFrom(msg.sender, address(this), amount);
     }
 
-    /// @inheritdoc IBlue
+    /// @inheritdoc IMorpho
     function withdrawCollateral(Market memory market, uint256 amount, address onBehalf, address receiver) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
@@ -288,7 +288,7 @@ contract Blue is IBlue {
 
     /* LIQUIDATION */
 
-    /// @inheritdoc IBlue
+    /// @inheritdoc IMorpho
     function liquidate(Market memory market, address borrower, uint256 seized, bytes calldata data) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
@@ -328,7 +328,7 @@ contract Blue is IBlue {
 
         emit Liquidate(id, msg.sender, borrower, repaid, repaidShares, seized, badDebtShares);
 
-        if (data.length > 0) IBlueLiquidateCallback(msg.sender).onBlueLiquidate(seized, repaid, data);
+        if (data.length > 0) IMorphoLiquidateCallback(msg.sender).onMorphoLiquidate(seized, repaid, data);
 
         IERC20(market.borrowableAsset).safeTransferFrom(msg.sender, address(this), repaid);
     }
@@ -341,14 +341,14 @@ contract Blue is IBlue {
 
         emit FlashLoan(msg.sender, token, amount);
 
-        IBlueFlashLoanCallback(msg.sender).onBlueFlashLoan(token, amount, data);
+        IMorphoFlashLoanCallback(msg.sender).onMorphoFlashLoan(token, amount, data);
 
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
     }
 
     /* AUTHORIZATION */
 
-    /// @inheritdoc IBlue
+    /// @inheritdoc IMorpho
     function setAuthorization(
         address authorizer,
         address authorized,
@@ -373,7 +373,7 @@ contract Blue is IBlue {
         emit SetAuthorization(msg.sender, authorizer, authorized, newIsAuthorized);
     }
 
-    /// @inheritdoc IBlue
+    /// @inheritdoc IMorpho
     function setAuthorization(address authorized, bool newIsAuthorized) external {
         isAuthorized[msg.sender][authorized] = newIsAuthorized;
 
@@ -453,7 +453,7 @@ contract Blue is IBlue {
 
     /* STORAGE VIEW */
 
-    /// @inheritdoc IBlue
+    /// @inheritdoc IMorpho
     function extsload(bytes32[] calldata slots) external view returns (bytes32[] memory res) {
         uint256 nSlots = slots.length;
 

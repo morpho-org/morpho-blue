@@ -9,6 +9,6 @@ interface IFlashLender {
     /// @notice Executes a flash loan.
     /// @param token The token to flash loan.
     /// @param amount The amount to flash loan.
-    /// @param data Arbitrary data to pass to the `onBlueFlashLoan` callback.
+    /// @param data Arbitrary data to pass to the `onMorphoFlashLoan` callback.
     function flashLoan(address token, uint256 amount, bytes calldata data) external;
 }

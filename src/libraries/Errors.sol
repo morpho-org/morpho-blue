@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 /// @title Errors
 /// @author Morpho Labs
 /// @custom:contact security@morpho.xyz
-/// @notice Library exposing errors used in Blue.
+/// @notice Library exposing errors used in Morpho.
 library Errors {
     /// @notice Thrown when the caller is not the owner.
     string internal constant NOT_OWNER = "not owner";

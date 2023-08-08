@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import {IIrm} from "../interfaces/IIrm.sol";
-import {Id, Market, IBlue} from "../interfaces/IBlue.sol";
+import {Id, Market, IMorpho} from "../interfaces/IMorpho.sol";
 
 import {FixedPointMathLib} from "../libraries/FixedPointMathLib.sol";
 import {MarketLib} from "../libraries/MarketLib.sol";
@@ -11,10 +11,10 @@ contract IrmMock is IIrm {
     using FixedPointMathLib for uint256;
     using MarketLib for Market;
 
-    IBlue private immutable BLUE;
+    IMorpho private immutable BLUE;
 
-    constructor(IBlue blue) {
-        BLUE = blue;
+    constructor(IMorpho morpho) {
+        BLUE = morpho;
     }
 
     function borrowRate(Market memory market) external view returns (uint256) {

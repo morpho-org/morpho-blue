@@ -21,11 +21,11 @@ struct Signature {
     bytes32 s;
 }
 
-/// @title IBlue
+/// @title IMorpho
 /// @author Morpho Labs
 /// @custom:contact security@morpho.xyz
-/// @notice Interface of Blue.
-interface IBlue is IFlashLender {
+/// @notice Interface of Morpho.
+interface IMorpho is IFlashLender {
     /// @notice Emitted when setting a new owner.
     /// @param newOwner The new owner of the contract.
     event SetOwner(address indexed newOwner);
@@ -241,7 +241,7 @@ interface IBlue is IFlashLender {
     /// @param market The market to supply assets to.
     /// @param amount The amount of assets to supply.
     /// @param onBehalf The address that will receive the position.
-    /// @param data Arbitrary data to pass to the `onBlueSupply` callback. Pass empty data if not needed.
+    /// @param data Arbitrary data to pass to the `onMorphoSupply` callback. Pass empty data if not needed.
     function supply(Market memory market, uint256 amount, address onBehalf, bytes memory data) external;
 
     /// @notice Withdraws assets from a market.
@@ -262,14 +262,14 @@ interface IBlue is IFlashLender {
     /// @notice Repays assets to a market.
     /// @param market The market to repay assets to.
     /// @param onBehalf The address for which to repay.
-    /// @param data Arbitrary data to pass to the `onBlueRepay` callback. Pass empty data if not needed.
+    /// @param data Arbitrary data to pass to the `onMorphoRepay` callback. Pass empty data if not needed.
     function repay(Market memory market, uint256 amount, address onBehalf, bytes memory data) external;
 
     /// @notice Supplies collateral to a market.
     /// @param market The market to supply collateral to.
     /// @param amount The amount of collateral to supply.
     /// @param onBehalf The address that will receive the position.
-    /// @param data Arbitrary data to pass to the `onBlueSupplyCollateral` callback. Pass empty data if not needed.
+    /// @param data Arbitrary data to pass to the `onMorphoSupplyCollateral` callback. Pass empty data if not needed.
     /// @dev Don't accrue interests because it's not required and it saves gas.
     function supplyCollateral(Market memory market, uint256 amount, address onBehalf, bytes memory data) external;
 
@@ -285,7 +285,7 @@ interface IBlue is IFlashLender {
     /// @param market The market of the position.
     /// @param borrower The borrower of the position.
     /// @param seized The amount of collateral to seize.
-    /// @param data Arbitrary data to pass to the `onBlueLiquidate` callback. Pass empty data if not needed
+    /// @param data Arbitrary data to pass to the `onMorphoLiquidate` callback. Pass empty data if not needed
     function liquidate(Market memory market, address borrower, uint256 seized, bytes memory data) external;
 
     /// @notice Sets the authorization for `authorized` to manage `msg.sender`'s positions.
