@@ -35,7 +35,6 @@ contract IntegrationCallbacksTest is
         } else if (selector == this.testFlashActions.selector) {
             uint256 toBorrow = abi.decode(data, (uint256));
             collateralAsset.setBalance(address(this), amount);
-            borrowableAsset.setBalance(address(this), toBorrow);
             blue.borrow(market, toBorrow, address(this), address(this));
         }
     }
@@ -138,7 +137,7 @@ contract IntegrationCallbacksTest is
         borrowableOracle.setPrice(1e18);
         uint256 toBorrow = amount.mulWadDown(LLTV);
 
-        borrowableAsset.setBalance(address(this), 2 * toBorrow);
+        borrowableAsset.setBalance(address(this), toBorrow);
         blue.supply(market, toBorrow, address(this), hex"");
 
         blue.supplyCollateral(
