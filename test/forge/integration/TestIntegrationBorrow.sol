@@ -21,7 +21,7 @@ contract IntegrationBorrowTest is BlueBaseTest {
     }
 
     function testBorrowToZeroAddress(address borrowerFuzz, uint256 amount) public {
-        amount = bound(amount, 1, 2 ** 64);
+        amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
         _provideLiquidity(amount);
 
@@ -32,7 +32,7 @@ contract IntegrationBorrowTest is BlueBaseTest {
 
     function testBorrowUnauthorized(address supplier, address attacker, address receiver, uint256 amount) public {
         vm.assume(supplier != attacker && supplier != address(0) && receiver != address(0));
-        amount = bound(amount, 1, 2 ** 64);
+        amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
         _provideLiquidity(amount);
 
@@ -57,7 +57,7 @@ contract IntegrationBorrowTest is BlueBaseTest {
         (amountCollateral, amountBorrowed, priceCollateral) =
             _boundUnhealthyPosition(amountCollateral, amountBorrowed, priceCollateral);
 
-        amountSupplied = bound(amountSupplied, amountBorrowed, 2 ** 64);
+        amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
         _provideLiquidity(amountSupplied);
 
         borrowableOracle.setPrice(FixedPointMathLib.WAD);
@@ -108,7 +108,7 @@ contract IntegrationBorrowTest is BlueBaseTest {
         (amountCollateral, amountBorrowed, priceCollateral) =
             _boundHealthyPosition(amountCollateral, amountBorrowed, priceCollateral);
 
-        amountSupplied = bound(amountSupplied, amountBorrowed, 2 ** 64);
+        amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
         _provideLiquidity(amountSupplied);
 
         borrowableOracle.setPrice(FixedPointMathLib.WAD);
@@ -144,7 +144,7 @@ contract IntegrationBorrowTest is BlueBaseTest {
         (amountCollateral, amountBorrowed, priceCollateral) =
             _boundHealthyPosition(amountCollateral, amountBorrowed, priceCollateral);
 
-        amountSupplied = bound(amountSupplied, amountBorrowed, 2 ** 64);
+        amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
         _provideLiquidity(amountSupplied);
 
         borrowableOracle.setPrice(FixedPointMathLib.WAD);

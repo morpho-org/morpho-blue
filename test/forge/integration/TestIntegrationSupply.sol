@@ -22,7 +22,7 @@ contract IntegrationSupplyTest is BlueBaseTest {
     }
 
     function testSupply(uint256 amount) public {
-        amount = bound(amount, 1, 2 ** 64);
+        amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
         borrowableAsset.setBalance(address(this), amount);
 
@@ -38,7 +38,7 @@ contract IntegrationSupplyTest is BlueBaseTest {
 
     function testSupplyOnBehalf(uint256 amount, address onBehalf) public {
         vm.assume(onBehalf != address(blue) && onBehalf != address(0));
-        amount = bound(amount, 1, 2 ** 64);
+        amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
         borrowableAsset.setBalance(address(this), amount);
 

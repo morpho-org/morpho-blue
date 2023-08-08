@@ -67,7 +67,7 @@ contract IntegrationCallbacksTest is
     // Tests.
 
     function testFlashLoan(uint256 amount) public {
-        amount = bound(amount, 1, 2 ** 64);
+        amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
         borrowableAsset.setBalance(address(this), amount);
         blue.supply(market, amount, address(this), hex"");
@@ -78,7 +78,7 @@ contract IntegrationCallbacksTest is
     }
 
     function testSupplyCallback(uint256 amount) public {
-        amount = bound(amount, 1, 2 ** 64);
+        amount = bound(amount, 1, MAX_TEST_AMOUNT);
         borrowableAsset.setBalance(address(this), amount);
         borrowableAsset.approve(address(blue), 0);
 
@@ -88,7 +88,7 @@ contract IntegrationCallbacksTest is
     }
 
     function testSupplyCollateralCallback(uint256 amount) public {
-        amount = bound(amount, 1, 2 ** 64);
+        amount = bound(amount, 1, MAX_TEST_AMOUNT);
         collateralAsset.setBalance(address(this), amount);
         collateralAsset.approve(address(blue), 0);
 
@@ -100,7 +100,7 @@ contract IntegrationCallbacksTest is
     }
 
     function testRepayCallback(uint256 amount) public {
-        amount = bound(amount, 1, 2 ** 64);
+        amount = bound(amount, 1, MAX_TEST_AMOUNT);
         borrowableAsset.setBalance(address(this), amount);
         blue.supply(market, amount, address(this), hex"");
         blue.borrow(market, amount, address(this), address(this));
@@ -113,7 +113,7 @@ contract IntegrationCallbacksTest is
     }
 
     function testLiquidateCallback(uint256 amount) public {
-        amount = bound(amount, 10, 2 ** 64);
+        amount = bound(amount, 10, MAX_TEST_AMOUNT);
         borrowableOracle.setPrice(1e18);
         borrowableAsset.setBalance(address(this), amount);
         collateralAsset.setBalance(address(this), amount);
@@ -133,7 +133,7 @@ contract IntegrationCallbacksTest is
     }
 
     function testFlashActions(uint256 amount) public {
-        amount = bound(amount, 10, 2 ** 64);
+        amount = bound(amount, 10, MAX_TEST_AMOUNT);
         borrowableOracle.setPrice(1e18);
         uint256 toBorrow = amount.mulWadDown(LLTV);
 

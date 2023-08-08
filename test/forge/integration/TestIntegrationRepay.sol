@@ -22,7 +22,7 @@ contract IntegrationRepayTest is BlueBaseTest {
     }
 
     function testRepay(uint256 amountLent, uint256 amountBorrowed, uint256 amountRepaid) public {
-        amountLent = bound(amountLent, 1, 2 ** 64);
+        amountLent = bound(amountLent, 1, MAX_TEST_AMOUNT);
         amountBorrowed = bound(amountBorrowed, 1, amountLent);
         amountRepaid = bound(amountRepaid, 1, amountBorrowed);
 
@@ -52,7 +52,7 @@ contract IntegrationRepayTest is BlueBaseTest {
     function testRepayOnBehalf(uint256 amountLent, uint256 amountBorrowed, uint256 amountRepaid, address onBehalf)
         public
     {
-        amountLent = bound(amountLent, 1, 2 ** 64);
+        amountLent = bound(amountLent, 1, MAX_TEST_AMOUNT);
         amountBorrowed = bound(amountBorrowed, 1, amountLent);
         amountRepaid = bound(amountRepaid, 1, amountBorrowed);
 

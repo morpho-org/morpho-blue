@@ -12,6 +12,8 @@ import {IrmMock as Irm} from "src/mocks/IrmMock.sol";
 contract BlueBaseTest is Test {
     using FixedPointMathLib for uint256;
 
+    uint256 internal constant MAX_TEST_AMOUNT = 2 ** 64;
+    uint256 internal constant MIN_COLLATERAL_PRICE = 100;
     address internal constant BORROWER = address(uint160(uint256(keccak256("Morpho Blue Borrower"))));
     address internal constant LIQUIDATOR = address(uint160(uint256(keccak256("Morpho Blue Liquidator"))));
     uint256 internal constant LLTV = 0.8 ether;
@@ -97,13 +99,13 @@ contract BlueBaseTest is Test {
         view
         returns (uint256, uint256, uint256)
     {
-        priceCollateral = bound(priceCollateral, 100, 2 ** 64);
-        amountBorrowed = bound(amountBorrowed, 1000, 2 ** 64);
+        priceCollateral = bound(priceCollateral, MIN_COLLATERAL_PRICE, MAX_TEST_AMOUNT);
+        amountBorrowed = bound(amountBorrowed, 1000, MAX_TEST_AMOUNT);
 
         uint256 minCollateral = amountBorrowed.divWadUp(market.lltv).divWadUp(priceCollateral);
         vm.assume(minCollateral != 0);
 
-        amountCollateral = bound(amountCollateral, minCollateral, max(minCollateral, 2 ** 64));
+        amountCollateral = bound(amountCollateral, minCollateral, max(minCollateral, MAX_TEST_AMOUNT));
 
         return (amountCollateral, amountBorrowed, priceCollateral);
     }
@@ -113,8 +115,8 @@ contract BlueBaseTest is Test {
         view
         returns (uint256, uint256, uint256)
     {
-        priceCollateral = bound(priceCollateral, 100, 2 ** 64);
-        amountBorrowed = bound(amountBorrowed, 1000, 2 ** 64);
+        priceCollateral = bound(priceCollateral, MIN_COLLATERAL_PRICE, MAX_TEST_AMOUNT);
+        amountBorrowed = bound(amountBorrowed, 1000, MAX_TEST_AMOUNT);
 
         uint256 maxCollateral = amountBorrowed.divWadDown(market.lltv).divWadDown(priceCollateral);
         vm.assume(maxCollateral != 0);

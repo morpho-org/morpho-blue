@@ -31,7 +31,7 @@ contract IntegrationLiquidateTest is BlueBaseTest {
         (amountCollateral, amountBorrowed, priceCollateral) =
             _boundHealthyPosition(amountCollateral, amountBorrowed, priceCollateral);
 
-        amountSupplied = bound(amountSupplied, amountBorrowed, 2 ** 64);
+        amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
         _provideLiquidity(amountSupplied);
 
         amountSeized = bound(amountSeized, 1, amountCollateral);
@@ -64,7 +64,7 @@ contract IntegrationLiquidateTest is BlueBaseTest {
 
         vm.assume(amountCollateral > 1);
 
-        amountSupplied = bound(amountSupplied, amountBorrowed, 2 ** 64);
+        amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
         _provideLiquidity(amountSupplied);
 
         uint256 incentive = _incentive(market.lltv);
@@ -135,9 +135,9 @@ contract IntegrationLiquidateTest is BlueBaseTest {
         params.expectedRepaid = amountCollateral.mulWadUp(priceCollateral).divWadUp(params.incentive);
 
         uint256 minBorrowed = max(params.expectedRepaid, amountBorrowed);
-        amountBorrowed = bound(amountBorrowed, minBorrowed, max(minBorrowed, 2 ** 64));
+        amountBorrowed = bound(amountBorrowed, minBorrowed, max(minBorrowed, MAX_TEST_AMOUNT));
 
-        amountSupplied = bound(amountSupplied, amountBorrowed, max(amountBorrowed, 2 ** 64));
+        amountSupplied = bound(amountSupplied, amountBorrowed, max(amountBorrowed, MAX_TEST_AMOUNT));
         _provideLiquidity(amountSupplied);
 
         borrowableAsset.setBalance(LIQUIDATOR, amountBorrowed);
