@@ -12,11 +12,10 @@ import {IrmMock as Irm} from "src/mocks/IrmMock.sol";
 contract BlueBaseTest is Test {
     using FixedPointMathLib for uint256;
 
-    address internal constant BORROWER = address(1234);
-    address internal constant LIQUIDATOR = address(5678);
+    address internal constant BORROWER = address(uint160(uint256(keccak256("Morpho Blue Borrower"))));
+    address internal constant LIQUIDATOR = address(uint160(uint256(keccak256("Morpho Blue Liquidator"))));
     uint256 internal constant LLTV = 0.8 ether;
-    address internal constant OWNER = address(0xdead);
-
+    address internal constant OWNER = address(uint160(uint256(keccak256("Morpho Blue Owner"))));
     Blue internal blue;
     ERC20 internal borrowableAsset;
     ERC20 internal collateralAsset;
@@ -68,12 +67,6 @@ contract BlueBaseTest is Test {
         borrowableAsset.approve(address(blue), type(uint256).max);
         collateralAsset.approve(address(blue), type(uint256).max);
         vm.stopPrank();
-    }
-
-    function netWorth(address user) internal view returns (uint256) {
-        uint256 collateralAssetValue = collateralAsset.balanceOf(user).mulWadDown(collateralOracle.price());
-        uint256 borrowableAssetValue = borrowableAsset.balanceOf(user).mulWadDown(borrowableOracle.price());
-        return collateralAssetValue + borrowableAssetValue;
     }
 
     function supplyBalance(address user) internal view returns (uint256) {
@@ -136,9 +129,7 @@ contract BlueBaseTest is Test {
     }
 
     function neq(Market memory a, Market memory b) internal pure returns (bool) {
-        return a.borrowableAsset != b.borrowableAsset || a.collateralAsset != b.collateralAsset
-            || a.borrowableOracle != b.borrowableOracle || a.collateralOracle != b.collateralOracle || a.lltv != b.lltv
-            || a.irm != b.irm;
+        return (keccak256(abi.encode(a)) != keccak256(abi.encode(b))) ;
     }
 
     function max(uint256 a, uint256 b) internal pure returns (uint256) {
