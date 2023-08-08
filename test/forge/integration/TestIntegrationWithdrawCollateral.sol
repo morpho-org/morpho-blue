@@ -6,7 +6,9 @@ import "test/forge/BlueBase.t.sol";
 contract IntegrationWithdrawCollateralTest is BlueBaseTest {
     using FixedPointMathLib for uint256;
 
-    function testWithdrawCollateralMarketNotCreated(Market memory marketFuzz, address supplier, address receiver) public {
+    function testWithdrawCollateralMarketNotCreated(Market memory marketFuzz, address supplier, address receiver)
+        public
+    {
         vm.assume(neq(marketFuzz, market) && receiver != address(0));
 
         vm.prank(supplier);
@@ -44,7 +46,9 @@ contract IntegrationWithdrawCollateralTest is BlueBaseTest {
         vm.stopPrank();
     }
 
-    function testWithdrawCollateralUnauthorized(address supplier, address attacker, address receiver, uint256 amount) public {
+    function testWithdrawCollateralUnauthorized(address supplier, address attacker, address receiver, uint256 amount)
+        public
+    {
         vm.assume(supplier != attacker && supplier != address(0) && receiver != address(0));
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 

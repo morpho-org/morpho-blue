@@ -38,13 +38,12 @@ contract IntegrationRepayTest is BlueBaseTest {
 
         vm.stopPrank();
 
+        uint256 expectedBorrowShares = (amountBorrowed - amountRepaid) * SharesMath.VIRTUAL_SHARES;
+
+        assertEq(blue.borrowShares(id, BORROWER), expectedBorrowShares, "borrow shares");
         assertEq(blue.totalBorrow(id), amountBorrowed - amountRepaid, "total borrow");
-        assertEq(
-            blue.borrowShares(id, BORROWER),
-            (amountBorrowed - amountRepaid) * SharesMath.VIRTUAL_SHARES,
-            "borrow shares"
-        );
-        assertEq(borrowableAsset.balanceOf(BORROWER), amountBorrowed - amountRepaid, "BORROWER balance");
+        assertEq(blue.totalBorrowShares(id), expectedBorrowShares, "total borrow shares");
+        assertEq(borrowableAsset.balanceOf(BORROWER), amountBorrowed - amountRepaid, "borrower balance");
         assertEq(borrowableAsset.balanceOf(address(blue)), amountLent - amountBorrowed + amountRepaid, "blue balance");
     }
 
@@ -71,12 +70,11 @@ contract IntegrationRepayTest is BlueBaseTest {
 
         vm.stopPrank();
 
+        uint256 expectedBorrowShares = (amountBorrowed - amountRepaid) * SharesMath.VIRTUAL_SHARES;
+
+        assertEq(blue.borrowShares(id, BORROWER), expectedBorrowShares, "borrow shares");
         assertEq(blue.totalBorrow(id), amountBorrowed - amountRepaid, "total borrow");
-        assertEq(
-            blue.borrowShares(id, BORROWER),
-            (amountBorrowed - amountRepaid) * SharesMath.VIRTUAL_SHARES,
-            "borrow shares"
-        );
+        assertEq(blue.totalBorrowShares(id), expectedBorrowShares, "total borrow shares");
         assertEq(borrowableAsset.balanceOf(BORROWER), amountBorrowed, "BORROWER balance");
         assertEq(borrowableAsset.balanceOf(address(blue)), amountLent - amountBorrowed + amountRepaid, "blue balance");
     }

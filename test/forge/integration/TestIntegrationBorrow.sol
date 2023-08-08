@@ -6,7 +6,9 @@ import "test/forge/BlueBase.t.sol";
 contract IntegrationBorrowTest is BlueBaseTest {
     using FixedPointMathLib for uint256;
 
-    function testBorrowUnknownMarket(Market memory marketFuzz, address borrowerFuzz, address receiver, uint256 amount) public {
+    function testBorrowUnknownMarket(Market memory marketFuzz, address borrowerFuzz, address receiver, uint256 amount)
+        public
+    {
         vm.assume(neq(marketFuzz, market) && receiver != address(0));
 
         vm.prank(borrowerFuzz);
@@ -119,13 +121,16 @@ contract IntegrationBorrowTest is BlueBaseTest {
         vm.startPrank(BORROWER);
         blue.supplyCollateral(market, amountCollateral, BORROWER, hex"");
 
+        uint256 expectedBorrowShares = amountBorrowed * SharesMath.VIRTUAL_SHARES;
+
         vm.expectEmit(true, true, true, true, address(blue));
-        emit Events.Borrow(id, BORROWER, BORROWER, receiver, amountBorrowed, amountBorrowed * SharesMath.VIRTUAL_SHARES);
+        emit Events.Borrow(id, BORROWER, BORROWER, receiver, amountBorrowed, expectedBorrowShares);
         blue.borrow(market, amountBorrowed, BORROWER, receiver);
         vm.stopPrank();
 
         assertEq(blue.totalBorrow(id), amountBorrowed, "total borrow");
-        assertEq(blue.borrowShares(id, BORROWER), amountBorrowed * SharesMath.VIRTUAL_SHARES, "borrow shares");
+        assertEq(blue.borrowShares(id, BORROWER), expectedBorrowShares, "borrow shares");
+        assertEq(blue.borrowShares(id, BORROWER), expectedBorrowShares, "total borrow shares");
         assertEq(borrowableAsset.balanceOf(receiver), amountBorrowed, "borrower balance");
         assertEq(borrowableAsset.balanceOf(address(blue)), amountSupplied - amountBorrowed, "blue balance");
     }
@@ -158,13 +163,16 @@ contract IntegrationBorrowTest is BlueBaseTest {
         blue.setAuthorization(BORROWER, true);
         vm.stopPrank();
 
+        uint256 expectedBorrowShares = amountBorrowed * SharesMath.VIRTUAL_SHARES;
+
         vm.prank(BORROWER);
         vm.expectEmit(true, true, true, true, address(blue));
-        emit Events.Borrow(id, BORROWER, onBehalf, receiver, amountBorrowed, amountBorrowed * SharesMath.VIRTUAL_SHARES);
+        emit Events.Borrow(id, BORROWER, onBehalf, receiver, amountBorrowed, expectedBorrowShares);
         blue.borrow(market, amountBorrowed, onBehalf, receiver);
 
+        assertEq(blue.borrowShares(id, onBehalf), expectedBorrowShares, "borrow shares");
         assertEq(blue.totalBorrow(id), amountBorrowed, "total borrow");
-        assertEq(blue.borrowShares(id, onBehalf), amountBorrowed * SharesMath.VIRTUAL_SHARES, "borrow shares");
+        assertEq(blue.totalBorrowShares(id), expectedBorrowShares, "total borrow shares");
         assertEq(borrowableAsset.balanceOf(receiver), amountBorrowed, "borrower balance");
         assertEq(borrowableAsset.balanceOf(address(blue)), amountSupplied - amountBorrowed, "blue balance");
     }

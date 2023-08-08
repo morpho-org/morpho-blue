@@ -26,12 +26,15 @@ contract IntegrationSupplyTest is BlueBaseTest {
 
         borrowableAsset.setBalance(address(this), amount);
 
+        uint256 expectedSupplyShares = amount * SharesMath.VIRTUAL_SHARES;
+
         vm.expectEmit(true, true, true, true, address(blue));
-        emit Events.Supply(id, address(this), address(this), amount, amount * SharesMath.VIRTUAL_SHARES);
+        emit Events.Supply(id, address(this), address(this), amount, expectedSupplyShares);
         blue.supply(market, amount, address(this), hex"");
 
+        assertEq(blue.supplyShares(id, address(this)), expectedSupplyShares, "supply shares");
         assertEq(blue.totalSupply(id), amount, "total supply");
-        assertEq(blue.supplyShares(id, address(this)), amount * SharesMath.VIRTUAL_SHARES, "supply shares");
+        assertEq(blue.totalSupplyShares(id), expectedSupplyShares, "total supply shares");
         assertEq(borrowableAsset.balanceOf(address(this)), 0, "lender balance");
         assertEq(borrowableAsset.balanceOf(address(blue)), amount, "blue balance");
     }
@@ -42,12 +45,15 @@ contract IntegrationSupplyTest is BlueBaseTest {
 
         borrowableAsset.setBalance(address(this), amount);
 
+        uint256 expectedSupplyShares = amount * SharesMath.VIRTUAL_SHARES;
+
         vm.expectEmit(true, true, true, true, address(blue));
-        emit Events.Supply(id, address(this), onBehalf, amount, amount * SharesMath.VIRTUAL_SHARES);
+        emit Events.Supply(id, address(this), onBehalf, amount, expectedSupplyShares);
         blue.supply(market, amount, onBehalf, hex"");
 
+        assertEq(blue.supplyShares(id, onBehalf), expectedSupplyShares, "supply shares");
         assertEq(blue.totalSupply(id), amount, "total supply");
-        assertEq(blue.supplyShares(id, onBehalf), amount * SharesMath.VIRTUAL_SHARES, "supply shares");
+        assertEq(blue.totalSupplyShares(id), expectedSupplyShares, "total supply shares");
         assertEq(borrowableAsset.balanceOf(onBehalf), 0, "lender balance");
         assertEq(borrowableAsset.balanceOf(address(blue)), amount, "blue balance");
     }

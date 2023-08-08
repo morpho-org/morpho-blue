@@ -78,11 +78,10 @@ contract IntegrationWithdrawTest is BlueBaseTest {
         );
         blue.withdraw(market, amountWithdrawn, address(this), receiver);
 
-        assertEq(
-            blue.supplyShares(id, address(this)),
-            (amountSupplied - amountWithdrawn) * SharesMath.VIRTUAL_SHARES,
-            "supply shares"
-        );
+        uint256 expectedSupplyShares = (amountSupplied - amountWithdrawn) * SharesMath.VIRTUAL_SHARES;
+        assertEq(blue.supplyShares(id, address(this)), expectedSupplyShares, "supply shares");
+        assertEq(blue.totalSupplyShares(id), expectedSupplyShares, "total supply shares");
+        assertEq(blue.totalSupply(id), amountSupplied - amountWithdrawn, "total supply");
         assertEq(borrowableAsset.balanceOf(receiver), amountWithdrawn, "receiver balance");
         assertEq(borrowableAsset.balanceOf(BORROWER), amountBorrowed, "borrower balance");
         assertEq(
@@ -123,12 +122,11 @@ contract IntegrationWithdrawTest is BlueBaseTest {
         );
         blue.withdraw(market, amountWithdrawn, onBehalf, receiver);
 
+        uint256 expectedSupplyShares = (amountSupplied - amountWithdrawn) * SharesMath.VIRTUAL_SHARES;
+
+        assertEq(blue.supplyShares(id, onBehalf), expectedSupplyShares, "supply shares");
         assertEq(blue.totalSupply(id), amountSupplied - amountWithdrawn, "total supply");
-        assertEq(
-            blue.supplyShares(id, onBehalf),
-            (amountSupplied - amountWithdrawn) * SharesMath.VIRTUAL_SHARES,
-            "supply shares"
-        );
+        assertEq(blue.totalSupplyShares(id), expectedSupplyShares, "total supply shares");
         assertEq(borrowableAsset.balanceOf(receiver) - receiverBalanceBefore, amountWithdrawn, "receiver balance");
         assertEq(
             borrowableAsset.balanceOf(address(blue)), amountSupplied - amountBorrowed - amountWithdrawn, "blue balance"
