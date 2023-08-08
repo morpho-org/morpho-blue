@@ -54,7 +54,7 @@ interface IBlue is IFlashLender {
 
     /// @notice Emitted on supply of assets.
     /// @param id The market id.
-    /// @param caller The caller of the `supply` function.
+    /// @param caller The caller.
     /// @param onBehalf The address that will receive the position.
     /// @param amount The amount of assets supplied.
     /// @param shares The amount of shares minted.
@@ -62,7 +62,7 @@ interface IBlue is IFlashLender {
 
     /// @notice Emitted on withdrawal of assets.
     /// @param id The market id.
-    /// @param caller The caller of the `withdraw` function.
+    /// @param caller The caller.
     /// @param onBehalf The address from which the assets are withdrawn.
     /// @param receiver The address that will receive the withdrawn assets.
     /// @param amount The amount of assets withdrawn.
@@ -78,7 +78,7 @@ interface IBlue is IFlashLender {
 
     /// @notice Emitted on borrow of assets.
     /// @param id The market id.
-    /// @param caller The caller of the `borrow` function.
+    /// @param caller The caller.
     /// @param onBehalf The address from which the assets are borrowed.
     /// @param receiver The address that will receive the borrowed assets.
     /// @param amount The amount of assets borrowed.
@@ -94,7 +94,7 @@ interface IBlue is IFlashLender {
 
     /// @notice Emitted on repayment of assets.
     /// @param id The market id.
-    /// @param caller The caller of the `repay` function.
+    /// @param caller The caller.
     /// @param onBehalf The address for which the assets are repaid.
     /// @param amount The amount of assets repaid.
     /// @param shares The amount of shares burned.
@@ -102,14 +102,14 @@ interface IBlue is IFlashLender {
 
     /// @notice Emitted on supply of collateral.
     /// @param id The market id.
-    /// @param caller The caller of the `supplyCollateral` function.
+    /// @param caller The caller.
     /// @param onBehalf The address that will receive the position.
     /// @param amount The amount of collateral supplied.
     event SupplyCollateral(Id indexed id, address indexed caller, address indexed onBehalf, uint256 amount);
 
     /// @notice Emitted on withdrawal of collateral.
     /// @param id The market id.
-    /// @param caller The caller of the `withdrawCollateral` function.
+    /// @param caller The caller.
     /// @param onBehalf The address from which the collateral is withdrawn.
     /// @param receiver The address that will receive the withdrawn collateral.
     /// @param amount The amount of collateral withdrawn.
@@ -119,7 +119,7 @@ interface IBlue is IFlashLender {
 
     /// @notice Emitted on liquidation of a position.
     /// @param id The market id.
-    /// @param caller The caller of the `liquidate` function.
+    /// @param caller The caller.
     /// @param borrower The borrower of the position.
     /// @param repaid The amount of assets repaid.
     /// @param repaidShares The amount of shares burned.
@@ -136,13 +136,13 @@ interface IBlue is IFlashLender {
     );
 
     /// @notice Emitted on flash loan.
-    /// @param caller The caller of the `flashLoan` function.
+    /// @param caller The caller..
     /// @param token The token that was flash loaned.
     /// @param amount The amount that was flash loaned.
     event FlashLoan(address indexed caller, address indexed token, uint256 amount);
 
     /// @notice Emitted when setting an authorization.
-    /// @param caller The caller of the authorization function.
+    /// @param caller The caller.
     /// @param authorizer The authorizer address.
     /// @param authorized The authorized address.
     /// @param newIsAuthorized The new authorization status.
@@ -151,7 +151,7 @@ interface IBlue is IFlashLender {
     );
 
     /// @notice Emitted when setting an authorization with a signature.
-    /// @param caller The caller of the authorization function.
+    /// @param caller The caller.
     /// @param authorizer The authorizer address.
     /// @param usedNonce The nonce that was used.
     event IncrementNonce(address indexed caller, address indexed authorizer, uint256 usedNonce);
@@ -203,38 +203,31 @@ interface IBlue is IFlashLender {
     function isIrmEnabled(address irm) external view returns (bool);
 
     /// @notice Whether the `lltv` is enabled.
-    function isLltvEnabled(uint256) external view returns (bool);
+    function isLltvEnabled(uint256 lltv) external view returns (bool);
 
     /// @notice User's authorizations. Note that by default, `msg.sender` is authorized by themself.
-    function isAuthorized(address, address) external view returns (bool);
+    function isAuthorized(address authorizer, address authorized) external view returns (bool);
 
-    /// @notice User's nonces. Used to prevent replay attacks with EIP-712 signatures.
-    function nonce(address) external view returns (uint256);
+    /// @notice User's current nonce. Used to prevent replay attacks with EIP-712 signatures.
+    function nonce(address user) external view returns (uint256);
 
-    /// @notice Sets the owner of the contract.
-    /// @param newOwner The new owner of the contract.
+    /// @notice Sets `newOwner` as owner of the contract.
     function setOwner(address newOwner) external;
 
-    /// @notice Enables an IRM.
-    /// @param irm The IRM to enable.
+    /// @notice Enables `irm` as possible IRM for market creation.
     function enableIrm(address irm) external;
 
-    /// @notice Enables an LLTV.
-    /// @param lltv The LLTV to enable.
+    /// @notice Enables `lltv` as possible LLTV for market creation.
     function enableLltv(uint256 lltv) external;
 
-    /// @notice Sets the fee for a market.
-    /// @param market The market to set the fee for.
-    /// @param newFee The new fee for the market.
+    /// @notice Sets the `newFee` for `market`.
     /// @dev It is the `owner`'s responsibility to ensure a fee recipient is set before setting a non-zero fee.
     function setFee(Market memory market, uint256 newFee) external;
 
-    /// @notice Sets the fee recipient.
-    /// @param recipient The new fee recipient.
+    /// @notice Sets `recipient` as recipient of the fee.
     function setFeeRecipient(address recipient) external;
 
-    /// @notice Creates a market.
-    /// @param market The market to create.
+    /// @notice Creates `market`.
     function createMarket(Market memory market) external;
 
     /// @notice Supplies assets to a market.

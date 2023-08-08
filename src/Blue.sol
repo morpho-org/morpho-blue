@@ -21,10 +21,13 @@ import {FixedPointMathLib} from "./libraries/FixedPointMathLib.sol";
 
 /// @dev The maximum fee a market can have (25%).
 uint256 constant MAX_FEE = 0.25e18;
+
 /// @dev The alpha parameter used to compute the incentive during a liquidation.
 uint256 constant ALPHA = 0.5e18;
+
 /// @dev The EIP-712 typeHash for EIP712Domain.
 bytes32 constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
+
 /// @dev The EIP-712 typeHash for Authorization.
 bytes32 constant AUTHORIZATION_TYPEHASH =
     keccak256("Authorization(address authorizer,address authorized,bool isAuthorized,uint256 nonce,uint256 deadline)");
@@ -95,7 +98,7 @@ contract Blue is IBlue {
         _;
     }
 
-    /* ADMIN FUNCTIONS */
+    /* ONLY OWNER FUNCTIONS */
 
     /// @inheritdoc IBlue
     function setOwner(address newOwner) external onlyOwner {
@@ -387,9 +390,7 @@ contract Blue is IBlue {
 
     /* INTEREST MANAGEMENT */
 
-    /// @dev Accrues interests for a market.
-    /// @param market The market to accrue interests for.
-    /// @param id The market's id.
+    /// @dev Accrues interests for `market`.
     function _accrueInterests(Market memory market, Id id) internal {
         uint256 elapsed = block.timestamp - lastUpdate[id];
 
@@ -420,10 +421,7 @@ contract Blue is IBlue {
 
     /* HEALTH CHECK */
 
-    /// @notice Returns whether a position is healthy.
-    /// @param market The market on which to check the health of `user`.
-    /// @param id The market's id.
-    /// @param user The user to check the health of.
+    /// @notice Returns whether the position of `user` is healthy in the given `market`.
     function _isHealthy(Market memory market, Id id, address user) internal view returns (bool) {
         if (borrowShares[id][user] == 0) return true;
 
@@ -433,12 +431,7 @@ contract Blue is IBlue {
         return _isHealthy(market, id, user, collateralPrice, borrowablePrice);
     }
 
-    /// @notice Returns whether a position is healthy.
-    /// @param market The market on which to check the health of `user`.
-    /// @param id The market's id.
-    /// @param user The user to check the health of.
-    /// @param collateralPrice The collateral asset price.
-    /// @param borrowablePrice The borrowable asset price.
+    /// @notice Returns whether the position of `user` is healthy in the given `market` with the given prices.
     function _isHealthy(Market memory market, Id id, address user, uint256 collateralPrice, uint256 borrowablePrice)
         internal
         view
