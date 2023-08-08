@@ -6,7 +6,7 @@ import "test/forge/BlueBase.t.sol";
 contract IntegrationWithdrawCollateralTest is BlueBaseTest {
     using FixedPointMathLib for uint256;
 
-    function testWithdrawCollateralUnknownMarket(Market memory marketFuzz) public {
+    function testWithdrawCollateralMarketNotCreated(Market memory marketFuzz) public {
         vm.assume(neq(marketFuzz, market));
 
         vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));

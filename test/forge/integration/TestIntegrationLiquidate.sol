@@ -7,7 +7,7 @@ contract IntegrationLiquidateTest is BlueBaseTest {
     using FixedPointMathLib for uint256;
     using SharesMath for uint256;
 
-    function testLiquidateUnknownMarket(Market memory marketFuzz) public {
+    function testLiquidateNotCreatedMarket(Market memory marketFuzz) public {
         vm.assume(neq(marketFuzz, market));
 
         vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));

@@ -15,7 +15,7 @@ contract IntegrationCreateMarketTest is BlueBaseTest {
         blue.createMarket(marketFuzz);
     }
 
-    function testCreateMarketWithEnabledIrmAndNotEnabledLLTV(Market memory marketFuzz) public {
+    function testCreateMarketWithEnabledIrmAndNotEnabledLltv(Market memory marketFuzz) public {
         vm.assume(marketFuzz.lltv != LLTV);
 
         vm.startPrank(OWNER);
@@ -29,7 +29,7 @@ contract IntegrationCreateMarketTest is BlueBaseTest {
         vm.stopPrank();
     }
 
-    function testCreateMarketWithEnabledIrmAndLLTV(Market memory marketFuzz) public {
+    function testCreateMarketWithEnabledIrmAndLltv(Market memory marketFuzz) public {
         marketFuzz.lltv = LLTV;
         Id marketFuzzId = marketFuzz.id();
 

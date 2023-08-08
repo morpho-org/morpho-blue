@@ -46,7 +46,7 @@ contract IntegrationOnlyOwnerTest is BlueBaseTest {
         assertTrue(blue.isIrmEnabled(irmFuzz), "IRM is not enabled");
     }
 
-    function testEnableLLTVWhenNotOwner(address addressFuzz, uint256 lltvFuzz) public {
+    function testEnableLltvWhenNotOwner(address addressFuzz, uint256 lltvFuzz) public {
         vm.assume(addressFuzz != OWNER);
         vm.assume(lltvFuzz != LLTV);
 
@@ -55,7 +55,7 @@ contract IntegrationOnlyOwnerTest is BlueBaseTest {
         blue.enableLltv(lltvFuzz);
     }
 
-    function testEnableTooHighLLTV(uint256 lltvFuzz) public {
+    function testEnableTooHighLltv(uint256 lltvFuzz) public {
         lltvFuzz = bound(lltvFuzz, FixedPointMathLib.WAD, type(uint256).max);
 
         vm.prank(OWNER);
@@ -63,7 +63,7 @@ contract IntegrationOnlyOwnerTest is BlueBaseTest {
         blue.enableLltv(lltvFuzz);
     }
 
-    function testEnableLLTV(uint256 lltvFuzz) public {
+    function testEnableLltv(uint256 lltvFuzz) public {
         lltvFuzz = bound(lltvFuzz, 0, FixedPointMathLib.WAD - 1);
 
         vm.prank(OWNER);

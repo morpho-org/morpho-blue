@@ -4,7 +4,7 @@ pragma solidity 0.8.21;
 import "test/forge/BlueBase.t.sol";
 
 contract IntegrationRepayTest is BlueBaseTest {
-    function testRepayUnknownMarket(Market memory marketFuzz) public {
+    function testRepayMarketNotCreated(Market memory marketFuzz) public {
         vm.assume(neq(marketFuzz, market));
 
         vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
