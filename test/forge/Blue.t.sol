@@ -365,6 +365,12 @@ contract BlueTest is
         borrowableAsset.setBalance(address(blue), blue.totalSupply(id));
     }
 
+    function testWithdrawSharesFuzzingCounterExample() public {
+        testWithdrawShares(
+            13602, 746421808204011799590440134892693060, 23199, 0x00000000000000000000000000000000000004d2
+        );
+    }
+
     function testWithdrawShares(uint256 amountLent, uint256 sharesWithdrawn, uint256 amountBorrowed, address receiver)
         public
     {
