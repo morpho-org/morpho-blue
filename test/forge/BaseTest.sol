@@ -63,7 +63,7 @@ contract BaseTest is Test {
             address(irm),
             LLTV
         );
-        id = Id.wrap(keccak256(abi.encode(market)));
+        id = market.id();
 
         vm.startPrank(OWNER);
         blue.enableIrm(address(irm));
