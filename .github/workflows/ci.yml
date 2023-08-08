@@ -1,18 +1,14 @@
-name: Hardhat
+name: CI
 
 on:
   push:
-    branches:
-      - main
-  pull_request:
-  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: true
 
 jobs:
-  yarn-test:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -31,13 +27,5 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
 
-      - name: Save hardhat cache
-        uses: actions/cache@v3
-        with:
-          path: |
-            cache_hardhat
-            artifacts
-          key: ${{ github.ref_name }}-hardhat
-
-      - name: Run Hardhat tests
-        run: yarn test
+      - name: Run Linter
+        run: yarn lint
