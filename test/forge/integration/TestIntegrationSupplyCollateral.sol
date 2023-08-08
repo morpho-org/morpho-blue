@@ -21,32 +21,22 @@ contract IntegrationSupplyCollateralTest is BlueBaseTest {
         blue.supplyCollateral(market, 1, address(0), hex"");
     }
 
-    function testSupplyCollateral(uint256 amount) public {
+    function testSupplyCollateral(address supplier, address onBehalf, uint256 amount) public {
+        vm.assume(supplier != address(blue) && onBehalf != address(blue) && onBehalf != address(0));
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
-        collateralAsset.setBalance(address(this), amount);
+        collateralAsset.setBalance(supplier, amount);
+
+        vm.startPrank(supplier);
+        collateralAsset.approve(address(blue), amount);
 
         vm.expectEmit(true, true, true, true, address(blue));
-        emit Events.SupplyCollateral(id, address(this), address(this), amount);
-        blue.supplyCollateral(market, amount, address(this), hex"");
-
-        assertEq(blue.collateral(id, address(this)), amount, "collateral balance");
-        assertEq(collateralAsset.balanceOf(address(this)), 0, "lender balance");
-        assertEq(collateralAsset.balanceOf(address(blue)), amount, "blue balance");
-    }
-
-    function testSupplyCollateralOnBehalf(uint256 amount, address onBehalf) public {
-        vm.assume(onBehalf != address(blue) && onBehalf != address(0));
-        amount = bound(amount, 1, MAX_TEST_AMOUNT);
-
-        collateralAsset.setBalance(address(this), amount);
-
-        vm.expectEmit(true, true, true, true, address(blue));
-        emit Events.SupplyCollateral(id, address(this), onBehalf, amount);
+        emit Events.SupplyCollateral(id, supplier, onBehalf, amount);
         blue.supplyCollateral(market, amount, onBehalf, hex"");
+        vm.stopPrank();
 
-        assertEq(blue.collateral(id, onBehalf), amount, "collateral balance");
-        assertEq(collateralAsset.balanceOf(onBehalf), 0, "lender balance");
+        assertEq(blue.collateral(id, onBehalf), amount, "collateral");
+        assertEq(collateralAsset.balanceOf(supplier), 0, "supplier balance");
         assertEq(collateralAsset.balanceOf(address(blue)), amount, "blue balance");
     }
 }

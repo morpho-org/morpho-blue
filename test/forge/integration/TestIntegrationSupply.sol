@@ -21,40 +21,26 @@ contract IntegrationSupplyTest is BlueBaseTest {
         blue.supply(market, 1, address(0), hex"");
     }
 
-    function testSupply(uint256 amount) public {
+    function testSupply(address supplier, address onBehalf, uint256 amount) public {
+        vm.assume(supplier != address(blue) && onBehalf != address(blue) && onBehalf != address(0));
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
-        borrowableAsset.setBalance(address(this), amount);
+        borrowableAsset.setBalance(supplier, amount);
 
         uint256 expectedSupplyShares = amount * SharesMath.VIRTUAL_SHARES;
 
-        vm.expectEmit(true, true, true, true, address(blue));
-        emit Events.Supply(id, address(this), address(this), amount, expectedSupplyShares);
-        blue.supply(market, amount, address(this), hex"");
-
-        assertEq(blue.supplyShares(id, address(this)), expectedSupplyShares, "supply shares");
-        assertEq(blue.totalSupply(id), amount, "total supply");
-        assertEq(blue.totalSupplyShares(id), expectedSupplyShares, "total supply shares");
-        assertEq(borrowableAsset.balanceOf(address(this)), 0, "lender balance");
-        assertEq(borrowableAsset.balanceOf(address(blue)), amount, "blue balance");
-    }
-
-    function testSupplyOnBehalf(uint256 amount, address onBehalf) public {
-        vm.assume(onBehalf != address(blue) && onBehalf != address(0));
-        amount = bound(amount, 1, MAX_TEST_AMOUNT);
-
-        borrowableAsset.setBalance(address(this), amount);
-
-        uint256 expectedSupplyShares = amount * SharesMath.VIRTUAL_SHARES;
+        vm.startPrank(supplier);
+        borrowableAsset.approve(address(blue), amount);
 
         vm.expectEmit(true, true, true, true, address(blue));
-        emit Events.Supply(id, address(this), onBehalf, amount, expectedSupplyShares);
+        emit Events.Supply(id, supplier, onBehalf, amount, expectedSupplyShares);
         blue.supply(market, amount, onBehalf, hex"");
+        vm.stopPrank();
 
         assertEq(blue.supplyShares(id, onBehalf), expectedSupplyShares, "supply shares");
         assertEq(blue.totalSupply(id), amount, "total supply");
         assertEq(blue.totalSupplyShares(id), expectedSupplyShares, "total supply shares");
-        assertEq(borrowableAsset.balanceOf(onBehalf), 0, "lender balance");
+        assertEq(borrowableAsset.balanceOf(supplier), 0, "supplier balance");
         assertEq(borrowableAsset.balanceOf(address(blue)), amount, "blue balance");
     }
 }
