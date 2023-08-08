@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.21;
+pragma solidity ^0.8.0;
 
 import "test/forge/BlueBase.t.sol";
 
@@ -67,7 +67,7 @@ contract IntegrationLiquidateTest is BlueBaseTest {
         amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
         _provideLiquidity(amountSupplied);
 
-        uint256 incentive = _incentive(market.lltv);
+        uint256 incentive = _liquidationIncentive(market.lltv);
         uint256 maxSeized = amountBorrowed.mulWadDown(incentive).divWadDown(priceCollateral);
         amountSeized = bound(amountSeized, 1, min(maxSeized, amountCollateral - 1));
         uint256 expectedRepaid = amountSeized.mulWadUp(priceCollateral).divWadUp(incentive);
@@ -130,7 +130,7 @@ contract IntegrationLiquidateTest is BlueBaseTest {
 
         vm.assume(amountCollateral > 1);
 
-        params.incentive = _incentive(market.lltv);
+        params.incentive = _liquidationIncentive(market.lltv);
         params.expectedRepaid = amountCollateral.mulWadUp(priceCollateral).divWadUp(params.incentive);
 
         uint256 minBorrowed = max(params.expectedRepaid, amountBorrowed);
