@@ -132,16 +132,13 @@ describe("Blue", () => {
       let amount = BigNumber.WAD.mul(1 + Math.floor(random() * 100));
 
       if (random() < 2 / 3) {
-        const totalSupply = await blue.totalSupply(id);
-        const totalSupplyShares = await blue.totalSupplyShares(id);
         Promise.all([
-          blue.connect(user).supply(market, amount, user.address, []),
-          blue.connect(user).withdraw(market, amount.mul(totalSupplyShares.add(BigNumber.WAD)).div(totalSupply.add(1)).div(2), user.address, user.address),
+          blue.connect(user).supply(market, 0, amount, user.address, []),
+          blue.connect(user).withdraw(market, 0, amount.div(2), user.address, user.address),
         ]);
       } else {
         const totalSupply = await blue.totalSupply(id);
         const totalBorrow = await blue.totalBorrow(id);
-        const totalBorrowShares = await blue.totalBorrowShares(id);
         const liquidity = BigNumber.from(totalSupply).sub(BigNumber.from(totalBorrow));
 
         amount = BigNumber.min(amount, BigNumber.from(liquidity).div(2));
@@ -149,8 +146,8 @@ describe("Blue", () => {
         if (amount > BigNumber.from(0)) {
           Promise.all([
             blue.connect(user).supplyCollateral(market, amount, user.address, []),
-            blue.connect(user).borrow(market, amount.div(2), user.address, user.address),
-            blue.connect(user).repay(market, amount.mul(totalBorrowShares.add(BigNumber.WAD)).div(totalBorrow.add(1)).div(4), user.address, []),
+            blue.connect(user).borrow(market, 0, amount.div(2), user.address, user.address),
+            blue.connect(user).repay(market, 0, amount.div(4), user.address, []),
             blue.connect(user).withdrawCollateral(market, amount.div(8), user.address, user.address),
           ]);
         }
@@ -180,13 +177,13 @@ describe("Blue", () => {
       updateMarket({ lltv });
 
       // We use 2 different users to borrow from a market so that liquidations do not put the borrow storage back to 0 on that market.
-      await blue.connect(user).supply(market, amount, user.address, "0x");
+      await blue.connect(user).supply(market, 0, amount, user.address, "0x");
       await blue.connect(user).supplyCollateral(market, amount, user.address, "0x");
-      await blue.connect(user).borrow(market, borrowedAmount, user.address, user.address);
+      await blue.connect(user).borrow(market, 0, borrowedAmount, user.address, user.address);
 
-      await blue.connect(borrower).supply(market, amount, borrower.address, "0x");
+      await blue.connect(borrower).supply(market, 0, amount, borrower.address, "0x");
       await blue.connect(borrower).supplyCollateral(market, amount, borrower.address, "0x");
-      await blue.connect(borrower).borrow(market, borrowedAmount, borrower.address, user.address);
+      await blue.connect(borrower).borrow(market, 0, borrowedAmount, borrower.address, user.address);
 
       await borrowableOracle.setPrice(BigNumber.WAD.mul(1000));
 
@@ -208,7 +205,7 @@ describe("Blue", () => {
     const user = signers[0];
     const amount = BigNumber.WAD;
 
-    await blue.connect(user).supply(market, amount, user.address, "0x");
+    await blue.connect(user).supply(market, 0, amount, user.address, "0x");
 
     await flashBorrower.flashLoan(borrowable.address, amount.div(2), []);
   });
