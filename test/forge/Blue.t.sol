@@ -43,8 +43,8 @@ contract BlueTest is
     Oracle private borrowableOracle;
     Oracle private collateralOracle;
     Irm private irm;
-    Market public market;
-    Id public id;
+    Market private market;
+    Id private id;
 
     function setUp() public {
         // Create Blue.

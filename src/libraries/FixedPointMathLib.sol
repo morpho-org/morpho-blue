@@ -7,7 +7,7 @@ uint256 constant WAD = 1e18;
 /// @dev Greatly inspired by Solmate (https://github.com/transmissions11/solmate/blob/main/src/utils/FixedPointMathLib.sol)
 /// and by USM (https://github.com/usmfum/USM/blob/master/contracts/WadMath.sol)
 library FixedPointMathLib {
-    uint256 private constant MAX_UINT256 = 2 ** 256 - 1;
+    uint256 internal constant MAX_UINT256 = 2 ** 256 - 1;
 
     /// @dev (x * y) / WAD rounded down.
     function mulWadDown(uint256 x, uint256 y) internal pure returns (uint256) {
