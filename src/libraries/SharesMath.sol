@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import {FixedPointMathLib} from "./FixedPointMathLib.sol";
 
-/// @title MarketLib
+/// @title SharesMath
 /// @author Morpho Labs
 /// @custom:contact security@morpho.xyz
 /// @notice Shares management library.
@@ -56,6 +56,7 @@ library SharesMath {
     /// Note: only works as long as totalSupplyShares + VIRTUAL_SHARES >= totalSupply + VIRTUAL_ASSETS.
     /// @param amount The amount of supply to withdraw.
     /// @param totalSupply The total amount of supply.
+    /// @param totalSupplyShares The total amount of supply shares.
     function toWithdrawShares(uint256 amount, uint256 totalSupply, uint256 totalSupplyShares)
         internal
         pure
@@ -71,6 +72,7 @@ library SharesMath {
     /// Note: only works as long as totalBorrowShares + VIRTUAL_SHARES >= totalBorrow + VIRTUAL_ASSETS.
     /// @param amount The amount of debt to repay.
     /// @param totalBorrow The total amount of debt.
+    /// @param totalBorrowShares The total amount of debt shares.
     function toRepayShares(uint256 amount, uint256 totalBorrow, uint256 totalBorrowShares)
         internal
         pure
