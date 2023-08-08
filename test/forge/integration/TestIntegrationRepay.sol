@@ -39,10 +39,9 @@ contract IntegrationRepayTest is BlueBaseTest {
         vm.stopPrank();
 
         assertEq(blue.totalBorrow(id), amountBorrowed - amountRepaid, "total borrow");
-        assertApproxEqAbs(
+        assertEq(
             blue.borrowShares(id, BORROWER),
             (amountBorrowed - amountRepaid) * SharesMath.VIRTUAL_SHARES,
-            100,
             "borrow shares"
         );
         assertEq(borrowableAsset.balanceOf(BORROWER), amountBorrowed - amountRepaid, "BORROWER balance");
@@ -73,10 +72,9 @@ contract IntegrationRepayTest is BlueBaseTest {
         vm.stopPrank();
 
         assertEq(blue.totalBorrow(id), amountBorrowed - amountRepaid, "total borrow");
-        assertApproxEqAbs(
+        assertEq(
             blue.borrowShares(id, BORROWER),
             (amountBorrowed - amountRepaid) * SharesMath.VIRTUAL_SHARES,
-            100,
             "borrow shares"
         );
         assertEq(borrowableAsset.balanceOf(BORROWER), amountBorrowed, "BORROWER balance");

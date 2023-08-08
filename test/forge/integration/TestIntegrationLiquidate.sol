@@ -94,7 +94,12 @@ contract IntegrationLiquidateTest is BlueBaseTest {
         assertEq(
             blue.borrowShares(id, BORROWER),
             amountBorrowed * SharesMath.VIRTUAL_SHARES - expectedRepaidShares,
-            "borrow share"
+            "borrow shares"
+        );
+        assertEq(
+            blue.totalBorrowShares(id),
+            amountBorrowed * SharesMath.VIRTUAL_SHARES - expectedRepaidShares,
+            "total borrow shares"
         );
         assertEq(blue.totalBorrow(id), amountBorrowed - expectedRepaid, "total borrow");
         assertEq(blue.collateral(id, BORROWER), amountCollateral - amountSeized, "collateral");
