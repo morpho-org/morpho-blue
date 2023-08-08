@@ -14,7 +14,7 @@ contract IntegrationWithdrawCollateralTest is BlueBaseTest {
     }
 
     function testWithdrawCollateralZeroAmount(uint256 amount) public {
-        amount = bound(amount, 1, 2 ** 64);
+        amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
         collateralAsset.setBalance(address(this), amount);
         blue.supplyCollateral(market, amount, address(this), hex"");
@@ -24,7 +24,7 @@ contract IntegrationWithdrawCollateralTest is BlueBaseTest {
     }
 
     function testWithdrawCollateralToZeroAddress(uint256 amount) public {
-        amount = bound(amount, 1, 2 ** 64);
+        amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
         collateralAsset.setBalance(address(this), amount);
         blue.supplyCollateral(market, amount, address(this), hex"");
@@ -35,7 +35,7 @@ contract IntegrationWithdrawCollateralTest is BlueBaseTest {
 
     function testWithdrawCollateralUnauthorized(address attacker, uint256 amount) public {
         vm.assume(attacker != address(this));
-        amount = bound(amount, 1, 2 ** 64);
+        amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
         collateralAsset.setBalance(address(this), amount);
         blue.supplyCollateral(market, amount, address(this), hex"");
@@ -54,7 +54,7 @@ contract IntegrationWithdrawCollateralTest is BlueBaseTest {
         (amountCollateral, amountBorrowed, priceCollateral) =
             _boundHealthyPosition(amountCollateral, amountBorrowed, priceCollateral);
 
-        amountSupplied = bound(amountSupplied, amountBorrowed, 2 ** 64);
+        amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
         _provideLiquidity(amountSupplied);
 
         borrowableOracle.setPrice(FixedPointMathLib.WAD);
@@ -83,10 +83,10 @@ contract IntegrationWithdrawCollateralTest is BlueBaseTest {
         (amountCollateral, amountBorrowed, priceCollateral) =
             _boundHealthyPosition(amountCollateral, amountBorrowed, priceCollateral);
 
-        amountSupplied = bound(amountSupplied, amountBorrowed, 2 ** 64);
+        amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
         _provideLiquidity(amountSupplied);
 
-        amountCollateralExcess = bound(amountCollateralExcess, 1, 2 ** 64);
+        amountCollateralExcess = bound(amountCollateralExcess, 1, MAX_TEST_AMOUNT);
 
         borrowableOracle.setPrice(FixedPointMathLib.WAD);
         collateralOracle.setPrice(priceCollateral);
@@ -124,10 +124,10 @@ contract IntegrationWithdrawCollateralTest is BlueBaseTest {
         (amountCollateral, amountBorrowed, priceCollateral) =
             _boundHealthyPosition(amountCollateral, amountBorrowed, priceCollateral);
 
-        amountSupplied = bound(amountSupplied, amountBorrowed, 2 ** 64);
+        amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
         _provideLiquidity(amountSupplied);
 
-        amountCollateralExcess = bound(amountCollateralExcess, 1, 2 ** 64);
+        amountCollateralExcess = bound(amountCollateralExcess, 1, MAX_TEST_AMOUNT);
 
         collateralAsset.setBalance(onBehalf, amountCollateral + amountCollateralExcess);
 

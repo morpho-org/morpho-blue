@@ -12,7 +12,7 @@ contract IntegrationWithdrawTest is BlueBaseTest {
     }
 
     function testWithdrawZeroAmount(uint256 amount) public {
-        amount = bound(amount, 1, 2 ** 64);
+        amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
         borrowableAsset.setBalance(address(this), amount);
         blue.supply(market, amount, address(this), hex"");
@@ -22,7 +22,7 @@ contract IntegrationWithdrawTest is BlueBaseTest {
     }
 
     function testWithdrawToZeroAddress(uint256 amount) public {
-        amount = bound(amount, 1, 2 ** 64);
+        amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
         borrowableAsset.setBalance(address(this), amount);
         blue.supply(market, amount, address(this), hex"");
@@ -33,7 +33,7 @@ contract IntegrationWithdrawTest is BlueBaseTest {
 
     function testWithdrawUnauthorized(address attacker, uint256 amount) public {
         vm.assume(attacker != address(this));
-        amount = bound(amount, 1, 2 ** 64);
+        amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
         borrowableAsset.setBalance(address(this), amount);
         blue.supply(market, amount, address(this), hex"");
@@ -44,7 +44,7 @@ contract IntegrationWithdrawTest is BlueBaseTest {
     }
 
     function testWithdrawInsufficientLiquidity(uint256 amountSupplied, uint256 amountBorrowed) public {
-        amountSupplied = bound(amountSupplied, 1, 2 ** 64);
+        amountSupplied = bound(amountSupplied, 1, MAX_TEST_AMOUNT);
         amountBorrowed = bound(amountBorrowed, 1, amountSupplied);
 
         borrowableAsset.setBalance(address(this), amountSupplied);
@@ -62,7 +62,7 @@ contract IntegrationWithdrawTest is BlueBaseTest {
     {
         vm.assume(receiver != address(0) && receiver != address(blue));
 
-        amountSupplied = bound(amountSupplied, 2, 2 ** 64);
+        amountSupplied = bound(amountSupplied, 2, MAX_TEST_AMOUNT);
         amountBorrowed = bound(amountBorrowed, 1, amountSupplied - 1);
         amountWithdrawn = bound(amountWithdrawn, 1, amountSupplied - amountBorrowed);
 
@@ -101,7 +101,7 @@ contract IntegrationWithdrawTest is BlueBaseTest {
         vm.assume(onBehalf != address(0) && onBehalf != address(blue));
         vm.assume(receiver != address(0) && receiver != address(blue));
 
-        amountSupplied = bound(amountSupplied, 2, 2 ** 64);
+        amountSupplied = bound(amountSupplied, 2, MAX_TEST_AMOUNT);
         amountBorrowed = bound(amountBorrowed, 1, amountSupplied - 1);
         amountWithdrawn = bound(amountWithdrawn, 1, amountSupplied - amountBorrowed);
 

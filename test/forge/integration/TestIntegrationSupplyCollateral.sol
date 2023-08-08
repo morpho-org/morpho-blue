@@ -22,7 +22,7 @@ contract IntegrationSupplyCollateralTest is BlueBaseTest {
     }
 
     function testSupplyCollateral(uint256 amount) public {
-        amount = bound(amount, 1, 2 ** 64);
+        amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
         collateralAsset.setBalance(address(this), amount);
 
@@ -37,7 +37,7 @@ contract IntegrationSupplyCollateralTest is BlueBaseTest {
 
     function testSupplyCollateralOnBehalf(uint256 amount, address onBehalf) public {
         vm.assume(onBehalf != address(blue) && onBehalf != address(0));
-        amount = bound(amount, 1, 2 ** 64);
+        amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
         collateralAsset.setBalance(address(this), amount);
 

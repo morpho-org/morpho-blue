@@ -28,7 +28,7 @@ contract IntegrationBorrowTest is BlueBaseTest {
     }
 
     function testBorrowUnauthorized(uint256 amount) public {
-        amount = bound(amount, 1, 2 ** 64);
+        amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
         borrowableAsset.setBalance(address(this), amount);
         blue.supply(market, amount, address(this), hex"");
@@ -98,7 +98,7 @@ contract IntegrationBorrowTest is BlueBaseTest {
         (amountCollateral, amountBorrowed, priceCollateral) =
             _boundHealthyPosition(amountCollateral, amountBorrowed, priceCollateral);
 
-        amountSupplied = bound(amountSupplied, amountBorrowed, 2 ** 64);
+        amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
         _provideLiquidity(amountSupplied);
 
         borrowableOracle.setPrice(FixedPointMathLib.WAD);
@@ -134,7 +134,7 @@ contract IntegrationBorrowTest is BlueBaseTest {
         (amountCollateral, amountBorrowed, priceCollateral) =
             _boundHealthyPosition(amountCollateral, amountBorrowed, priceCollateral);
 
-        amountSupplied = bound(amountSupplied, amountBorrowed, 2 ** 64);
+        amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
         _provideLiquidity(amountSupplied);
 
         borrowableOracle.setPrice(FixedPointMathLib.WAD);

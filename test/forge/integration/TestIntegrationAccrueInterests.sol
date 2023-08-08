@@ -7,7 +7,7 @@ contract IntegrationAccrueInterestsTest is BlueBaseTest {
     using FixedPointMathLib for uint256;
 
     function testAccrueInterestsNoTimeElapsed(uint256 amountSupplied, uint256 amountBorrowed) public {
-        amountSupplied = bound(amountSupplied, 2, 2 ** 64);
+        amountSupplied = bound(amountSupplied, 2, MAX_TEST_AMOUNT);
         amountBorrowed = bound(amountBorrowed, 1, amountSupplied);
 
         // Set fee parameters.
@@ -36,7 +36,7 @@ contract IntegrationAccrueInterestsTest is BlueBaseTest {
     }
 
     function testAccrueInterestsNoBorrow(uint256 amountSupplied, uint256 timeElapsed) public {
-        amountSupplied = bound(amountSupplied, 2, 2 ** 64);
+        amountSupplied = bound(amountSupplied, 2, MAX_TEST_AMOUNT);
         timeElapsed = uint32(bound(timeElapsed, 1, type(uint32).max));
 
         // Set fee parameters.
@@ -67,7 +67,7 @@ contract IntegrationAccrueInterestsTest is BlueBaseTest {
     }
 
     function testAccrueInterestNoFee(uint256 amountSupplied, uint256 amountBorrowed, uint256 timeElapsed) public {
-        amountSupplied = bound(amountSupplied, 2, 2 ** 64);
+        amountSupplied = bound(amountSupplied, 2, MAX_TEST_AMOUNT);
         amountBorrowed = bound(amountBorrowed, 1, amountSupplied);
         timeElapsed = uint32(bound(timeElapsed, 1, type(uint32).max));
 
@@ -125,7 +125,7 @@ contract IntegrationAccrueInterestsTest is BlueBaseTest {
     ) public {
         AccrueInterestWithFeesTestParams memory params;
 
-        amountSupplied = bound(amountSupplied, 2, 2 ** 64);
+        amountSupplied = bound(amountSupplied, 2, MAX_TEST_AMOUNT);
         amountBorrowed = bound(amountBorrowed, 1, amountSupplied);
         timeElapsed = uint32(bound(timeElapsed, 1, type(uint32).max));
         fee = bound(fee, 1, MAX_FEE);
