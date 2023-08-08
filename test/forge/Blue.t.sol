@@ -8,7 +8,6 @@ import {SigUtils} from "./helpers/SigUtils.sol";
 
 import "src/Blue.sol";
 import {SharesMath} from "src/libraries/SharesMath.sol";
-import {BlueLib} from "src/libraries/BlueLib.sol";
 import {
     IBlueLiquidateCallback,
     IBlueRepayCallback,
@@ -26,7 +25,6 @@ contract BlueTest is
     IBlueRepayCallback,
     IBlueLiquidateCallback
 {
-    using BlueLib for IBlue;
     using MarketLib for Market;
     using SharesMath for uint256;
     using stdStorage for StdStorage;
