@@ -124,12 +124,20 @@ contract BlueBaseTest is Test {
         return (amountCollateral, amountBorrowed, priceCollateral);
     }
 
+    function _boundValidLltv(uint256 lltv) internal pure returns (uint256) {
+        return _bound(lltv, 0, FixedPointMathLib.WAD - 1);
+    }
+
+    function _boundInvalidLltv(uint256 lltv) internal pure returns (uint256) {
+        return _bound(lltv, FixedPointMathLib.WAD, type(uint256).max);
+    }
+
     function _incentive(uint256 lltv) internal pure returns (uint256) {
         return FixedPointMathLib.WAD + ALPHA.mulWadDown(FixedPointMathLib.WAD.divWadDown(lltv) - FixedPointMathLib.WAD);
     }
 
     function neq(Market memory a, Market memory b) internal pure returns (bool) {
-        return (keccak256(abi.encode(a)) != keccak256(abi.encode(b))) ;
+        return (keccak256(abi.encode(a)) != keccak256(abi.encode(b)));
     }
 
     function max(uint256 a, uint256 b) internal pure returns (uint256) {

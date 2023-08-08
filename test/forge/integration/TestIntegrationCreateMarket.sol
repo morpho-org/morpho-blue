@@ -7,12 +7,27 @@ contract IntegrationCreateMarketTest is BlueBaseTest {
     using MarketLib for Market;
     using FixedPointMathLib for uint256;
 
-    function testCreateMarketWithNotEnabledIrm(Market memory marketFuzz) public {
-        vm.assume(marketFuzz.irm != address(irm));
+    function testCreateMarketWithNotEnabledIrmAndNotEnabledLltv(Market memory marketFuzz) public {
+        vm.assume(marketFuzz.irm != address(irm) && marketFuzz.lltv != LLTV);
 
         vm.prank(OWNER);
         vm.expectRevert(bytes(Errors.IRM_NOT_ENABLED));
         blue.createMarket(marketFuzz);
+    }
+
+    function testCreateMarketWithNotEnabledIrmAndEnabledLltv(Market memory marketFuzz) public {
+        vm.assume(marketFuzz.irm != address(irm));
+        marketFuzz.lltv = _boundValidLltv(marketFuzz.lltv);
+
+        vm.startPrank(OWNER);
+
+        vm.expectEmit(true, true, true, true, address(blue));
+        emit Events.EnableLltv(marketFuzz.lltv);
+        blue.enableLltv(marketFuzz.lltv);
+
+        vm.expectRevert(bytes(Errors.IRM_NOT_ENABLED));
+        blue.createMarket(marketFuzz);
+        vm.stopPrank();
     }
 
     function testCreateMarketWithEnabledIrmAndNotEnabledLltv(Market memory marketFuzz) public {
@@ -42,7 +57,7 @@ contract IntegrationCreateMarketTest is BlueBaseTest {
         emit Events.CreateMarket(marketFuzz.id(), marketFuzz);
         blue.createMarket(marketFuzz);
 
-        assertGt(blue.lastUpdate(marketFuzzId), 0, "lastUpdate == 0");
+        assertEq(blue.lastUpdate(marketFuzzId), block.timestamp, "lastUpdate != block.timestamp");
         assertEq(blue.totalSupply(marketFuzzId), 0, "totalSupply != 0");
         assertEq(blue.totalSupplyShares(marketFuzzId), 0, "totalSupplyShares != 0");
         assertEq(blue.totalBorrow(marketFuzzId), 0, "totalBorrow != 0");
