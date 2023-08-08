@@ -6,6 +6,10 @@ import {Id, Market, IBlue} from "../interfaces/IBlue.sol";
 import {MarketLib} from "./MarketLib.sol";
 import {SharesMath} from "./SharesMath.sol";
 
+/// @title BlueLib
+/// @author Morpho Labs
+/// @custom:contact security@morpho.xyz
+/// @notice A library to ease interactions with Blue.
 library BlueLib {
     using MarketLib for Market;
     using SharesMath for uint256;
