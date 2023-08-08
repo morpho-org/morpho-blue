@@ -4,21 +4,28 @@ pragma solidity 0.8.21;
 import "test/forge/BlueBase.t.sol";
 
 contract IntegrationSupplyTest is BlueBaseTest {
-    function testSupplyUnknownMarket(Market memory marketFuzz) public {
-        vm.assume(neq(marketFuzz, market));
+    function testSupplyUnknownMarket(Market memory marketFuzz, address supplier, uint256 amount) public {
+        vm.assume(neq(marketFuzz, market) && supplier != address(0));
 
+        vm.prank(supplier);
         vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
-        blue.supply(marketFuzz, 1, address(this), hex"");
+        blue.supply(marketFuzz, amount, supplier, hex"");
     }
 
-    function testSupplyZeroAmount() public {
+    function testSupplyZeroAmount(address supplier) public {
+        vm.assume(supplier != address(0));
+
+        vm.prank(supplier);
         vm.expectRevert(bytes(Errors.ZERO_AMOUNT));
-        blue.supply(market, 0, address(this), hex"");
+        blue.supply(market, 0, supplier, hex"");
     }
 
-    function testSupplyOnBehalfZeroAddress() public {
+    function testSupplyOnBehalfZeroAddress(address supplier, uint256 amount) public {
+        amount = bound(amount, 1, MAX_TEST_AMOUNT);
+
+        vm.prank(supplier);
         vm.expectRevert(bytes(Errors.ZERO_ADDRESS));
-        blue.supply(market, 1, address(0), hex"");
+        blue.supply(market, amount, address(0), hex"");
     }
 
     function testSupply(address supplier, address onBehalf, uint256 amount) public {
