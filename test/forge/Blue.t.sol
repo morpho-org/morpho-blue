@@ -826,7 +826,7 @@ contract BlueTest is
         Signature memory sig;
         (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
 
-        blue.setAuthorization(
+        blue.setAuthorizationWithSig(
             authorization.authorizer, authorization.authorized, authorization.isAuthorized, authorization.deadline, sig
         );
 

@@ -328,8 +328,14 @@ contract Blue is IBlue {
 
     // Authorizations.
 
+    function setAuthorization(address authorized, bool newIsAuthorized) external {
+        isAuthorized[msg.sender][authorized] = newIsAuthorized;
+
+        emit SetAuthorization(msg.sender, msg.sender, authorized, newIsAuthorized);
+    }
+
     /// @dev The signature is malleable, but it has no impact on the security here.
-    function setAuthorization(
+    function setAuthorizationWithSig(
         address authorizer,
         address authorized,
         bool newIsAuthorized,
@@ -351,12 +357,6 @@ contract Blue is IBlue {
         isAuthorized[authorizer][authorized] = newIsAuthorized;
 
         emit SetAuthorization(msg.sender, authorizer, authorized, newIsAuthorized);
-    }
-
-    function setAuthorization(address authorized, bool newIsAuthorized) external {
-        isAuthorized[msg.sender][authorized] = newIsAuthorized;
-
-        emit SetAuthorization(msg.sender, msg.sender, authorized, newIsAuthorized);
     }
 
     function _isSenderAuthorized(address user) internal view returns (bool) {
