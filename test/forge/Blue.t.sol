@@ -32,8 +32,8 @@ contract BlueTest is
     using stdStorage for StdStorage;
     using FixedPointMathLib for uint256;
 
-    address private constant BORROWER = address(1234);
-    address private constant LIQUIDATOR = address(5678);
+    address private constant BORROWER = address(0x1234);
+    address private constant LIQUIDATOR = address(0x5678);
     uint256 private constant LLTV = 0.8 ether;
     address private constant OWNER = address(0xdead);
 
@@ -368,6 +368,7 @@ contract BlueTest is
     function testWithdrawShares(uint256 amountLent, uint256 sharesWithdrawn, uint256 amountBorrowed, address receiver)
         public
     {
+        vm.assume(receiver != BORROWER);
         vm.assume(receiver != address(0));
         vm.assume(receiver != address(blue));
         vm.assume(receiver != address(this));
