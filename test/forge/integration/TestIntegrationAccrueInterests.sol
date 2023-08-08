@@ -6,11 +6,11 @@ import "test/forge/BlueBase.t.sol";
 contract IntegrationAccrueInterestsTest is BlueBaseTest {
     using FixedPointMathLib for uint256;
 
-    function testAccrueInterestNoTimeElapsed(uint256 amountSupplied, uint256 amountBorrowed) public {
+    function testAccrueInterestsNoTimeElapsed(uint256 amountSupplied, uint256 amountBorrowed) public {
         amountSupplied = bound(amountSupplied, 2, 2 ** 64);
         amountBorrowed = bound(amountBorrowed, 1, amountSupplied);
 
-        //set fee parameters
+        // Set fee parameters.
         vm.prank(OWNER);
         blue.setFeeRecipient(OWNER);
 
@@ -24,7 +24,7 @@ contract IntegrationAccrueInterestsTest is BlueBaseTest {
         uint256 totalSupplyBeforeAccrued = blue.totalSupply(id);
         uint256 totalSupplySharesBeforeAccrued = blue.totalSupplyShares(id);
 
-        // Supply then withdraw collateral to triger accrueInterests function
+        // Supply then withdraw collateral to trigger accrueInterests function.
         collateralAsset.setBalance(address(this), 1);
         blue.supplyCollateral(market, 1, address(this), hex"");
         blue.withdrawCollateral(market, 1, address(this), address(this));
@@ -35,7 +35,7 @@ contract IntegrationAccrueInterestsTest is BlueBaseTest {
         assertEq(blue.supplyShares(id, OWNER), 0, "feeRecipient's supply shares");
     }
 
-    function testAccrueInterestNoBorrow(uint256 amountSupplied, uint256 timeElapsed) public {
+    function testAccrueInterestsNoBorrow(uint256 amountSupplied, uint256 timeElapsed) public {
         amountSupplied = bound(amountSupplied, 2, 2 ** 64);
         timeElapsed = uint32(bound(timeElapsed, 1, type(uint32).max));
 
