@@ -2,7 +2,9 @@
   "scripts": {
     "postinstall": "husky install",
     "compile": "npx hardhat compile --force",
-    "test": "npx hardhat test"
+    "test": "npx hardhat test",
+    "lint": "prettier --check test/hardhat && forge fmt --check",
+    "lint:fix": "prettier --write test/hardhat && forge fmt"
   },
   "dependencies": {
     "@ethersproject/abi": "^5.7.0",

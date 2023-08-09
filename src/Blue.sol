@@ -113,6 +113,10 @@ contract Blue is IBlue {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(newFee <= MAX_FEE, Errors.MAX_FEE_EXCEEDED);
+
+        // Accrue interests using the previous fee set before changing it.
+        _accrueInterests(market, id);
+
         fee[id] = newFee;
 
         emit SetFee(id, newFee);
@@ -131,6 +135,7 @@ contract Blue is IBlue {
         require(isIrmEnabled[market.irm], Errors.IRM_NOT_ENABLED);
         require(isLltvEnabled[market.lltv], Errors.LLTV_NOT_ENABLED);
         require(lastUpdate[id] == 0, Errors.MARKET_CREATED);
+
         lastUpdate[id] = block.timestamp;
 
         emit CreateMarket(id, market);
@@ -328,8 +333,14 @@ contract Blue is IBlue {
 
     // Authorizations.
 
+    function setAuthorization(address authorized, bool newIsAuthorized) external {
+        isAuthorized[msg.sender][authorized] = newIsAuthorized;
+
+        emit SetAuthorization(msg.sender, msg.sender, authorized, newIsAuthorized);
+    }
+
     /// @dev The signature is malleable, but it has no impact on the security here.
-    function setAuthorization(
+    function setAuthorizationWithSig(
         address authorizer,
         address authorized,
         bool newIsAuthorized,
@@ -351,12 +362,6 @@ contract Blue is IBlue {
         isAuthorized[authorizer][authorized] = newIsAuthorized;
 
         emit SetAuthorization(msg.sender, authorizer, authorized, newIsAuthorized);
-    }
-
-    function setAuthorization(address authorized, bool newIsAuthorized) external {
-        isAuthorized[msg.sender][authorized] = newIsAuthorized;
-
-        emit SetAuthorization(msg.sender, msg.sender, authorized, newIsAuthorized);
     }
 
     function _isSenderAuthorized(address user) internal view returns (bool) {
