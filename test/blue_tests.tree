@@ -33,6 +33,7 @@
             ├── when newFee > MAX_FEE
             │   └── revert with MAX_FEE_EXCEEDED
             └── when newFee <= MAX_FEE
+                ├── it should accrue the interests
                 ├── it should set fee[market.id] to newFee
                 └── it should emit SetFee(market.id, newFee)
 .
