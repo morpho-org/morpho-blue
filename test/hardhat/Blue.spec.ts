@@ -5,6 +5,7 @@ import { expect } from "chai";
 import { BigNumber, constants, utils } from "ethers";
 import hre from "hardhat";
 import { Blue, OracleMock, ERC20Mock, IrmMock } from "types";
+import { MarketStruct } from "types/src/Blue";
 import { FlashBorrowerMock } from "types/src/mocks/FlashBorrowerMock";
 
 const closePositions = false;
@@ -17,23 +18,14 @@ const random = () => {
   return (seed - 1) / 2147483646;
 };
 
-const identifier = (market: Market) => {
+const identifier = (market: MarketStruct) => {
   const encodedMarket = defaultAbiCoder.encode(
-    ["address", "address", "address", "address", "address", "uint256"],
+    ["address", "address", "address", "address", "uint256"],
     Object.values(market),
   );
 
   return Buffer.from(utils.keccak256(encodedMarket).slice(2), "hex");
 };
-
-interface Market {
-  borrowableAsset: string;
-  collateralAsset: string;
-  borrowableOracle: string;
-  collateralOracle: string;
-  irm: string;
-  lltv: BigNumber;
-}
 
 describe("Blue", () => {
   let signers: SignerWithAddress[];
@@ -43,17 +35,16 @@ describe("Blue", () => {
   let blue: Blue;
   let borrowable: ERC20Mock;
   let collateral: ERC20Mock;
-  let borrowableOracle: OracleMock;
-  let collateralOracle: OracleMock;
+  let oracle: OracleMock;
   let irm: IrmMock;
   let flashBorrower: FlashBorrowerMock;
 
-  let market: Market;
+  let market: MarketStruct;
   let id: Buffer;
 
   let nbLiquidations: number;
 
-  const updateMarket = (newMarket: Partial<Market>) => {
+  const updateMarket = (newMarket: Partial<MarketStruct>) => {
     market = { ...market, ...newMarket };
     id = identifier(market);
   };
@@ -73,11 +64,9 @@ describe("Blue", () => {
 
     const OracleMockFactory = await hre.ethers.getContractFactory("OracleMock", admin);
 
-    borrowableOracle = await OracleMockFactory.deploy();
-    collateralOracle = await OracleMockFactory.deploy();
+    oracle = await OracleMockFactory.deploy();
 
-    await borrowableOracle.setPrice(BigNumber.WAD);
-    await collateralOracle.setPrice(BigNumber.WAD);
+    await oracle.setPrice(BigNumber.WAD);
 
     const BlueFactory = await hre.ethers.getContractFactory("Blue", admin);
 
@@ -90,8 +79,7 @@ describe("Blue", () => {
     updateMarket({
       borrowableAsset: borrowable.address,
       collateralAsset: collateral.address,
-      borrowableOracle: borrowableOracle.address,
-      collateralOracle: collateralOracle.address,
+      oracle: oracle.address,
       irm: irm.address,
       lltv: BigNumber.WAD.div(2).add(1),
     });
@@ -202,7 +190,7 @@ describe("Blue", () => {
       await blue.connect(borrower).supplyCollateral(market, amount, borrower.address, "0x");
       await blue.connect(borrower).borrow(market, borrowedAmount, borrower.address, user.address);
 
-      await borrowableOracle.setPrice(BigNumber.WAD.mul(1000));
+      await oracle.setPrice(BigNumber.WAD.div(10));
 
       const seized = closePositions ? constants.MaxUint256 : amount.div(2);
 
@@ -214,7 +202,7 @@ describe("Blue", () => {
         expect(remainingCollateral.isZero(), "did not take the whole collateral when closing the position").to.be.true;
       else expect(!remainingCollateral.isZero(), "unexpectedly closed the position").to.be.true;
 
-      await borrowableOracle.setPrice(BigNumber.WAD);
+      await oracle.setPrice(BigNumber.WAD);
     }
   });
 
