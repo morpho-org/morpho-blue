@@ -143,7 +143,7 @@ contract Blue is IBlue {
     {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
-        require((shares == 0 && amount > 0) || (shares > 0 && amount == 0));
+        require((shares == 0 && amount > 0) || (shares > 0 && amount == 0), Errors.INCONSISTENT_INPUT);
         require(onBehalf != address(0), Errors.ZERO_ADDRESS);
 
         _accrueInterests(market, id);
@@ -170,7 +170,7 @@ contract Blue is IBlue {
     {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
-        require((shares == 0 && amount > 0) || (shares > 0 && amount == 0));
+        require((shares == 0 && amount > 0) || (shares > 0 && amount == 0), Errors.INCONSISTENT_INPUT);
         // No need to verify that onBehalf != address(0) thanks to the authorization check.
         require(receiver != address(0), Errors.ZERO_ADDRESS);
         require(_isSenderAuthorized(onBehalf), Errors.UNAUTHORIZED);
@@ -201,7 +201,7 @@ contract Blue is IBlue {
     {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
-        require((shares == 0 && amount > 0) || (shares > 0 && amount == 0));
+        require((shares == 0 && amount > 0) || (shares > 0 && amount == 0), Errors.INCONSISTENT_INPUT);
         // No need to verify that onBehalf != address(0) thanks to the authorization check.
         require(receiver != address(0), Errors.ZERO_ADDRESS);
         require(_isSenderAuthorized(onBehalf), Errors.UNAUTHORIZED);
@@ -231,7 +231,7 @@ contract Blue is IBlue {
     {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
-        require((shares == 0 && amount > 0) || (shares > 0 && amount == 0));
+        require((shares == 0 && amount > 0) || (shares > 0 && amount == 0), Errors.INCONSISTENT_INPUT);
         require(onBehalf != address(0), Errors.ZERO_ADDRESS);
 
         _accrueInterests(market, id);
