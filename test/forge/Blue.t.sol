@@ -313,20 +313,35 @@ contract BlueTest is
         blue.createMarket(marketFuzz);
     }
 
-    function testSupplyOnBehalf(uint256 amount, address onBehalf) public {
+    function testSupplyAmount(uint256 amount, address onBehalf) public {
         vm.assume(onBehalf != address(0));
         vm.assume(onBehalf != address(blue));
         amount = bound(amount, 1, 2 ** 64);
+        uint256 shares = amount.toSharesDown(blue.totalSupply(id), blue.totalSupplyShares(id));
 
         borrowableAsset.setBalance(address(this), amount);
         blue.supply(market, 0, amount, onBehalf, hex"");
 
-        assertEq(blue.supplyShares(id, onBehalf), amount * SharesMath.VIRTUAL_SHARES, "supply share");
+        assertEq(blue.supplyShares(id, onBehalf), shares, "supply share");
         assertEq(borrowableAsset.balanceOf(onBehalf), 0, "lender balance");
         assertEq(borrowableAsset.balanceOf(address(blue)), amount, "blue balance");
     }
 
-    function testBorrow(uint256 amountLent, uint256 amountBorrowed, address receiver) public {
+    function testSupplyShares(uint256 shares, address onBehalf) public {
+        vm.assume(onBehalf != address(0));
+        vm.assume(onBehalf != address(blue));
+        shares = bound(shares, 1, 2 ** 64);
+        uint256 amount = shares.toAssetsUp(blue.totalSupply(id), blue.totalSupplyShares(id));
+
+        borrowableAsset.setBalance(address(this), amount);
+        blue.supply(market, shares, 0, onBehalf, hex"");
+
+        assertEq(blue.supplyShares(id, onBehalf), shares, "supply share");
+        assertEq(borrowableAsset.balanceOf(onBehalf), 0, "lender balance");
+        assertEq(borrowableAsset.balanceOf(address(blue)), amount, "blue balance");
+    }
+
+    function testBorrowAmount(uint256 amountLent, uint256 amountBorrowed, address receiver) public {
         vm.assume(receiver != address(0));
         vm.assume(receiver != address(blue));
         amountLent = bound(amountLent, 1, 2 ** 64);
@@ -348,6 +363,21 @@ contract BlueTest is
         assertEq(blue.borrowShares(id, BORROWER), amountBorrowed * SharesMath.VIRTUAL_SHARES, "borrow share");
         assertEq(borrowableAsset.balanceOf(receiver), amountBorrowed, "receiver balance");
         assertEq(borrowableAsset.balanceOf(address(blue)), amountLent - amountBorrowed, "blue balance");
+    }
+
+    function testBorrowShares(uint256 shares) public {
+        shares = bound(shares, 1, 2 ** 64);
+        uint256 amount = shares.toAssetsDown(blue.totalBorrow(id), blue.totalBorrowShares(id));
+
+        borrowableAsset.setBalance(address(this), amount);
+        if (amount > 0) blue.supply(market, 0, amount, address(this), hex"");
+
+        vm.prank(BORROWER);
+        blue.borrow(market, shares, 0, BORROWER, BORROWER);
+
+        assertEq(blue.borrowShares(id, BORROWER), shares, "borrow share");
+        assertEq(borrowableAsset.balanceOf(BORROWER), amount, "receiver balance");
+        assertEq(borrowableAsset.balanceOf(address(blue)), 0, "blue balance");
     }
 
     function _testWithdrawCommon(uint256 amountLent) public {
