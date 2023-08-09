@@ -9,16 +9,13 @@ contract MathTest is Test {
     using FixedPointMathLib for uint256;
 
     function testWTaylorCompounded(uint256 rate, uint256 timeElapsed) public {
-
         // Assume rate is less than a ~500% APY. (~180% APR)
         vm.assume(rate < (FixedPointMathLib.WAD / 20_000_000) && timeElapsed < 365 days);
         uint256 result = rate.wTaylorCompounded(timeElapsed) + FixedPointMathLib.WAD;
         uint256 toCompare = wPow(FixedPointMathLib.WAD + rate, timeElapsed);
         assertLe(result, toCompare, "rate should be less than the compounded rate");
         assertGe(
-            result,
-            FixedPointMathLib.WAD + timeElapsed * rate,
-            "rate should be greater than the simple interest rate"
+            result, FixedPointMathLib.WAD + timeElapsed * rate, "rate should be greater than the simple interest rate"
         );
         assertLe((toCompare - result) * 100_00 / toCompare, 8_00, "The error should be less than or equal to 8%");
     }
