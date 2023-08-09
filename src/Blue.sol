@@ -122,9 +122,7 @@ contract Blue is IBlue {
         emit SetFee(id, newFee);
     }
 
-    function setFeeRecipient(Market memory market, address recipient) external {
-        Id id = market.id();
-        require(msg.sender == owner || msg.sender == feeRecipient[id], Errors.NOT_OWNER_OR_RECIPIENT);
+    function setFeeRecipient(Id id, address recipient) external onlyOwner {
         feeRecipient[id] = recipient;
 
         emit SetFeeRecipient(id, recipient);

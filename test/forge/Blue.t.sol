@@ -243,40 +243,23 @@ contract BlueTest is
         fee = bound(fee, 0, FixedPointMathLib.WAD);
 
         vm.expectRevert(bytes(Errors.NOT_OWNER));
+        vm.prank(caller);
         blue.setFee(market, fee);
     }
 
-    function testSetFeeRecipientIfOwner(Market memory marketFuzz, address recipient) public {
+    function testSetFeeRecipientIfOwner(Id idFuzz, address recipient) public {
         vm.prank(OWNER);
-        blue.setFeeRecipient(marketFuzz, recipient);
+        blue.setFeeRecipient(idFuzz, recipient);
 
-        assertEq(blue.feeRecipient(marketFuzz.id()), recipient);
+        assertEq(blue.feeRecipient(idFuzz), recipient);
     }
 
-    function testSetFeeRecipientIfRecipient(Market memory marketFuzz, address recipient1, address recipient2) public {
-        vm.prank(OWNER);
-        blue.setFeeRecipient(marketFuzz, recipient1);
+    function testSetFeeRecipientIfNotOwner(Id idFuzz, address recipient, address caller) public {
+        vm.assume(caller != OWNER);
 
-        vm.prank(recipient1);
-        blue.setFeeRecipient(marketFuzz, recipient2);
-
-        assertEq(blue.feeRecipient(marketFuzz.id()), recipient2);
-    }
-
-    function testSetFeeRecipientShouldRevertIfNotOwnerOrRecipient(
-        Market memory marketFuzz,
-        address caller,
-        address recipient1,
-        address recipient2
-    ) public {
-        vm.prank(OWNER);
-        blue.setFeeRecipient(marketFuzz, recipient1);
-
-        vm.assume(caller != OWNER && caller != recipient1);
-
-        vm.expectRevert(bytes(Errors.NOT_OWNER_OR_RECIPIENT));
+        vm.expectRevert(bytes(Errors.NOT_OWNER));
         vm.prank(caller);
-        blue.setFeeRecipient(marketFuzz, recipient2);
+        blue.setFeeRecipient(idFuzz, recipient);
     }
 
     function testFeeAccrues(uint256 amountLent, uint256 amountBorrowed, uint256 fee, uint256 timeElapsed) public {
@@ -288,7 +271,7 @@ contract BlueTest is
 
         vm.startPrank(OWNER);
         blue.setFee(market, fee);
-        blue.setFeeRecipient(market, recipient);
+        blue.setFeeRecipient(id, recipient);
         vm.stopPrank();
 
         borrowableAsset.setBalance(address(this), amountLent);

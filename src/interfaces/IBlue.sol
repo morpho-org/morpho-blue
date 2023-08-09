@@ -102,7 +102,7 @@ interface IBlue is IFlashLender {
     function enableIrm(address irm) external;
     function enableLltv(uint256 lltv) external;
     function setFee(Market memory market, uint256 newFee) external;
-    function setFeeRecipient(Market memory market, address recipient) external;
+    function setFeeRecipient(Id id, address recipient) external;
     function createMarket(Market memory market) external;
 
     function supply(Market memory market, uint256 amount, address onBehalf, bytes memory data) external;
