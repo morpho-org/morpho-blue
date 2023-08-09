@@ -27,8 +27,7 @@ contract IntegrationAuthorization is BaseTest {
     ) public {
         deadline = uint32(bound(deadline, block.timestamp + 1, type(uint32).max) - 1);
         timeElapsed = uint32(bound(timeElapsed, deadline + 1, type(uint32).max));
-        // Private key must be less than the secp256k1 curve order.
-        privateKey = bound(privateKey, 1, type(uint32).max);
+        privateKey = bound(privateKey, 1, SECP256K1_ORDER - 1);
         address authorizer = vm.addr(privateKey);
 
         SigUtils.Authorization memory authorization = SigUtils.Authorization({
@@ -59,8 +58,7 @@ contract IntegrationAuthorization is BaseTest {
         bool isAuthorized
     ) public {
         deadline = uint32(bound(deadline, block.timestamp + 1, type(uint32).max));
-        // Private key must be less than the secp256k1 curve order.
-        privateKey = bound(privateKey, 1, type(uint32).max);
+        privateKey = bound(privateKey, 1, SECP256K1_ORDER - 1);
         address authorizer = vm.addr(privateKey);
         vm.assume(authorizer != address(this));
 
@@ -90,8 +88,7 @@ contract IntegrationAuthorization is BaseTest {
         bool isAuthorized
     ) public {
         deadline = uint32(bound(deadline, block.timestamp + 1, type(uint32).max));
-        // Private key must be less than the secp256k1 curve order.
-        privateKey = bound(privateKey, 1, type(uint32).max);
+        privateKey = bound(privateKey, 1, SECP256K1_ORDER - 1);
         address authorizer = vm.addr(privateKey);
 
         SigUtils.Authorization memory authorization = SigUtils.Authorization({
