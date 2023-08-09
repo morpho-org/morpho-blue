@@ -113,6 +113,10 @@ contract Blue is IBlue {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(newFee <= MAX_FEE, Errors.MAX_FEE_EXCEEDED);
+
+        // Accrue interests using the previous fee set before changing it.
+        _accrueInterests(market, id);
+
         fee[id] = newFee;
 
         emit SetFee(id, newFee);
@@ -131,6 +135,7 @@ contract Blue is IBlue {
         require(isIrmEnabled[market.irm], Errors.IRM_NOT_ENABLED);
         require(isLltvEnabled[market.lltv], Errors.LLTV_NOT_ENABLED);
         require(lastUpdate[id] == 0, Errors.MARKET_CREATED);
+
         lastUpdate[id] = block.timestamp;
 
         emit CreateMarket(id, market);
