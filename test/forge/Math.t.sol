@@ -11,7 +11,8 @@ contract MathTest is Test {
 
     function testWTaylorCompounded(uint256 rate, uint256 timeElapsed) public {
         // Assume rate is less than a ~500% APY. (~180% APR)
-        vm.assume(rate < (FixedPointMathLib.WAD / 20_000_000) && timeElapsed < 365 days);
+        rate = bound(rate, 0, FixedPointMathLib.WAD / 20_000_000);
+        timeElapsed = bound(timeElapsed, 0, 365 days);
         uint256 result = rate.wTaylorCompounded(timeElapsed) + FixedPointMathLib.WAD;
         uint256 toCompare = WadMath.wadExpUp(rate * timeElapsed);
         assertLe(result, toCompare, "rate should be less than the compounded rate");
