@@ -224,6 +224,7 @@ describe("Blue", () => {
 
     await blue.connect(user).supply(market, amount, user.address, "0x");
 
-    await flashBorrower.flashLoan(borrowable.address, amount.div(2), []);
+    const data = defaultAbiCoder.encode(["address"], [borrowable.address]);
+    await flashBorrower.flashLoan(borrowable.address, amount.div(2), data);
   });
 });
