@@ -21,6 +21,7 @@ import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
 
 uint256 constant MAX_FEE = 0.25e18;
 uint256 constant ALPHA = 0.5e18;
+uint256 constant ORACLE_PRICE_SCALE = 1e36;
 
 /// @dev The EIP-712 typeHash for EIP712Domain.
 bytes32 constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
@@ -277,14 +278,14 @@ contract Blue is IBlue {
 
         _accrueInterests(market, id);
 
-        (uint256 collateralPrice, uint256 priceScale) = IOracle(market.oracle).price();
+        uint256 collateralPrice = IOracle(market.oracle).price();
 
-        require(!_isHealthy(market, id, borrower, collateralPrice, priceScale), Errors.HEALTHY_POSITION);
+        require(!_isHealthy(market, id, borrower, collateralPrice), Errors.HEALTHY_POSITION);
 
         // The liquidation incentive is 1 + ALPHA * (1 / LLTV - 1).
         uint256 incentive = FixedPointMathLib.WAD
             + ALPHA.mulWadDown(FixedPointMathLib.WAD.divWadDown(market.lltv) - FixedPointMathLib.WAD);
-        uint256 repaid = seized.mulDivUp(collateralPrice, priceScale).divWadUp(incentive);
+        uint256 repaid = seized.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).divWadUp(incentive);
         uint256 repaidShares = repaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
 
         borrowShares[id][borrower] -= repaidShares;
@@ -397,18 +398,18 @@ contract Blue is IBlue {
     function _isHealthy(Market memory market, Id id, address user) internal view returns (bool) {
         if (borrowShares[id][user] == 0) return true;
 
-        (uint256 collateralPrice, uint256 priceScale) = IOracle(market.oracle).price();
+        uint256 collateralPrice = IOracle(market.oracle).price();
 
-        return _isHealthy(market, id, user, collateralPrice, priceScale);
+        return _isHealthy(market, id, user, collateralPrice);
     }
 
-    function _isHealthy(Market memory market, Id id, address user, uint256 collateralPrice, uint256 priceScale)
+    function _isHealthy(Market memory market, Id id, address user, uint256 collateralPrice)
         internal
         view
         returns (bool)
     {
         uint256 borrowed = borrowShares[id][user].toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
-        uint256 maxBorrow = collateral[id][user].mulDivDown(collateralPrice, priceScale).mulWadDown(market.lltv);
+        uint256 maxBorrow = collateral[id][user].mulDivDown(collateralPrice, ORACLE_PRICE_SCALE).mulWadDown(market.lltv);
 
         return maxBorrow >= borrowed;
     }

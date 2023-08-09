@@ -39,6 +39,8 @@ describe("Blue", () => {
   let irm: IrmMock;
   let flashBorrower: FlashBorrowerMock;
 
+  let oraclePriceScale = BigNumber.from("1000000000000000000000000000000000000");
+
   let market: MarketStruct;
   let id: Buffer;
 
@@ -66,7 +68,7 @@ describe("Blue", () => {
 
     oracle = await OracleMockFactory.deploy();
 
-    await oracle.setPrice(BigNumber.WAD);
+    await oracle.setPrice(oraclePriceScale);
 
     const BlueFactory = await hre.ethers.getContractFactory("Blue", admin);
 
@@ -190,7 +192,7 @@ describe("Blue", () => {
       await blue.connect(borrower).supplyCollateral(market, amount, borrower.address, "0x");
       await blue.connect(borrower).borrow(market, borrowedAmount, borrower.address, user.address);
 
-      await oracle.setPrice(BigNumber.WAD.div(10));
+      await oracle.setPrice(oraclePriceScale.div(10));
 
       const seized = closePositions ? constants.MaxUint256 : amount.div(2);
 
@@ -202,7 +204,7 @@ describe("Blue", () => {
         expect(remainingCollateral.isZero(), "did not take the whole collateral when closing the position").to.be.true;
       else expect(!remainingCollateral.isZero(), "unexpectedly closed the position").to.be.true;
 
-      await oracle.setPrice(BigNumber.WAD);
+      await oracle.setPrice(oraclePriceScale);
     }
   });
 
