@@ -343,11 +343,12 @@ contract BlueTest is
         vm.assume(receiver != address(blue));
         amountLent = bound(amountLent, 1, 2 ** 64);
         amountBorrowed = bound(amountBorrowed, 1, 2 ** 64);
+        uint256 shares = amountBorrowed.toSharesUp(blue.totalBorrow(id), blue.totalBorrowShares(id));
 
         borrowableAsset.setBalance(address(this), amountLent);
         blue.supply(market, 0, amountLent, address(this), hex"");
 
-        uint256 collateralAmount = amountBorrowed.divWadUp(LLTV);
+        uint256 collateralAmount = shares.toAssetsUp(blue.totalBorrow(id), blue.totalBorrowShares(id)).divWadUp(LLTV);
         collateralAsset.setBalance(address(this), collateralAmount);
         blue.supplyCollateral(market, collateralAmount, BORROWER, hex"");
 
@@ -373,8 +374,7 @@ contract BlueTest is
         borrowableAsset.setBalance(address(this), amount);
         if (amount > 0) blue.supply(market, 0, amount, address(this), hex"");
 
-        uint256 collateralAmount = (amount + 1).divWadUp(LLTV);
-        console.log(amount);
+        uint256 collateralAmount = shares.toAssetsUp(blue.totalBorrow(id), blue.totalBorrowShares(id)).divWadUp(LLTV);
         collateralAsset.setBalance(address(this), collateralAmount);
         if (collateralAmount > 0) blue.supplyCollateral(market, collateralAmount, BORROWER, hex"");
 
@@ -511,11 +511,13 @@ contract BlueTest is
 
         uint256 thisBalanceBefore = borrowableAsset.balanceOf(address(this));
         uint256 borrowSharesBefore = blue.borrowShares(id, address(this));
-        exactAmountRepaid =
-            bound(exactAmountRepaid, 1, borrowSharesBefore.toAssetsUp(blue.totalBorrow(id), blue.totalBorrowShares(id)));
+        exactAmountRepaid = bound(
+            exactAmountRepaid, 1, borrowSharesBefore.toAssetsDown(blue.totalBorrow(id), blue.totalBorrowShares(id))
+        );
+        uint256 sharesRepaid = exactAmountRepaid.toSharesDown(blue.totalBorrow(id), blue.totalBorrowShares(id));
         blue.repay(market, 0, exactAmountRepaid, address(this), hex"");
 
-        // assertEq(blue.borrowShares(id, address(this)), borrowSharesBefore - sharesRepaid, "borrow share");
+        assertEq(blue.borrowShares(id, address(this)), borrowSharesBefore - sharesRepaid, "borrow share");
         assertEq(borrowableAsset.balanceOf(address(this)), thisBalanceBefore - exactAmountRepaid, "this balance");
         assertEq(borrowableAsset.balanceOf(address(blue)), exactAmountRepaid, "blue balance");
     }

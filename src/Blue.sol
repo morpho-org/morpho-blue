@@ -233,7 +233,7 @@ contract Blue is IBlue {
         _accrueInterests(market, id);
 
         if (shares > 0) amount = shares.toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
-        else shares = shares.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
+        else shares = amount.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
 
         borrowShares[id][onBehalf] -= shares;
         totalBorrowShares[id] -= shares;
