@@ -56,9 +56,10 @@ contract SingleMarketInvariantTest is InvariantBaseTest {
 
     function withdrawOnBlue(uint256 amount) public {
         if (blue.supplyShares(id, msg.sender) == 0) return;
-        amount = bound(
-            amount, 1, blue.supplyShares(id, msg.sender).toAssetsDown(blue.totalSupply(id), blue.totalSupplyShares(id))
-        );
+        if (blue.totalSupply(id) - blue.totalBorrow(id) == 0) return;
+        uint256 supplierBalance = blue.supplyShares(id, msg.sender).toAssetsDown(blue.totalSupply(id), blue.totalSupplyShares(id));
+        uint256 availableLiquidity = blue.totalSupply(id) - blue.totalBorrow(id);
+        amount = bound(amount, 1, min(supplierBalance, availableLiquidity));
         vm.prank(msg.sender);
         blue.withdraw(market, amount, msg.sender, msg.sender);
     }
@@ -72,10 +73,10 @@ contract SingleMarketInvariantTest is InvariantBaseTest {
 
     function repayOnBlue(uint256 amount) public {
         if (blue.borrowShares(id, msg.sender) == 0) return;
-        borrowableAsset.setBalance(msg.sender, amount);
         amount = bound(
             amount, 1, blue.borrowShares(id, msg.sender).toAssetsDown(blue.totalBorrow(id), blue.totalBorrowShares(id))
         );
+        borrowableAsset.setBalance(msg.sender, amount);
         vm.prank(msg.sender);
         blue.repay(market, amount, msg.sender, hex"");
     }

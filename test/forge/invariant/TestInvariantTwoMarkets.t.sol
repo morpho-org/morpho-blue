@@ -12,16 +12,16 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
     Market public market2;
     Id public id2;
 
-    enum ChoseMarket{
-        market,
-        market2
-    }
+    // enum EnumMarket{
+    //     market,
+    //     market2
+    // }
 
     function setUp() public virtual override {
         super.setUp();
         
-        irm = new Irm(blue);
-        vm.label(address(irm), "IRM");
+        irm2 = new Irm(blue);
+        vm.label(address(irm2), "IRM2");
 
         market2 = Market(
             address(borrowableAsset),
@@ -29,12 +29,14 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
             address(borrowableOracle),
             address(collateralOracle),
             address(irm2),
-            LLTV
+            LLTV + 1
         );
         id2 = market2.id();
 
         vm.startPrank(OWNER);
         blue.enableIrm(address(irm2));
+        blue.enableLltv(LLTV + 1);
+        blue.createMarket(market2);
         vm.stopPrank();
 
         _targetDefaultSenders();
@@ -66,81 +68,106 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
         vm.warp(block.timestamp + elapsed);
     }
 
-    function supplyOnBlue(uint256 amount, ChoseMarket choseMarket) public {
+    function supplyOnBlue(uint256 amount, bool changeMarket) public {
+        Market memory chosenMarket;
+        Id chosenId;
+        if (!changeMarket){
+            chosenMarket = market;
+            chosenId = id;
+        } else{
+            chosenMarket = market2;
+            chosenId = id2;
+        }
         amount = bound(amount, 1, 2 ** 64);
         borrowableAsset.setBalance(msg.sender, amount);
         vm.prank(msg.sender);
-        if (choseMarket == ChoseMarket.market){
-            blue.supply(market, amount, msg.sender, hex"");
-        }
-        else{
-            blue.supply(market2, amount, msg.sender, hex"");
-        }
+        blue.supply(chosenMarket, amount, msg.sender, hex"");
     }
 
-    function withdrawOnBlue(uint256 amount, ChoseMarket choseMarket) public {
-        if (blue.supplyShares(id, msg.sender) == 0) return;
+    function withdrawOnBlue(uint256 amount, bool changeMarket) public {
+        Market memory chosenMarket;
+        Id chosenId;
+        if (!changeMarket){
+            chosenMarket = market;
+            chosenId = id;
+        } else{
+            chosenMarket = market2;
+            chosenId = id2;
+        }
+        if (blue.supplyShares(chosenId, msg.sender) == 0) return;
+        if (blue.totalSupply(chosenId) - blue.totalBorrow(chosenId) == 0) return;
+        uint256 supplierBalance = blue.supplyShares(chosenId, msg.sender).toAssetsDown(blue.totalSupply(chosenId), blue.totalSupplyShares(chosenId));
+        uint256 availableLiquidity = blue.totalSupply(chosenId) - blue.totalBorrow(chosenId);
+        amount = bound(amount, 1, min(supplierBalance, availableLiquidity));
+        vm.prank(msg.sender);
+        blue.withdraw(chosenMarket, amount, msg.sender, msg.sender);
+    }
+
+    function borrowOnBlue(uint256 amount, bool changeMarket) public {
+        Market memory chosenMarket;
+        Id chosenId;
+        if (!changeMarket){
+            chosenMarket = market;
+            chosenId = id;
+        } else{
+            chosenMarket = market2;
+            chosenId = id2;
+        }
+        if (blue.totalSupply(chosenId) - blue.totalBorrow(chosenId) == 0) return;
+        amount = bound(amount, 1, blue.totalSupply(chosenId) - blue.totalBorrow(chosenId));
+        vm.prank(msg.sender);
+        blue.borrow(chosenMarket, amount, msg.sender, msg.sender);
+    }
+
+    function repayOnBlue(uint256 amount, bool changeMarket) public {
+        Market memory chosenMarket;
+        Id chosenId;
+        if (!changeMarket){
+            chosenMarket = market;
+            chosenId = id;
+        } else{
+            chosenMarket = market2;
+            chosenId = id2;
+        }
+        if (blue.borrowShares(chosenId, msg.sender) == 0) return;
         amount = bound(
-            amount, 1, blue.supplyShares(id, msg.sender).toAssetsDown(blue.totalSupply(id), blue.totalSupplyShares(id))
+            amount, 1, blue.borrowShares(chosenId, msg.sender).toAssetsDown(blue.totalBorrow(chosenId), blue.totalBorrowShares(chosenId))
         );
-        vm.prank(msg.sender);
-        if (choseMarket == ChoseMarket.market){
-            blue.withdraw(market, amount, msg.sender, msg.sender);
-        }
-        else{
-            blue.withdraw(market2, amount, msg.sender, msg.sender);
-        }
-    }
-
-    function borrowOnBlue(uint256 amount, ChoseMarket choseMarket) public {
-        if (blue.totalSupply(id) - blue.totalBorrow(id) == 0) return;
-        amount = bound(amount, 1, blue.totalSupply(id) - blue.totalBorrow(id));
-        vm.prank(msg.sender);
-        if (choseMarket == ChoseMarket.market){
-            blue.borrow(market, amount, msg.sender, msg.sender);
-        }
-        else{
-            blue.borrow(market2, amount, msg.sender, msg.sender);
-        }
-    }
-
-    function repayOnBlue(uint256 amount, ChoseMarket choseMarket) public {
-        if (blue.borrowShares(id, msg.sender) == 0) return;
         borrowableAsset.setBalance(msg.sender, amount);
-        amount = bound(
-            amount, 1, blue.borrowShares(id, msg.sender).toAssetsDown(blue.totalBorrow(id), blue.totalBorrowShares(id))
-        );
         vm.prank(msg.sender);
-        if (choseMarket == ChoseMarket.market){
-            blue.repay(market, amount, msg.sender, hex"");
-        }
-        else{
-            blue.repay(market2, amount, msg.sender, hex"");
-        }
+        blue.repay(chosenMarket, amount, msg.sender, hex"");
     }
 
-    function supplyCollateralOnBlue(uint256 amount, ChoseMarket choseMarket) public {
+    function supplyCollateralOnBlue(uint256 amount, bool changeMarket) public {
+        Market memory chosenMarket;
+        Id chosenId;
+        if (!changeMarket){
+            chosenMarket = market;
+            chosenId = id;
+        } else{
+            chosenMarket = market2;
+            chosenId = id2;
+        }
         amount = bound(amount, 1, 2 ** 64);
         collateralAsset.setBalance(msg.sender, amount);
         vm.prank(msg.sender);
-        if (choseMarket == ChoseMarket.market){
-            blue.supplyCollateral(market, amount, msg.sender, hex"");
-        }
-        else{
-            blue.supplyCollateral(market2, amount, msg.sender, hex"");
-        }
+        blue.supplyCollateral(chosenMarket, amount, msg.sender, hex"");
     }
 
-    function withdrawCollateralOnBlue(uint256 amount, ChoseMarket choseMarket) public {
-        if (blue.collateral(id, msg.sender) == 0) return;
-        amount = bound(amount, 1, blue.collateral(id, msg.sender));
+    function withdrawCollateralOnBlue(uint256 amount, bool changeMarket) public {
+        Market memory chosenMarket;
+        Id chosenId;
+        if (!changeMarket){
+            chosenMarket = market;
+            chosenId = id;
+        } else{
+            chosenMarket = market2;
+            chosenId = id2;
+        }
+        if (blue.collateral(chosenId, msg.sender) == 0) return;
+        amount = bound(amount, 1, blue.collateral(chosenId, msg.sender));
         vm.prank(msg.sender);
-        if (choseMarket == ChoseMarket.market){
-            blue.withdrawCollateral(market, amount, msg.sender, msg.sender);
-        }
-        else{
-            blue.withdrawCollateral(market2, amount, msg.sender, msg.sender);
-        }
+        blue.withdrawCollateral(chosenMarket, amount, msg.sender, msg.sender);
     }
 
     function invariantBlueBalance() public {
