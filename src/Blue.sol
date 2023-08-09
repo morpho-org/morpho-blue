@@ -153,11 +153,8 @@ contract Blue is IBlue {
 
         _accrueInterests(market, id);
 
-        if (shares > 0) {
-            amount = shares.toAssetsUp(totalSupply[id], totalSupplyShares[id]);
-        } else {
-            shares = amount.toSharesDown(totalSupply[id], totalSupplyShares[id]);
-        }
+        if (shares > 0) amount = shares.toAssetsUp(totalSupply[id], totalSupplyShares[id]);
+        else shares = amount.toSharesDown(totalSupply[id], totalSupplyShares[id]);
 
         supplyShares[id][onBehalf] += shares;
         totalSupplyShares[id] += shares;
@@ -182,11 +179,8 @@ contract Blue is IBlue {
 
         _accrueInterests(market, id);
 
-        if (shares > 0) {
-            amount = shares.toAssetsDown(totalSupply[id], totalSupplyShares[id]);
-        } else {
-            shares = amount.toSharesUp(totalSupply[id], totalSupplyShares[id]);
-        }
+        if (shares > 0) amount = shares.toAssetsDown(totalSupply[id], totalSupplyShares[id]);
+        else shares = amount.toSharesUp(totalSupply[id], totalSupplyShares[id]);
 
         supplyShares[id][onBehalf] -= shares;
         totalSupplyShares[id] -= shares;
@@ -213,11 +207,8 @@ contract Blue is IBlue {
 
         _accrueInterests(market, id);
 
-        if (shares > 0) {
-            amount = shares.toAssetsDown(totalBorrow[id], totalBorrowShares[id]);
-        } else {
-            shares = amount.toSharesUp(totalBorrow[id], totalBorrowShares[id]);
-        }
+        if (shares > 0) amount = shares.toAssetsDown(totalBorrow[id], totalBorrowShares[id]);
+        else shares = amount.toSharesUp(totalBorrow[id], totalBorrowShares[id]);
 
         borrowShares[id][onBehalf] += shares;
         totalBorrowShares[id] += shares;
@@ -241,11 +232,8 @@ contract Blue is IBlue {
 
         _accrueInterests(market, id);
 
-        if (shares > 0) {
-            amount = shares.toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
-        } else {
-            shares = shares.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
-        }
+        if (shares > 0) amount = shares.toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
+        else shares = shares.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
 
         borrowShares[id][onBehalf] -= shares;
         totalBorrowShares[id] -= shares;
