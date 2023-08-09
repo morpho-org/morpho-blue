@@ -17,7 +17,7 @@ contract IrmMock is IIrm {
         BLUE = blue;
     }
 
-    function borrowRate(Market memory market) external view returns (uint256) {
+    function prevBorrowRate(Market memory market) external view returns (uint256) {
         Id id = market.id();
         uint256 utilization = BLUE.totalBorrow(id).divWadDown(BLUE.totalSupply(id));
 

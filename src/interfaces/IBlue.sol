@@ -158,10 +158,10 @@ interface IBlue is IFlashLender {
 
     /// @notice Emitted when accruing interests.
     /// @param id The market id.
-    /// @param borrowRate The borrow rate.
+    /// @param prevBorrowRate The previous borrow rate.
     /// @param accruedInterests The amount of interests accrued.
     /// @param feeShares The amount of shares minted as fee.
-    event AccrueInterests(Id indexed id, uint256 borrowRate, uint256 accruedInterests, uint256 feeShares);
+    event AccrueInterests(Id indexed id, uint256 prevBorrowRate, uint256 accruedInterests, uint256 feeShares);
 
     /// @notice The EIP-712 domain separator.
     function DOMAIN_SEPARATOR() external view returns (bytes32);
