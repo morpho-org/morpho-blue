@@ -113,6 +113,10 @@ contract Blue is IBlue {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(newFee <= MAX_FEE, Errors.MAX_FEE_EXCEEDED);
+
+        // Accrue interests using the previous fee set before changing it.
+        _accrueInterests(market, id);
+
         fee[id] = newFee;
 
         emit SetFee(id, newFee);
@@ -131,6 +135,7 @@ contract Blue is IBlue {
         require(isIrmEnabled[market.irm], Errors.IRM_NOT_ENABLED);
         require(isLltvEnabled[market.lltv], Errors.LLTV_NOT_ENABLED);
         require(lastUpdate[id] == 0, Errors.MARKET_CREATED);
+
         lastUpdate[id] = block.timestamp;
 
         emit CreateMarket(id, market);
@@ -301,15 +306,14 @@ contract Blue is IBlue {
 
         _accrueInterests(market, id);
 
-        uint256 collateralPrice = IOracle(market.collateralOracle).price();
-        uint256 borrowablePrice = IOracle(market.borrowableOracle).price();
+        (uint256 collateralPrice, uint256 priceScale) = IOracle(market.oracle).price();
 
-        require(!_isHealthy(market, id, borrower, collateralPrice, borrowablePrice), Errors.HEALTHY_POSITION);
+        require(!_isHealthy(market, id, borrower, collateralPrice, priceScale), Errors.HEALTHY_POSITION);
 
         // The liquidation incentive is 1 + ALPHA * (1 / LLTV - 1).
         uint256 incentive = FixedPointMathLib.WAD
             + ALPHA.mulWadDown(FixedPointMathLib.WAD.divWadDown(market.lltv) - FixedPointMathLib.WAD);
-        uint256 repaid = seized.mulWadUp(collateralPrice).divWadUp(incentive).divWadUp(borrowablePrice);
+        uint256 repaid = seized.mulDivUp(collateralPrice, priceScale).divWadUp(incentive);
         uint256 repaidShares = repaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
 
         borrowShares[id][borrower] -= repaidShares;
@@ -398,7 +402,7 @@ contract Blue is IBlue {
 
         if (marketTotalBorrow != 0) {
             uint256 borrowRate = IIrm(market.irm).borrowRate(market);
-            uint256 accruedInterests = marketTotalBorrow.mulWadDown(borrowRate * elapsed);
+            uint256 accruedInterests = marketTotalBorrow.mulWadDown(borrowRate.wTaylorCompounded(elapsed));
             totalBorrow[id] = marketTotalBorrow + accruedInterests;
             totalSupply[id] += accruedInterests;
 
@@ -422,22 +426,20 @@ contract Blue is IBlue {
     function _isHealthy(Market memory market, Id id, address user) internal view returns (bool) {
         if (borrowShares[id][user] == 0) return true;
 
-        uint256 collateralPrice = IOracle(market.collateralOracle).price();
-        uint256 borrowablePrice = IOracle(market.borrowableOracle).price();
+        (uint256 collateralPrice, uint256 priceScale) = IOracle(market.oracle).price();
 
-        return _isHealthy(market, id, user, collateralPrice, borrowablePrice);
+        return _isHealthy(market, id, user, collateralPrice, priceScale);
     }
 
-    function _isHealthy(Market memory market, Id id, address user, uint256 collateralPrice, uint256 borrowablePrice)
+    function _isHealthy(Market memory market, Id id, address user, uint256 collateralPrice, uint256 priceScale)
         internal
         view
         returns (bool)
     {
-        uint256 borrowValue =
-            borrowShares[id][user].toAssetsUp(totalBorrow[id], totalBorrowShares[id]).mulWadUp(borrowablePrice);
-        uint256 collateralValue = collateral[id][user].mulWadDown(collateralPrice);
+        uint256 borrowed = borrowShares[id][user].toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
+        uint256 maxBorrow = collateral[id][user].mulDivDown(collateralPrice, priceScale).mulWadDown(market.lltv);
 
-        return collateralValue.mulWadDown(market.lltv) >= borrowValue;
+        return maxBorrow >= borrowed;
     }
 
     // Storage view.

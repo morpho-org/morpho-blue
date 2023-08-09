@@ -8,8 +8,7 @@ type Id is bytes32;
 struct Market {
     address borrowableAsset;
     address collateralAsset;
-    address borrowableOracle;
-    address collateralOracle;
+    address oracle;
     address irm;
     uint256 lltv;
 }
