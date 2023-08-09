@@ -32,17 +32,17 @@ library FixedPointMathLib {
     /// @dev The sum of the last three terms in a four term taylor series expansion
     ///      to approximate a compound interest rate: (1 + x)^n - 1.
     function wTaylorCompounded(uint256 x, uint256 n) internal pure returns (uint256) {
-        uint256 mon = x;
+        uint256 seriesTerm = x;
         uint256 coeff = n;
-        uint256 firstTerm = mon * coeff;
+        uint256 firstTerm = coeff * seriesTerm;
 
-        mon = mulWadDown(mon, x);
+        seriesTerm = mulWadDown(seriesTerm, x);
         coeff = (coeff * zeroFloorSub(n, 1)) / 2;
-        uint256 secondTerm = mon * coeff;
+        uint256 secondTerm = coeff * seriesTerm;
 
-        mon = mulWadDown(mon, x);
+        seriesTerm = mulWadDown(seriesTerm, x);
         coeff = (coeff * zeroFloorSub(n, 2)) / 3;
-        uint256 thirdTerm = mon * coeff;
+        uint256 thirdTerm = coeff * seriesTerm;
 
         return firstTerm + secondTerm + thirdTerm;
     }
