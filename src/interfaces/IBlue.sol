@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.5.0;
 
-import {IFlashLender} from "./IFlashLender.sol";
-
 type Id is bytes32;
 
 struct Market {
@@ -20,7 +18,7 @@ struct Signature {
     bytes32 s;
 }
 
-interface IBlue is IFlashLender {
+interface IBlue {
     event SupplyCollateral(Id indexed id, address indexed caller, address indexed onBehalf, uint256 amount);
     event WithdrawCollateral(
         Id indexed id, address caller, address indexed onBehalf, address indexed receiver, uint256 amount
@@ -105,14 +103,16 @@ interface IBlue is IFlashLender {
     function setFeeRecipient(address recipient) external;
     function createMarket(Market memory market) external;
 
-    function supply(Market memory market, uint256 amount, address onBehalf, bytes memory data) external;
+    function interact(bytes calldata data) external;
+
+    function supply(Market memory market, uint256 amount, address onBehalf) external;
     function withdraw(Market memory market, uint256 amount, address onBehalf, address receiver) external;
     function borrow(Market memory market, uint256 amount, address onBehalf, address receiver) external;
-    function repay(Market memory market, uint256 amount, address onBehalf, bytes memory data) external;
-    function supplyCollateral(Market memory market, uint256 amount, address onBehalf, bytes memory data) external;
+    function repay(Market memory market, uint256 amount, address onBehalf) external;
+    function supplyCollateral(Market memory market, uint256 amount, address onBehalf) external;
     function withdrawCollateral(Market memory market, uint256 amount, address onBehalf, address receiver) external;
-    function liquidate(Market memory market, address borrower, uint256 seized, bytes memory data) external;
-    function flashLoan(address token, uint256 amount, bytes calldata data) external;
+    function liquidate(Market memory market, address borrower, uint256 seized) external;
+    function flashLoan(address token, uint256 amount) external;
 
     function setAuthorization(address authorized, bool newIsAuthorized) external;
     function setAuthorizationWithSig(

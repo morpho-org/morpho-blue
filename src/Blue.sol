@@ -1,13 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.21;
 
-import {
-    IBlueLiquidateCallback,
-    IBlueRepayCallback,
-    IBlueSupplyCallback,
-    IBlueSupplyCollateralCallback,
-    IBlueFlashLoanCallback
-} from "./interfaces/IBlueCallbacks.sol";
+import {IFlashBlue} from "./interfaces/IBlueCallbacks.sol";
 import {IIrm} from "./interfaces/IIrm.sol";
 import {IERC20} from "./interfaces/IERC20.sol";
 import {IOracle} from "./interfaces/IOracle.sol";
@@ -71,6 +65,12 @@ contract Blue is IBlue {
     mapping(address => mapping(address => bool)) public isAuthorized;
     // User's nonces. Used to prevent replay attacks with EIP-712 signatures.
     mapping(address => uint256) public nonce;
+    // The locking mechanism for flash accounting.
+    bool locked;
+    // Amounts to transfer.
+    mapping(address => uint256) public amountsToTransfer;
+    // Assets to transfer.
+    address[] public assetsToTransfer;
 
     // Constructor.
 
@@ -84,6 +84,11 @@ contract Blue is IBlue {
 
     modifier onlyOwner() {
         require(msg.sender == owner, Errors.NOT_OWNER);
+        _;
+    }
+
+    modifier isLocked() {
+        require(locked, Errors.NOT_LOCKED);
         _;
     }
 
@@ -141,9 +146,31 @@ contract Blue is IBlue {
         emit CreateMarket(id, market);
     }
 
+    // Main entry point
+
+    function interact(bytes calldata data) external {
+        locked = true;
+        IFlashBlue(msg.sender).onBlueCallback(data);
+        locked = false;
+
+        while (assetsToTransfer.length != 0) {
+            address asset = assetsToTransfer[assetsToTransfer.length - 1];
+            assetsToTransfer.pop();
+            IERC20(asset).safeTransferFrom(msg.sender, address(this), amountsToTransfer[asset]);
+            delete amountsToTransfer[asset];
+        }
+    }
+
+    function deferredTransfer(address token, uint256 amount) internal {
+        if (amountsToTransfer[token] == 0) {
+            assetsToTransfer.push(token);
+        }
+        amountsToTransfer[token] += amount;
+    }
+
     // Supply management.
 
-    function supply(Market memory market, uint256 amount, address onBehalf, bytes calldata data) external {
+    function supply(Market memory market, uint256 amount, address onBehalf) external isLocked {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
@@ -159,12 +186,10 @@ contract Blue is IBlue {
 
         emit Supply(id, msg.sender, onBehalf, amount, shares);
 
-        if (data.length > 0) IBlueSupplyCallback(msg.sender).onBlueSupply(amount, data);
-
-        IERC20(market.borrowableAsset).safeTransferFrom(msg.sender, address(this), amount);
+        deferredTransfer(market.borrowableAsset, amount);
     }
 
-    function withdraw(Market memory market, uint256 shares, address onBehalf, address receiver) external {
+    function withdraw(Market memory market, uint256 shares, address onBehalf, address receiver) external isLocked {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(shares != 0, Errors.ZERO_SHARES);
@@ -189,7 +214,7 @@ contract Blue is IBlue {
 
     // Borrow management.
 
-    function borrow(Market memory market, uint256 amount, address onBehalf, address receiver) external {
+    function borrow(Market memory market, uint256 amount, address onBehalf, address receiver) external isLocked {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
@@ -213,7 +238,7 @@ contract Blue is IBlue {
         IERC20(market.borrowableAsset).safeTransfer(receiver, amount);
     }
 
-    function repay(Market memory market, uint256 shares, address onBehalf, bytes calldata data) external {
+    function repay(Market memory market, uint256 shares, address onBehalf) external isLocked {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(shares != 0, Errors.ZERO_SHARES);
@@ -229,15 +254,13 @@ contract Blue is IBlue {
 
         emit Repay(id, msg.sender, onBehalf, amount, shares);
 
-        if (data.length > 0) IBlueRepayCallback(msg.sender).onBlueRepay(amount, data);
-
-        IERC20(market.borrowableAsset).safeTransferFrom(msg.sender, address(this), amount);
+        deferredTransfer(market.borrowableAsset, amount);
     }
 
     // Collateral management.
 
     /// @dev Don't accrue interests because it's not required and it saves gas.
-    function supplyCollateral(Market memory market, uint256 amount, address onBehalf, bytes calldata data) external {
+    function supplyCollateral(Market memory market, uint256 amount, address onBehalf) external isLocked {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
@@ -249,12 +272,13 @@ contract Blue is IBlue {
 
         emit SupplyCollateral(id, msg.sender, onBehalf, amount);
 
-        if (data.length > 0) IBlueSupplyCollateralCallback(msg.sender).onBlueSupplyCollateral(amount, data);
-
-        IERC20(market.collateralAsset).safeTransferFrom(msg.sender, address(this), amount);
+        deferredTransfer(market.collateralAsset, amount);
     }
 
-    function withdrawCollateral(Market memory market, uint256 amount, address onBehalf, address receiver) external {
+    function withdrawCollateral(Market memory market, uint256 amount, address onBehalf, address receiver)
+        external
+        isLocked
+    {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
@@ -275,7 +299,7 @@ contract Blue is IBlue {
 
     // Liquidation.
 
-    function liquidate(Market memory market, address borrower, uint256 seized, bytes calldata data) external {
+    function liquidate(Market memory market, address borrower, uint256 seized) external isLocked {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(seized != 0, Errors.ZERO_AMOUNT);
@@ -313,21 +337,17 @@ contract Blue is IBlue {
 
         emit Liquidate(id, msg.sender, borrower, repaid, repaidShares, seized, badDebtShares);
 
-        if (data.length > 0) IBlueLiquidateCallback(msg.sender).onBlueLiquidate(seized, repaid, data);
-
-        IERC20(market.borrowableAsset).safeTransferFrom(msg.sender, address(this), repaid);
+        deferredTransfer(market.borrowableAsset, repaid);
     }
 
     // Flash Loans.
 
-    function flashLoan(address token, uint256 amount, bytes calldata data) external {
+    function flashLoan(address token, uint256 amount) external isLocked {
         IERC20(token).safeTransfer(msg.sender, amount);
 
         emit FlashLoan(msg.sender, token, amount);
 
-        IBlueFlashLoanCallback(msg.sender).onBlueFlashLoan(token, amount, data);
-
-        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
+        deferredTransfer(token, amount);
     }
 
     // Authorizations.

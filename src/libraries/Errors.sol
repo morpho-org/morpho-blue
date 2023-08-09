@@ -2,6 +2,8 @@
 pragma solidity ^0.8.0;
 
 library Errors {
+    string internal constant NOT_LOCKED = "not locked";
+
     string internal constant NOT_OWNER = "not owner";
 
     string internal constant LLTV_TOO_HIGH = "LLTV too high";

@@ -23,7 +23,7 @@ library BlueLib {
         blue.withdraw(market, shares, onBehalf, receiver);
     }
 
-    function repayAmount(IBlue blue, Market memory market, uint256 amount, address onBehalf, bytes memory data)
+    function repayAmount(IBlue blue, Market memory market, uint256 amount, address onBehalf)
         internal
         returns (uint256 shares)
     {
@@ -33,6 +33,6 @@ library BlueLib {
         uint256 maxShares = blue.borrowShares(id, address(this));
         if (shares > maxShares) shares = maxShares;
 
-        blue.repay(market, shares, onBehalf, data);
+        blue.repay(market, shares, onBehalf);
     }
 }
