@@ -941,7 +941,7 @@ contract BlueTest is
 
     // Callback functions.
 
-    function onBlueSupply(uint256 amount, bytes memory data) external {
+    function onBlueSupply(Market memory market, uint256 amount, bytes memory data) external {
         require(msg.sender == address(blue));
         bytes4 selector;
         (selector, data) = abi.decode(data, (bytes4, bytes));
@@ -950,7 +950,7 @@ contract BlueTest is
         }
     }
 
-    function onBlueSupplyCollateral(uint256 amount, bytes memory data) external {
+    function onBlueSupplyCollateral(Market memory market, uint256 amount, bytes memory data) external {
         require(msg.sender == address(blue));
         bytes4 selector;
         (selector, data) = abi.decode(data, (bytes4, bytes));
@@ -964,7 +964,7 @@ contract BlueTest is
         }
     }
 
-    function onBlueRepay(uint256 amount, bytes memory data) external {
+    function onBlueRepay(Market memory market, uint256 amount, bytes memory data) external {
         require(msg.sender == address(blue));
         bytes4 selector;
         (selector, data) = abi.decode(data, (bytes4, bytes));
@@ -976,7 +976,7 @@ contract BlueTest is
         }
     }
 
-    function onBlueLiquidate(uint256, uint256 repaid, bytes memory data) external {
+    function onBlueLiquidate(Market memory market, uint256, uint256 repaid, bytes memory data) external {
         require(msg.sender == address(blue));
         bytes4 selector;
         (selector, data) = abi.decode(data, (bytes4, bytes));
