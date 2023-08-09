@@ -20,7 +20,7 @@ contract SingleMarketInvariantTest is InvariantBaseTest {
         _weightSelector(this.withdrawOnBlue.selector, 20);
         _weightSelector(this.supplyCollateralOnBlue.selector, 20);
         _weightSelector(this.withdrawCollateralOnBlue.selector, 20);
-        _weightSelector(this.newBlock.selector, 1);
+        _weightSelector(this.newBlock.selector, 5);
         _weightSelector(this.setMarketFee.selector, 2);
 
         targetSelector(FuzzSelector({addr: address(this), selectors: selectors}));
@@ -41,7 +41,7 @@ contract SingleMarketInvariantTest is InvariantBaseTest {
     }
 
     function setMarketFee(uint256 newFee) public {
-        newFee = bound(newFee, 1, MAX_FEE);
+        newFee = bound(newFee, 0, MAX_FEE);
 
         vm.prank(OWNER);
         blue.setFee(market, newFee);

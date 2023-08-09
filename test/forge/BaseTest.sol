@@ -17,18 +17,21 @@ contract BaseTest is Test {
     uint256 internal constant MAX_TEST_AMOUNT = 2 ** 64;
     uint256 internal constant MIN_COLLATERAL_PRICE = 100;
     uint256 internal constant MAX_COLLATERAL_PRICE = 2 ** 64;
-    address internal constant BORROWER = address(uint160(uint256(keccak256("Morpho Blue Borrower"))));
-    address internal constant LIQUIDATOR = address(uint160(uint256(keccak256("Morpho Blue Liquidator"))));
+
+    address internal BORROWER = _addrFromHashedString("Morpho Blue Borrower");
+    address internal LIQUIDATOR = _addrFromHashedString("Morpho Blue Liquidator");
+    address internal OWNER = _addrFromHashedString("Morpho Blue Owner");
+
     uint256 internal constant LLTV = 0.8 ether;
-    address internal constant OWNER = address(uint160(uint256(keccak256("Morpho Blue Owner"))));
+
     Blue internal blue;
     ERC20 internal borrowableAsset;
     ERC20 internal collateralAsset;
     Oracle internal borrowableOracle;
     Oracle internal collateralOracle;
     Irm internal irm;
-    Market public market;
-    Id public id;
+    Market internal market;
+    Id internal id;
 
     function setUp() virtual public {
         vm.label(OWNER, "Owner");
@@ -86,6 +89,10 @@ contract BaseTest is Test {
         borrowableAsset.approve(address(blue), type(uint256).max);
         collateralAsset.approve(address(blue), type(uint256).max);
         vm.stopPrank();
+    }
+
+    function _addrFromHashedString(string memory str) internal pure returns (address) {
+        return address(uint160(uint256(keccak256(bytes(str)))));
     }
 
     function _provideLiquidity(uint256 amount) internal {

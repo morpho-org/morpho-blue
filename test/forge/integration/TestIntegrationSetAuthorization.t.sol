@@ -27,8 +27,7 @@ contract IntegrationAuthorization is BaseTest {
     ) public {
         deadline = uint32(bound(deadline, block.timestamp + 1, type(uint32).max) - 1);
         timeElapsed = uint32(bound(timeElapsed, deadline + 1, type(uint32).max));
-        // Private key must be less than the secp256k1 curve order.
-        privateKey = bound(privateKey, 1, type(uint32).max);
+        privateKey = bound(privateKey, 1, SECP256K1_ORDER - 1);
         address authorizer = vm.addr(privateKey);
 
         SigUtils.Authorization memory authorization = SigUtils.Authorization({
@@ -59,8 +58,7 @@ contract IntegrationAuthorization is BaseTest {
         bool isAuthorized
     ) public {
         deadline = uint32(bound(deadline, block.timestamp + 1, type(uint32).max));
-        // Private key must be less than the secp256k1 curve order.
-        privateKey = bound(privateKey, 1, type(uint32).max);
+        privateKey = bound(privateKey, 1, SECP256K1_ORDER - 1);
         address authorizer = vm.addr(privateKey);
         vm.assume(authorizer != address(this));
 
@@ -90,8 +88,7 @@ contract IntegrationAuthorization is BaseTest {
         bool isAuthorized
     ) public {
         deadline = uint32(bound(deadline, block.timestamp + 1, type(uint32).max));
-        // Private key must be less than the secp256k1 curve order.
-        privateKey = bound(privateKey, 1, type(uint32).max);
+        privateKey = bound(privateKey, 1, SECP256K1_ORDER - 1);
         address authorizer = vm.addr(privateKey);
 
         SigUtils.Authorization memory authorization = SigUtils.Authorization({
@@ -117,5 +114,69 @@ contract IntegrationAuthorization is BaseTest {
 
         assertEq(blue.isAuthorized(authorizer, authorized), isAuthorized);
         assertEq(blue.nonce(authorizer), 1);
+    }
+
+    function testSetAuthorizationWithSignatureInvalidNonce(
+        uint32 deadline,
+        address authorized,
+        uint256 privateKey,
+        bool isAuthorized,
+        uint256 nonce
+    ) public {
+        deadline = uint32(bound(deadline, block.timestamp + 1, type(uint32).max));
+        privateKey = bound(privateKey, 1, SECP256K1_ORDER - 1);
+        address authorizer = vm.addr(privateKey);
+        vm.assume(nonce != blue.nonce(authorizer));
+
+        SigUtils.Authorization memory authorization = SigUtils.Authorization({
+            authorizer: authorizer,
+            authorized: authorized,
+            isAuthorized: isAuthorized,
+            nonce: nonce,
+            deadline: deadline
+        });
+
+        bytes32 digest = SigUtils.getTypedDataHash(blue.DOMAIN_SEPARATOR(), authorization);
+
+        Signature memory sig;
+        (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
+
+        vm.expectRevert(bytes(Errors.INVALID_SIGNATURE));
+        blue.setAuthorization(
+            authorization.authorizer, authorization.authorized, authorization.isAuthorized, authorization.deadline, sig
+        );
+    }
+
+    function testSetAuthorizationWithSignatureReplay(
+        uint32 deadline,
+        address authorized,
+        uint256 privateKey,
+        bool isAuthorized
+    ) public {
+        deadline = uint32(bound(deadline, block.timestamp + 1, type(uint32).max));
+        privateKey = bound(privateKey, 1, SECP256K1_ORDER - 1);
+        address authorizer = vm.addr(privateKey);
+
+        SigUtils.Authorization memory authorization = SigUtils.Authorization({
+            authorizer: authorizer,
+            authorized: authorized,
+            isAuthorized: isAuthorized,
+            nonce: blue.nonce(authorizer),
+            deadline: deadline
+        });
+
+        bytes32 digest = SigUtils.getTypedDataHash(blue.DOMAIN_SEPARATOR(), authorization);
+
+        Signature memory sig;
+        (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
+
+        blue.setAuthorization(
+            authorization.authorizer, authorization.authorized, authorization.isAuthorized, authorization.deadline, sig
+        );
+
+        vm.expectRevert(bytes(Errors.INVALID_SIGNATURE));
+        blue.setAuthorization(
+            authorization.authorizer, authorization.authorized, authorization.isAuthorized, authorization.deadline, sig
+        );
     }
 }

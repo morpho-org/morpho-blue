@@ -16,14 +16,14 @@ contract InvariantBaseTest is BaseTest {
     }
 
     function _targetDefaultSenders() internal {
-        targetSender(address(uint160(uint256(keccak256("Morpho Blue address1")))));
-        targetSender(address(uint160(uint256(keccak256("Morpho Blue address2")))));
-        targetSender(address(uint160(uint256(keccak256("Morpho Blue address3")))));
-        targetSender(address(uint160(uint256(keccak256("Morpho Blue address4")))));
-        targetSender(address(uint160(uint256(keccak256("Morpho Blue address5")))));
-        targetSender(address(uint160(uint256(keccak256("Morpho Blue address6")))));
-        targetSender(address(uint160(uint256(keccak256("Morpho Blue address7")))));
-        targetSender(address(uint160(uint256(keccak256("Morpho Blue address8")))));
+        targetSender(_addrFromHashedString("Morpho Blue address1"));
+        targetSender(_addrFromHashedString("Morpho Blue address2"));
+        targetSender(_addrFromHashedString("Morpho Blue address3"));
+        targetSender(_addrFromHashedString("Morpho Blue address4"));
+        targetSender(_addrFromHashedString("Morpho Blue address5"));
+        targetSender(_addrFromHashedString("Morpho Blue address6"));
+        targetSender(_addrFromHashedString("Morpho Blue address7"));
+        targetSender(_addrFromHashedString("Morpho Blue address8"));
     }
 
     function _weightSelector(bytes4 selector, uint256 weight) internal {
@@ -32,35 +32,27 @@ contract InvariantBaseTest is BaseTest {
         }
     }
 
-    function sumUsersSupplyShares(address[] memory addresses) internal view returns (uint256) {
-        uint256 sum;
+    function sumUsersSupplyShares(address[] memory addresses) internal view returns (uint256 sum) {
         for (uint256 i; i < addresses.length; ++i) {
             sum += blue.supplyShares(id, addresses[i]);
         }
-        return sum;
     }
 
-    function sumUsersBorrowShares(address[] memory addresses) internal view returns (uint256) {
-        uint256 sum;
+    function sumUsersBorrowShares(address[] memory addresses) internal view returns (uint256 sum) {
         for (uint256 i; i < addresses.length; ++i) {
             sum += blue.borrowShares(id, addresses[i]);
         }
-        return sum;
     }
 
-    function sumUsersSuppliedAmounts(address[] memory addresses) internal view returns (uint256) {
-        uint256 sum;
+    function sumUsersSuppliedAmounts(address[] memory addresses) internal view returns (uint256 sum) {
         for (uint256 i; i < addresses.length; ++i) {
             sum += blue.supplyShares(id, addresses[i]).toAssetsDown(blue.totalSupply(id), blue.totalSupplyShares(id));
         }
-        return sum;
     }
 
-    function sumUsersBorrowedAmounts(address[] memory addresses) internal view returns (uint256) {
-        uint256 sum;
+    function sumUsersBorrowedAmounts(address[] memory addresses) internal view returns (uint256 sum) {
         for (uint256 i; i < addresses.length; ++i) {
             sum += blue.borrowShares(id, addresses[i]).toAssetsUp(blue.totalBorrow(id), blue.totalBorrowShares(id));
         }
-        return sum;
     }
 }
