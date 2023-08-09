@@ -6,6 +6,6 @@ pragma solidity >=0.5.0;
 /// @custom:contact security@morpho.xyz
 /// @notice Interface that oracles used by Blue must implement.
 interface IOracle {
-    /// @notice Returns the price of the underlying asset.
-    function price() external view returns (uint256);
+    /// @notice Returns the price of the collateral asset quoted in the borrowable asset and the price's unit scale.
+    function price() external view returns (uint256 collateralPrice, uint256 scale);
 }

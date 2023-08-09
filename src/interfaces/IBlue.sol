@@ -8,8 +8,7 @@ type Id is bytes32;
 struct Market {
     address borrowableAsset;
     address collateralAsset;
-    address borrowableOracle;
-    address collateralOracle;
+    address oracle;
     address irm;
     uint256 lltv;
 }
@@ -295,7 +294,7 @@ interface IBlue is IFlashLender {
     /// @param newIsAuthorized The new authorization status.
     /// @param deadline The deadline after which the signature is invalid.
     /// @dev The signature is malleable, but it has no impact on the security here.
-    function setAuthorization(
+    function setAuthorizationWithSig(
         address authorizer,
         address authorized,
         bool newIsAuthorized,
