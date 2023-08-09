@@ -30,11 +30,11 @@ library FixedPointMathLib {
     }
 
     /// @dev The sum of the last three terms in a four term taylor series expansion
-    ///      to approximate a compound interest rate: (1 + x)^n - 1.
+    ///      to approximate a continuous compound interest rate: e^(nx) - 1.
     function wTaylorCompounded(uint256 x, uint256 n) internal pure returns (uint256) {
         uint256 firstTerm = x * n;
-        uint256 secondTerm = mulWadDown(firstTerm, x * zeroFloorSub(n, 1)) / 2;
-        uint256 thirdTerm = mulWadDown(secondTerm, x * zeroFloorSub(n, 2)) / 3;
+        uint256 secondTerm = mulWadDown(firstTerm, firstTerm) / 2;
+        uint256 thirdTerm = mulWadDown(secondTerm, firstTerm) / 3;
 
         return firstTerm + secondTerm + thirdTerm;
     }
@@ -63,17 +63,6 @@ library FixedPointMathLib {
             // If x * y modulo the denominator is strictly greater than 0,
             // 1 is added to round up the division of x * y by the denominator.
             z := add(gt(mod(mul(x, y), denominator), 0), div(mul(x, y), denominator))
-        }
-    }
-
-    /*//////////////////////////////////////////////////////////////
-                    INTEGER OPERATIONS
-    //////////////////////////////////////////////////////////////*/
-
-    /// @dev Returns max(x - y, 0).
-    function zeroFloorSub(uint256 x, uint256 y) internal pure returns (uint256 z) {
-        assembly {
-            z := mul(gt(x, y), sub(x, y))
         }
     }
 }
