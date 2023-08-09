@@ -172,32 +172,34 @@ interface IBlue is IFlashLender {
     /// @notice The fee recipient.
     function feeRecipient() external view returns (address);
 
-    /// @notice Users' supply balance.
-    function supplyShares(Id, address user) external view returns (uint256);
+    /// @notice The `user`'s supply shares on the market defined by the given `id`.
+    function supplyShares(Id id, address user) external view returns (uint256);
 
-    /// @notice Users' borrow balances.
+    /// @notice The `user`'s borrow shares on the market defined by the given `id`.
     function borrowShares(Id, address user) external view returns (uint256);
 
-    /// @notice Users' collateral balance.
-    function collateral(Id, address user) external view returns (uint256);
+    /// @notice The `user`'s collateral balance on the market defined by the given `id`.
+    function collateral(Id id, address user) external view returns (uint256);
 
-    /// @notice Market's total supply.
-    function totalSupply(Id) external view returns (uint256);
+    /// @notice The total amount of assets supplied to the market defined by the given `id`.
+    /// @dev The value can be incaccurate since it does not take into account the accrued interests.
+    function totalSupply(Id id) external view returns (uint256);
 
-    /// @notice Market's total supply shares.
-    function totalSupplyShares(Id) external view returns (uint256);
+    /// @notice The total supply shares of the market defined by the given `id`.
+    function totalSupplyShares(Id id) external view returns (uint256);
 
-    /// @notice Market's total borrow.
-    function totalBorrow(Id) external view returns (uint256);
+    /// @notice The total amount of assets borrowed from the market defined by the given `id`.
+    /// @dev The value can be incaccurate since it does not take into account the accrued interests.
+    function totalBorrow(Id id) external view returns (uint256);
 
-    /// @notice Market's total borrow shares.
-    function totalBorrowShares(Id) external view returns (uint256);
+    /// @notice The total borrow shares of the market defined by the given `id`.
+    function totalBorrowShares(Id id) external view returns (uint256);
 
-    /// @notice Interests last update (used to check if a market has been created).
-    function lastUpdate(Id) external view returns (uint256);
+    /// @notice The last update of the market defined by the given `id` (used to check if a market has been created).
+    function lastUpdate(Id id) external view returns (uint256);
 
-    /// @notice The market's fee.
-    function fee(Id) external view returns (uint256);
+    /// @notice The fee of the market defined by the given `id`.
+    function fee(Id id) external view returns (uint256);
 
     /// @notice Whether the `irm` is enabled.
     function isIrmEnabled(address irm) external view returns (bool);
@@ -205,10 +207,11 @@ interface IBlue is IFlashLender {
     /// @notice Whether the `lltv` is enabled.
     function isLltvEnabled(uint256 lltv) external view returns (bool);
 
-    /// @notice User's authorizations. Note that by default, `msg.sender` is authorized by themself.
+    /// @notice Whether `aurothized` is authorized to modify `authorizer`'s positions.
+    /// @dev By default, `msg.sender` is authorized by themself.
     function isAuthorized(address authorizer, address authorized) external view returns (bool);
 
-    /// @notice User's current nonce. Used to prevent replay attacks with EIP-712 signatures.
+    /// @notice The `user`'s current nonce. Used to prevent replay attacks with EIP-712 signatures.
     function nonce(address user) external view returns (uint256);
 
     /// @notice Sets `newOwner` as owner of the contract.
@@ -221,7 +224,7 @@ interface IBlue is IFlashLender {
     function enableLltv(uint256 lltv) external;
 
     /// @notice Sets the `newFee` for `market`.
-    /// @dev It is the `owner`'s responsibility to ensure a fee recipient is set before setting a non-zero fee.
+    /// @dev It is the `owner`'s responsibility to ensure `feeRecipient` is set before setting a non-zero fee.
     function setFee(Market memory market, uint256 newFee) external;
 
     /// @notice Sets `recipient` as recipient of the fee.
