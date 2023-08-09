@@ -62,7 +62,7 @@ interface IBlue is IFlashLender {
 
     event SetFee(Id indexed id, uint256 fee);
 
-    event SetFeeRecipient(address indexed feeRecipient);
+    event SetFeeRecipient(Id indexed id, address indexed feeRecipient);
 
     event CreateMarket(Id indexed id, Market market);
 
@@ -81,7 +81,6 @@ interface IBlue is IFlashLender {
     function DOMAIN_SEPARATOR() external view returns (bytes32);
 
     function owner() external view returns (address);
-    function feeRecipient() external view returns (address);
 
     function supplyShares(Id, address) external view returns (uint256);
     function borrowShares(Id, address) external view returns (uint256);
@@ -92,6 +91,7 @@ interface IBlue is IFlashLender {
     function totalBorrowShares(Id) external view returns (uint256);
     function lastUpdate(Id) external view returns (uint256);
     function fee(Id) external view returns (uint256);
+    function feeRecipient(Id) external view returns (address);
 
     function isIrmEnabled(address) external view returns (bool);
     function isLltvEnabled(uint256) external view returns (bool);
@@ -102,7 +102,7 @@ interface IBlue is IFlashLender {
     function enableIrm(address irm) external;
     function enableLltv(uint256 lltv) external;
     function setFee(Market memory market, uint256 newFee) external;
-    function setFeeRecipient(address recipient) external;
+    function setFeeRecipient(Market memory market, address recipient) external;
     function createMarket(Market memory market) external;
 
     function supply(Market memory market, uint256 amount, address onBehalf, bytes memory data) external;

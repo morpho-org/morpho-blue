@@ -4,6 +4,8 @@ pragma solidity ^0.8.0;
 library Errors {
     string internal constant NOT_OWNER = "not owner";
 
+    string internal constant NOT_OWNER_OR_RECIPIENT = "not owner or current fee recipient";
+
     string internal constant LLTV_TOO_HIGH = "LLTV too high";
 
     string internal constant MAX_FEE_EXCEEDED = "MAX_FEE exceeded";

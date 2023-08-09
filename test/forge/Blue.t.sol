@@ -246,19 +246,37 @@ contract BlueTest is
         blue.setFee(market, fee);
     }
 
-    function testSetFeeRecipient(address recipient) public {
+    function testSetFeeRecipientIfOwner(Market memory marketFuzz, address recipient) public {
         vm.prank(OWNER);
-        blue.setFeeRecipient(recipient);
+        blue.setFeeRecipient(marketFuzz, recipient);
 
-        assertEq(blue.feeRecipient(), recipient);
+        assertEq(blue.feeRecipient(marketFuzz.id()), recipient);
     }
 
-    function testSetFeeRecipientShouldRevertIfNotOwner(address caller, address recipient) public {
-        vm.assume(caller != OWNER);
+    function testSetFeeRecipientIfRecipient(Market memory marketFuzz, address recipient1, address recipient2) public {
+        vm.prank(OWNER);
+        blue.setFeeRecipient(marketFuzz, recipient1);
 
-        vm.expectRevert(bytes(Errors.NOT_OWNER));
+        vm.prank(recipient1);
+        blue.setFeeRecipient(marketFuzz, recipient2);
+
+        assertEq(blue.feeRecipient(marketFuzz.id()), recipient2);
+    }
+
+    function testSetFeeRecipientShouldRevertIfNotOwnerOrRecipient(
+        Market memory marketFuzz,
+        address caller,
+        address recipient1,
+        address recipient2
+    ) public {
+        vm.prank(OWNER);
+        blue.setFeeRecipient(marketFuzz, recipient1);
+
+        vm.assume(caller != OWNER && caller != recipient1);
+
+        vm.expectRevert(bytes(Errors.NOT_OWNER_OR_RECIPIENT));
         vm.prank(caller);
-        blue.setFeeRecipient(recipient);
+        blue.setFeeRecipient(marketFuzz, recipient2);
     }
 
     function testFeeAccrues(uint256 amountLent, uint256 amountBorrowed, uint256 fee, uint256 timeElapsed) public {
@@ -270,7 +288,7 @@ contract BlueTest is
 
         vm.startPrank(OWNER);
         blue.setFee(market, fee);
-        blue.setFeeRecipient(recipient);
+        blue.setFeeRecipient(market, recipient);
         vm.stopPrank();
 
         borrowableAsset.setBalance(address(this), amountLent);

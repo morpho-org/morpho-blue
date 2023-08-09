@@ -43,8 +43,6 @@ contract Blue is IBlue {
 
     // Owner.
     address public owner;
-    // Fee recipient.
-    address public feeRecipient;
     // User' supply balances.
     mapping(Id => mapping(address => uint256)) public supplyShares;
     // User' borrow balances.
@@ -63,6 +61,8 @@ contract Blue is IBlue {
     mapping(Id => uint256) public lastUpdate;
     // Fee.
     mapping(Id => uint256) public fee;
+    // Fee recipient.
+    mapping(Id => address) public feeRecipient;
     // Enabled IRMs.
     mapping(address => bool) public isIrmEnabled;
     // Enabled LLTVs.
@@ -122,10 +122,12 @@ contract Blue is IBlue {
         emit SetFee(id, newFee);
     }
 
-    function setFeeRecipient(address recipient) external onlyOwner {
-        feeRecipient = recipient;
+    function setFeeRecipient(Market memory market, address recipient) external {
+        Id id = market.id();
+        require(msg.sender == owner || msg.sender == feeRecipient[id], Errors.NOT_OWNER_OR_RECIPIENT);
+        feeRecipient[id] = recipient;
 
-        emit SetFeeRecipient(recipient);
+        emit SetFeeRecipient(id, recipient);
     }
 
     // Markets management.
@@ -387,7 +389,7 @@ contract Blue is IBlue {
                 uint256 feeAmount = accruedInterests.mulWadDown(fee[id]);
                 // The fee amount is subtracted from the total supply in this calculation to compensate for the fact that total supply is already updated.
                 feeShares = feeAmount.mulDivDown(totalSupplyShares[id], totalSupply[id] - feeAmount);
-                supplyShares[id][feeRecipient] += feeShares;
+                supplyShares[id][feeRecipient[id]] += feeShares;
                 totalSupplyShares[id] += feeShares;
             }
 
