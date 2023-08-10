@@ -151,7 +151,7 @@ contract BlueTest is
         Blue blue2 = new Blue(OWNER);
 
         vm.prank(attacker);
-        vm.expectRevert(bytes(ErrorsLib.NOT_OWNER));
+        vm.expectRevert(bytes(NOT_OWNER));
         blue2.setOwner(newOwner);
     }
 
@@ -159,7 +159,7 @@ contract BlueTest is
         vm.assume(attacker != blue.owner());
 
         vm.prank(attacker);
-        vm.expectRevert(bytes(ErrorsLib.NOT_OWNER));
+        vm.expectRevert(bytes(NOT_OWNER));
         blue.enableIrm(newIrm);
     }
 
@@ -183,7 +183,7 @@ contract BlueTest is
         vm.assume(marketFuzz.irm != address(irm));
 
         vm.prank(OWNER);
-        vm.expectRevert(bytes(ErrorsLib.IRM_NOT_ENABLED));
+        vm.expectRevert(bytes(IRM_NOT_ENABLED));
         blue.createMarket(marketFuzz);
     }
 
@@ -191,7 +191,7 @@ contract BlueTest is
         vm.assume(attacker != OWNER);
 
         vm.prank(attacker);
-        vm.expectRevert(bytes(ErrorsLib.NOT_OWNER));
+        vm.expectRevert(bytes(NOT_OWNER));
         blue.enableLltv(newLltv);
     }
 
@@ -208,7 +208,7 @@ contract BlueTest is
         newLltv = bound(newLltv, WAD, type(uint256).max);
 
         vm.prank(OWNER);
-        vm.expectRevert(bytes(ErrorsLib.LLTV_TOO_HIGH));
+        vm.expectRevert(bytes(LLTV_TOO_HIGH));
         blue.enableLltv(newLltv);
     }
 
@@ -225,7 +225,7 @@ contract BlueTest is
         fee = bound(fee, MAX_FEE + 1, type(uint256).max);
 
         vm.prank(OWNER);
-        vm.expectRevert(bytes(ErrorsLib.MAX_FEE_EXCEEDED));
+        vm.expectRevert(bytes(MAX_FEE_EXCEEDED));
         blue.setFee(market, fee);
     }
 
@@ -234,7 +234,7 @@ contract BlueTest is
         fee = bound(fee, 0, WAD);
 
         vm.prank(OWNER);
-        vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
+        vm.expectRevert(bytes(MARKET_NOT_CREATED));
         blue.setFee(marketFuzz, fee);
     }
 
@@ -242,7 +242,7 @@ contract BlueTest is
         vm.assume(caller != OWNER);
         fee = bound(fee, 0, WAD);
 
-        vm.expectRevert(bytes(ErrorsLib.NOT_OWNER));
+        vm.expectRevert(bytes(NOT_OWNER));
         blue.setFee(market, fee);
     }
 
@@ -256,7 +256,7 @@ contract BlueTest is
     function testSetFeeRecipientShouldRevertIfNotOwner(address caller, address recipient) public {
         vm.assume(caller != OWNER);
 
-        vm.expectRevert(bytes(ErrorsLib.NOT_OWNER));
+        vm.expectRevert(bytes(NOT_OWNER));
         vm.prank(caller);
         blue.setFeeRecipient(recipient);
     }
@@ -308,7 +308,7 @@ contract BlueTest is
         marketFuzz.irm = address(irm);
 
         vm.prank(OWNER);
-        vm.expectRevert(bytes(ErrorsLib.LLTV_NOT_ENABLED));
+        vm.expectRevert(bytes(LLTV_NOT_ENABLED));
         blue.createMarket(marketFuzz);
     }
 
@@ -340,7 +340,7 @@ contract BlueTest is
 
         if (amountBorrowed > amountLent) {
             vm.prank(BORROWER);
-            vm.expectRevert(bytes(ErrorsLib.INSUFFICIENT_LIQUIDITY));
+            vm.expectRevert(bytes(INSUFFICIENT_LIQUIDITY));
             blue.borrow(market, amountBorrowed, BORROWER, receiver);
             return;
         }
@@ -393,7 +393,7 @@ contract BlueTest is
             blue.withdraw(market, sharesWithdrawn, address(this), receiver);
             return;
         } else if (amountWithdrawn > totalSupplyBefore - amountBorrowed) {
-            vm.expectRevert(bytes(ErrorsLib.INSUFFICIENT_LIQUIDITY));
+            vm.expectRevert(bytes(INSUFFICIENT_LIQUIDITY));
             blue.withdraw(market, sharesWithdrawn, address(this), receiver);
             return;
         }
@@ -569,7 +569,7 @@ contract BlueTest is
         uint256 maxBorrow = amountCollateral.wMulDown(collateralPrice).wMulDown(LLTV);
 
         vm.prank(BORROWER);
-        if (maxBorrow < amountBorrowed) vm.expectRevert(bytes(ErrorsLib.INSUFFICIENT_COLLATERAL));
+        if (maxBorrow < amountBorrowed) vm.expectRevert(bytes(INSUFFICIENT_COLLATERAL));
         blue.borrow(market, amountBorrowed, BORROWER, BORROWER);
     }
 
@@ -692,68 +692,68 @@ contract BlueTest is
     function testUnknownMarket(Market memory marketFuzz) public {
         vm.assume(neq(marketFuzz, market));
 
-        vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
+        vm.expectRevert(bytes(MARKET_NOT_CREATED));
         blue.supply(marketFuzz, 1, address(this), hex"");
 
-        vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
+        vm.expectRevert(bytes(MARKET_NOT_CREATED));
         blue.withdraw(marketFuzz, 1, address(this), address(this));
 
-        vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
+        vm.expectRevert(bytes(MARKET_NOT_CREATED));
         blue.borrow(marketFuzz, 1, address(this), address(this));
 
-        vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
+        vm.expectRevert(bytes(MARKET_NOT_CREATED));
         blue.repay(marketFuzz, 1, address(this), hex"");
 
-        vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
+        vm.expectRevert(bytes(MARKET_NOT_CREATED));
         blue.supplyCollateral(marketFuzz, 1, address(this), hex"");
 
-        vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
+        vm.expectRevert(bytes(MARKET_NOT_CREATED));
         blue.withdrawCollateral(marketFuzz, 1, address(this), address(this));
 
-        vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
+        vm.expectRevert(bytes(MARKET_NOT_CREATED));
         blue.liquidate(marketFuzz, address(0), 1, hex"");
     }
 
     function testInputZero() public {
-        vm.expectRevert(bytes(ErrorsLib.ZERO_AMOUNT));
+        vm.expectRevert(bytes(ZERO_AMOUNT));
         blue.supply(market, 0, address(this), hex"");
 
-        vm.expectRevert(bytes(ErrorsLib.ZERO_SHARES));
+        vm.expectRevert(bytes(ZERO_SHARES));
         blue.withdraw(market, 0, address(this), address(this));
 
-        vm.expectRevert(bytes(ErrorsLib.ZERO_AMOUNT));
+        vm.expectRevert(bytes(ZERO_AMOUNT));
         blue.borrow(market, 0, address(this), address(this));
 
-        vm.expectRevert(bytes(ErrorsLib.ZERO_SHARES));
+        vm.expectRevert(bytes(ZERO_SHARES));
         blue.repay(market, 0, address(this), hex"");
 
-        vm.expectRevert(bytes(ErrorsLib.ZERO_AMOUNT));
+        vm.expectRevert(bytes(ZERO_AMOUNT));
         blue.supplyCollateral(market, 0, address(this), hex"");
 
-        vm.expectRevert(bytes(ErrorsLib.ZERO_AMOUNT));
+        vm.expectRevert(bytes(ZERO_AMOUNT));
         blue.withdrawCollateral(market, 0, address(this), address(this));
 
-        vm.expectRevert(bytes(ErrorsLib.ZERO_AMOUNT));
+        vm.expectRevert(bytes(ZERO_AMOUNT));
         blue.liquidate(market, address(0), 0, hex"");
     }
 
     function testZeroAddress() public {
-        vm.expectRevert(bytes(ErrorsLib.ZERO_ADDRESS));
+        vm.expectRevert(bytes(ZERO_ADDRESS));
         blue.supply(market, 1, address(0), hex"");
 
-        vm.expectRevert(bytes(ErrorsLib.ZERO_ADDRESS));
+        vm.expectRevert(bytes(ZERO_ADDRESS));
         blue.withdraw(market, 1, address(this), address(0));
 
-        vm.expectRevert(bytes(ErrorsLib.ZERO_ADDRESS));
+        vm.expectRevert(bytes(ZERO_ADDRESS));
         blue.borrow(market, 1, address(this), address(0));
 
-        vm.expectRevert(bytes(ErrorsLib.ZERO_ADDRESS));
+        vm.expectRevert(bytes(ZERO_ADDRESS));
         blue.repay(market, 1, address(0), hex"");
 
-        vm.expectRevert(bytes(ErrorsLib.ZERO_ADDRESS));
+        vm.expectRevert(bytes(ZERO_ADDRESS));
         blue.supplyCollateral(market, 1, address(0), hex"");
 
-        vm.expectRevert(bytes(ErrorsLib.ZERO_ADDRESS));
+        vm.expectRevert(bytes(ZERO_ADDRESS));
         blue.withdrawCollateral(market, 1, address(this), address(0));
     }
 
@@ -780,11 +780,11 @@ contract BlueTest is
 
         vm.startPrank(attacker);
 
-        vm.expectRevert(bytes(ErrorsLib.UNAUTHORIZED));
+        vm.expectRevert(bytes(UNAUTHORIZED));
         blue.withdraw(market, 1, address(this), address(this));
-        vm.expectRevert(bytes(ErrorsLib.UNAUTHORIZED));
+        vm.expectRevert(bytes(UNAUTHORIZED));
         blue.withdrawCollateral(market, 1, address(this), address(this));
-        vm.expectRevert(bytes(ErrorsLib.UNAUTHORIZED));
+        vm.expectRevert(bytes(UNAUTHORIZED));
         blue.borrow(market, 1, address(this), address(this));
 
         vm.stopPrank();

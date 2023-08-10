@@ -20,6 +20,38 @@ struct Signature {
     bytes32 s;
 }
 
+string constant NOT_OWNER = "not owner";
+
+string constant LLTV_TOO_HIGH = "LLTV too high";
+
+string constant MAX_FEE_EXCEEDED = "MAX_FEE exceeded";
+
+string constant IRM_NOT_ENABLED = "IRM not enabled";
+
+string constant LLTV_NOT_ENABLED = "LLTV not enabled";
+
+string constant MARKET_CREATED = "market created";
+
+string constant MARKET_NOT_CREATED = "market not created";
+
+string constant ZERO_AMOUNT = "zero amount";
+
+string constant ZERO_SHARES = "zero shares";
+
+string constant ZERO_ADDRESS = "zero address";
+
+string constant UNAUTHORIZED = "unauthorized";
+
+string constant INSUFFICIENT_COLLATERAL = "insufficient collateral";
+
+string constant INSUFFICIENT_LIQUIDITY = "insufficient liquidity";
+
+string constant HEALTHY_POSITION = "position is healthy";
+
+string constant INVALID_SIGNATURE = "invalid signature";
+
+string constant SIGNATURE_EXPIRED = "signature expired";
+
 interface IBlue is IFlashLender {
     event SupplyCollateral(Id indexed id, address indexed caller, address indexed onBehalf, uint256 amount);
     event WithdrawCollateral(
