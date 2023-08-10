@@ -169,6 +169,8 @@ interface IBlue is IFlashLender {
     function owner() external view returns (address);
 
     /// @notice The fee recipient.
+    /// @dev The recipient receives the fees through a supply position.
+    ///      As every other supplier, the recipient is subject to illiquidity risks.
     function feeRecipient() external view returns (address);
 
     /// @notice The `user`'s supply shares on the market defined by the given `id`.
