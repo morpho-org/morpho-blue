@@ -12,7 +12,7 @@ contract IntegrationWithdrawCollateralTest is BaseTest {
         vm.assume(neq(marketFuzz, market) && receiver != address(0));
 
         vm.prank(supplier);
-        vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
+        vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
         blue.withdrawCollateral(marketFuzz, 1, supplier, receiver);
     }
 
@@ -26,7 +26,7 @@ contract IntegrationWithdrawCollateralTest is BaseTest {
         collateralAsset.approve(address(blue), amount);
         blue.supplyCollateral(market, amount, supplier, hex"");
 
-        vm.expectRevert(bytes(Errors.ZERO_AMOUNT));
+        vm.expectRevert(bytes(ErrorsLib.ZERO_AMOUNT));
         blue.withdrawCollateral(market, 0, supplier, receiver);
         vm.stopPrank();
     }
@@ -41,7 +41,7 @@ contract IntegrationWithdrawCollateralTest is BaseTest {
         collateralAsset.approve(address(blue), type(uint256).max);
         blue.supplyCollateral(market, amount, supplier, hex"");
 
-        vm.expectRevert(bytes(Errors.ZERO_ADDRESS));
+        vm.expectRevert(bytes(ErrorsLib.ZERO_ADDRESS));
         blue.withdrawCollateral(market, amount, supplier, address(0));
         vm.stopPrank();
     }
@@ -60,7 +60,7 @@ contract IntegrationWithdrawCollateralTest is BaseTest {
         vm.stopPrank();
 
         vm.prank(attacker);
-        vm.expectRevert(bytes(Errors.UNAUTHORIZED));
+        vm.expectRevert(bytes(ErrorsLib.UNAUTHORIZED));
         blue.withdrawCollateral(market, amount, supplier, receiver);
     }
 
@@ -76,15 +76,14 @@ contract IntegrationWithdrawCollateralTest is BaseTest {
         amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
         _provideLiquidity(amountSupplied);
 
-        borrowableOracle.setPrice(FixedPointMathLib.WAD);
-        collateralOracle.setPrice(priceCollateral);
+        oracle.setPrice(priceCollateral);
 
         collateralAsset.setBalance(BORROWER, amountCollateral);
 
         vm.startPrank(BORROWER);
         blue.supplyCollateral(market, amountCollateral, BORROWER, hex"");
-        blue.borrow(market, amountBorrowed, BORROWER, BORROWER);
-        vm.expectRevert(bytes(Errors.INSUFFICIENT_COLLATERAL));
+        blue.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
+        vm.expectRevert(bytes(ErrorsLib.INSUFFICIENT_COLLATERAL));
         blue.withdrawCollateral(market, amountCollateral, BORROWER, BORROWER);
         vm.stopPrank();
     }
@@ -107,18 +106,17 @@ contract IntegrationWithdrawCollateralTest is BaseTest {
 
         amountCollateralExcess = bound(amountCollateralExcess, 1, MAX_TEST_AMOUNT);
 
-        borrowableOracle.setPrice(FixedPointMathLib.WAD);
-        collateralOracle.setPrice(priceCollateral);
+        oracle.setPrice(priceCollateral);
 
         collateralAsset.setBalance(BORROWER, amountCollateral + amountCollateralExcess);
 
         vm.startPrank(BORROWER);
 
         blue.supplyCollateral(market, amountCollateral + amountCollateralExcess, BORROWER, hex"");
-        blue.borrow(market, amountBorrowed, BORROWER, BORROWER);
+        blue.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
 
         vm.expectEmit(true, true, true, true, address(blue));
-        emit Events.WithdrawCollateral(id, BORROWER, BORROWER, receiver, amountCollateralExcess);
+        emit EventsLib.WithdrawCollateral(id, BORROWER, BORROWER, receiver, amountCollateralExcess);
         blue.withdrawCollateral(market, amountCollateralExcess, BORROWER, receiver);
 
         vm.stopPrank();
@@ -146,6 +144,8 @@ contract IntegrationWithdrawCollateralTest is BaseTest {
         amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
         _provideLiquidity(amountSupplied);
 
+        oracle.setPrice(priceCollateral);
+
         amountCollateralExcess = bound(amountCollateralExcess, 1, MAX_TEST_AMOUNT);
 
         collateralAsset.setBalance(onBehalf, amountCollateral + amountCollateralExcess);
@@ -155,13 +155,13 @@ contract IntegrationWithdrawCollateralTest is BaseTest {
         collateralAsset.approve(address(blue), amountCollateral + amountCollateralExcess);
         blue.supplyCollateral(market, amountCollateral + amountCollateralExcess, onBehalf, hex"");
         blue.setAuthorization(BORROWER, true);
-        blue.borrow(market, amountBorrowed, onBehalf, onBehalf);
+        blue.borrow(market, amountBorrowed, 0, onBehalf, onBehalf);
         vm.stopPrank();
 
         vm.prank(BORROWER);
 
         vm.expectEmit(true, true, true, true, address(blue));
-        emit Events.WithdrawCollateral(id, BORROWER, onBehalf, receiver, amountCollateralExcess);
+        emit EventsLib.WithdrawCollateral(id, BORROWER, onBehalf, receiver, amountCollateralExcess);
         blue.withdrawCollateral(market, amountCollateralExcess, onBehalf, receiver);
 
         assertEq(blue.collateral(id, onBehalf), amountCollateral, "collateral balance");

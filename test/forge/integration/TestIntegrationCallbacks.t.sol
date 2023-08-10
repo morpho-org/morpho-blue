@@ -35,7 +35,7 @@ contract IntegrationCallbacksTest is
         } else if (selector == this.testFlashActions.selector) {
             uint256 toBorrow = abi.decode(data, (uint256));
             collateralAsset.setBalance(address(this), amount);
-            blue.borrow(market, toBorrow, address(this), address(this));
+            blue.borrow(market, toBorrow, 0, address(this), address(this));
         }
     }
 
@@ -70,7 +70,7 @@ contract IntegrationCallbacksTest is
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
         borrowableAsset.setBalance(address(this), amount);
-        blue.supply(market, amount, address(this), hex"");
+        blue.supply(market, amount, 0, address(this), hex"");
 
         blue.flashLoan(address(borrowableAsset), amount, bytes(""));
 
@@ -83,8 +83,8 @@ contract IntegrationCallbacksTest is
         borrowableAsset.approve(address(blue), 0);
 
         vm.expectRevert();
-        blue.supply(market, amount, address(this), hex"");
-        blue.supply(market, amount, address(this), abi.encode(this.testSupplyCallback.selector, hex""));
+        blue.supply(market, amount, 0, address(this), hex"");
+        blue.supply(market, amount, 0, address(this), abi.encode(this.testSupplyCallback.selector, hex""));
     }
 
     function testSupplyCollateralCallback(uint256 amount) public {
@@ -100,30 +100,34 @@ contract IntegrationCallbacksTest is
     }
 
     function testRepayCallback(uint256 amount) public {
-        amount = bound(amount, 1, MAX_TEST_AMOUNT);
+        amount = bound(amount, MIN_COLLATERAL_PRICE, MAX_TEST_AMOUNT);
+
         borrowableAsset.setBalance(address(this), amount);
-        blue.supply(market, amount, address(this), hex"");
-        blue.borrow(market, amount, address(this), address(this));
+        collateralAsset.setBalance(address(this), amount.wDivUp(LLTV));
+
+        blue.supply(market, amount, 0, address(this), hex"");
+        blue.supplyCollateral(market, amount.wDivUp(LLTV), address(this), hex"");
+        blue.borrow(market, amount, 0, address(this), address(this));
 
         borrowableAsset.approve(address(blue), 0);
 
         vm.expectRevert();
-        blue.repay(market, amount, address(this), hex"");
-        blue.repay(market, amount, address(this), abi.encode(this.testRepayCallback.selector, hex""));
+        blue.repay(market, amount, 0, address(this), hex"");
+        blue.repay(market, amount, 0, address(this), abi.encode(this.testRepayCallback.selector, hex""));
     }
 
     function testLiquidateCallback(uint256 amount) public {
-        amount = bound(amount, 10, MAX_TEST_AMOUNT);
-        borrowableOracle.setPrice(1e18);
+        amount = bound(amount, MIN_TEST_AMOUNT, MAX_TEST_AMOUNT);
+        oracle.setPrice(1e18);
         borrowableAsset.setBalance(address(this), amount);
         collateralAsset.setBalance(address(this), amount);
-        blue.supply(market, amount, address(this), hex"");
+        blue.supply(market, amount, 0, address(this), hex"");
         blue.supplyCollateral(market, amount, address(this), hex"");
-        blue.borrow(market, amount.mulWadDown(LLTV), address(this), address(this));
+        blue.borrow(market, amount.wMulDown(LLTV), 0, address(this), address(this));
 
-        borrowableOracle.setPrice(1.01e18);
+        oracle.setPrice(0.99e18);
 
-        uint256 toSeize = amount.mulWadDown(LLTV);
+        uint256 toSeize = amount.wMulDown(LLTV);
 
         borrowableAsset.setBalance(address(this), toSeize);
         borrowableAsset.approve(address(blue), 0);
@@ -134,18 +138,18 @@ contract IntegrationCallbacksTest is
 
     function testFlashActions(uint256 amount) public {
         amount = bound(amount, 10, MAX_TEST_AMOUNT);
-        borrowableOracle.setPrice(1e18);
-        uint256 toBorrow = amount.mulWadDown(LLTV);
+        oracle.setPrice(1e18);
+        uint256 toBorrow = amount.wMulDown(LLTV);
 
         borrowableAsset.setBalance(address(this), toBorrow);
-        blue.supply(market, toBorrow, address(this), hex"");
+        blue.supply(market, toBorrow, 0, address(this), hex"");
 
         blue.supplyCollateral(
             market, amount, address(this), abi.encode(this.testFlashActions.selector, abi.encode(toBorrow))
         );
         assertGt(blue.borrowShares(market.id(), address(this)), 0, "no borrow");
 
-        blue.repay(market, toBorrow, address(this), abi.encode(this.testFlashActions.selector, abi.encode(amount)));
+        blue.repay(market, toBorrow, 0, address(this), abi.encode(this.testFlashActions.selector, abi.encode(amount)));
         assertEq(blue.collateral(market.id(), address(this)), 0, "no withdraw collateral");
     }
 }

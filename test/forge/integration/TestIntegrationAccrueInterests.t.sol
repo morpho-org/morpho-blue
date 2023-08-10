@@ -15,10 +15,14 @@ contract IntegrationAccrueInterestsTest is BaseTest {
         blue.setFeeRecipient(OWNER);
 
         borrowableAsset.setBalance(address(this), amountSupplied);
-        blue.supply(market, amountSupplied, address(this), hex"");
+        blue.supply(market, amountSupplied, 0, address(this), hex"");
 
-        vm.prank(BORROWER);
-        blue.borrow(market, amountBorrowed, BORROWER, BORROWER);
+        collateralAsset.setBalance(BORROWER, amountBorrowed.wDivUp(LLTV));
+
+        vm.startPrank(BORROWER);
+        blue.supplyCollateral(market, amountBorrowed.wDivUp(LLTV), BORROWER, hex"");
+        blue.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
+        vm.stopPrank();
 
         uint256 totalBorrowBeforeAccrued = blue.totalBorrow(id);
         uint256 totalSupplyBeforeAccrued = blue.totalSupply(id);
@@ -44,7 +48,7 @@ contract IntegrationAccrueInterestsTest is BaseTest {
         blue.setFeeRecipient(OWNER);
 
         borrowableAsset.setBalance(address(this), amountSupplied);
-        blue.supply(market, amountSupplied, address(this), hex"");
+        blue.supply(market, amountSupplied, 0, address(this), hex"");
 
         // New block.
         vm.roll(block.number + 1);
@@ -76,20 +80,26 @@ contract IntegrationAccrueInterestsTest is BaseTest {
         blue.setFeeRecipient(OWNER);
 
         borrowableAsset.setBalance(address(this), amountSupplied);
-        blue.supply(market, amountSupplied, address(this), hex"");
+        borrowableAsset.setBalance(address(this), amountSupplied);
+        blue.supply(market, amountSupplied, 0, address(this), hex"");
 
-        vm.prank(BORROWER);
-        blue.borrow(market, amountBorrowed, BORROWER, BORROWER);
+        collateralAsset.setBalance(BORROWER, amountBorrowed.wDivUp(LLTV));
+
+        vm.startPrank(BORROWER);
+        blue.supplyCollateral(market, amountBorrowed.wDivUp(LLTV), BORROWER, hex"");
+        blue.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
+        vm.stopPrank();
 
         // New block.
         vm.roll(block.number + 1);
         vm.warp(block.timestamp + timeElapsed);
 
-        uint256 borrowRate = (blue.totalBorrow(id).divWadDown(blue.totalSupply(id))) / 365 days;
+        uint256 borrowRate = (blue.totalBorrow(id).wDivDown(blue.totalSupply(id))) / 365 days;
         uint256 totalBorrowBeforeAccrued = blue.totalBorrow(id);
         uint256 totalSupplyBeforeAccrued = blue.totalSupply(id);
         uint256 totalSupplySharesBeforeAccrued = blue.totalSupplyShares(id);
-        uint256 expectedAccruedInterests = totalBorrowBeforeAccrued.mulWadDown(borrowRate * timeElapsed);
+        uint256 expectedAccruedInterests =
+            totalBorrowBeforeAccrued.wMulDown(borrowRate.wTaylorCompounded(timeElapsed));
 
         // Supply then withdraw collateral to trigger `_accrueInterests` function.
         collateralAsset.setBalance(address(this), 1);
@@ -97,7 +107,7 @@ contract IntegrationAccrueInterestsTest is BaseTest {
         blue.supplyCollateral(market, 1, address(this), hex"");
 
         vm.expectEmit(true, true, true, true, address(blue));
-        emit Events.AccrueInterests(id, borrowRate, expectedAccruedInterests, 0);
+        emit EventsLib.AccrueInterests(id, borrowRate, expectedAccruedInterests, 0);
         blue.withdrawCollateral(market, 1, address(this), address(this));
 
         assertEq(blue.totalBorrow(id), totalBorrowBeforeAccrued + expectedAccruedInterests, "total borrow");
@@ -137,21 +147,26 @@ contract IntegrationAccrueInterestsTest is BaseTest {
         vm.stopPrank();
 
         borrowableAsset.setBalance(address(this), amountSupplied);
-        blue.supply(market, amountSupplied, address(this), hex"");
+        blue.supply(market, amountSupplied, 0, address(this), hex"");
 
-        vm.prank(BORROWER);
-        blue.borrow(market, amountBorrowed, BORROWER, BORROWER);
+        collateralAsset.setBalance(BORROWER, amountBorrowed.wDivUp(LLTV));
+
+        vm.startPrank(BORROWER);
+        blue.supplyCollateral(market, amountBorrowed.wDivUp(LLTV), BORROWER, hex"");
+        blue.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
+        vm.stopPrank();
 
         // New block.
         vm.roll(block.number + 1);
         vm.warp(block.timestamp + timeElapsed);
 
-        params.borrowRate = (blue.totalBorrow(id).divWadDown(blue.totalSupply(id))) / 365 days;
+        params.borrowRate = (blue.totalBorrow(id).wDivDown(blue.totalSupply(id))) / 365 days;
         params.totalBorrowBeforeAccrued = blue.totalBorrow(id);
         params.totalSupplyBeforeAccrued = blue.totalSupply(id);
         params.totalSupplySharesBeforeAccrued = blue.totalSupplyShares(id);
-        params.expectedAccruedInterests = params.totalBorrowBeforeAccrued.mulWadDown(params.borrowRate * timeElapsed);
-        params.feeAmount = params.expectedAccruedInterests.mulWadDown(fee);
+        params.expectedAccruedInterests =
+            params.totalBorrowBeforeAccrued.wMulDown(params.borrowRate.wTaylorCompounded(timeElapsed));
+        params.feeAmount = params.expectedAccruedInterests.wMulDown(fee);
         params.feeShares = params.feeAmount.mulDivDown(
             params.totalSupplySharesBeforeAccrued,
             params.totalSupplyBeforeAccrued + params.expectedAccruedInterests - params.feeAmount
@@ -162,7 +177,7 @@ contract IntegrationAccrueInterestsTest is BaseTest {
         blue.supplyCollateral(market, 1, address(this), hex"");
 
         vm.expectEmit(true, true, true, true, address(blue));
-        emit Events.AccrueInterests(id, params.borrowRate, params.expectedAccruedInterests, params.feeShares);
+        emit EventsLib.AccrueInterests(id, params.borrowRate, params.expectedAccruedInterests, params.feeShares);
         blue.withdrawCollateral(market, 1, address(this), address(this));
 
         assertEq(

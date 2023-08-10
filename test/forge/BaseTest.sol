@@ -27,8 +27,7 @@ contract BaseTest is Test {
     Blue internal blue;
     ERC20 internal borrowableAsset;
     ERC20 internal collateralAsset;
-    Oracle internal borrowableOracle;
-    Oracle internal collateralOracle;
+    Oracle internal oracle;
     Irm internal irm;
     Market internal market;
     Id internal id;
@@ -49,23 +48,15 @@ contract BaseTest is Test {
         collateralAsset = new ERC20("collateral", "C", 18);
         vm.label(address(collateralAsset), "Collateral asset");
 
-        borrowableOracle = new Oracle();
-        vm.label(address(borrowableOracle), "Borrowable oracle");
+        oracle = new Oracle();
+        vm.label(address(oracle), "Oracle");
 
-        collateralOracle = new Oracle();
-        vm.label(address(collateralOracle), "Collateral oracle");
+        oracle.setPrice(WAD);
 
         irm = new Irm(blue);
         vm.label(address(irm), "IRM");
 
-        market = Market(
-            address(borrowableAsset),
-            address(collateralAsset),
-            address(borrowableOracle),
-            address(collateralOracle),
-            address(irm),
-            LLTV
-        );
+        market = Market(address(borrowableAsset), address(collateralAsset), address(oracle), address(irm), LLTV);
         id = market.id();
 
         vm.startPrank(OWNER);
@@ -76,8 +67,7 @@ contract BaseTest is Test {
 
         // We set the price of the borrowable asset to zero so that borrowers
         // don't need to deposit any collateral.
-        borrowableOracle.setPrice(0);
-        collateralOracle.setPrice(1e18);
+        oracle.setPrice(1e18);
 
         borrowableAsset.approve(address(blue), type(uint256).max);
         collateralAsset.approve(address(blue), type(uint256).max);
@@ -97,7 +87,7 @@ contract BaseTest is Test {
 
     function _provideLiquidity(uint256 amount) internal {
         borrowableAsset.setBalance(address(this), amount);
-        blue.supply(market, amount, address(this), hex"");
+        blue.supply(market, amount, 0, address(this), hex"");
     }
 
     function _boundHealthyPosition(uint256 amountCollateral, uint256 amountBorrowed, uint256 priceCollateral)
@@ -108,7 +98,7 @@ contract BaseTest is Test {
         priceCollateral = bound(priceCollateral, MIN_COLLATERAL_PRICE, MAX_COLLATERAL_PRICE);
         amountBorrowed = bound(amountBorrowed, MIN_TEST_AMOUNT, MAX_TEST_AMOUNT);
 
-        uint256 minCollateral = amountBorrowed.divWadUp(market.lltv).divWadUp(priceCollateral);
+        uint256 minCollateral = amountBorrowed.wDivUp(market.lltv).wDivUp(priceCollateral);
 
         amountCollateral = bound(amountCollateral, minCollateral, max(minCollateral, MAX_TEST_AMOUNT));
 
@@ -123,7 +113,7 @@ contract BaseTest is Test {
         priceCollateral = bound(priceCollateral, MIN_COLLATERAL_PRICE, MAX_COLLATERAL_PRICE);
         amountBorrowed = bound(amountBorrowed, MIN_TEST_AMOUNT, MAX_TEST_AMOUNT);
 
-        uint256 maxCollateral = amountBorrowed.divWadDown(market.lltv).divWadDown(priceCollateral);
+        uint256 maxCollateral = amountBorrowed.wDivDown(market.lltv).wDivDown(priceCollateral);
         vm.assume(maxCollateral != 0);
 
         amountCollateral = bound(amountBorrowed, 1, maxCollateral);
@@ -132,15 +122,15 @@ contract BaseTest is Test {
     }
 
     function _boundValidLltv(uint256 lltv) internal view returns (uint256) {
-        return bound(lltv, 0, FixedPointMathLib.WAD - 1);
+        return bound(lltv, 0, WAD - 1);
     }
 
     function _boundInvalidLltv(uint256 lltv) internal view returns (uint256) {
-        return bound(lltv, FixedPointMathLib.WAD, type(uint256).max);
+        return bound(lltv, WAD, type(uint256).max);
     }
 
     function _liquidationIncentive(uint256 lltv) internal pure returns (uint256) {
-        return FixedPointMathLib.WAD + ALPHA.mulWadDown(FixedPointMathLib.WAD.divWadDown(lltv) - FixedPointMathLib.WAD);
+        return WAD + ALPHA.wMulDown(WAD.wDivDown(lltv) - WAD);
     }
 
     function neq(Market memory a, Market memory b) internal pure returns (bool) {

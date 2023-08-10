@@ -8,24 +8,24 @@ contract IntegrationSupplyTest is BaseTest {
         vm.assume(neq(marketFuzz, market) && supplier != address(0));
 
         vm.prank(supplier);
-        vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
-        blue.supply(marketFuzz, amount, supplier, hex"");
+        vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
+        blue.supply(marketFuzz, amount, 0, supplier, hex"");
     }
 
     function testSupplyZeroAmount(address supplier) public {
         vm.assume(supplier != address(0));
 
         vm.prank(supplier);
-        vm.expectRevert(bytes(Errors.ZERO_AMOUNT));
-        blue.supply(market, 0, supplier, hex"");
+        vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
+        blue.supply(market, 0, 0, supplier, hex"");
     }
 
     function testSupplyOnBehalfZeroAddress(address supplier, uint256 amount) public {
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
         vm.prank(supplier);
-        vm.expectRevert(bytes(Errors.ZERO_ADDRESS));
-        blue.supply(market, amount, address(0), hex"");
+        vm.expectRevert(bytes(ErrorsLib.ZERO_ADDRESS));
+        blue.supply(market, amount, 0, address(0), hex"");
     }
 
     function testSupply(address supplier, address onBehalf, uint256 amount) public {
@@ -34,14 +34,14 @@ contract IntegrationSupplyTest is BaseTest {
 
         borrowableAsset.setBalance(supplier, amount);
 
-        uint256 expectedSupplyShares = amount * SharesMath.VIRTUAL_SHARES;
+        uint256 expectedSupplyShares = amount * SharesMathLib.VIRTUAL_SHARES;
 
         vm.startPrank(supplier);
         borrowableAsset.approve(address(blue), amount);
 
         vm.expectEmit(true, true, true, true, address(blue));
-        emit Events.Supply(id, supplier, onBehalf, amount, expectedSupplyShares);
-        blue.supply(market, amount, onBehalf, hex"");
+        emit EventsLib.Supply(id, supplier, onBehalf, amount, expectedSupplyShares);
+        blue.supply(market, amount, 0, onBehalf, hex"");
         vm.stopPrank();
 
         assertEq(blue.supplyShares(id, onBehalf), expectedSupplyShares, "supply shares");

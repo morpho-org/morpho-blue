@@ -5,19 +5,19 @@ import "../BaseTest.sol";
 
 contract IntegrationLiquidateTest is BaseTest {
     using FixedPointMathLib for uint256;
-    using SharesMath for uint256;
+    using SharesMathLib for uint256;
 
     function testLiquidateNotCreatedMarket(Market memory marketFuzz) public {
         vm.assume(neq(marketFuzz, market));
 
-        vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
+        vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
         blue.liquidate(marketFuzz, address(this), 1, hex"");
     }
 
     function testLiquidateZeroAmount() public {
         vm.prank(BORROWER);
 
-        vm.expectRevert(bytes(Errors.ZERO_AMOUNT));
+        vm.expectRevert(bytes(ErrorsLib.ZERO_AMOUNT));
         blue.liquidate(market, address(this), 0, hex"");
     }
 
@@ -36,19 +36,18 @@ contract IntegrationLiquidateTest is BaseTest {
 
         amountSeized = bound(amountSeized, 1, amountCollateral);
 
-        borrowableOracle.setPrice(FixedPointMathLib.WAD);
-        collateralOracle.setPrice(priceCollateral);
+        oracle.setPrice(priceCollateral);
 
         borrowableAsset.setBalance(LIQUIDATOR, amountBorrowed);
         collateralAsset.setBalance(BORROWER, amountCollateral);
 
         vm.startPrank(BORROWER);
         blue.supplyCollateral(market, amountCollateral, BORROWER, hex"");
-        blue.borrow(market, amountBorrowed, BORROWER, BORROWER);
+        blue.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
         vm.stopPrank();
 
         vm.prank(LIQUIDATOR);
-        vm.expectRevert(bytes(Errors.HEALTHY_POSITION));
+        vm.expectRevert(bytes(ErrorsLib.HEALTHY_POSITION));
         blue.liquidate(market, BORROWER, amountSeized, hex"");
     }
 
@@ -68,30 +67,31 @@ contract IntegrationLiquidateTest is BaseTest {
         _provideLiquidity(amountSupplied);
 
         uint256 incentive = _liquidationIncentive(market.lltv);
-        uint256 maxSeized = amountBorrowed.mulWadDown(incentive).divWadDown(priceCollateral);
+        uint256 maxSeized = amountBorrowed.wMulDown(incentive).wDivDown(priceCollateral);
         amountSeized = bound(amountSeized, 1, min(maxSeized, amountCollateral - 1));
-        uint256 expectedRepaid = amountSeized.mulWadUp(priceCollateral).divWadUp(incentive);
+        uint256 expectedRepaid = amountSeized.wMulUp(priceCollateral).wDivUp(incentive);
 
         borrowableAsset.setBalance(LIQUIDATOR, amountBorrowed);
         collateralAsset.setBalance(BORROWER, amountCollateral);
 
+        oracle.setPrice((amountCollateral * 1e18).wMulUp(LLTV) * amountBorrowed);
+
         vm.startPrank(BORROWER);
         blue.supplyCollateral(market, amountCollateral, BORROWER, hex"");
-        blue.borrow(market, amountBorrowed, BORROWER, BORROWER);
+        blue.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
         vm.stopPrank();
 
-        borrowableOracle.setPrice(FixedPointMathLib.WAD);
-        collateralOracle.setPrice(priceCollateral);
+        oracle.setPrice(priceCollateral);
 
         uint256 expectedRepaidShares = expectedRepaid.toSharesDown(blue.totalBorrow(id), blue.totalBorrowShares(id));
 
         vm.prank(LIQUIDATOR);
 
         vm.expectEmit(true, true, true, true, address(blue));
-        emit Events.Liquidate(id, LIQUIDATOR, BORROWER, expectedRepaid, expectedRepaidShares, amountSeized, 0);
+        emit EventsLib.Liquidate(id, LIQUIDATOR, BORROWER, expectedRepaid, expectedRepaidShares, amountSeized, 0);
         blue.liquidate(market, BORROWER, amountSeized, hex"");
 
-        uint256 expectedBorrowShares = amountBorrowed * SharesMath.VIRTUAL_SHARES - expectedRepaidShares;
+        uint256 expectedBorrowShares = amountBorrowed * SharesMathLib.VIRTUAL_SHARES - expectedRepaidShares;
 
         assertEq(blue.borrowShares(id, BORROWER), expectedBorrowShares, "borrow shares");
         assertEq(blue.totalBorrow(id), amountBorrowed - expectedRepaid, "total borrow");
@@ -131,7 +131,7 @@ contract IntegrationLiquidateTest is BaseTest {
         vm.assume(amountCollateral > 1);
 
         params.incentive = _liquidationIncentive(market.lltv);
-        params.expectedRepaid = amountCollateral.mulWadUp(priceCollateral).divWadUp(params.incentive);
+        params.expectedRepaid = amountCollateral.wMulUp(priceCollateral).wDivUp(params.incentive);
 
         uint256 minBorrowed = max(params.expectedRepaid, amountBorrowed);
         amountBorrowed = bound(amountBorrowed, minBorrowed, max(minBorrowed, MAX_TEST_AMOUNT));
@@ -142,13 +142,14 @@ contract IntegrationLiquidateTest is BaseTest {
         borrowableAsset.setBalance(LIQUIDATOR, amountBorrowed);
         collateralAsset.setBalance(BORROWER, amountCollateral);
 
+        oracle.setPrice((amountCollateral * 1e18).wMulUp(LLTV) * amountBorrowed);
+
         vm.startPrank(BORROWER);
         blue.supplyCollateral(market, amountCollateral, BORROWER, hex"");
-        blue.borrow(market, amountBorrowed, BORROWER, BORROWER);
+        blue.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
         vm.stopPrank();
 
-        borrowableOracle.setPrice(FixedPointMathLib.WAD);
-        collateralOracle.setPrice(priceCollateral);
+        oracle.setPrice(priceCollateral);
 
         params.expectedRepaidShares =
             params.expectedRepaid.toSharesDown(blue.totalBorrow(id), blue.totalBorrowShares(id));
@@ -164,14 +165,14 @@ contract IntegrationLiquidateTest is BaseTest {
         vm.prank(LIQUIDATOR);
 
         vm.expectEmit(true, true, true, true, address(blue));
-        emit Events.Liquidate(
+        emit EventsLib.Liquidate(
             id,
             LIQUIDATOR,
             BORROWER,
             params.expectedRepaid,
             params.expectedRepaidShares,
             amountCollateral,
-            params.expectedBadDebt * SharesMath.VIRTUAL_SHARES
+            params.expectedBadDebt * SharesMathLib.VIRTUAL_SHARES
         );
         blue.liquidate(market, BORROWER, amountCollateral, hex"");
 

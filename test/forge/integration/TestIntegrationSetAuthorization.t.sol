@@ -45,8 +45,8 @@ contract IntegrationAuthorization is BaseTest {
 
         vm.warp(block.timestamp + timeElapsed);
 
-        vm.expectRevert(bytes(Errors.SIGNATURE_EXPIRED));
-        blue.setAuthorization(
+        vm.expectRevert(bytes(ErrorsLib.SIGNATURE_EXPIRED));
+        blue.setAuthorizationWithSig(
             authorization.authorizer, authorization.authorized, authorization.isAuthorized, authorization.deadline, sig
         );
     }
@@ -75,8 +75,8 @@ contract IntegrationAuthorization is BaseTest {
         Signature memory sig;
         (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
 
-        vm.expectRevert(bytes(Errors.INVALID_SIGNATURE));
-        blue.setAuthorization(
+        vm.expectRevert(bytes(ErrorsLib.INVALID_SIGNATURE));
+        blue.setAuthorizationWithSig(
             address(this), authorization.authorized, authorization.isAuthorized, authorization.deadline, sig
         );
     }
@@ -105,10 +105,10 @@ contract IntegrationAuthorization is BaseTest {
         (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
 
         vm.expectEmit(true, true, true, true, address(blue));
-        emit Events.SetAuthorization(
+        emit EventsLib.SetAuthorization(
             address(this), authorization.authorizer, authorization.authorized, authorization.isAuthorized
         );
-        blue.setAuthorization(
+        blue.setAuthorizationWithSig(
             authorization.authorizer, authorization.authorized, authorization.isAuthorized, authorization.deadline, sig
         );
 
@@ -141,8 +141,8 @@ contract IntegrationAuthorization is BaseTest {
         Signature memory sig;
         (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
 
-        vm.expectRevert(bytes(Errors.INVALID_SIGNATURE));
-        blue.setAuthorization(
+        vm.expectRevert(bytes(ErrorsLib.INVALID_SIGNATURE));
+        blue.setAuthorizationWithSig(
             authorization.authorizer, authorization.authorized, authorization.isAuthorized, authorization.deadline, sig
         );
     }
@@ -170,12 +170,12 @@ contract IntegrationAuthorization is BaseTest {
         Signature memory sig;
         (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
 
-        blue.setAuthorization(
+        blue.setAuthorizationWithSig(
             authorization.authorizer, authorization.authorized, authorization.isAuthorized, authorization.deadline, sig
         );
 
-        vm.expectRevert(bytes(Errors.INVALID_SIGNATURE));
-        blue.setAuthorization(
+        vm.expectRevert(bytes(ErrorsLib.INVALID_SIGNATURE));
+        blue.setAuthorizationWithSig(
             authorization.authorizer, authorization.authorized, authorization.isAuthorized, authorization.deadline, sig
         );
     }
