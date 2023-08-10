@@ -750,24 +750,24 @@ contract BlueTest is
     }
 
     function testInputZero() public {
-        vm.expectRevert(bytes(ErrorsLib.NOT_EXACTLY_ONE_ZERO));
+        vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
         blue.supply(market, 0, 0, address(this), hex"");
-        vm.expectRevert(bytes(ErrorsLib.NOT_EXACTLY_ONE_ZERO));
+        vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
         blue.supply(market, 1, 1, address(this), hex"");
 
-        vm.expectRevert(bytes(ErrorsLib.NOT_EXACTLY_ONE_ZERO));
+        vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
         blue.withdraw(market, 0, 0, address(this), address(this));
-        vm.expectRevert(bytes(ErrorsLib.NOT_EXACTLY_ONE_ZERO));
+        vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
         blue.withdraw(market, 1, 1, address(this), address(this));
 
-        vm.expectRevert(bytes(ErrorsLib.NOT_EXACTLY_ONE_ZERO));
+        vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
         blue.borrow(market, 0, 0, address(this), address(this));
-        vm.expectRevert(bytes(ErrorsLib.NOT_EXACTLY_ONE_ZERO));
+        vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
         blue.borrow(market, 1, 1, address(this), address(this));
 
-        vm.expectRevert(bytes(ErrorsLib.NOT_EXACTLY_ONE_ZERO));
+        vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
         blue.repay(market, 0, 0, address(this), hex"");
-        vm.expectRevert(bytes(ErrorsLib.NOT_EXACTLY_ONE_ZERO));
+        vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
         blue.repay(market, 1, 1, address(this), hex"");
 
         vm.expectRevert(bytes(ErrorsLib.ZERO_AMOUNT));

@@ -9,7 +9,7 @@ library ErrorsLib {
     string constant LLTV_NOT_ENABLED = "LLTV not enabled";
     string constant MARKET_CREATED = "market created";
     string constant MARKET_NOT_CREATED = "market not created";
-    string constant NOT_EXACTLY_ONE_ZERO = "not exactly one zero";
+    string constant INCONSISTENT_INPUT = "inconsistent input";
     string constant ZERO_AMOUNT = "zero amount";
     string constant ZERO_ADDRESS = "zero address";
     string constant UNAUTHORIZED = "unauthorized";
