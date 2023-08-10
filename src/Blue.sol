@@ -149,7 +149,7 @@ contract Blue is IBlue {
     {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
-        require(UtilsLib.exactlyOneZero(amount, shares), Errors.NOT_EXACTLY_ONE_ZERO);
+        require(UtilsLib.exactlyOneZero(amount, shares), Errors.INCONSISTENT_INPUT);
         require(onBehalf != address(0), Errors.ZERO_ADDRESS);
 
         _accrueInterests(market, id);
@@ -173,7 +173,7 @@ contract Blue is IBlue {
     {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
-        require(UtilsLib.exactlyOneZero(amount, shares), Errors.NOT_EXACTLY_ONE_ZERO);
+        require(UtilsLib.exactlyOneZero(amount, shares), Errors.INCONSISTENT_INPUT);
         // No need to verify that onBehalf != address(0) thanks to the authorization check.
         require(receiver != address(0), Errors.ZERO_ADDRESS);
         require(_isSenderAuthorized(onBehalf), Errors.UNAUTHORIZED);
@@ -201,7 +201,7 @@ contract Blue is IBlue {
     {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
-        require(UtilsLib.exactlyOneZero(amount, shares), Errors.NOT_EXACTLY_ONE_ZERO);
+        require(UtilsLib.exactlyOneZero(amount, shares), Errors.INCONSISTENT_INPUT);
         // No need to verify that onBehalf != address(0) thanks to the authorization check.
         require(receiver != address(0), Errors.ZERO_ADDRESS);
         require(_isSenderAuthorized(onBehalf), Errors.UNAUTHORIZED);
@@ -228,7 +228,7 @@ contract Blue is IBlue {
     {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
-        require(UtilsLib.exactlyOneZero(amount, shares), Errors.NOT_EXACTLY_ONE_ZERO);
+        require(UtilsLib.exactlyOneZero(amount, shares), Errors.INCONSISTENT_INPUT);
         require(onBehalf != address(0), Errors.ZERO_ADDRESS);
 
         _accrueInterests(market, id);
