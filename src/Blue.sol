@@ -288,10 +288,13 @@ contract Blue is IBlue {
 
     // Liquidation.
 
-    function liquidate(Market memory market, address borrower, uint256 seized, bytes calldata data) external {
+    function liquidate(Market memory market, address borrower, uint256 amount, uint256 shares, bytes calldata data)
+        external
+        returns (uint256 seized)
+    {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
-        require(seized != 0, Errors.ZERO_AMOUNT);
+        require(UtilsLib.exactlyOneZero(amount, shares), Errors.INCONSISTENT_INPUT);
 
         _accrueInterests(market, id);
 
@@ -299,21 +302,26 @@ contract Blue is IBlue {
 
         require(!_isHealthy(market, id, borrower, collateralPrice, priceScale), Errors.HEALTHY_POSITION);
 
+        if (amount > 0) shares = amount.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
+        else amount = shares.toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
+
+        borrowShares[id][borrower] -= shares;
+        totalBorrowShares[id] -= shares;
+        totalBorrow[id] -= amount;
+
         // The liquidation incentive is 1 + ALPHA * (1 / LLTV - 1).
         uint256 incentive = FixedPointMathLib.WAD
             + ALPHA.mulWadDown(FixedPointMathLib.WAD.divWadDown(market.lltv) - FixedPointMathLib.WAD);
-        uint256 repaid = seized.mulDivUp(collateralPrice, priceScale).divWadUp(incentive);
-        uint256 repaidShares = repaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
+        seized = amount.divWadDown(collateralPrice).mulWadDown(incentive);
 
-        borrowShares[id][borrower] -= repaidShares;
-        totalBorrowShares[id] -= repaidShares;
-        totalBorrow[id] -= repaid;
+        // Liquidations are not guaranteed to be profitable: the collateral seized is capped to the borrower's collateral.
+        if (seized > collateral[id][borrower]) seized = collateral[id][borrower];
 
         collateral[id][borrower] -= seized;
 
         // Realize the bad debt if needed.
         uint256 badDebtShares;
-        if (collateral[id][borrower] == 0) {
+        if (collateral[id][borrower].mulWadDown(collateralPrice) == 0) {
             badDebtShares = borrowShares[id][borrower];
             uint256 badDebt = badDebtShares.toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
             totalSupply[id] -= badDebt;
@@ -324,11 +332,11 @@ contract Blue is IBlue {
 
         IERC20(market.collateralAsset).safeTransfer(msg.sender, seized);
 
-        emit Liquidate(id, msg.sender, borrower, repaid, repaidShares, seized, badDebtShares);
+        emit Liquidate(id, msg.sender, borrower, amount, shares, seized, badDebtShares);
 
-        if (data.length > 0) IBlueLiquidateCallback(msg.sender).onBlueLiquidate(seized, repaid, data);
+        if (data.length > 0) IBlueLiquidateCallback(msg.sender).onBlueLiquidate(seized, amount, data);
 
-        IERC20(market.borrowableAsset).safeTransferFrom(msg.sender, address(this), repaid);
+        IERC20(market.borrowableAsset).safeTransferFrom(msg.sender, address(this), amount);
     }
 
     // Flash Loans.

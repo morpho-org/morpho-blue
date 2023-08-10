@@ -115,7 +115,8 @@ interface IBlue is IFlashLender {
         external;
     function supplyCollateral(Market memory market, uint256 amount, address onBehalf, bytes memory data) external;
     function withdrawCollateral(Market memory market, uint256 amount, address onBehalf, address receiver) external;
-    function liquidate(Market memory market, address borrower, uint256 seized, bytes memory data) external;
+    function liquidate(Market memory market, address borrower, uint256 amount, uint256 shares, bytes memory data)
+        external;
     function flashLoan(address token, uint256 amount, bytes calldata data) external;
 
     function setAuthorization(address authorized, bool newIsAuthorized) external;

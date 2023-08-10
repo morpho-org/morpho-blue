@@ -962,8 +962,10 @@ contract BlueTest is
         borrowableAsset.setBalance(address(this), amount);
         borrowableAsset.approve(address(blue), 0);
         vm.expectRevert("TRANSFER_FROM_FAILED");
-        blue.liquidate(market, address(this), collateralAmount, hex"");
-        blue.liquidate(market, address(this), collateralAmount, abi.encode(this.testLiquidateCallback.selector, hex""));
+        blue.liquidate(market, address(this), collateralAmount, 0, hex"");
+        blue.liquidate(
+            market, address(this), collateralAmount, 0, abi.encode(this.testLiquidateCallback.selector, hex"")
+        );
     }
 
     function testFlashActions(uint256 amount) public {
