@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
+import {UtilsLib} from "./UtilsLib.sol";
+
 /// @notice Arithmetic library with operations for fixed-point numbers.
 /// @author Solmate (https://github.com/transmissions11/solmate/blob/main/src/utils/FixedPointMathLib.sol)
 /// @author Inspired by USM (https://github.com/usmfum/USM/blob/master/contracts/WadMath.sol)
@@ -27,6 +29,16 @@ library FixedPointMathLib {
 
     function divWadUp(uint256 x, uint256 y) internal pure returns (uint256) {
         return mulDivUp(x, WAD, y); // Equivalent to (x * WAD) / y rounded up.
+    }
+
+    /// @dev The sum of the last three terms in a four term taylor series expansion
+    ///      to approximate a compound interest rate: (1 + x)^n - 1.
+    function wTaylorCompounded(uint256 x, uint256 n) internal pure returns (uint256) {
+        uint256 firstTerm = x * n;
+        uint256 secondTerm = mulWadDown(firstTerm, x * UtilsLib.zeroFloorSub(n, 1)) / 2;
+        uint256 thirdTerm = mulWadDown(secondTerm, x * UtilsLib.zeroFloorSub(n, 2)) / 3;
+
+        return firstTerm + secondTerm + thirdTerm;
     }
 
     /*//////////////////////////////////////////////////////////////
