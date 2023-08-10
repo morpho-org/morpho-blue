@@ -98,8 +98,7 @@ contract IntegrationAccrueInterestsTest is BaseTest {
         uint256 totalBorrowBeforeAccrued = blue.totalBorrow(id);
         uint256 totalSupplyBeforeAccrued = blue.totalSupply(id);
         uint256 totalSupplySharesBeforeAccrued = blue.totalSupplyShares(id);
-        uint256 expectedAccruedInterests =
-            totalBorrowBeforeAccrued.wMulDown(borrowRate.wTaylorCompounded(timeElapsed));
+        uint256 expectedAccruedInterests = totalBorrowBeforeAccrued.wMulDown(borrowRate.wTaylorCompounded(timeElapsed));
 
         // Supply then withdraw collateral to trigger `_accrueInterests` function.
         collateralAsset.setBalance(address(this), 1);
