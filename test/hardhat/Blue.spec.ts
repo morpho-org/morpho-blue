@@ -175,7 +175,7 @@ describe("Blue", () => {
 
       await oracle.setPrice(BigNumber.WAD.div(10));
 
-      const seized = closePositions ? constants.MaxUint256 : amount.div(2);
+      const seized = closePositions ? amount : amount.div(2);
 
       await blue.connect(liquidator).liquidate(market, borrower.address, seized, "0x");
 
