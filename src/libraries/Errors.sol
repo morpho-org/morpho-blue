@@ -18,7 +18,7 @@ library Errors {
 
     string internal constant ZERO_AMOUNT = "zero amount";
 
-    string internal constant ZERO_SHARES = "zero shares";
+    string internal constant INCONSISTENT_INPUT = "inconsistent input";
 
     string internal constant ZERO_ADDRESS = "zero address";
 
