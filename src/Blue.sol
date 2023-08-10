@@ -166,9 +166,9 @@ contract Blue is IBlue {
         if (amount > 0) shares = amount.toSharesDown(market.totalSupply(), market.totalSupplyShares());
         else amount = shares.toAssetsUp(market.totalSupply(), market.totalSupplyShares());
 
-        market.setSupplyShares(onBehalf, market.supplyShares(onBehalf) + shares);
-        market.setTotalSupplyShares(market.totalSupplyShares() + shares);
-        market.setTotalSupply(market.totalSupply() + amount);
+        market.increaseSupplyShares(onBehalf, shares);
+        market.increaseTotalSupplyShares(shares);
+        market.increaseTotalSupply(amount);
 
         emit EventsLib.Supply(id, msg.sender, onBehalf, amount, shares);
 
@@ -199,9 +199,9 @@ contract Blue is IBlue {
         if (amount > 0) shares = amount.toSharesUp(market.totalSupply(), market.totalSupplyShares());
         else amount = shares.toAssetsDown(market.totalSupply(), market.totalSupplyShares());
 
-        market.setSupplyShares(onBehalf, market.supplyShares(onBehalf) - shares);
-        market.setTotalSupplyShares(market.totalSupplyShares() - shares);
-        market.setTotalSupply(market.totalSupply() - amount);
+        market.decreaseSupplyShares(onBehalf, shares);
+        market.decreaseTotalSupplyShares(shares);
+        market.decreaseTotalSupply(amount);
 
         emit EventsLib.Withdraw(id, msg.sender, onBehalf, receiver, amount, shares);
 
@@ -234,9 +234,9 @@ contract Blue is IBlue {
         if (amount > 0) shares = amount.toSharesUp(market.totalBorrow(), market.totalBorrowShares());
         else amount = shares.toAssetsDown(market.totalBorrow(), market.totalBorrowShares());
 
-        market.setBorrowShares(onBehalf, market.borrowShares(onBehalf) + shares);
-        market.setTotalBorrowShares(market.totalBorrowShares() + shares);
-        market.setTotalBorrow(market.totalBorrow() + amount);
+        market.increaseBorrowShares(onBehalf, shares);
+        market.increaseTotalBorrowShares(shares);
+        market.increaseTotalBorrow(amount);
 
         emit EventsLib.Borrow(id, msg.sender, onBehalf, receiver, amount, shares);
 
@@ -266,9 +266,9 @@ contract Blue is IBlue {
         if (amount > 0) shares = amount.toSharesDown(market.totalBorrow(), market.totalBorrowShares());
         else amount = shares.toAssetsUp(market.totalBorrow(), market.totalBorrowShares());
 
-        market.setBorrowShares(onBehalf, market.borrowShares(onBehalf) - shares);
-        market.setTotalBorrowShares(market.totalBorrowShares() - shares);
-        market.setTotalBorrow(market.totalBorrow() - amount);
+        market.decreaseBorrowShares(onBehalf, shares);
+        market.decreaseTotalBorrowShares(shares);
+        market.decreaseTotalBorrow(amount);
 
         emit EventsLib.Repay(id, msg.sender, onBehalf, amount, shares);
 
@@ -292,7 +292,7 @@ contract Blue is IBlue {
 
         // Don't accrue interests because it's not required and it saves gas.
 
-        market.setCollateral(onBehalf, market.collateral(onBehalf) + amount);
+        market.increaseCollateral(onBehalf, amount);
 
         emit EventsLib.SupplyCollateral(id, msg.sender, onBehalf, amount);
 
@@ -316,7 +316,7 @@ contract Blue is IBlue {
 
         _accrueInterests(marketParams, id);
 
-        market.setCollateral(onBehalf, market.collateral(onBehalf) - amount);
+        market.decreaseCollateral(onBehalf, amount);
 
         emit EventsLib.WithdrawCollateral(id, msg.sender, onBehalf, receiver, amount);
 
@@ -348,20 +348,20 @@ contract Blue is IBlue {
         uint256 repaid = seized.mulDivUp(collateralPrice, priceScale).wDivUp(incentive);
         uint256 repaidShares = repaid.toSharesDown(market.totalBorrow(), market.totalBorrowShares());
 
-        market.setBorrowShares(borrower, market.borrowShares(borrower) - repaidShares);
-        market.setTotalBorrowShares(market.totalBorrowShares() - repaidShares);
-        market.setTotalBorrow(market.totalBorrow() - repaid);
+        market.decreaseBorrowShares(borrower, repaidShares);
+        market.decreaseTotalBorrowShares(repaidShares);
+        market.decreaseTotalBorrow(repaid);
 
-        market.setCollateral(borrower, market.collateral(borrower) - seized);
+        market.decreaseCollateral(borrower, seized);
 
         // Realize the bad debt if needed.
         uint256 badDebtShares;
         if (market.collateral(borrower) == 0) {
             badDebtShares = market.borrowShares(borrower);
             uint256 badDebt = badDebtShares.toAssetsUp(market.totalBorrow(), market.totalBorrowShares());
-            market.setTotalSupply(market.totalSupply() - badDebt);
-            market.setTotalBorrow(market.totalBorrow() - badDebt);
-            market.setTotalBorrowShares(market.totalBorrowShares() - badDebtShares);
+            market.decreaseTotalSupply(badDebt);
+            market.decreaseTotalBorrow(badDebt);
+            market.decreaseTotalBorrowShares(badDebtShares);
             market.setBorrowShares(borrower, 0);
         }
 
@@ -441,16 +441,16 @@ contract Blue is IBlue {
         if (marketTotalBorrow != 0) {
             uint256 borrowRate = IIrm(marketParams.irm).borrowRate(marketParams);
             uint256 accruedInterests = marketTotalBorrow.wMulDown(borrowRate.wTaylorCompounded(elapsed));
-            market.setTotalBorrow(marketTotalBorrow + accruedInterests);
-            market.setTotalSupply(market.totalSupply() + accruedInterests);
+            market.increaseTotalBorrow(accruedInterests);
+            market.increaseTotalSupply(accruedInterests);
 
             uint256 feeShares;
             if (market.fee() != 0) {
                 uint256 feeAmount = accruedInterests.wMulDown(market.fee());
                 // The fee amount is subtracted from the total supply in this calculation to compensate for the fact that total supply is already updated.
                 feeShares = feeAmount.mulDivDown(market.totalSupplyShares(), market.totalSupply() - feeAmount);
-                market.setSupplyShares(feeRecipient, market.supplyShares(feeRecipient) + feeShares);
-                market.setTotalSupplyShares(market.totalSupplyShares() + feeShares);
+                market.increaseSupplyShares(feeRecipient, feeShares);
+                market.increaseTotalSupplyShares(feeShares);
             }
 
             emit EventsLib.AccrueInterests(id, borrowRate, accruedInterests, feeShares);

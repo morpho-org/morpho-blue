@@ -75,28 +75,84 @@ library MarketLib {
         market.userBalances[user].supplyShares = amount.safeCastTo128();
     }
 
+    function increaseSupplyShares(Market storage market, address user, uint256 amount) internal {
+        setSupplyShares(market, user, supplyShares(market, user) + amount);
+    }
+
+    function decreaseSupplyShares(Market storage market, address user, uint256 amount) internal {
+        setSupplyShares(market, user, supplyShares(market, user) - amount);
+    }
+
     function setBorrowShares(Market storage market, address user, uint256 amount) internal {
         market.userBalances[user].borrowShares = amount.safeCastTo128();
+    }
+
+    function increaseBorrowShares(Market storage market, address user, uint256 amount) internal {
+        setBorrowShares(market, user, borrowShares(market, user) + amount);
+    }
+
+    function decreaseBorrowShares(Market storage market, address user, uint256 amount) internal {
+        setBorrowShares(market, user, borrowShares(market, user) - amount);
     }
 
     function setCollateral(Market storage market, address user, uint256 amount) internal {
         market.userBalances[user].collateral = amount.safeCastTo128();
     }
 
+    function increaseCollateral(Market storage market, address user, uint256 amount) internal {
+        setCollateral(market, user, collateral(market, user) + amount);
+    }
+
+    function decreaseCollateral(Market storage market, address user, uint256 amount) internal {
+        setCollateral(market, user, collateral(market, user) - amount);
+    }
+
     function setTotalSupply(Market storage market, uint256 amount) internal {
         market.marketState.totalSupply = amount.safeCastTo128();
+    }
+
+    function increaseTotalSupply(Market storage market, uint256 amount) internal {
+        setTotalSupply(market, totalSupply(market) + amount);
+    }
+
+    function decreaseTotalSupply(Market storage market, uint256 amount) internal {
+        setTotalSupply(market, totalSupply(market) - amount);
     }
 
     function setTotalSupplyShares(Market storage market, uint256 amount) internal {
         market.marketState.totalSupplyShares = amount.safeCastTo128();
     }
 
+    function increaseTotalSupplyShares(Market storage market, uint256 amount) internal {
+        setTotalSupplyShares(market, totalSupplyShares(market) + amount);
+    }
+
+    function decreaseTotalSupplyShares(Market storage market, uint256 amount) internal {
+        setTotalSupplyShares(market, totalSupplyShares(market) - amount);
+    }
+
     function setTotalBorrow(Market storage market, uint256 amount) internal {
         market.marketState.totalBorrow = amount.safeCastTo128();
     }
 
+    function increaseTotalBorrow(Market storage market, uint256 amount) internal {
+        setTotalBorrow(market, totalBorrow(market) + amount);
+    }
+
+    function decreaseTotalBorrow(Market storage market, uint256 amount) internal {
+        setTotalBorrow(market, totalBorrow(market) - amount);
+    }
+
     function setTotalBorrowShares(Market storage market, uint256 amount) internal {
         market.marketState.totalBorrowShares = amount.safeCastTo128();
+    }
+
+    function increaseTotalBorrowShares(Market storage market, uint256 amount) internal {
+        setTotalBorrowShares(market, totalBorrowShares(market) + amount);
+    }
+
+    function decreaseTotalBorrowShares(Market storage market, uint256 amount) internal {
+        setTotalBorrowShares(market, totalBorrowShares(market) - amount);
     }
 
     function setLastUpdate(Market storage market, uint256 amount) internal {
