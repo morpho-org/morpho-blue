@@ -76,4 +76,11 @@ library FixedPointMathLib {
             z := mul(gt(x, y), sub(x, y))
         }
     }
+
+    /// @dev Returns true iff there is exaclty one zero.
+    function exactlyOneZero(uint256 x, uint256 y) internal pure returns (bool z) {
+        assembly {
+            z := xor(iszero(x), iszero(y))
+        }
+    }
 }
