@@ -387,10 +387,6 @@ contract Blue is IBlue {
 
         if (elapsed == 0) return;
 
-        lastUpdate[id] = block.timestamp;
-
-        if (totalBorrow[id] == 0) return;
-
         uint256 borrowRate = IIrm(market.irm).borrowRate(market);
         uint256 accruedInterests = totalBorrow[id].mulWadDown(borrowRate.wTaylorCompounded(elapsed));
         totalBorrow[id] += accruedInterests;
@@ -404,6 +400,8 @@ contract Blue is IBlue {
             supplyShares[id][feeRecipient] += feeShares;
             totalSupplyShares[id] += feeShares;
         }
+
+        lastUpdate[id] = block.timestamp;
 
         emit AccrueInterests(id, borrowRate, accruedInterests, feeShares);
     }
