@@ -149,6 +149,7 @@ contract Blue is IBlue {
     // Main entry point
 
     function interact(bytes calldata data) external {
+        require(!locked, "already locked");
         locked = true;
         IFlashBlue(msg.sender).onBlueCallback(data);
         locked = false;
