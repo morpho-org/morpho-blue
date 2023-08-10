@@ -55,4 +55,15 @@ contract InvariantBaseTest is BaseTest {
             sum += blue.borrowShares(id, addresses[i]).toAssetsUp(blue.totalBorrow(id), blue.totalBorrowShares(id));
         }
     }
+
+    function isHealthy(Market memory market, Id id, address user) public returns(bool) {
+        uint256 collateralPrice = IOracle(market.collateralOracle).price();
+        uint256 borrowablePrice = IOracle(market.borrowableOracle).price();
+
+        uint256 borrowValue =
+            blue.borrowShares(id, user).toAssetsUp(blue.totalBorrow(id), blue.totalBorrowShares(id)).mulWadUp(borrowablePrice);
+        uint256 collateralValue = blue.collateral(id,user).mulWadDown(collateralPrice);
+
+        return collateralValue.mulWadDown(market.lltv) >= borrowValue;
+    }
 }
