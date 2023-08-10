@@ -50,9 +50,7 @@ contract InvariantBaseTest is BaseTest {
         vm.prank(randomSenderToWithdrawOnBehalf);
         blue.setAuthorization(sender, true);
 
-        for (uint256 i; i < addressArray.length; ++i) {
-            addressArray.pop();
-        }
+        delete addressArray;
     }
 
     function _randomSenderToBorrowOnBehalf(address[] memory addresses, address seed, address sender)
@@ -71,9 +69,7 @@ contract InvariantBaseTest is BaseTest {
         vm.prank(randomSenderToBorrowOnBehalf);
         blue.setAuthorization(sender, true);
 
-        for (uint256 i; i < addressArray.length; ++i) {
-            addressArray.pop();
-        }
+        delete addressArray; 
     }
 
     function _randomSenderToRepayOnBehalf(address[] memory addresses, address seed, address sender)
@@ -89,12 +85,7 @@ contract InvariantBaseTest is BaseTest {
 
         randomSenderToRepayOnBehalf = addressArray[uint256(uint160(seed)) % addressArray.length];
 
-        vm.prank(randomSenderToRepayOnBehalf);
-        blue.setAuthorization(sender, true);
-
-        for (uint256 i; i < addressArray.length; ++i) {
-            addressArray.pop();
-        }
+        delete addressArray;
     }
 
     function _randomSenderToWithdrawCollateralOnBehalf(address[] memory addresses, address seed, address sender)
@@ -113,9 +104,7 @@ contract InvariantBaseTest is BaseTest {
         vm.prank(randomSenderToWithdrawCollateralOnBehalf);
         blue.setAuthorization(sender, true);
 
-        for (uint256 i; i < addressArray.length; ++i) {
-            addressArray.pop();
-        }
+        delete addressArray; 
     }
 
     function _randomSenderToLiquidate(address[] memory addresses, address seed)
@@ -131,9 +120,7 @@ contract InvariantBaseTest is BaseTest {
 
         randomSenderToLiquidate = addressArray[uint256(uint160(seed)) % addressArray.length];
 
-        for (uint256 i; i < addressArray.length; ++i) {
-            addressArray.pop();
-        }
+        delete addressArray;
     }
 
     function sumUsersSupplyShares(address[] memory addresses) internal view returns (uint256 sum) {

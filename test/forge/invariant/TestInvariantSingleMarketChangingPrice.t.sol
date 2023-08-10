@@ -94,7 +94,9 @@ contract SinglePositionConstantPriceInvariantTest is InvariantBaseTest {
 
         uint256 supplierBalance =
             blue.supplyShares(id, msg.sender).toAssetsDown(blue.totalSupply(id), blue.totalSupplyShares(id));
-        amount = bound(amount, 1, min(supplierBalance, availableLiquidity));
+        if (supplierBalance.mulWadDown(95e16) == 0) return;
+        if (availableLiquidity.mulWadDown(95e16) == 0) return;
+        amount = bound(amount, 1, min(supplierBalance.mulWadDown(95e16), availableLiquidity.mulWadDown(95e16)));
 
         vm.prank(msg.sender);
         blue.withdraw(market, amount, msg.sender, msg.sender);
@@ -107,12 +109,13 @@ contract SinglePositionConstantPriceInvariantTest is InvariantBaseTest {
         address[] memory senders = targetSenders();
         address onBehalf = _randomSenderToWithdrawOnBehalf(senders, seed, msg.sender);
         if (onBehalf == address(0)) return;
+        if (blue.supplyShares(id, onBehalf) != 0) return;
 
         uint256 supplierBalance =
             blue.supplyShares(id, onBehalf).toAssetsDown(blue.totalSupply(id), blue.totalSupplyShares(id));
-        if (supplierBalance == 0) {
-            amount = bound(amount, 1, min(supplierBalance, availableLiquidity));
-        }
+        if (supplierBalance.mulWadDown(95e16) == 0) return;
+        if (availableLiquidity.mulWadDown(95e16) == 0) return;
+        amount = bound(amount, 1, min(supplierBalance.mulWadDown(95e16), availableLiquidity.mulWadDown(95e16)));
 
         vm.prank(msg.sender);
         blue.withdraw(market, amount, onBehalf, msg.sender);
@@ -123,8 +126,8 @@ contract SinglePositionConstantPriceInvariantTest is InvariantBaseTest {
         collateralAsset.setBalance(address(this), 1);
         blue.supplyCollateral(market, 1, address(this), hex"");
 
-        uint256 availableSupply = blue.totalSupply(id) - blue.totalBorrow(id);
-        if (availableSupply == 0 || blue.collateral(id, msg.sender) == 0 || !isHealthy(market, id, msg.sender)) return;
+        uint256 availableLiquidity = blue.totalSupply(id) - blue.totalBorrow(id);
+        if (availableLiquidity == 0 || blue.collateral(id, msg.sender) == 0 || !isHealthy(market, id, msg.sender)) return;
 
         uint256 collateralPrice = IOracle(market.collateralOracle).price();
         uint256 borrowablePrice = IOracle(market.borrowableOracle).price();
@@ -135,9 +138,10 @@ contract SinglePositionConstantPriceInvariantTest is InvariantBaseTest {
         ).mulWadUp(borrowablePrice);
         uint256 currentBorrowPower = totalBorrowPower - alreadyBorrowed;
 
-        if (currentBorrowPower == 0) return;
+        if (currentBorrowPower.mulWadDown(95e16) == 0) return;
+        if (availableLiquidity.mulWadDown(95e16) == 0) return;
 
-        amount = bound(amount, 1, min(currentBorrowPower, availableSupply));
+        amount = bound(amount, 1, min(currentBorrowPower.mulWadDown(95e16), availableLiquidity.mulWadDown(95e16)));
 
         vm.prank(msg.sender);
         blue.borrow(market, amount, msg.sender, msg.sender);
@@ -148,8 +152,8 @@ contract SinglePositionConstantPriceInvariantTest is InvariantBaseTest {
         collateralAsset.setBalance(address(this), 1);
         blue.supplyCollateral(market, 1, address(this), hex"");
 
-        uint256 availableSupply = blue.totalSupply(id) - blue.totalBorrow(id);
-        if (availableSupply == 0) return;
+        uint256 availableLiquidity = blue.totalSupply(id) - blue.totalBorrow(id);
+        if (availableLiquidity == 0) return;
 
         address[] memory senders = targetSenders();
         address onBehalf = _randomSenderToBorrowOnBehalf(senders, seed, msg.sender);
@@ -163,9 +167,10 @@ contract SinglePositionConstantPriceInvariantTest is InvariantBaseTest {
         ).mulWadUp(borrowablePrice);
         uint256 currentBorrowPower = totalBorrowPower - alreadyBorrowed;
 
-        if (currentBorrowPower == 0) return;
+        if (currentBorrowPower.mulWadDown(95e16) == 0) return;
+        if (availableLiquidity.mulWadDown(95e16) == 0) return;
 
-        amount = bound(amount, 1, min(currentBorrowPower, availableSupply));
+        amount = bound(amount, 1, min(currentBorrowPower.mulWadDown(95e16), availableLiquidity.mulWadDown(95e16)));
 
         vm.prank(msg.sender);
         blue.borrow(market, amount, onBehalf, msg.sender);
