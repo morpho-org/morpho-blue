@@ -24,6 +24,10 @@ struct MarketState {
     uint8 fee; // Fee.
 }
 
+/// @title MarketLib
+/// @author Morpho Labs
+/// @custom:contact security@morpho.xyz
+/// @notice Library to convert a market to its id.
 library MarketLib {
     using SafeCastLib for uint256;
 
