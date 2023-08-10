@@ -163,7 +163,7 @@ contract Blue is IBlue {
 
         emit Supply(id, msg.sender, onBehalf, amount, shares);
 
-        if (data.length > 0) IBlueSupplyCallback(msg.sender).onBlueSupply(amount, data);
+        if (data.length > 0) IBlueSupplyCallback(msg.sender).onBlueSupply(market.borrowableAsset, amount, data);
 
         IERC20(market.borrowableAsset).safeTransferFrom(msg.sender, address(this), amount);
     }
@@ -242,7 +242,7 @@ contract Blue is IBlue {
 
         emit Repay(id, msg.sender, onBehalf, amount, shares);
 
-        if (data.length > 0) IBlueRepayCallback(msg.sender).onBlueRepay(amount, data);
+        if (data.length > 0) IBlueRepayCallback(msg.sender).onBlueRepay(market.borrowableAsset, amount, data);
 
         IERC20(market.borrowableAsset).safeTransferFrom(msg.sender, address(this), amount);
     }
@@ -262,7 +262,9 @@ contract Blue is IBlue {
 
         emit SupplyCollateral(id, msg.sender, onBehalf, amount);
 
-        if (data.length > 0) IBlueSupplyCollateralCallback(msg.sender).onBlueSupplyCollateral(amount, data);
+        if (data.length > 0) {
+            IBlueSupplyCollateralCallback(msg.sender).onBlueSupplyCollateral(market.collateralAsset, amount, data);
+        }
 
         IERC20(market.collateralAsset).safeTransferFrom(msg.sender, address(this), amount);
     }
@@ -326,7 +328,7 @@ contract Blue is IBlue {
 
         emit Liquidate(id, msg.sender, borrower, repaid, repaidShares, seized, badDebtShares);
 
-        if (data.length > 0) IBlueLiquidateCallback(msg.sender).onBlueLiquidate(seized, repaid, data);
+        if (data.length > 0) IBlueLiquidateCallback(msg.sender).onBlueLiquidate(market.borrowableAsset, repaid, data);
 
         IERC20(market.borrowableAsset).safeTransferFrom(msg.sender, address(this), repaid);
     }

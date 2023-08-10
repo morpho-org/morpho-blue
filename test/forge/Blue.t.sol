@@ -991,21 +991,21 @@ contract BlueTest is
 
     // Callback functions.
 
-    function onBlueSupply(uint256 amount, bytes memory data) external {
+    function onBlueSupply(address token, uint256 amount, bytes memory data) external {
         require(msg.sender == address(blue));
         bytes4 selector;
         (selector, data) = abi.decode(data, (bytes4, bytes));
         if (selector == this.testSupplyCallback.selector) {
-            borrowableAsset.approve(address(blue), amount);
+            ERC20(token).approve(address(blue), amount);
         }
     }
 
-    function onBlueSupplyCollateral(uint256 amount, bytes memory data) external {
+    function onBlueSupplyCollateral(address token, uint256 amount, bytes memory data) external {
         require(msg.sender == address(blue));
         bytes4 selector;
         (selector, data) = abi.decode(data, (bytes4, bytes));
         if (selector == this.testSupplyCollateralCallback.selector) {
-            collateralAsset.approve(address(blue), amount);
+            ERC20(token).approve(address(blue), amount);
         } else if (selector == this.testFlashActions.selector) {
             uint256 toBorrow = abi.decode(data, (uint256));
             collateralAsset.setBalance(address(this), amount);
@@ -1014,24 +1014,24 @@ contract BlueTest is
         }
     }
 
-    function onBlueRepay(uint256 amount, bytes memory data) external {
+    function onBlueRepay(address token, uint256 amount, bytes memory data) external {
         require(msg.sender == address(blue));
         bytes4 selector;
         (selector, data) = abi.decode(data, (bytes4, bytes));
         if (selector == this.testRepayCallback.selector) {
-            borrowableAsset.approve(address(blue), amount);
+            ERC20(token).approve(address(blue), amount);
         } else if (selector == this.testFlashActions.selector) {
             uint256 toWithdraw = abi.decode(data, (uint256));
             blue.withdrawCollateral(market, toWithdraw, address(this), address(this));
         }
     }
 
-    function onBlueLiquidate(uint256, uint256 repaid, bytes memory data) external {
+    function onBlueLiquidate(address token, uint256 amount, bytes memory data) external {
         require(msg.sender == address(blue));
         bytes4 selector;
         (selector, data) = abi.decode(data, (bytes4, bytes));
         if (selector == this.testLiquidateCallback.selector) {
-            borrowableAsset.approve(address(blue), repaid);
+            ERC20(token).approve(address(blue), amount);
         }
     }
 
