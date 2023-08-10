@@ -10,7 +10,7 @@ import {IOracle} from "./interfaces/IOracle.sol";
 import {UtilsLib} from "./libraries/UtilsLib.sol";
 import {EventsLib} from "./libraries/EventsLib.sol";
 import {ErrorsLib} from "./libraries/ErrorsLib.sol";
-import {MarketLib} from "./libraries/MarketLib.sol";
+import {MarketLib, Market, UserBalances, MarketState} from "./libraries/MarketLib.sol";
 import {SharesMathLib} from "./libraries/SharesMathLib.sol";
 import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
 import {FixedPointMathLib, WAD} from "./libraries/FixedPointMathLib.sol";
@@ -27,6 +27,7 @@ bytes32 constant AUTHORIZATION_TYPEHASH =
 
 contract Blue is IBlue {
     using MarketLib for Market;
+    using MarketLib for MarketParams;
     using SharesMathLib for uint256;
     using SafeTransferLib for IERC20;
     using FixedPointMathLib for uint256;
@@ -35,30 +36,17 @@ contract Blue is IBlue {
 
     bytes32 public immutable DOMAIN_SEPARATOR;
 
-    // Storage.
+    /* INTERNAL STORAGE */
+
+    // Markets.
+    mapping(Id => Market) internal _market;
+
+    /* PUBLIC STORAGE */
 
     // Owner.
     address public owner;
     // Fee recipient.
     address public feeRecipient;
-    // User' supply balances.
-    mapping(Id => mapping(address => uint256)) public supplyShares;
-    // User' borrow balances.
-    mapping(Id => mapping(address => uint256)) public borrowShares;
-    // User' collateral balance.
-    mapping(Id => mapping(address => uint256)) public collateral;
-    // Market total supply.
-    mapping(Id => uint256) public totalSupply;
-    // Market total supply shares.
-    mapping(Id => uint256) public totalSupplyShares;
-    // Market total borrow.
-    mapping(Id => uint256) public totalBorrow;
-    // Market total borrow shares.
-    mapping(Id => uint256) public totalBorrowShares;
-    // Interests last update (used to check if a market has been created).
-    mapping(Id => uint256) public lastUpdate;
-    // Fee.
-    mapping(Id => uint256) public fee;
     // Enabled IRMs.
     mapping(address => bool) public isIrmEnabled;
     // Enabled LLTVs.
@@ -105,15 +93,17 @@ contract Blue is IBlue {
     }
 
     /// @notice It is the owner's responsibility to ensure a fee recipient is set before setting a non-zero fee.
-    function setFee(Market memory market, uint256 newFee) external onlyOwner {
-        Id id = market.id();
-        require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
+    function setFee(MarketParams memory marketParams, uint256 newFee) external onlyOwner {
+        Id id = marketParams.id();
+        Market storage market = _market[id];
+        
+        require(market.lastUpdate() != 0, ErrorsLib.MARKET_NOT_CREATED);
         require(newFee <= MAX_FEE, ErrorsLib.MAX_FEE_EXCEEDED);
 
         // Accrue interests using the previous fee set before changing it.
-        _accrueInterests(market, id);
+        _accrueInterests(marketParams, id);
 
-        fee[id] = newFee;
+        market.setFee(newFee);
 
         emit EventsLib.SetFee(id, newFee);
     }
@@ -126,203 +116,219 @@ contract Blue is IBlue {
 
     // Markets management.
 
-    function createMarket(Market memory market) external {
-        Id id = market.id();
-        require(isIrmEnabled[market.irm], ErrorsLib.IRM_NOT_ENABLED);
-        require(isLltvEnabled[market.lltv], ErrorsLib.LLTV_NOT_ENABLED);
-        require(lastUpdate[id] == 0, ErrorsLib.MARKET_CREATED);
+    function createMarket(MarketParams memory marketParams) external {
+        Id id = marketParams.id();
+        Market storage market = _market[id];
 
-        lastUpdate[id] = block.timestamp;
+        require(isIrmEnabled[marketParams.irm], ErrorsLib.IRM_NOT_ENABLED);
+        require(isLltvEnabled[marketParams.lltv], ErrorsLib.LLTV_NOT_ENABLED);
+        require(market.lastUpdate() == 0, ErrorsLib.MARKET_CREATED);
 
-        emit EventsLib.CreateMarket(id, market);
+        market.setLastUpdate(block.timestamp);
+
+        emit EventsLib.CreateMarket(id, marketParams);
     }
 
     // Supply management.
 
-    function supply(Market memory market, uint256 amount, uint256 shares, address onBehalf, bytes calldata data)
+    function supply(MarketParams memory marketParams, uint256 amount, uint256 shares, address onBehalf, bytes calldata data)
         external
     {
-        Id id = market.id();
-        require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
+        Id id = marketParams.id();
+        Market storage market = _market[id];
+
+        require(market.lastUpdate() != 0, ErrorsLib.MARKET_NOT_CREATED);
         require(UtilsLib.exactlyOneZero(amount, shares), ErrorsLib.INCONSISTENT_INPUT);
         require(onBehalf != address(0), ErrorsLib.ZERO_ADDRESS);
 
-        _accrueInterests(market, id);
+        _accrueInterests(marketParams, id);
 
-        if (amount > 0) shares = amount.toSharesDown(totalSupply[id], totalSupplyShares[id]);
-        else amount = shares.toAssetsUp(totalSupply[id], totalSupplyShares[id]);
+        if (amount > 0) shares = amount.toSharesDown(market.totalSupply(), market.totalSupplyShares());
+        else amount = shares.toAssetsUp(market.totalSupply(), market.totalSupplyShares());
 
-        supplyShares[id][onBehalf] += shares;
-        totalSupplyShares[id] += shares;
-        totalSupply[id] += amount;
+        market.setSupplyShares(onBehalf, market.supplyShares(onBehalf) + shares);
+        market.setTotalSupplyShares(market.totalSupplyShares() + shares);
+        market.setTotalSupply(market.totalSupply() + amount);
 
         emit EventsLib.Supply(id, msg.sender, onBehalf, amount, shares);
 
         if (data.length > 0) IBlueSupplyCallback(msg.sender).onBlueSupply(amount, data);
 
-        IERC20(market.borrowableAsset).safeTransferFrom(msg.sender, address(this), amount);
+        IERC20(marketParams.borrowableAsset).safeTransferFrom(msg.sender, address(this), amount);
     }
 
-    function withdraw(Market memory market, uint256 amount, uint256 shares, address onBehalf, address receiver)
+    function withdraw(MarketParams memory marketParams, uint256 amount, uint256 shares, address onBehalf, address receiver)
         external
     {
-        Id id = market.id();
-        require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
+        Id id = marketParams.id();
+        Market storage market = _market[id];
+
+        require(market.lastUpdate() != 0, ErrorsLib.MARKET_NOT_CREATED);
         require(UtilsLib.exactlyOneZero(amount, shares), ErrorsLib.INCONSISTENT_INPUT);
         // No need to verify that onBehalf != address(0) thanks to the authorization check.
         require(receiver != address(0), ErrorsLib.ZERO_ADDRESS);
         require(_isSenderAuthorized(onBehalf), ErrorsLib.UNAUTHORIZED);
 
-        _accrueInterests(market, id);
+        _accrueInterests(marketParams, id);
 
-        if (amount > 0) shares = amount.toSharesUp(totalSupply[id], totalSupplyShares[id]);
-        else amount = shares.toAssetsDown(totalSupply[id], totalSupplyShares[id]);
+        if (amount > 0) shares = amount.toSharesUp(market.totalSupply(), market.totalSupplyShares());
+        else amount = shares.toAssetsDown(market.totalSupply(), market.totalSupplyShares());
 
-        supplyShares[id][onBehalf] -= shares;
-        totalSupplyShares[id] -= shares;
-        totalSupply[id] -= amount;
+        market.setSupplyShares(onBehalf, market.supplyShares(onBehalf) - shares);
+        market.setTotalSupplyShares(market.totalSupplyShares() - shares);
+        market.setTotalSupply(market.totalSupply() - amount);
 
         emit EventsLib.Withdraw(id, msg.sender, onBehalf, receiver, amount, shares);
 
-        require(totalBorrow[id] <= totalSupply[id], ErrorsLib.INSUFFICIENT_LIQUIDITY);
+        require(market.totalBorrow() <= market.totalSupply(), ErrorsLib.INSUFFICIENT_LIQUIDITY);
 
-        IERC20(market.borrowableAsset).safeTransfer(receiver, amount);
+        IERC20(marketParams.borrowableAsset).safeTransfer(receiver, amount);
     }
 
     // Borrow management.
 
-    function borrow(Market memory market, uint256 amount, uint256 shares, address onBehalf, address receiver)
+    function borrow(MarketParams memory marketParams, uint256 amount, uint256 shares, address onBehalf, address receiver)
         external
     {
-        Id id = market.id();
-        require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
+        Id id = marketParams.id();
+        Market storage market = _market[id];
+
+        require(market.lastUpdate() != 0, ErrorsLib.MARKET_NOT_CREATED);
         require(UtilsLib.exactlyOneZero(amount, shares), ErrorsLib.INCONSISTENT_INPUT);
         // No need to verify that onBehalf != address(0) thanks to the authorization check.
         require(receiver != address(0), ErrorsLib.ZERO_ADDRESS);
         require(_isSenderAuthorized(onBehalf), ErrorsLib.UNAUTHORIZED);
 
-        _accrueInterests(market, id);
+        _accrueInterests(marketParams, id);
 
-        if (amount > 0) shares = amount.toSharesUp(totalBorrow[id], totalBorrowShares[id]);
-        else amount = shares.toAssetsDown(totalBorrow[id], totalBorrowShares[id]);
+        if (amount > 0) shares = amount.toSharesUp(market.totalBorrow(), market.totalBorrowShares());
+        else amount = shares.toAssetsDown(market.totalBorrow(), market.totalBorrowShares());
 
-        borrowShares[id][onBehalf] += shares;
-        totalBorrowShares[id] += shares;
-        totalBorrow[id] += amount;
+        market.setBorrowShares(onBehalf, market.borrowShares(onBehalf) + shares);
+        market.setTotalBorrowShares(market.totalBorrowShares() + shares);
+        market.setTotalBorrow(market.totalBorrow() + amount);
 
         emit EventsLib.Borrow(id, msg.sender, onBehalf, receiver, amount, shares);
 
-        require(_isHealthy(market, id, onBehalf), ErrorsLib.INSUFFICIENT_COLLATERAL);
-        require(totalBorrow[id] <= totalSupply[id], ErrorsLib.INSUFFICIENT_LIQUIDITY);
+        require(_isHealthy(marketParams, id, onBehalf), ErrorsLib.INSUFFICIENT_COLLATERAL);
+        require(market.totalBorrow() <= market.totalSupply(), ErrorsLib.INSUFFICIENT_LIQUIDITY);
 
-        IERC20(market.borrowableAsset).safeTransfer(receiver, amount);
+        IERC20(marketParams.borrowableAsset).safeTransfer(receiver, amount);
     }
 
-    function repay(Market memory market, uint256 amount, uint256 shares, address onBehalf, bytes calldata data)
+    function repay(MarketParams memory marketParams, uint256 amount, uint256 shares, address onBehalf, bytes calldata data)
         external
     {
-        Id id = market.id();
-        require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
+        Id id = marketParams.id();
+        Market storage market = _market[id];
+
+        require(market.lastUpdate() != 0, ErrorsLib.MARKET_NOT_CREATED);
         require(UtilsLib.exactlyOneZero(amount, shares), ErrorsLib.INCONSISTENT_INPUT);
         require(onBehalf != address(0), ErrorsLib.ZERO_ADDRESS);
 
-        _accrueInterests(market, id);
+        _accrueInterests(marketParams, id);
 
-        if (amount > 0) shares = amount.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
-        else amount = shares.toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
+        if (amount > 0) shares = amount.toSharesDown(market.totalBorrow(), market.totalBorrowShares());
+        else amount = shares.toAssetsUp(market.totalBorrow(), market.totalBorrowShares());
 
-        borrowShares[id][onBehalf] -= shares;
-        totalBorrowShares[id] -= shares;
-        totalBorrow[id] -= amount;
+        market.setBorrowShares(onBehalf, market.borrowShares(onBehalf) - shares);
+        market.setTotalBorrowShares(market.totalBorrowShares() - shares);
+        market.setTotalBorrow(market.totalBorrow() - amount);
 
         emit EventsLib.Repay(id, msg.sender, onBehalf, amount, shares);
 
         if (data.length > 0) IBlueRepayCallback(msg.sender).onBlueRepay(amount, data);
 
-        IERC20(market.borrowableAsset).safeTransferFrom(msg.sender, address(this), amount);
+        IERC20(marketParams.borrowableAsset).safeTransferFrom(msg.sender, address(this), amount);
     }
 
     // Collateral management.
 
     /// @dev Don't accrue interests because it's not required and it saves gas.
-    function supplyCollateral(Market memory market, uint256 amount, address onBehalf, bytes calldata data) external {
-        Id id = market.id();
-        require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
+    function supplyCollateral(MarketParams memory marketParams, uint256 amount, address onBehalf, bytes calldata data) external {
+        Id id = marketParams.id();
+        Market storage market = _market[id];
+
+        require(market.lastUpdate() != 0, ErrorsLib.MARKET_NOT_CREATED);
         require(amount != 0, ErrorsLib.ZERO_AMOUNT);
         require(onBehalf != address(0), ErrorsLib.ZERO_ADDRESS);
 
         // Don't accrue interests because it's not required and it saves gas.
 
-        collateral[id][onBehalf] += amount;
+        market.setCollateral(onBehalf, market.collateral(onBehalf) + amount);
 
         emit EventsLib.SupplyCollateral(id, msg.sender, onBehalf, amount);
 
         if (data.length > 0) IBlueSupplyCollateralCallback(msg.sender).onBlueSupplyCollateral(amount, data);
 
-        IERC20(market.collateralAsset).safeTransferFrom(msg.sender, address(this), amount);
+        IERC20(marketParams.collateralAsset).safeTransferFrom(msg.sender, address(this), amount);
     }
 
-    function withdrawCollateral(Market memory market, uint256 amount, address onBehalf, address receiver) external {
-        Id id = market.id();
-        require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
+    function withdrawCollateral(MarketParams memory marketParams, uint256 amount, address onBehalf, address receiver) external {
+        Id id = marketParams.id();
+        Market storage market = _market[id];
+
+        require(market.lastUpdate() != 0, ErrorsLib.MARKET_NOT_CREATED);
         require(amount != 0, ErrorsLib.ZERO_AMOUNT);
         // No need to verify that onBehalf != address(0) thanks to the authorization check.
         require(receiver != address(0), ErrorsLib.ZERO_ADDRESS);
         require(_isSenderAuthorized(onBehalf), ErrorsLib.UNAUTHORIZED);
 
-        _accrueInterests(market, id);
+        _accrueInterests(marketParams, id);
 
-        collateral[id][onBehalf] -= amount;
+        market.setCollateral(onBehalf, market.collateral(onBehalf) - amount);
 
         emit EventsLib.WithdrawCollateral(id, msg.sender, onBehalf, receiver, amount);
 
-        require(_isHealthy(market, id, onBehalf), ErrorsLib.INSUFFICIENT_COLLATERAL);
+        require(_isHealthy(marketParams, id, onBehalf), ErrorsLib.INSUFFICIENT_COLLATERAL);
 
-        IERC20(market.collateralAsset).safeTransfer(receiver, amount);
+        IERC20(marketParams.collateralAsset).safeTransfer(receiver, amount);
     }
 
     // Liquidation.
 
-    function liquidate(Market memory market, address borrower, uint256 seized, bytes calldata data) external {
-        Id id = market.id();
-        require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
+    function liquidate(MarketParams memory marketParams, address borrower, uint256 seized, bytes calldata data) external {
+        Id id = marketParams.id();
+        Market storage market = _market[id];
+
+        require(market.lastUpdate() != 0, ErrorsLib.MARKET_NOT_CREATED);
         require(seized != 0, ErrorsLib.ZERO_AMOUNT);
 
-        _accrueInterests(market, id);
+        _accrueInterests(marketParams, id);
 
-        (uint256 collateralPrice, uint256 priceScale) = IOracle(market.oracle).price();
+        (uint256 collateralPrice, uint256 priceScale) = IOracle(marketParams.oracle).price();
 
-        require(!_isHealthy(market, id, borrower, collateralPrice, priceScale), ErrorsLib.HEALTHY_POSITION);
+        require(!_isHealthy(marketParams, id, borrower, collateralPrice, priceScale), ErrorsLib.HEALTHY_POSITION);
 
         // The liquidation incentive is 1 + ALPHA * (1 / LLTV - 1).
-        uint256 incentive = WAD + ALPHA.wMulDown(WAD.wDivDown(market.lltv) - WAD);
+        uint256 incentive = WAD + ALPHA.wMulDown(WAD.wDivDown(marketParams.lltv) - WAD);
         uint256 repaid = seized.mulDivUp(collateralPrice, priceScale).wDivUp(incentive);
-        uint256 repaidShares = repaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
+        uint256 repaidShares = repaid.toSharesDown(market.totalBorrow(), market.totalBorrowShares());
 
-        borrowShares[id][borrower] -= repaidShares;
-        totalBorrowShares[id] -= repaidShares;
-        totalBorrow[id] -= repaid;
+        market.setBorrowShares(borrower, market.borrowShares(borrower) - repaidShares);
+        market.setTotalBorrowShares(market.totalBorrowShares() - repaidShares);
+        market.setTotalBorrow(market.totalBorrow() - repaid);
 
-        collateral[id][borrower] -= seized;
+        market.setCollateral(borrower, market.collateral(borrower) - seized);
 
         // Realize the bad debt if needed.
         uint256 badDebtShares;
-        if (collateral[id][borrower] == 0) {
-            badDebtShares = borrowShares[id][borrower];
-            uint256 badDebt = badDebtShares.toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
-            totalSupply[id] -= badDebt;
-            totalBorrow[id] -= badDebt;
-            totalBorrowShares[id] -= badDebtShares;
-            borrowShares[id][borrower] = 0;
+        if (market.collateral(borrower) == 0) {
+            badDebtShares = market.borrowShares(borrower);
+            uint256 badDebt = badDebtShares.toAssetsUp(market.totalBorrow(), market.totalBorrowShares());
+            market.setTotalSupply(market.totalSupply() - badDebt);
+            market.setTotalBorrow(market.totalBorrow() - badDebt);
+            market.setTotalBorrowShares(market.totalBorrowShares() - badDebtShares);
+            market.setBorrowShares(borrower, 0);
         }
 
-        IERC20(market.collateralAsset).safeTransfer(msg.sender, seized);
+        IERC20(marketParams.collateralAsset).safeTransfer(msg.sender, seized);
 
         emit EventsLib.Liquidate(id, msg.sender, borrower, repaid, repaidShares, seized, badDebtShares);
 
         if (data.length > 0) IBlueLiquidateCallback(msg.sender).onBlueLiquidate(repaid, data);
 
-        IERC20(market.borrowableAsset).safeTransferFrom(msg.sender, address(this), repaid);
+        IERC20(marketParams.borrowableAsset).safeTransferFrom(msg.sender, address(this), repaid);
     }
 
     // Flash Loans.
@@ -376,51 +382,57 @@ contract Blue is IBlue {
 
     // Interests management.
 
-    function _accrueInterests(Market memory market, Id id) internal {
-        uint256 elapsed = block.timestamp - lastUpdate[id];
+    function _accrueInterests(MarketParams memory marketParams, Id id) internal {
+        Market storage market = _market[id];
+
+        uint256 elapsed = block.timestamp - market.lastUpdate();
 
         if (elapsed == 0) return;
 
-        uint256 marketTotalBorrow = totalBorrow[id];
+        uint256 marketTotalBorrow = market.totalBorrow();
 
         if (marketTotalBorrow != 0) {
-            uint256 borrowRate = IIrm(market.irm).borrowRate(market);
+            uint256 borrowRate = IIrm(marketParams.irm).borrowRate(marketParams);
             uint256 accruedInterests = marketTotalBorrow.wMulDown(borrowRate.wTaylorCompounded(elapsed));
-            totalBorrow[id] = marketTotalBorrow + accruedInterests;
-            totalSupply[id] += accruedInterests;
+            market.setTotalBorrow(marketTotalBorrow + accruedInterests);
+            market.setTotalSupply(market.totalSupply() + accruedInterests);
 
             uint256 feeShares;
-            if (fee[id] != 0) {
-                uint256 feeAmount = accruedInterests.wMulDown(fee[id]);
+            if (market.fee() != 0) {
+                uint256 feeAmount = accruedInterests.wMulDown(market.fee());
                 // The fee amount is subtracted from the total supply in this calculation to compensate for the fact that total supply is already updated.
-                feeShares = feeAmount.mulDivDown(totalSupplyShares[id], totalSupply[id] - feeAmount);
-                supplyShares[id][feeRecipient] += feeShares;
-                totalSupplyShares[id] += feeShares;
+                feeShares = feeAmount.mulDivDown(market.totalSupplyShares(), market.totalSupply() - feeAmount);
+                market.setSupplyShares(feeRecipient, market.supplyShares(feeRecipient) + feeShares);
+                market.setTotalSupplyShares(market.totalSupplyShares() + feeShares);
             }
 
             emit EventsLib.AccrueInterests(id, borrowRate, accruedInterests, feeShares);
         }
 
-        lastUpdate[id] = block.timestamp;
+        market.setLastUpdate(block.timestamp);
     }
 
     // Health check.
 
-    function _isHealthy(Market memory market, Id id, address user) internal view returns (bool) {
-        if (borrowShares[id][user] == 0) return true;
+    function _isHealthy(MarketParams memory marketParams, Id id, address user) internal view returns (bool) {
+        Market storage market = _market[id];
 
-        (uint256 collateralPrice, uint256 priceScale) = IOracle(market.oracle).price();
+        if (market.borrowShares(user) == 0) return true;
 
-        return _isHealthy(market, id, user, collateralPrice, priceScale);
+        (uint256 collateralPrice, uint256 priceScale) = IOracle(marketParams.oracle).price();
+
+        return _isHealthy(marketParams, id, user, collateralPrice, priceScale);
     }
 
-    function _isHealthy(Market memory market, Id id, address user, uint256 collateralPrice, uint256 priceScale)
+    function _isHealthy(MarketParams memory marketParams, Id id, address user, uint256 collateralPrice, uint256 priceScale)
         internal
         view
         returns (bool)
     {
-        uint256 borrowed = borrowShares[id][user].toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
-        uint256 maxBorrow = collateral[id][user].mulDivDown(collateralPrice, priceScale).wMulDown(market.lltv);
+        Market storage market = _market[id];
+
+        uint256 borrowed = market.borrowShares(user).toAssetsUp(market.totalBorrow(), market.totalBorrowShares());
+        uint256 maxBorrow = market.collateral(user).mulDivDown(collateralPrice, priceScale).wMulDown(marketParams.lltv);
 
         return maxBorrow >= borrowed;
     }
@@ -440,5 +452,41 @@ contract Blue is IBlue {
                 mstore(add(res, mul(i, 32)), sload(slot))
             }
         }
+    }
+
+    function totalSupplyShares(Id id) external view returns (uint256) {
+        return _market[id].totalSupplyShares();
+    }
+
+    function totalBorrowShares(Id id) external view returns (uint256) {
+        return _market[id].totalBorrowShares();
+    }
+
+    function supplyShares(Id id, address user) external view returns (uint256) {
+        return _market[id].supplyShares(user);
+    }
+
+    function borrowShares(Id id, address user) external view returns (uint256) {
+        return _market[id].borrowShares(user);
+    }
+
+    function totalSupply(Id id) external view returns (uint256) {
+        return _market[id].totalSupply();
+    }
+
+    function totalBorrow(Id id) external view returns (uint256) {
+        return _market[id].totalBorrow();
+    }
+
+    function lastUpdate(Id id) external view returns (uint256) {
+        return _market[id].lastUpdate();
+    }
+
+    function fee(Id id) external view returns (uint256) {
+        return _market[id].fee();
+    }
+
+    function collateral(Id id, address user) external view returns (uint256) {
+        return _market[id].collateral(user);
     }
 }

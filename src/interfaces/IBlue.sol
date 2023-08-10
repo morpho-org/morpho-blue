@@ -2,10 +2,11 @@
 pragma solidity >=0.5.0;
 
 import {IFlashLender} from "./IFlashLender.sol";
+import {Market, Id} from "../libraries/MarketLib.sol";
 
 type Id is bytes32;
 
-struct Market {
+struct MarketParams {
     address borrowableAsset;
     address collateralAsset;
     address oracle;
@@ -44,21 +45,21 @@ interface IBlue is IFlashLender {
     function setOwner(address newOwner) external;
     function enableIrm(address irm) external;
     function enableLltv(uint256 lltv) external;
-    function setFee(Market memory market, uint256 newFee) external;
+    function setFee(MarketParams memory marketParams, uint256 newFee) external;
     function setFeeRecipient(address recipient) external;
-    function createMarket(Market memory market) external;
+    function createMarket(MarketParams memory market) external;
 
-    function supply(Market memory market, uint256 amount, uint256 shares, address onBehalf, bytes memory data)
+    function supply(MarketParams memory marketParams, uint256 amount, uint256 shares, address onBehalf, bytes memory data)
         external;
-    function withdraw(Market memory market, uint256 amount, uint256 shares, address onBehalf, address receiver)
+    function withdraw(MarketParams memory marketParams, uint256 amount, uint256 shares, address onBehalf, address receiver)
         external;
-    function borrow(Market memory market, uint256 amount, uint256 shares, address onBehalf, address receiver)
+    function borrow(MarketParams memory marketParams, uint256 amount, uint256 shares, address onBehalf, address receiver)
         external;
-    function repay(Market memory market, uint256 amount, uint256 shares, address onBehalf, bytes memory data)
+    function repay(MarketParams memory marketParams, uint256 amount, uint256 shares, address onBehalf, bytes memory data)
         external;
-    function supplyCollateral(Market memory market, uint256 amount, address onBehalf, bytes memory data) external;
-    function withdrawCollateral(Market memory market, uint256 amount, address onBehalf, address receiver) external;
-    function liquidate(Market memory market, address borrower, uint256 seized, bytes memory data) external;
+    function supplyCollateral(MarketParams memory marketParams, uint256 amount, address onBehalf, bytes memory data) external;
+    function withdrawCollateral(MarketParams memory marketParams, uint256 amount, address onBehalf, address receiver) external;
+    function liquidate(MarketParams memory marketParams, address borrower, uint256 seized, bytes memory data) external;
     function flashLoan(address token, uint256 amount, bytes calldata data) external;
 
     function setAuthorization(address authorized, bool newIsAuthorized) external;
