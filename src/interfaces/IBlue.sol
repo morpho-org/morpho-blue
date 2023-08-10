@@ -34,9 +34,9 @@ string constant MARKET_CREATED = "market created";
 
 string constant MARKET_NOT_CREATED = "market not created";
 
-string constant ZERO_AMOUNT = "zero amount";
+string constant NOT_EXACTLY_ONE_ZERO = "not exactly one zero";
 
-string constant ZERO_SHARES = "zero shares";
+string constant ZERO_AMOUNT = "zero amount";
 
 string constant ZERO_ADDRESS = "zero address";
 
@@ -137,10 +137,14 @@ interface IBlue is IFlashLender {
     function setFeeRecipient(address recipient) external;
     function createMarket(Market memory market) external;
 
-    function supply(Market memory market, uint256 amount, address onBehalf, bytes memory data) external;
-    function withdraw(Market memory market, uint256 amount, address onBehalf, address receiver) external;
-    function borrow(Market memory market, uint256 amount, address onBehalf, address receiver) external;
-    function repay(Market memory market, uint256 amount, address onBehalf, bytes memory data) external;
+    function supply(Market memory market, uint256 amount, uint256 shares, address onBehalf, bytes memory data)
+        external;
+    function withdraw(Market memory market, uint256 amount, uint256 shares, address onBehalf, address receiver)
+        external;
+    function borrow(Market memory market, uint256 amount, uint256 shares, address onBehalf, address receiver)
+        external;
+    function repay(Market memory market, uint256 amount, uint256 shares, address onBehalf, bytes memory data)
+        external;
     function supplyCollateral(Market memory market, uint256 amount, address onBehalf, bytes memory data) external;
     function withdrawCollateral(Market memory market, uint256 amount, address onBehalf, address receiver) external;
     function liquidate(Market memory market, address borrower, uint256 seized, bytes memory data) external;

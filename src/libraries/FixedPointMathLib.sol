@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
+import {UtilsLib} from "./UtilsLib.sol";
+
 uint256 constant WAD = 1e18;
 
 /// @notice Fixed-point arithmetic library.
@@ -29,6 +31,16 @@ library FixedPointMathLib {
         return mulDivUp(x, WAD, y);
     }
 
+    /// @dev The sum of the last three terms in a four term taylor series expansion
+    ///      to approximate a compound interest rate: (1 + x)^n - 1.
+    function wTaylorCompounded(uint256 x, uint256 n) internal pure returns (uint256) {
+        uint256 firstTerm = x * n;
+        uint256 secondTerm = wMulDown(firstTerm, x * UtilsLib.zeroFloorSub(n, 1)) / 2;
+        uint256 thirdTerm = wMulDown(secondTerm, x * UtilsLib.zeroFloorSub(n, 2)) / 3;
+
+        return firstTerm + secondTerm + thirdTerm;
+    }
+
     /// @dev (x * y) / denominator rounded down.
     function mulDivDown(uint256 x, uint256 y, uint256 denominator) internal pure returns (uint256 z) {
         /// @solidity memory-safe-assembly
@@ -51,23 +63,6 @@ library FixedPointMathLib {
             // If x * y modulo the denominator is strictly greater than 0,
             // 1 is added to round up the division of x * y by the denominator.
             z := add(gt(mod(mul(x, y), denominator), 0), div(mul(x, y), denominator))
-        }
-    }
-
-    /// @dev The sum of the last three terms in a four term taylor series expansion
-    ///      to approximate a compound interest rate: (1 + x)^n - 1.
-    function wTaylorCompounded(uint256 x, uint256 n) internal pure returns (uint256) {
-        uint256 firstTerm = x * n;
-        uint256 secondTerm = wMulDown(firstTerm, x * zeroFloorSub(n, 1)) / 2;
-        uint256 thirdTerm = wMulDown(secondTerm, x * zeroFloorSub(n, 2)) / 3;
-
-        return firstTerm + secondTerm + thirdTerm;
-    }
-
-    /// @dev Returns max(x - y, 0).
-    function zeroFloorSub(uint256 x, uint256 y) private pure returns (uint256 z) {
-        assembly {
-            z := mul(gt(x, y), sub(x, y))
         }
     }
 }

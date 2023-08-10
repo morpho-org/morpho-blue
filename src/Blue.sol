@@ -7,6 +7,7 @@ import {IIrm} from "./interfaces/IIrm.sol";
 import {IERC20} from "./interfaces/IERC20.sol";
 import {IOracle} from "./interfaces/IOracle.sol";
 
+import {UtilsLib} from "./libraries/UtilsLib.sol";
 import {MarketLib} from "./libraries/MarketLib.sol";
 import {SharesMathLib} from "./libraries/SharesMathLib.sol";
 import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
@@ -136,15 +137,18 @@ contract Blue is IBlue {
 
     // Supply management.
 
-    function supply(Market memory market, uint256 amount, address onBehalf, bytes calldata data) external {
+    function supply(Market memory market, uint256 amount, uint256 shares, address onBehalf, bytes calldata data)
+        external
+    {
         Id id = market.id();
         require(lastUpdate[id] != 0, MARKET_NOT_CREATED);
-        require(amount != 0, ZERO_AMOUNT);
+        require(UtilsLib.exactlyOneZero(amount, shares), NOT_EXACTLY_ONE_ZERO);
         require(onBehalf != address(0), ZERO_ADDRESS);
 
         _accrueInterests(market, id);
 
-        uint256 shares = amount.toSharesDown(totalSupply[id], totalSupplyShares[id]);
+        if (amount > 0) shares = amount.toSharesDown(totalSupply[id], totalSupplyShares[id]);
+        else amount = shares.toAssetsUp(totalSupply[id], totalSupplyShares[id]);
 
         supplyShares[id][onBehalf] += shares;
         totalSupplyShares[id] += shares;
@@ -157,17 +161,20 @@ contract Blue is IBlue {
         IERC20(market.borrowableAsset).safeTransferFrom(msg.sender, address(this), amount);
     }
 
-    function withdraw(Market memory market, uint256 shares, address onBehalf, address receiver) external {
+    function withdraw(Market memory market, uint256 amount, uint256 shares, address onBehalf, address receiver)
+        external
+    {
         Id id = market.id();
         require(lastUpdate[id] != 0, MARKET_NOT_CREATED);
-        require(shares != 0, ZERO_SHARES);
+        require(UtilsLib.exactlyOneZero(amount, shares), NOT_EXACTLY_ONE_ZERO);
         // No need to verify that onBehalf != address(0) thanks to the authorization check.
         require(receiver != address(0), ZERO_ADDRESS);
         require(_isSenderAuthorized(onBehalf), UNAUTHORIZED);
 
         _accrueInterests(market, id);
 
-        uint256 amount = shares.toAssetsDown(totalSupply[id], totalSupplyShares[id]);
+        if (amount > 0) shares = amount.toSharesUp(totalSupply[id], totalSupplyShares[id]);
+        else amount = shares.toAssetsDown(totalSupply[id], totalSupplyShares[id]);
 
         supplyShares[id][onBehalf] -= shares;
         totalSupplyShares[id] -= shares;
@@ -182,17 +189,20 @@ contract Blue is IBlue {
 
     // Borrow management.
 
-    function borrow(Market memory market, uint256 amount, address onBehalf, address receiver) external {
+    function borrow(Market memory market, uint256 amount, uint256 shares, address onBehalf, address receiver)
+        external
+    {
         Id id = market.id();
         require(lastUpdate[id] != 0, MARKET_NOT_CREATED);
-        require(amount != 0, ZERO_AMOUNT);
+        require(UtilsLib.exactlyOneZero(amount, shares), NOT_EXACTLY_ONE_ZERO);
         // No need to verify that onBehalf != address(0) thanks to the authorization check.
         require(receiver != address(0), ZERO_ADDRESS);
         require(_isSenderAuthorized(onBehalf), UNAUTHORIZED);
 
         _accrueInterests(market, id);
 
-        uint256 shares = amount.toSharesUp(totalBorrow[id], totalBorrowShares[id]);
+        if (amount > 0) shares = amount.toSharesUp(totalBorrow[id], totalBorrowShares[id]);
+        else amount = shares.toAssetsDown(totalBorrow[id], totalBorrowShares[id]);
 
         borrowShares[id][onBehalf] += shares;
         totalBorrowShares[id] += shares;
@@ -206,15 +216,18 @@ contract Blue is IBlue {
         IERC20(market.borrowableAsset).safeTransfer(receiver, amount);
     }
 
-    function repay(Market memory market, uint256 shares, address onBehalf, bytes calldata data) external {
+    function repay(Market memory market, uint256 amount, uint256 shares, address onBehalf, bytes calldata data)
+        external
+    {
         Id id = market.id();
         require(lastUpdate[id] != 0, MARKET_NOT_CREATED);
-        require(shares != 0, ZERO_SHARES);
+        require(UtilsLib.exactlyOneZero(amount, shares), NOT_EXACTLY_ONE_ZERO);
         require(onBehalf != address(0), ZERO_ADDRESS);
 
         _accrueInterests(market, id);
 
-        uint256 amount = shares.toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
+        if (amount > 0) shares = amount.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
+        else amount = shares.toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
 
         borrowShares[id][onBehalf] -= shares;
         totalBorrowShares[id] -= shares;
