@@ -8,6 +8,7 @@ import {IERC20} from "./interfaces/IERC20.sol";
 import {IOracle} from "./interfaces/IOracle.sol";
 
 import {UtilsLib} from "./libraries/UtilsLib.sol";
+import {EventsLib} from "./libraries/EventsLib.sol";
 import {ErrorsLib} from "./libraries/ErrorsLib.sol";
 import {MarketLib} from "./libraries/MarketLib.sol";
 import {SharesMathLib} from "./libraries/SharesMathLib.sol";
@@ -87,20 +88,20 @@ contract Blue is IBlue {
     function setOwner(address newOwner) external onlyOwner {
         owner = newOwner;
 
-        emit SetOwner(newOwner);
+        emit EventsLib.SetOwner(newOwner);
     }
 
     function enableIrm(address irm) external onlyOwner {
         isIrmEnabled[irm] = true;
 
-        emit EnableIrm(address(irm));
+        emit EventsLib.EnableIrm(address(irm));
     }
 
     function enableLltv(uint256 lltv) external onlyOwner {
         require(lltv < WAD, ErrorsLib.LLTV_TOO_HIGH);
         isLltvEnabled[lltv] = true;
 
-        emit EnableLltv(lltv);
+        emit EventsLib.EnableLltv(lltv);
     }
 
     /// @notice It is the owner's responsibility to ensure a fee recipient is set before setting a non-zero fee.
@@ -114,13 +115,13 @@ contract Blue is IBlue {
 
         fee[id] = newFee;
 
-        emit SetFee(id, newFee);
+        emit EventsLib.SetFee(id, newFee);
     }
 
     function setFeeRecipient(address recipient) external onlyOwner {
         feeRecipient = recipient;
 
-        emit SetFeeRecipient(recipient);
+        emit EventsLib.SetFeeRecipient(recipient);
     }
 
     // Markets management.
@@ -133,7 +134,7 @@ contract Blue is IBlue {
 
         lastUpdate[id] = block.timestamp;
 
-        emit CreateMarket(id, market);
+        emit EventsLib.CreateMarket(id, market);
     }
 
     // Supply management.
@@ -155,7 +156,7 @@ contract Blue is IBlue {
         totalSupplyShares[id] += shares;
         totalSupply[id] += amount;
 
-        emit Supply(id, msg.sender, onBehalf, amount, shares);
+        emit EventsLib.Supply(id, msg.sender, onBehalf, amount, shares);
 
         if (data.length > 0) IBlueSupplyCallback(msg.sender).onBlueSupply(amount, data);
 
@@ -181,7 +182,7 @@ contract Blue is IBlue {
         totalSupplyShares[id] -= shares;
         totalSupply[id] -= amount;
 
-        emit Withdraw(id, msg.sender, onBehalf, receiver, amount, shares);
+        emit EventsLib.Withdraw(id, msg.sender, onBehalf, receiver, amount, shares);
 
         require(totalBorrow[id] <= totalSupply[id], ErrorsLib.INSUFFICIENT_LIQUIDITY);
 
@@ -209,7 +210,7 @@ contract Blue is IBlue {
         totalBorrowShares[id] += shares;
         totalBorrow[id] += amount;
 
-        emit Borrow(id, msg.sender, onBehalf, receiver, amount, shares);
+        emit EventsLib.Borrow(id, msg.sender, onBehalf, receiver, amount, shares);
 
         require(_isHealthy(market, id, onBehalf), ErrorsLib.INSUFFICIENT_COLLATERAL);
         require(totalBorrow[id] <= totalSupply[id], ErrorsLib.INSUFFICIENT_LIQUIDITY);
@@ -234,7 +235,7 @@ contract Blue is IBlue {
         totalBorrowShares[id] -= shares;
         totalBorrow[id] -= amount;
 
-        emit Repay(id, msg.sender, onBehalf, amount, shares);
+        emit EventsLib.Repay(id, msg.sender, onBehalf, amount, shares);
 
         if (data.length > 0) IBlueRepayCallback(msg.sender).onBlueRepay(amount, data);
 
@@ -254,7 +255,7 @@ contract Blue is IBlue {
 
         collateral[id][onBehalf] += amount;
 
-        emit SupplyCollateral(id, msg.sender, onBehalf, amount);
+        emit EventsLib.SupplyCollateral(id, msg.sender, onBehalf, amount);
 
         if (data.length > 0) IBlueSupplyCollateralCallback(msg.sender).onBlueSupplyCollateral(amount, data);
 
@@ -273,7 +274,7 @@ contract Blue is IBlue {
 
         collateral[id][onBehalf] -= amount;
 
-        emit WithdrawCollateral(id, msg.sender, onBehalf, receiver, amount);
+        emit EventsLib.WithdrawCollateral(id, msg.sender, onBehalf, receiver, amount);
 
         require(_isHealthy(market, id, onBehalf), ErrorsLib.INSUFFICIENT_COLLATERAL);
 
@@ -317,7 +318,7 @@ contract Blue is IBlue {
 
         IERC20(market.collateralAsset).safeTransfer(msg.sender, seized);
 
-        emit Liquidate(id, msg.sender, borrower, repaid, repaidShares, seized, badDebtShares);
+        emit EventsLib.Liquidate(id, msg.sender, borrower, repaid, repaidShares, seized, badDebtShares);
 
         if (data.length > 0) IBlueLiquidateCallback(msg.sender).onBlueLiquidate(seized, repaid, data);
 
@@ -329,7 +330,7 @@ contract Blue is IBlue {
     function flashLoan(address token, uint256 amount, bytes calldata data) external {
         IERC20(token).safeTransfer(msg.sender, amount);
 
-        emit FlashLoan(msg.sender, token, amount);
+        emit EventsLib.FlashLoan(msg.sender, token, amount);
 
         IBlueFlashLoanCallback(msg.sender).onBlueFlashLoan(token, amount, data);
 
@@ -341,7 +342,7 @@ contract Blue is IBlue {
     function setAuthorization(address authorized, bool newIsAuthorized) external {
         isAuthorized[msg.sender][authorized] = newIsAuthorized;
 
-        emit SetAuthorization(msg.sender, msg.sender, authorized, newIsAuthorized);
+        emit EventsLib.SetAuthorization(msg.sender, msg.sender, authorized, newIsAuthorized);
     }
 
     /// @dev The signature is malleable, but it has no impact on the security here.
@@ -362,11 +363,11 @@ contract Blue is IBlue {
 
         require(signatory != address(0) && authorizer == signatory, ErrorsLib.INVALID_SIGNATURE);
 
-        emit IncrementNonce(msg.sender, authorizer, usedNonce);
+        emit EventsLib.IncrementNonce(msg.sender, authorizer, usedNonce);
 
         isAuthorized[authorizer][authorized] = newIsAuthorized;
 
-        emit SetAuthorization(msg.sender, authorizer, authorized, newIsAuthorized);
+        emit EventsLib.SetAuthorization(msg.sender, authorizer, authorized, newIsAuthorized);
     }
 
     function _isSenderAuthorized(address user) internal view returns (bool) {
@@ -397,7 +398,7 @@ contract Blue is IBlue {
                 totalSupplyShares[id] += feeShares;
             }
 
-            emit AccrueInterests(id, borrowRate, accruedInterests, feeShares);
+            emit EventsLib.AccrueInterests(id, borrowRate, accruedInterests, feeShares);
         }
 
         lastUpdate[id] = block.timestamp;
