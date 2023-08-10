@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
+import {UtilsLib} from "./UtilsLib.sol";
+
 /// @notice Arithmetic library with operations for fixed-point numbers.
 /// @author Solmate (https://github.com/transmissions11/solmate/blob/main/src/utils/FixedPointMathLib.sol)
 /// @author Inspired by USM (https://github.com/usmfum/USM/blob/master/contracts/WadMath.sol)
@@ -33,8 +35,8 @@ library FixedPointMathLib {
     ///      to approximate a compound interest rate: (1 + x)^n - 1.
     function wTaylorCompounded(uint256 x, uint256 n) internal pure returns (uint256) {
         uint256 firstTerm = x * n;
-        uint256 secondTerm = mulWadDown(firstTerm, x * zeroFloorSub(n, 1)) / 2;
-        uint256 thirdTerm = mulWadDown(secondTerm, x * zeroFloorSub(n, 2)) / 3;
+        uint256 secondTerm = mulWadDown(firstTerm, x * UtilsLib.zeroFloorSub(n, 1)) / 2;
+        uint256 thirdTerm = mulWadDown(secondTerm, x * UtilsLib.zeroFloorSub(n, 2)) / 3;
 
         return firstTerm + secondTerm + thirdTerm;
     }
@@ -63,17 +65,6 @@ library FixedPointMathLib {
             // If x * y modulo the denominator is strictly greater than 0,
             // 1 is added to round up the division of x * y by the denominator.
             z := add(gt(mod(mul(x, y), denominator), 0), div(mul(x, y), denominator))
-        }
-    }
-
-    /*//////////////////////////////////////////////////////////////
-                    INTEGER OPERATIONS
-    //////////////////////////////////////////////////////////////*/
-
-    /// @dev Returns max(x - y, 0).
-    function zeroFloorSub(uint256 x, uint256 y) internal pure returns (uint256 z) {
-        assembly {
-            z := mul(gt(x, y), sub(x, y))
         }
     }
 }
