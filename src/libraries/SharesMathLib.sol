@@ -5,7 +5,7 @@ import {FixedPointMathLib} from "./FixedPointMathLib.sol";
 
 /// @notice Shares management library.
 /// @dev This implementation mitigates share price manipulations, using OpenZeppelin's method of virtual shares: https://docs.openzeppelin.com/contracts/4.x/erc4626#inflation-attack.
-library SharesMath {
+library SharesMathLib {
     using FixedPointMathLib for uint256;
 
     uint256 internal constant VIRTUAL_SHARES = 1e18;
