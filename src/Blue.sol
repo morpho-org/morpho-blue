@@ -239,7 +239,7 @@ contract Blue is IBlue {
         IERC20(market.borrowableAsset).safeTransfer(receiver, amount);
     }
 
-    function repay(Market memory market, uint256 shares, address onBehalf) external isLocked {
+    function repay(Market memory market, uint256 shares, address onBehalf) external isLocked returns (uint256 amount) {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(shares != 0, Errors.ZERO_SHARES);
@@ -247,7 +247,7 @@ contract Blue is IBlue {
 
         _accrueInterests(market, id);
 
-        uint256 amount = shares.toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
+        amount = shares.toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
 
         borrowShares[id][onBehalf] -= shares;
         totalBorrowShares[id] -= shares;
@@ -297,7 +297,11 @@ contract Blue is IBlue {
 
     // Liquidation.
 
-    function liquidate(Market memory market, address borrower, uint256 seized) external isLocked {
+    function liquidate(Market memory market, address borrower, uint256 seized)
+        external
+        isLocked
+        returns (uint256 repaid)
+    {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(seized != 0, Errors.ZERO_AMOUNT);
@@ -311,7 +315,7 @@ contract Blue is IBlue {
         // The liquidation incentive is 1 + ALPHA * (1 / LLTV - 1).
         uint256 incentive = FixedPointMathLib.WAD
             + ALPHA.mulWadDown(FixedPointMathLib.WAD.divWadDown(market.lltv) - FixedPointMathLib.WAD);
-        uint256 repaid = seized.mulDivUp(collateralPrice, priceScale).divWadUp(incentive);
+        repaid = seized.mulDivUp(collateralPrice, priceScale).divWadUp(incentive);
         uint256 repaidShares = repaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
 
         borrowShares[id][borrower] -= repaidShares;
