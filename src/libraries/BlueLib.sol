@@ -10,8 +10,9 @@ library BlueLib {
     using MarketLib for Market;
     using SharesMath for uint256;
 
-    function withdrawAmount(IBlue blue, Market memory market, uint256 amount, address onBehalf, address receiver)
+    function computeWithdrawShares(IBlue blue, Market memory market, uint256 amount)
         internal
+        view
         returns (uint256 shares)
     {
         Id id = market.id();
@@ -19,12 +20,11 @@ library BlueLib {
 
         uint256 maxShares = blue.supplyShares(id, address(this));
         if (shares > maxShares) shares = maxShares;
-
-        blue.withdraw(market, shares, onBehalf, receiver);
     }
 
-    function repayAmount(IBlue blue, Market memory market, uint256 amount, address onBehalf)
+    function computeRepayShares(IBlue blue, Market memory market, uint256 amount)
         internal
+        view
         returns (uint256 shares)
     {
         Id id = market.id();
@@ -32,7 +32,5 @@ library BlueLib {
 
         uint256 maxShares = blue.borrowShares(id, address(this));
         if (shares > maxShares) shares = maxShares;
-
-        blue.repay(market, shares, onBehalf);
     }
 }

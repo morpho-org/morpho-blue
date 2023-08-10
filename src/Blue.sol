@@ -190,7 +190,7 @@ contract Blue is IBlue {
         deferredTransfer(market.borrowableAsset, amount);
     }
 
-    function withdraw(Market memory market, uint256 shares, address onBehalf, address receiver) external isLocked {
+    function withdraw(Market memory market, uint256 shares, address onBehalf, address receiver) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(shares != 0, Errors.ZERO_SHARES);
@@ -215,7 +215,7 @@ contract Blue is IBlue {
 
     // Borrow management.
 
-    function borrow(Market memory market, uint256 amount, address onBehalf, address receiver) external isLocked {
+    function borrow(Market memory market, uint256 amount, address onBehalf, address receiver) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
@@ -276,10 +276,7 @@ contract Blue is IBlue {
         deferredTransfer(market.collateralAsset, amount);
     }
 
-    function withdrawCollateral(Market memory market, uint256 amount, address onBehalf, address receiver)
-        external
-        isLocked
-    {
+    function withdrawCollateral(Market memory market, uint256 amount, address onBehalf, address receiver) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);

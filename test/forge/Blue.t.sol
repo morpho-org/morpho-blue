@@ -73,9 +73,10 @@ contract BlueTest is Test, IFlashBlue {
 
     enum Action {
         Supply,
-        Withdraw,
-        Borrow,
-        Repay
+        SupplyCollateral,
+        Repay,
+        Liquidate,
+        Flashloan
     }
 
     function onBlueCallback(bytes memory data) external {
@@ -83,11 +84,39 @@ contract BlueTest is Test, IFlashBlue {
         if (action == Action.Supply) {
             (, Market memory m, uint256 amount, address onBehalf) = abi.decode(data, (Action, Market, uint256, address));
             blue.supply(m, amount, onBehalf);
+        } else if (action == Action.SupplyCollateral) {
+            (, Market memory m, uint256 amount, address onBehalf) = abi.decode(data, (Action, Market, uint256, address));
+            blue.supplyCollateral(m, amount, onBehalf);
+        } else if (action == Action.Repay) {
+            (, Market memory m, uint256 shares, address onBehalf) = abi.decode(data, (Action, Market, uint256, address));
+            blue.repay(m, shares, onBehalf);
+        } else if (action == Action.Liquidate) {
+            (, Market memory m, address borrower, uint256 seized) = abi.decode(data, (Action, Market, address, uint256));
+            blue.liquidate(m, borrower, seized);
+        } else if (action == Action.Flashloan) {
+            (, address token, uint256 amount) = abi.decode(data, (Action, address, uint256));
+            blue.flashLoan(token, amount);
         }
     }
 
     function supply(Market memory m, uint256 amount, address onBehalf) internal {
         blue.interact(abi.encode(Action.Supply, m, amount, onBehalf));
+    }
+
+    function supplyCollateral(Market memory m, uint256 amount, address onBehalf) internal {
+        blue.interact(abi.encode(Action.SupplyCollateral, m, amount, onBehalf));
+    }
+
+    function repay(Market memory m, uint256 shares, address onBehalf) internal {
+        blue.interact(abi.encode(Action.Repay, m, shares, onBehalf));
+    }
+
+    function liquidate(Market memory m, address borrower, uint256 seized) internal {
+        blue.interact(abi.encode(Action.Liquidate, m, borrower, seized));
+    }
+
+    function flashLoan(address token, uint256 amount) internal {
+        blue.interact(abi.encode(Action.Flashloan, token, amount));
     }
 
     /// @dev Calculates the net worth of the given user quoted in borrowable asset.
@@ -269,47 +298,47 @@ contract BlueTest is Test, IFlashBlue {
         blue.setFeeRecipient(recipient);
     }
 
-    // function testFeeAccrues(uint256 amountLent, uint256 amountBorrowed, uint256 fee, uint256 timeElapsed) public {
-    //     amountLent = bound(amountLent, 1, 2 ** 64);
-    //     amountBorrowed = bound(amountBorrowed, 1, amountLent);
-    //     timeElapsed = bound(timeElapsed, 1, 365 days);
-    //     fee = bound(fee, 0, MAX_FEE);
-    //     address recipient = OWNER;
+    function testFeeAccrues(uint256 amountLent, uint256 amountBorrowed, uint256 fee, uint256 timeElapsed) public {
+        amountLent = bound(amountLent, 1, 2 ** 64);
+        amountBorrowed = bound(amountBorrowed, 1, amountLent);
+        timeElapsed = bound(timeElapsed, 1, 365 days);
+        fee = bound(fee, 0, MAX_FEE);
+        address recipient = OWNER;
 
-    //     vm.startPrank(OWNER);
-    //     blue.setFee(market, fee);
-    //     blue.setFeeRecipient(recipient);
-    //     vm.stopPrank();
+        vm.startPrank(OWNER);
+        blue.setFee(market, fee);
+        blue.setFeeRecipient(recipient);
+        vm.stopPrank();
 
-    //     borrowableAsset.setBalance(address(this), amountLent);
-    //     blue.supply(market, amountLent, address(this), hex"");
+        borrowableAsset.setBalance(address(this), amountLent);
+        supply(market, amountLent, address(this));
 
-    //     uint256 collateralAmount = amountBorrowed.divWadUp(LLTV);
-    //     collateralAsset.setBalance(address(this), collateralAmount);
-    //     blue.supplyCollateral(market, collateralAmount, BORROWER, hex"");
+        uint256 collateralAmount = amountBorrowed.divWadUp(LLTV);
+        collateralAsset.setBalance(address(this), collateralAmount);
+        supplyCollateral(market, collateralAmount, BORROWER);
 
-    //     vm.prank(BORROWER);
-    //     blue.borrow(market, amountBorrowed, BORROWER, BORROWER);
+        vm.prank(BORROWER);
+        blue.borrow(market, amountBorrowed, BORROWER, BORROWER);
 
-    //     uint256 totalSupplyBefore = blue.totalSupply(id);
-    //     uint256 totalSupplySharesBefore = blue.totalSupplyShares(id);
+        uint256 totalSupplyBefore = blue.totalSupply(id);
+        uint256 totalSupplySharesBefore = blue.totalSupplyShares(id);
 
-    //     // Trigger an accrue.
-    //     vm.warp(block.timestamp + timeElapsed);
+        // Trigger an accrue.
+        vm.warp(block.timestamp + timeElapsed);
 
-    //     collateralAsset.setBalance(address(this), 1);
-    //     blue.supplyCollateral(market, 1, address(this), hex"");
-    //     blue.withdrawCollateral(market, 1, address(this), address(this));
+        collateralAsset.setBalance(address(this), 1);
+        supplyCollateral(market, 1, address(this));
+        blue.withdrawCollateral(market, 1, address(this), address(this));
 
-    //     uint256 totalSupplyAfter = blue.totalSupply(id);
-    //     vm.assume(totalSupplyAfter > totalSupplyBefore);
+        uint256 totalSupplyAfter = blue.totalSupply(id);
+        vm.assume(totalSupplyAfter > totalSupplyBefore);
 
-    //     uint256 accrued = totalSupplyAfter - totalSupplyBefore;
-    //     uint256 expectedFee = accrued.mulWadDown(fee);
-    //     uint256 expectedFeeShares = expectedFee.mulDivDown(totalSupplySharesBefore, totalSupplyAfter - expectedFee);
+        uint256 accrued = totalSupplyAfter - totalSupplyBefore;
+        uint256 expectedFee = accrued.mulWadDown(fee);
+        uint256 expectedFeeShares = expectedFee.mulDivDown(totalSupplySharesBefore, totalSupplyAfter - expectedFee);
 
-    //     assertEq(blue.supplyShares(id, recipient), expectedFeeShares);
-    // }
+        assertEq(blue.supplyShares(id, recipient), expectedFeeShares);
+    }
 
     function testCreateMarketWithNotEnabledLltv(Market memory marketFuzz) public {
         vm.assume(marketFuzz.lltv != LLTV);
@@ -335,543 +364,545 @@ contract BlueTest is Test, IFlashBlue {
         assertEq(borrowableAsset.balanceOf(address(blue)), amount, "blue balance");
     }
 
-    // function testBorrow(uint256 amountLent, uint256 amountBorrowed, address receiver) public {
-    //     vm.assume(receiver != address(0));
-    //     vm.assume(receiver != address(blue));
-    //     amountLent = bound(amountLent, 1, 2 ** 64);
-    //     amountBorrowed = bound(amountBorrowed, 1, 2 ** 64);
-
-    //     borrowableAsset.setBalance(address(this), amountLent);
-    //     blue.supply(market, amountLent, address(this), hex"");
-
-    //     uint256 collateralAmount = amountBorrowed.divWadUp(LLTV);
-    //     collateralAsset.setBalance(address(this), collateralAmount);
-    //     blue.supplyCollateral(market, collateralAmount, BORROWER, hex"");
-
-    //     if (amountBorrowed > amountLent) {
-    //         vm.prank(BORROWER);
-    //         vm.expectRevert(bytes(Errors.INSUFFICIENT_LIQUIDITY));
-    //         blue.borrow(market, amountBorrowed, BORROWER, receiver);
-    //         return;
-    //     }
-
-    //     vm.prank(BORROWER);
-    //     blue.borrow(market, amountBorrowed, BORROWER, receiver);
-
-    //     assertEq(blue.borrowShares(id, BORROWER), amountBorrowed * SharesMath.VIRTUAL_SHARES, "borrow share");
-    //     assertEq(borrowableAsset.balanceOf(receiver), amountBorrowed, "receiver balance");
-    //     assertEq(borrowableAsset.balanceOf(address(blue)), amountLent - amountBorrowed, "blue balance");
-    // }
-
-    // function _testWithdrawCommon(uint256 amountLent) public {
-    //     amountLent = bound(amountLent, 1, 2 ** 64);
-
-    //     borrowableAsset.setBalance(address(this), amountLent);
-    //     blue.supply(market, amountLent, address(this), hex"");
-
-    //     // Accrue interests.
-    //     stdstore.target(address(blue)).sig("totalSupply(bytes32)").with_key(Id.unwrap(id)).checked_write(
-    //         blue.totalSupply(id) * 4 / 3
-    //     );
-    //     borrowableAsset.setBalance(address(blue), blue.totalSupply(id));
-    // }
-
-    // function testWithdrawShares(uint256 amountLent, uint256 sharesWithdrawn, uint256 amountBorrowed, address receiver)
-    //     public
-    // {
-    //     vm.assume(receiver != BORROWER);
-    //     vm.assume(receiver != address(0));
-    //     vm.assume(receiver != address(blue));
-    //     vm.assume(receiver != address(this));
-    //     sharesWithdrawn = bound(sharesWithdrawn, 1, 2 ** 64);
-
-    //     _testWithdrawCommon(amountLent);
-    //     amountBorrowed = bound(amountBorrowed, 1, blue.totalSupply(id));
-
-    //     uint256 collateralAmount = amountBorrowed.divWadUp(LLTV);
-    //     collateralAsset.setBalance(address(this), collateralAmount);
-    //     blue.supplyCollateral(market, collateralAmount, BORROWER, hex"");
-
-    //     blue.borrow(market, amountBorrowed, BORROWER, BORROWER);
-
-    //     uint256 totalSupplyBefore = blue.totalSupply(id);
-    //     uint256 supplySharesBefore = blue.supplyShares(id, address(this));
-    //     uint256 amountWithdrawn = sharesWithdrawn.toAssetsDown(blue.totalSupply(id), blue.totalSupplyShares(id));
-
-    //     if (sharesWithdrawn > blue.supplyShares(id, address(this))) {
-    //         vm.expectRevert(stdError.arithmeticError);
-    //         blue.withdraw(market, sharesWithdrawn, address(this), receiver);
-    //         return;
-    //     } else if (amountWithdrawn > totalSupplyBefore - amountBorrowed) {
-    //         vm.expectRevert(bytes(Errors.INSUFFICIENT_LIQUIDITY));
-    //         blue.withdraw(market, sharesWithdrawn, address(this), receiver);
-    //         return;
-    //     }
-
-    //     blue.withdraw(market, sharesWithdrawn, address(this), receiver);
-
-    //     assertEq(blue.supplyShares(id, address(this)), supplySharesBefore - sharesWithdrawn, "supply share");
-    //     assertEq(borrowableAsset.balanceOf(receiver), amountWithdrawn, "receiver balance");
-    //     assertEq(
-    //         borrowableAsset.balanceOf(address(blue)),
-    //         totalSupplyBefore - amountBorrowed - amountWithdrawn,
-    //         "blue balance"
-    //     );
-    // }
-
-    // function testWithdrawAmount(uint256 amountLent, uint256 exactAmountWithdrawn) public {
-    //     _testWithdrawCommon(amountLent);
-
-    //     uint256 totalSupplyBefore = blue.totalSupply(id);
-    //     uint256 supplySharesBefore = blue.supplyShares(id, address(this));
-    //     exactAmountWithdrawn = bound(
-    //         exactAmountWithdrawn, 1, supplySharesBefore.toAssetsDown(blue.totalSupply(id), blue.totalSupplyShares(id))
-    //     );
-    //     uint256 sharesWithdrawn = blue.withdrawAmount(market, exactAmountWithdrawn, address(this), address(this));
-
-    //     assertEq(blue.supplyShares(id, address(this)), supplySharesBefore - sharesWithdrawn, "supply share");
-    //     assertEq(borrowableAsset.balanceOf(address(this)), exactAmountWithdrawn, "this balance");
-    //     assertEq(borrowableAsset.balanceOf(address(blue)), totalSupplyBefore - exactAmountWithdrawn, "blue balance");
-    // }
-
-    // function testWithdrawAll(uint256 amountLent) public {
-    //     _testWithdrawCommon(amountLent);
-
-    //     uint256 totalSupplyBefore = blue.totalSupply(id);
-    //     uint256 amountWithdrawn =
-    //         blue.supplyShares(id, address(this)).toAssetsDown(blue.totalSupply(id), blue.totalSupplyShares(id));
-    //     blue.withdraw(market, blue.supplyShares(id, address(this)), address(this), address(this));
-
-    //     assertEq(blue.supplyShares(id, address(this)), 0, "supply share");
-    //     assertEq(borrowableAsset.balanceOf(address(this)), amountWithdrawn, "this balance");
-    //     assertEq(borrowableAsset.balanceOf(address(blue)), totalSupplyBefore - amountWithdrawn, "blue balance");
-    // }
-
-    // function _testRepayCommon(uint256 amountBorrowed, address borrower) public {
-    //     amountBorrowed = bound(amountBorrowed, 1, 2 ** 64);
-
-    //     borrowableAsset.setBalance(address(this), 2 ** 66);
-    //     blue.supply(market, amountBorrowed, address(this), hex"");
-
-    //     uint256 collateralAmount = amountBorrowed.divWadUp(LLTV);
-    //     collateralAsset.setBalance(address(this), collateralAmount);
-    //     blue.supplyCollateral(market, collateralAmount, borrower, hex"");
-
-    //     vm.prank(borrower);
-    //     blue.borrow(market, amountBorrowed, borrower, borrower);
-
-    //     // Accrue interests.
-    //     stdstore.target(address(blue)).sig("totalBorrow(bytes32)").with_key(Id.unwrap(id)).checked_write(
-    //         blue.totalBorrow(id) * 4 / 3
-    //     );
-    // }
-
-    // function testRepayShares(uint256 amountBorrowed, uint256 sharesRepaid, address onBehalf) public {
-    //     vm.assume(onBehalf != address(0));
-    //     vm.assume(onBehalf != address(blue));
-    //     _testRepayCommon(amountBorrowed, onBehalf);
-
-    //     uint256 thisBalanceBefore = borrowableAsset.balanceOf(address(this));
-    //     uint256 borrowSharesBefore = blue.borrowShares(id, onBehalf);
-    //     sharesRepaid = bound(sharesRepaid, 1, borrowSharesBefore);
-
-    //     uint256 amountRepaid = sharesRepaid.toAssetsUp(blue.totalBorrow(id), blue.totalBorrowShares(id));
-    //     blue.repay(market, sharesRepaid, onBehalf, hex"");
-
-    //     assertEq(blue.borrowShares(id, onBehalf), borrowSharesBefore - sharesRepaid, "borrow share");
-    //     assertEq(borrowableAsset.balanceOf(address(this)), thisBalanceBefore - amountRepaid, "this balance");
-    //     assertEq(borrowableAsset.balanceOf(address(blue)), amountRepaid, "blue balance");
-    // }
-
-    // function testRepayAmount(uint256 amountBorrowed, uint256 exactAmountRepaid) public {
-    //     _testRepayCommon(amountBorrowed, address(this));
-
-    //     uint256 thisBalanceBefore = borrowableAsset.balanceOf(address(this));
-    //     uint256 borrowSharesBefore = blue.borrowShares(id, address(this));
-    //     exactAmountRepaid =
-    //         bound(exactAmountRepaid, 1, borrowSharesBefore.toAssetsUp(blue.totalBorrow(id), blue.totalBorrowShares(id)));
-    //     uint256 sharesRepaid = blue.repayAmount(market, exactAmountRepaid, address(this), hex"");
-
-    //     assertEq(blue.borrowShares(id, address(this)), borrowSharesBefore - sharesRepaid, "borrow share");
-    //     assertEq(borrowableAsset.balanceOf(address(this)), thisBalanceBefore - exactAmountRepaid, "this balance");
-    //     assertEq(borrowableAsset.balanceOf(address(blue)), exactAmountRepaid, "blue balance");
-    // }
-
-    // function testRepayAll(uint256 amountBorrowed) public {
-    //     _testRepayCommon(amountBorrowed, address(this));
-
-    //     uint256 amountRepaid =
-    //         blue.borrowShares(id, address(this)).toAssetsUp(blue.totalBorrow(id), blue.totalBorrowShares(id));
-    //     borrowableAsset.setBalance(address(this), amountRepaid);
-    //     blue.repay(market, blue.borrowShares(id, address(this)), address(this), hex"");
-
-    //     assertEq(blue.borrowShares(id, address(this)), 0, "borrow share");
-    //     assertEq(borrowableAsset.balanceOf(address(this)), 0, "this balance");
-    //     assertEq(borrowableAsset.balanceOf(address(blue)), amountRepaid, "blue balance");
-    // }
-
-    // function testSupplyCollateralOnBehalf(uint256 amount, address onBehalf) public {
-    //     vm.assume(onBehalf != address(0));
-    //     vm.assume(onBehalf != address(blue));
-    //     amount = bound(amount, 1, 2 ** 64);
-
-    //     collateralAsset.setBalance(address(this), amount);
-    //     blue.supplyCollateral(market, amount, onBehalf, hex"");
-
-    //     assertEq(blue.collateral(id, onBehalf), amount, "collateral");
-    //     assertEq(collateralAsset.balanceOf(onBehalf), 0, "onBehalf balance");
-    //     assertEq(collateralAsset.balanceOf(address(blue)), amount, "blue balance");
-    // }
-
-    // function testWithdrawCollateral(uint256 amountDeposited, uint256 amountWithdrawn, address receiver) public {
-    //     vm.assume(receiver != address(0));
-    //     vm.assume(receiver != address(blue));
-    //     amountDeposited = bound(amountDeposited, 1, 2 ** 64);
-    //     amountWithdrawn = bound(amountWithdrawn, 1, 2 ** 64);
-
-    //     collateralAsset.setBalance(address(this), amountDeposited);
-    //     blue.supplyCollateral(market, amountDeposited, address(this), hex"");
-
-    //     if (amountWithdrawn > amountDeposited) {
-    //         vm.expectRevert(stdError.arithmeticError);
-    //         blue.withdrawCollateral(market, amountWithdrawn, address(this), receiver);
-    //         return;
-    //     }
-
-    //     blue.withdrawCollateral(market, amountWithdrawn, address(this), receiver);
-
-    //     assertEq(blue.collateral(id, address(this)), amountDeposited - amountWithdrawn, "this collateral");
-    //     assertEq(collateralAsset.balanceOf(receiver), amountWithdrawn, "receiver balance");
-    //     assertEq(collateralAsset.balanceOf(address(blue)), amountDeposited - amountWithdrawn, "blue balance");
-    // }
-
-    // function testWithdrawCollateralAll(uint256 amountDeposited, address receiver) public {
-    //     vm.assume(receiver != address(0));
-    //     vm.assume(receiver != address(blue));
-    //     amountDeposited = bound(amountDeposited, 1, 2 ** 64);
-
-    //     collateralAsset.setBalance(address(this), amountDeposited);
-    //     blue.supplyCollateral(market, amountDeposited, address(this), hex"");
-    //     blue.withdrawCollateral(market, blue.collateral(id, address(this)), address(this), receiver);
-
-    //     assertEq(blue.collateral(id, address(this)), 0, "this collateral");
-    //     assertEq(collateralAsset.balanceOf(receiver), amountDeposited, "receiver balance");
-    //     assertEq(collateralAsset.balanceOf(address(blue)), 0, "blue balance");
-    // }
-
-    // function testCollateralRequirements(uint256 amountCollateral, uint256 amountBorrowed, uint256 collateralPrice)
-    //     public
-    // {
-    //     amountBorrowed = bound(amountBorrowed, 1, 2 ** 64);
-    //     amountCollateral = bound(amountCollateral, 1, 2 ** 64);
-    //     collateralPrice = bound(collateralPrice, 0, 2 ** 64);
-
-    //     oracle.setPrice(collateralPrice);
-
-    //     borrowableAsset.setBalance(address(this), amountBorrowed);
-    //     collateralAsset.setBalance(BORROWER, amountCollateral);
-
-    //     blue.supply(market, amountBorrowed, address(this), hex"");
-
-    //     vm.prank(BORROWER);
-    //     blue.supplyCollateral(market, amountCollateral, BORROWER, hex"");
-
-    //     uint256 maxBorrow = amountCollateral.mulWadDown(collateralPrice).mulWadDown(LLTV);
-
-    //     vm.prank(BORROWER);
-    //     if (maxBorrow < amountBorrowed) vm.expectRevert(bytes(Errors.INSUFFICIENT_COLLATERAL));
-    //     blue.borrow(market, amountBorrowed, BORROWER, BORROWER);
-    // }
-
-    // function testLiquidate(uint256 amountLent) public {
-    //     oracle.setPrice(1e18);
-    //     amountLent = bound(amountLent, 1000, 2 ** 64);
-
-    //     uint256 amountCollateral = amountLent;
-    //     uint256 borrowingPower = amountCollateral.mulWadDown(LLTV);
-    //     uint256 amountBorrowed = borrowingPower.mulWadDown(0.8e18);
-    //     uint256 toSeize = amountCollateral.mulWadDown(LLTV);
-    //     uint256 incentive =
-    //         FixedPointMathLib.WAD + ALPHA.mulWadDown(FixedPointMathLib.WAD.divWadDown(LLTV) - FixedPointMathLib.WAD);
-
-    //     borrowableAsset.setBalance(address(this), amountLent);
-    //     collateralAsset.setBalance(BORROWER, amountCollateral);
-    //     borrowableAsset.setBalance(LIQUIDATOR, amountBorrowed);
-
-    //     // Supply
-    //     blue.supply(market, amountLent, address(this), hex"");
-
-    //     // Borrow
-    //     vm.startPrank(BORROWER);
-    //     blue.supplyCollateral(market, amountCollateral, BORROWER, hex"");
-    //     blue.borrow(market, amountBorrowed, BORROWER, BORROWER);
-    //     vm.stopPrank();
-
-    //     // Price change
-    //     oracle.setPrice(0.5e18);
-
-    //     uint256 liquidatorNetWorthBefore = netWorth(LIQUIDATOR);
-
-    //     // Liquidate
-    //     vm.prank(LIQUIDATOR);
-    //     blue.liquidate(market, BORROWER, toSeize, hex"");
-
-    //     uint256 liquidatorNetWorthAfter = netWorth(LIQUIDATOR);
-    //     (uint256 collateralPrice, uint256 priceScale) = IOracle(market.oracle).price();
-
-    //     uint256 expectedRepaid = toSeize.mulDivUp(collateralPrice, priceScale).divWadUp(incentive);
-    //     uint256 expectedNetWorthAfter =
-    //         liquidatorNetWorthBefore + toSeize.mulDivDown(collateralPrice, priceScale) - expectedRepaid;
-    //     assertEq(liquidatorNetWorthAfter, expectedNetWorthAfter, "LIQUIDATOR net worth");
-    //     assertApproxEqAbs(borrowBalance(BORROWER), amountBorrowed - expectedRepaid, 100, "BORROWER balance");
-    //     assertEq(blue.collateral(id, BORROWER), amountCollateral - toSeize, "BORROWER collateral");
-    // }
-
-    // function testRealizeBadDebt(uint256 amountLent) public {
-    //     oracle.setPrice(1e18);
-    //     amountLent = bound(amountLent, 1000, 2 ** 64);
-
-    //     uint256 amountCollateral = amountLent;
-    //     uint256 borrowingPower = amountCollateral.mulWadDown(LLTV);
-    //     uint256 amountBorrowed = borrowingPower.mulWadDown(0.8e18);
-    //     uint256 toSeize = amountCollateral;
-    //     uint256 incentive = FixedPointMathLib.WAD
-    //         + ALPHA.mulWadDown(FixedPointMathLib.WAD.divWadDown(market.lltv) - FixedPointMathLib.WAD);
-
-    //     borrowableAsset.setBalance(address(this), amountLent);
-    //     collateralAsset.setBalance(BORROWER, amountCollateral);
-    //     borrowableAsset.setBalance(LIQUIDATOR, amountBorrowed);
-
-    //     // Supply
-    //     blue.supply(market, amountLent, address(this), hex"");
-
-    //     // Borrow
-    //     vm.startPrank(BORROWER);
-    //     blue.supplyCollateral(market, amountCollateral, BORROWER, hex"");
-    //     blue.borrow(market, amountBorrowed, BORROWER, BORROWER);
-    //     vm.stopPrank();
-
-    //     // Price change
-    //     oracle.setPrice(0.01e18);
-
-    //     uint256 liquidatorNetWorthBefore = netWorth(LIQUIDATOR);
-
-    //     // Liquidate
-    //     vm.prank(LIQUIDATOR);
-    //     blue.liquidate(market, BORROWER, toSeize, hex"");
-
-    //     uint256 liquidatorNetWorthAfter = netWorth(LIQUIDATOR);
-    //     (uint256 collateralPrice, uint256 priceScale) = IOracle(market.oracle).price();
-
-    //     uint256 expectedRepaid = toSeize.mulDivUp(collateralPrice, priceScale).divWadUp(incentive);
-    //     uint256 expectedNetWorthAfter =
-    //         liquidatorNetWorthBefore + toSeize.mulDivDown(collateralPrice, priceScale) - expectedRepaid;
-    //     assertEq(liquidatorNetWorthAfter, expectedNetWorthAfter, "LIQUIDATOR net worth");
-    //     assertEq(borrowBalance(BORROWER), 0, "BORROWER balance");
-    //     assertEq(blue.collateral(id, BORROWER), 0, "BORROWER collateral");
-    //     uint256 expectedBadDebt = amountBorrowed - expectedRepaid;
-    //     assertGt(expectedBadDebt, 0, "bad debt");
-    //     assertApproxEqAbs(supplyBalance(address(this)), amountLent - expectedBadDebt, 10, "lender supply balance");
-    //     assertApproxEqAbs(blue.totalBorrow(id), 0, 10, "total borrow");
-    // }
-
-    // function testTwoUsersSupply(uint256 firstAmount, uint256 secondAmount) public {
-    //     firstAmount = bound(firstAmount, 1, 2 ** 64);
-    //     secondAmount = bound(secondAmount, 1, 2 ** 64);
-
-    //     borrowableAsset.setBalance(address(this), firstAmount);
-    //     blue.supply(market, firstAmount, address(this), hex"");
-
-    //     borrowableAsset.setBalance(BORROWER, secondAmount);
-    //     vm.prank(BORROWER);
-    //     blue.supply(market, secondAmount, BORROWER, hex"");
-
-    //     assertApproxEqAbs(supplyBalance(address(this)), firstAmount, 100, "same balance first user");
-    //     assertEq(
-    //         blue.supplyShares(id, address(this)), firstAmount * SharesMath.VIRTUAL_SHARES, "expected shares first user"
-    //     );
-    //     assertApproxEqAbs(supplyBalance(BORROWER), secondAmount, 100, "same balance second user");
-    //     assertApproxEqAbs(
-    //         blue.supplyShares(id, BORROWER),
-    //         secondAmount * SharesMath.VIRTUAL_SHARES,
-    //         100,
-    //         "expected shares second user"
-    //     );
-    // }
-
-    // function testUnknownMarket(Market memory marketFuzz) public {
-    //     vm.assume(neq(marketFuzz, market));
-
-    //     vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
-    //     blue.supply(marketFuzz, 1, address(this), hex"");
-
-    //     vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
-    //     blue.withdraw(marketFuzz, 1, address(this), address(this));
-
-    //     vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
-    //     blue.borrow(marketFuzz, 1, address(this), address(this));
-
-    //     vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
-    //     blue.repay(marketFuzz, 1, address(this), hex"");
-
-    //     vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
-    //     blue.supplyCollateral(marketFuzz, 1, address(this), hex"");
-
-    //     vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
-    //     blue.withdrawCollateral(marketFuzz, 1, address(this), address(this));
+    function testBorrow(uint256 amountLent, uint256 amountBorrowed, address receiver) public {
+        vm.assume(receiver != address(0));
+        vm.assume(receiver != address(blue));
+        amountLent = bound(amountLent, 1, 2 ** 64);
+        amountBorrowed = bound(amountBorrowed, 1, 2 ** 64);
+
+        borrowableAsset.setBalance(address(this), amountLent);
+        supply(market, amountLent, address(this));
+
+        uint256 collateralAmount = amountBorrowed.divWadUp(LLTV);
+        collateralAsset.setBalance(address(this), collateralAmount);
+        supplyCollateral(market, collateralAmount, BORROWER);
+
+        if (amountBorrowed > amountLent) {
+            vm.prank(BORROWER);
+            vm.expectRevert(bytes(Errors.INSUFFICIENT_LIQUIDITY));
+            blue.borrow(market, amountBorrowed, BORROWER, receiver);
+            return;
+        }
+
+        vm.prank(BORROWER);
+        blue.borrow(market, amountBorrowed, BORROWER, receiver);
+
+        assertEq(blue.borrowShares(id, BORROWER), amountBorrowed * SharesMath.VIRTUAL_SHARES, "borrow share");
+        assertEq(borrowableAsset.balanceOf(receiver), amountBorrowed, "receiver balance");
+        assertEq(borrowableAsset.balanceOf(address(blue)), amountLent - amountBorrowed, "blue balance");
+    }
+
+    function _testWithdrawCommon(uint256 amountLent) public {
+        amountLent = bound(amountLent, 1, 2 ** 64);
+
+        borrowableAsset.setBalance(address(this), amountLent);
+        supply(market, amountLent, address(this));
+
+        // Accrue interests.
+        stdstore.target(address(blue)).sig("totalSupply(bytes32)").with_key(Id.unwrap(id)).checked_write(
+            blue.totalSupply(id) * 4 / 3
+        );
+        borrowableAsset.setBalance(address(blue), blue.totalSupply(id));
+    }
+
+    function testWithdrawShares(uint256 amountLent, uint256 sharesWithdrawn, uint256 amountBorrowed, address receiver)
+        public
+    {
+        vm.assume(receiver != BORROWER);
+        vm.assume(receiver != address(0));
+        vm.assume(receiver != address(blue));
+        vm.assume(receiver != address(this));
+        sharesWithdrawn = bound(sharesWithdrawn, 1, 2 ** 64);
+
+        _testWithdrawCommon(amountLent);
+        amountBorrowed = bound(amountBorrowed, 1, blue.totalSupply(id));
+
+        uint256 collateralAmount = amountBorrowed.divWadUp(LLTV);
+        collateralAsset.setBalance(address(this), collateralAmount);
+        supplyCollateral(market, collateralAmount, BORROWER);
+
+        blue.borrow(market, amountBorrowed, BORROWER, BORROWER);
+
+        uint256 totalSupplyBefore = blue.totalSupply(id);
+        uint256 supplySharesBefore = blue.supplyShares(id, address(this));
+        uint256 amountWithdrawn = sharesWithdrawn.toAssetsDown(blue.totalSupply(id), blue.totalSupplyShares(id));
+
+        if (sharesWithdrawn > blue.supplyShares(id, address(this))) {
+            vm.expectRevert(stdError.arithmeticError);
+            blue.withdraw(market, sharesWithdrawn, address(this), receiver);
+            return;
+        } else if (amountWithdrawn > totalSupplyBefore - amountBorrowed) {
+            vm.expectRevert(bytes(Errors.INSUFFICIENT_LIQUIDITY));
+            blue.withdraw(market, sharesWithdrawn, address(this), receiver);
+            return;
+        }
+
+        blue.withdraw(market, sharesWithdrawn, address(this), receiver);
+
+        assertEq(blue.supplyShares(id, address(this)), supplySharesBefore - sharesWithdrawn, "supply share");
+        assertEq(borrowableAsset.balanceOf(receiver), amountWithdrawn, "receiver balance");
+        assertEq(
+            borrowableAsset.balanceOf(address(blue)),
+            totalSupplyBefore - amountBorrowed - amountWithdrawn,
+            "blue balance"
+        );
+    }
+
+    function testWithdrawAmount(uint256 amountLent, uint256 exactAmountWithdrawn) public {
+        _testWithdrawCommon(amountLent);
+
+        uint256 totalSupplyBefore = blue.totalSupply(id);
+        uint256 supplySharesBefore = blue.supplyShares(id, address(this));
+        exactAmountWithdrawn = bound(
+            exactAmountWithdrawn, 1, supplySharesBefore.toAssetsDown(blue.totalSupply(id), blue.totalSupplyShares(id))
+        );
+        uint256 sharesWithdrawn = blue.computeWithdrawShares(market, exactAmountWithdrawn);
+        blue.withdraw(market, sharesWithdrawn, address(this), address(this));
+
+        assertEq(blue.supplyShares(id, address(this)), supplySharesBefore - sharesWithdrawn, "supply share");
+        assertEq(borrowableAsset.balanceOf(address(this)), exactAmountWithdrawn, "this balance");
+        assertEq(borrowableAsset.balanceOf(address(blue)), totalSupplyBefore - exactAmountWithdrawn, "blue balance");
+    }
+
+    function testWithdrawAll(uint256 amountLent) public {
+        _testWithdrawCommon(amountLent);
+
+        uint256 totalSupplyBefore = blue.totalSupply(id);
+        uint256 amountWithdrawn =
+            blue.supplyShares(id, address(this)).toAssetsDown(blue.totalSupply(id), blue.totalSupplyShares(id));
+        blue.withdraw(market, blue.supplyShares(id, address(this)), address(this), address(this));
+
+        assertEq(blue.supplyShares(id, address(this)), 0, "supply share");
+        assertEq(borrowableAsset.balanceOf(address(this)), amountWithdrawn, "this balance");
+        assertEq(borrowableAsset.balanceOf(address(blue)), totalSupplyBefore - amountWithdrawn, "blue balance");
+    }
+
+    function _testRepayCommon(uint256 amountBorrowed, address borrower) public {
+        amountBorrowed = bound(amountBorrowed, 1, 2 ** 64);
+
+        borrowableAsset.setBalance(address(this), 2 ** 66);
+        supply(market, amountBorrowed, address(this));
+
+        uint256 collateralAmount = amountBorrowed.divWadUp(LLTV);
+        collateralAsset.setBalance(address(this), collateralAmount);
+        supplyCollateral(market, collateralAmount, borrower);
+
+        vm.prank(borrower);
+        blue.borrow(market, amountBorrowed, borrower, borrower);
+
+        // Accrue interests.
+        stdstore.target(address(blue)).sig("totalBorrow(bytes32)").with_key(Id.unwrap(id)).checked_write(
+            blue.totalBorrow(id) * 4 / 3
+        );
+    }
+
+    function testRepayShares(uint256 amountBorrowed, uint256 sharesRepaid, address onBehalf) public {
+        vm.assume(onBehalf != address(0));
+        vm.assume(onBehalf != address(blue));
+        _testRepayCommon(amountBorrowed, onBehalf);
+
+        uint256 thisBalanceBefore = borrowableAsset.balanceOf(address(this));
+        uint256 borrowSharesBefore = blue.borrowShares(id, onBehalf);
+        sharesRepaid = bound(sharesRepaid, 1, borrowSharesBefore);
+
+        uint256 amountRepaid = sharesRepaid.toAssetsUp(blue.totalBorrow(id), blue.totalBorrowShares(id));
+        repay(market, sharesRepaid, onBehalf);
+
+        assertEq(blue.borrowShares(id, onBehalf), borrowSharesBefore - sharesRepaid, "borrow share");
+        assertEq(borrowableAsset.balanceOf(address(this)), thisBalanceBefore - amountRepaid, "this balance");
+        assertEq(borrowableAsset.balanceOf(address(blue)), amountRepaid, "blue balance");
+    }
+
+    function testRepayAmount(uint256 amountBorrowed, uint256 exactAmountRepaid) public {
+        _testRepayCommon(amountBorrowed, address(this));
+
+        uint256 thisBalanceBefore = borrowableAsset.balanceOf(address(this));
+        uint256 borrowSharesBefore = blue.borrowShares(id, address(this));
+        exactAmountRepaid =
+            bound(exactAmountRepaid, 1, borrowSharesBefore.toAssetsUp(blue.totalBorrow(id), blue.totalBorrowShares(id)));
+        uint256 sharesRepaid = blue.computeRepayShares(market, exactAmountRepaid);
+        repay(market, sharesRepaid, address(this));
+
+        assertEq(blue.borrowShares(id, address(this)), borrowSharesBefore - sharesRepaid, "borrow share");
+        assertEq(borrowableAsset.balanceOf(address(this)), thisBalanceBefore - exactAmountRepaid, "this balance");
+        assertEq(borrowableAsset.balanceOf(address(blue)), exactAmountRepaid, "blue balance");
+    }
+
+    function testRepayAll(uint256 amountBorrowed) public {
+        _testRepayCommon(amountBorrowed, address(this));
+
+        uint256 amountRepaid =
+            blue.borrowShares(id, address(this)).toAssetsUp(blue.totalBorrow(id), blue.totalBorrowShares(id));
+        borrowableAsset.setBalance(address(this), amountRepaid);
+        repay(market, blue.borrowShares(id, address(this)), address(this));
+
+        assertEq(blue.borrowShares(id, address(this)), 0, "borrow share");
+        assertEq(borrowableAsset.balanceOf(address(this)), 0, "this balance");
+        assertEq(borrowableAsset.balanceOf(address(blue)), amountRepaid, "blue balance");
+    }
+
+    function testSupplyCollateralOnBehalf(uint256 amount, address onBehalf) public {
+        vm.assume(onBehalf != address(0));
+        vm.assume(onBehalf != address(blue));
+        amount = bound(amount, 1, 2 ** 64);
+
+        collateralAsset.setBalance(address(this), amount);
+        supplyCollateral(market, amount, onBehalf);
+
+        assertEq(blue.collateral(id, onBehalf), amount, "collateral");
+        assertEq(collateralAsset.balanceOf(onBehalf), 0, "onBehalf balance");
+        assertEq(collateralAsset.balanceOf(address(blue)), amount, "blue balance");
+    }
+
+    function testWithdrawCollateral(uint256 amountDeposited, uint256 amountWithdrawn, address receiver) public {
+        vm.assume(receiver != address(0));
+        vm.assume(receiver != address(blue));
+        amountDeposited = bound(amountDeposited, 1, 2 ** 64);
+        amountWithdrawn = bound(amountWithdrawn, 1, 2 ** 64);
+
+        collateralAsset.setBalance(address(this), amountDeposited);
+        supplyCollateral(market, amountDeposited, address(this));
+
+        if (amountWithdrawn > amountDeposited) {
+            vm.expectRevert(stdError.arithmeticError);
+            blue.withdrawCollateral(market, amountWithdrawn, address(this), receiver);
+            return;
+        }
+
+        blue.withdrawCollateral(market, amountWithdrawn, address(this), receiver);
+
+        assertEq(blue.collateral(id, address(this)), amountDeposited - amountWithdrawn, "this collateral");
+        assertEq(collateralAsset.balanceOf(receiver), amountWithdrawn, "receiver balance");
+        assertEq(collateralAsset.balanceOf(address(blue)), amountDeposited - amountWithdrawn, "blue balance");
+    }
+
+    function testWithdrawCollateralAll(uint256 amountDeposited, address receiver) public {
+        vm.assume(receiver != address(0));
+        vm.assume(receiver != address(blue));
+        amountDeposited = bound(amountDeposited, 1, 2 ** 64);
+
+        collateralAsset.setBalance(address(this), amountDeposited);
+        supplyCollateral(market, amountDeposited, address(this));
+        blue.withdrawCollateral(market, blue.collateral(id, address(this)), address(this), receiver);
+
+        assertEq(blue.collateral(id, address(this)), 0, "this collateral");
+        assertEq(collateralAsset.balanceOf(receiver), amountDeposited, "receiver balance");
+        assertEq(collateralAsset.balanceOf(address(blue)), 0, "blue balance");
+    }
+
+    function testCollateralRequirements(uint256 amountCollateral, uint256 amountBorrowed, uint256 collateralPrice)
+        public
+    {
+        amountBorrowed = bound(amountBorrowed, 1, 2 ** 64);
+        amountCollateral = bound(amountCollateral, 1, 2 ** 64);
+        collateralPrice = bound(collateralPrice, 0, 2 ** 64);
+
+        oracle.setPrice(collateralPrice);
+
+        borrowableAsset.setBalance(address(this), amountBorrowed);
+        collateralAsset.setBalance(BORROWER, amountCollateral);
+
+        supply(market, amountBorrowed, address(this));
+
+        vm.prank(BORROWER);
+        supplyCollateral(market, amountCollateral, BORROWER);
+
+        uint256 maxBorrow = amountCollateral.mulWadDown(collateralPrice).mulWadDown(LLTV);
+
+        vm.prank(BORROWER);
+        if (maxBorrow < amountBorrowed) vm.expectRevert(bytes(Errors.INSUFFICIENT_COLLATERAL));
+        blue.borrow(market, amountBorrowed, BORROWER, BORROWER);
+    }
+
+    function testLiquidate(uint256 amountLent) public {
+        oracle.setPrice(1e18);
+        amountLent = bound(amountLent, 1000, 2 ** 64);
+
+        uint256 amountCollateral = amountLent;
+        uint256 borrowingPower = amountCollateral.mulWadDown(LLTV);
+        uint256 amountBorrowed = borrowingPower.mulWadDown(0.8e18);
+        uint256 toSeize = amountCollateral.mulWadDown(LLTV);
+        uint256 incentive =
+            FixedPointMathLib.WAD + ALPHA.mulWadDown(FixedPointMathLib.WAD.divWadDown(LLTV) - FixedPointMathLib.WAD);
+
+        borrowableAsset.setBalance(address(this), amountLent);
+        collateralAsset.setBalance(BORROWER, amountCollateral);
+        borrowableAsset.setBalance(LIQUIDATOR, amountBorrowed);
+
+        // Supply
+        supply(market, amountLent, address(this));
+
+        // Borrow
+        vm.startPrank(BORROWER);
+        supplyCollateral(market, amountCollateral, BORROWER);
+        blue.borrow(market, amountBorrowed, BORROWER, BORROWER);
+        vm.stopPrank();
+
+        // Price change
+        oracle.setPrice(0.5e18);
+
+        uint256 liquidatorNetWorthBefore = netWorth(LIQUIDATOR);
+
+        // Liquidate
+        vm.prank(LIQUIDATOR);
+        liquidate(market, BORROWER, toSeize);
+
+        uint256 liquidatorNetWorthAfter = netWorth(LIQUIDATOR);
+        (uint256 collateralPrice, uint256 priceScale) = IOracle(market.oracle).price();
+
+        uint256 expectedRepaid = toSeize.mulDivUp(collateralPrice, priceScale).divWadUp(incentive);
+        uint256 expectedNetWorthAfter =
+            liquidatorNetWorthBefore + toSeize.mulDivDown(collateralPrice, priceScale) - expectedRepaid;
+        assertEq(liquidatorNetWorthAfter, expectedNetWorthAfter, "LIQUIDATOR net worth");
+        assertApproxEqAbs(borrowBalance(BORROWER), amountBorrowed - expectedRepaid, 100, "BORROWER balance");
+        assertEq(blue.collateral(id, BORROWER), amountCollateral - toSeize, "BORROWER collateral");
+    }
+
+    function testRealizeBadDebt(uint256 amountLent) public {
+        oracle.setPrice(1e18);
+        amountLent = bound(amountLent, 1000, 2 ** 64);
+
+        uint256 amountCollateral = amountLent;
+        uint256 borrowingPower = amountCollateral.mulWadDown(LLTV);
+        uint256 amountBorrowed = borrowingPower.mulWadDown(0.8e18);
+        uint256 toSeize = amountCollateral;
+        uint256 incentive = FixedPointMathLib.WAD
+            + ALPHA.mulWadDown(FixedPointMathLib.WAD.divWadDown(market.lltv) - FixedPointMathLib.WAD);
+
+        borrowableAsset.setBalance(address(this), amountLent);
+        collateralAsset.setBalance(BORROWER, amountCollateral);
+        borrowableAsset.setBalance(LIQUIDATOR, amountBorrowed);
+
+        // Supply
+        supply(market, amountLent, address(this));
+
+        // Borrow
+        vm.startPrank(BORROWER);
+        supplyCollateral(market, amountCollateral, BORROWER);
+        blue.borrow(market, amountBorrowed, BORROWER, BORROWER);
+        vm.stopPrank();
+
+        // Price change
+        oracle.setPrice(0.01e18);
+
+        uint256 liquidatorNetWorthBefore = netWorth(LIQUIDATOR);
+
+        // Liquidate
+        vm.prank(LIQUIDATOR);
+        liquidate(market, BORROWER, toSeize);
+
+        uint256 liquidatorNetWorthAfter = netWorth(LIQUIDATOR);
+        (uint256 collateralPrice, uint256 priceScale) = IOracle(market.oracle).price();
+
+        uint256 expectedRepaid = toSeize.mulDivUp(collateralPrice, priceScale).divWadUp(incentive);
+        uint256 expectedNetWorthAfter =
+            liquidatorNetWorthBefore + toSeize.mulDivDown(collateralPrice, priceScale) - expectedRepaid;
+        assertEq(liquidatorNetWorthAfter, expectedNetWorthAfter, "LIQUIDATOR net worth");
+        assertEq(borrowBalance(BORROWER), 0, "BORROWER balance");
+        assertEq(blue.collateral(id, BORROWER), 0, "BORROWER collateral");
+        uint256 expectedBadDebt = amountBorrowed - expectedRepaid;
+        assertGt(expectedBadDebt, 0, "bad debt");
+        assertApproxEqAbs(supplyBalance(address(this)), amountLent - expectedBadDebt, 10, "lender supply balance");
+        assertApproxEqAbs(blue.totalBorrow(id), 0, 10, "total borrow");
+    }
+
+    function testTwoUsersSupply(uint256 firstAmount, uint256 secondAmount) public {
+        firstAmount = bound(firstAmount, 1, 2 ** 64);
+        secondAmount = bound(secondAmount, 1, 2 ** 64);
+
+        borrowableAsset.setBalance(address(this), firstAmount);
+        supply(market, firstAmount, address(this));
+
+        borrowableAsset.setBalance(BORROWER, secondAmount);
+        vm.prank(BORROWER);
+        supply(market, secondAmount, BORROWER);
+
+        assertApproxEqAbs(supplyBalance(address(this)), firstAmount, 100, "same balance first user");
+        assertEq(
+            blue.supplyShares(id, address(this)), firstAmount * SharesMath.VIRTUAL_SHARES, "expected shares first user"
+        );
+        assertApproxEqAbs(supplyBalance(BORROWER), secondAmount, 100, "same balance second user");
+        assertApproxEqAbs(
+            blue.supplyShares(id, BORROWER),
+            secondAmount * SharesMath.VIRTUAL_SHARES,
+            100,
+            "expected shares second user"
+        );
+    }
+
+    function testUnknownMarket(Market memory marketFuzz) public {
+        vm.assume(neq(marketFuzz, market));
+
+        vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
+        supply(marketFuzz, 1, address(this));
+
+        vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
+        blue.withdraw(marketFuzz, 1, address(this), address(this));
+
+        vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
+        blue.borrow(marketFuzz, 1, address(this), address(this));
+
+        vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
+        repay(marketFuzz, 1, address(this));
+
+        vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
+        supplyCollateral(marketFuzz, 1, address(this));
+
+        vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
+        blue.withdrawCollateral(marketFuzz, 1, address(this), address(this));
+
+        vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
+        liquidate(marketFuzz, address(0), 1);
+    }
+
+    function testInputZero() public {
+        vm.expectRevert(bytes(Errors.ZERO_AMOUNT));
+        supply(market, 0, address(this));
+
+        vm.expectRevert(bytes(Errors.ZERO_SHARES));
+        blue.withdraw(market, 0, address(this), address(this));
+
+        vm.expectRevert(bytes(Errors.ZERO_AMOUNT));
+        blue.borrow(market, 0, address(this), address(this));
+
+        vm.expectRevert(bytes(Errors.ZERO_SHARES));
+        repay(market, 0, address(this));
+
+        vm.expectRevert(bytes(Errors.ZERO_AMOUNT));
+        supplyCollateral(market, 0, address(this));
+
+        vm.expectRevert(bytes(Errors.ZERO_AMOUNT));
+        blue.withdrawCollateral(market, 0, address(this), address(this));
+
+        vm.expectRevert(bytes(Errors.ZERO_AMOUNT));
+        liquidate(market, address(0), 0);
+    }
+
+    function testZeroAddress() public {
+        vm.expectRevert(bytes(Errors.ZERO_ADDRESS));
+        supply(market, 1, address(0));
+
+        vm.expectRevert(bytes(Errors.ZERO_ADDRESS));
+        blue.withdraw(market, 1, address(this), address(0));
+
+        vm.expectRevert(bytes(Errors.ZERO_ADDRESS));
+        blue.borrow(market, 1, address(this), address(0));
+
+        vm.expectRevert(bytes(Errors.ZERO_ADDRESS));
+        repay(market, 1, address(0));
+
+        vm.expectRevert(bytes(Errors.ZERO_ADDRESS));
+        supplyCollateral(market, 1, address(0));
+
+        vm.expectRevert(bytes(Errors.ZERO_ADDRESS));
+        blue.withdrawCollateral(market, 1, address(this), address(0));
+    }
+
+    function testEmptyMarket(uint256 amount) public {
+        amount = bound(amount, 1, type(uint256).max / SharesMath.VIRTUAL_SHARES);
 
-    //     vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
-    //     blue.liquidate(marketFuzz, address(0), 1, hex"");
-    // }
-
-    // function testInputZero() public {
-    //     vm.expectRevert(bytes(Errors.ZERO_AMOUNT));
-    //     blue.supply(market, 0, address(this), hex"");
-
-    //     vm.expectRevert(bytes(Errors.ZERO_SHARES));
-    //     blue.withdraw(market, 0, address(this), address(this));
-
-    //     vm.expectRevert(bytes(Errors.ZERO_AMOUNT));
-    //     blue.borrow(market, 0, address(this), address(this));
-
-    //     vm.expectRevert(bytes(Errors.ZERO_SHARES));
-    //     blue.repay(market, 0, address(this), hex"");
-
-    //     vm.expectRevert(bytes(Errors.ZERO_AMOUNT));
-    //     blue.supplyCollateral(market, 0, address(this), hex"");
-
-    //     vm.expectRevert(bytes(Errors.ZERO_AMOUNT));
-    //     blue.withdrawCollateral(market, 0, address(this), address(this));
-
-    //     vm.expectRevert(bytes(Errors.ZERO_AMOUNT));
-    //     blue.liquidate(market, address(0), 0, hex"");
-    // }
-
-    // function testZeroAddress() public {
-    //     vm.expectRevert(bytes(Errors.ZERO_ADDRESS));
-    //     blue.supply(market, 1, address(0), hex"");
-
-    //     vm.expectRevert(bytes(Errors.ZERO_ADDRESS));
-    //     blue.withdraw(market, 1, address(this), address(0));
-
-    //     vm.expectRevert(bytes(Errors.ZERO_ADDRESS));
-    //     blue.borrow(market, 1, address(this), address(0));
-
-    //     vm.expectRevert(bytes(Errors.ZERO_ADDRESS));
-    //     blue.repay(market, 1, address(0), hex"");
-
-    //     vm.expectRevert(bytes(Errors.ZERO_ADDRESS));
-    //     blue.supplyCollateral(market, 1, address(0), hex"");
-
-    //     vm.expectRevert(bytes(Errors.ZERO_ADDRESS));
-    //     blue.withdrawCollateral(market, 1, address(this), address(0));
-    // }
-
-    // function testEmptyMarket(uint256 amount) public {
-    //     amount = bound(amount, 1, type(uint256).max / SharesMath.VIRTUAL_SHARES);
-
-    //     vm.expectRevert(stdError.arithmeticError);
-    //     blue.withdraw(market, amount, address(this), address(this));
-
-    //     vm.expectRevert(stdError.arithmeticError);
-    //     blue.repay(market, amount, address(this), hex"");
-
-    //     vm.expectRevert(stdError.arithmeticError);
-    //     blue.withdrawCollateral(market, amount, address(this), address(this));
-    // }
-
-    // function testSetAuthorization(address authorized, bool isAuthorized) public {
-    //     blue.setAuthorization(authorized, isAuthorized);
-    //     assertEq(blue.isAuthorized(address(this), authorized), isAuthorized);
-    // }
-
-    // function testNotAuthorized(address attacker) public {
-    //     vm.assume(attacker != address(this));
-
-    //     vm.startPrank(attacker);
-
-    //     vm.expectRevert(bytes(Errors.UNAUTHORIZED));
-    //     blue.withdraw(market, 1, address(this), address(this));
-    //     vm.expectRevert(bytes(Errors.UNAUTHORIZED));
-    //     blue.withdrawCollateral(market, 1, address(this), address(this));
-    //     vm.expectRevert(bytes(Errors.UNAUTHORIZED));
-    //     blue.borrow(market, 1, address(this), address(this));
-
-    //     vm.stopPrank();
-    // }
-
-    // function testAuthorization(address authorized) public {
-    //     borrowableAsset.setBalance(address(this), 100 ether);
-    //     collateralAsset.setBalance(address(this), 100 ether);
-
-    //     blue.supply(market, 100 ether, address(this), hex"");
-    //     blue.supplyCollateral(market, 100 ether, address(this), hex"");
-
-    //     blue.setAuthorization(authorized, true);
-
-    //     vm.startPrank(authorized);
-
-    //     blue.withdraw(market, 1 ether, address(this), address(this));
-    //     blue.withdrawCollateral(market, 1 ether, address(this), address(this));
-    //     blue.borrow(market, 1 ether, address(this), address(this));
-
-    //     vm.stopPrank();
-    // }
-
-    // function testAuthorizationWithSig(uint32 deadline, address authorized, uint256 privateKey, bool isAuthorized)
-    //     public
-    // {
-    //     deadline = uint32(bound(deadline, block.timestamp + 1, type(uint32).max));
-    //     privateKey = bound(privateKey, 1, type(uint32).max); // "Private key must be less than the secp256k1 curve order (115792089237316195423570985008687907852837564279074904382605163141518161494337)."
-    //     address authorizer = vm.addr(privateKey);
-
-    //     SigUtils.Authorization memory authorization = SigUtils.Authorization({
-    //         authorizer: authorizer,
-    //         authorized: authorized,
-    //         isAuthorized: isAuthorized,
-    //         nonce: blue.nonce(authorizer),
-    //         deadline: block.timestamp + deadline
-    //     });
-
-    //     bytes32 digest = SigUtils.getTypedDataHash(blue.DOMAIN_SEPARATOR(), authorization);
-
-    //     Signature memory sig;
-    //     (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
-
-    //     blue.setAuthorizationWithSig(
-    //         authorization.authorizer, authorization.authorized, authorization.isAuthorized, authorization.deadline, sig
-    //     );
-
-    //     assertEq(blue.isAuthorized(authorizer, authorized), isAuthorized);
-    //     assertEq(blue.nonce(authorizer), 1);
-    // }
-
-    // function testFlashLoan(uint256 amount) public {
-    //     amount = bound(amount, 1, 2 ** 64);
-
-    //     borrowableAsset.setBalance(address(this), amount);
-    //     blue.supply(market, amount, address(this), hex"");
-
-    //     blue.flashLoan(address(borrowableAsset), amount, bytes(""));
-
-    //     assertEq(borrowableAsset.balanceOf(address(blue)), amount, "balanceOf");
-    // }
-
-    // function testExtsLoad(uint256 slot, bytes32 value0) public {
-    //     bytes32[] memory slots = new bytes32[](2);
-    //     slots[0] = bytes32(slot);
-    //     slots[1] = bytes32(slot / 2);
-
-    //     bytes32 value1 = keccak256(abi.encode(value0));
-    //     vm.store(address(blue), slots[0], value0);
-    //     vm.store(address(blue), slots[1], value1);
-
-    //     bytes32[] memory values = blue.extsload(slots);
-
-    //     assertEq(values.length, 2, "values.length");
-    //     assertEq(values[0], slot > 0 ? value0 : value1, "value0");
-    //     assertEq(values[1], value1, "value1");
-    // }
+        vm.expectRevert(stdError.arithmeticError);
+        blue.withdraw(market, amount, address(this), address(this));
+
+        vm.expectRevert(stdError.arithmeticError);
+        repay(market, amount, address(this));
+
+        vm.expectRevert(stdError.arithmeticError);
+        blue.withdrawCollateral(market, amount, address(this), address(this));
+    }
+
+    function testSetAuthorization(address authorized, bool isAuthorized) public {
+        blue.setAuthorization(authorized, isAuthorized);
+        assertEq(blue.isAuthorized(address(this), authorized), isAuthorized);
+    }
+
+    function testNotAuthorized(address attacker) public {
+        vm.assume(attacker != address(this));
+
+        vm.startPrank(attacker);
+
+        vm.expectRevert(bytes(Errors.UNAUTHORIZED));
+        blue.withdraw(market, 1, address(this), address(this));
+        vm.expectRevert(bytes(Errors.UNAUTHORIZED));
+        blue.withdrawCollateral(market, 1, address(this), address(this));
+        vm.expectRevert(bytes(Errors.UNAUTHORIZED));
+        blue.borrow(market, 1, address(this), address(this));
+
+        vm.stopPrank();
+    }
+
+    function testAuthorization(address authorized) public {
+        borrowableAsset.setBalance(address(this), 100 ether);
+        collateralAsset.setBalance(address(this), 100 ether);
+
+        supply(market, 100 ether, address(this));
+        supplyCollateral(market, 100 ether, address(this));
+
+        blue.setAuthorization(authorized, true);
+
+        vm.startPrank(authorized);
+
+        blue.withdraw(market, 1 ether, address(this), address(this));
+        blue.withdrawCollateral(market, 1 ether, address(this), address(this));
+        blue.borrow(market, 1 ether, address(this), address(this));
+
+        vm.stopPrank();
+    }
+
+    function testAuthorizationWithSig(uint32 deadline, address authorized, uint256 privateKey, bool isAuthorized)
+        public
+    {
+        deadline = uint32(bound(deadline, block.timestamp + 1, type(uint32).max));
+        privateKey = bound(privateKey, 1, type(uint32).max); // "Private key must be less than the secp256k1 curve order (115792089237316195423570985008687907852837564279074904382605163141518161494337)."
+        address authorizer = vm.addr(privateKey);
+
+        SigUtils.Authorization memory authorization = SigUtils.Authorization({
+            authorizer: authorizer,
+            authorized: authorized,
+            isAuthorized: isAuthorized,
+            nonce: blue.nonce(authorizer),
+            deadline: block.timestamp + deadline
+        });
+
+        bytes32 digest = SigUtils.getTypedDataHash(blue.DOMAIN_SEPARATOR(), authorization);
+
+        Signature memory sig;
+        (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
+
+        blue.setAuthorizationWithSig(
+            authorization.authorizer, authorization.authorized, authorization.isAuthorized, authorization.deadline, sig
+        );
+
+        assertEq(blue.isAuthorized(authorizer, authorized), isAuthorized);
+        assertEq(blue.nonce(authorizer), 1);
+    }
+
+    function testFlashLoan(uint256 amount) public {
+        amount = bound(amount, 1, 2 ** 64);
+
+        borrowableAsset.setBalance(address(this), amount);
+        supply(market, amount, address(this));
+
+        flashLoan(address(borrowableAsset), amount);
+
+        assertEq(borrowableAsset.balanceOf(address(blue)), amount, "balanceOf");
+    }
+
+    function testExtsLoad(uint256 slot, bytes32 value0) public {
+        bytes32[] memory slots = new bytes32[](2);
+        slots[0] = bytes32(slot);
+        slots[1] = bytes32(slot / 2);
+
+        bytes32 value1 = keccak256(abi.encode(value0));
+        vm.store(address(blue), slots[0], value0);
+        vm.store(address(blue), slots[1], value1);
+
+        bytes32[] memory values = blue.extsload(slots);
+
+        assertEq(values.length, 2, "values.length");
+        assertEq(values[0], slot > 0 ? value0 : value1, "value0");
+        assertEq(values[1], value1, "value1");
+    }
 
     // function testSupplyCallback(uint256 amount) public {
     //     amount = bound(amount, 1, 2 ** 64);
@@ -879,8 +910,8 @@ contract BlueTest is Test, IFlashBlue {
     //     borrowableAsset.approve(address(blue), 0);
 
     //     vm.expectRevert();
-    //     blue.supply(market, amount, address(this), hex"");
-    //     blue.supply(market, amount, address(this), abi.encode(this.testSupplyCallback.selector, hex""));
+    //     supply(market, amount, address(this));
+    //     supply(market, amount, address(this), abi.encode(this.testSupplyCallback.selector));
     // }
 
     // function testSupplyCollateralCallback(uint256 amount) public {
@@ -889,39 +920,37 @@ contract BlueTest is Test, IFlashBlue {
     //     collateralAsset.approve(address(blue), 0);
 
     //     vm.expectRevert();
-    //     blue.supplyCollateral(market, amount, address(this), hex"");
-    //     blue.supplyCollateral(
-    //         market, amount, address(this), abi.encode(this.testSupplyCollateralCallback.selector, hex"")
-    //     );
+    //     supplyCollateral(market, amount, address(this));
+    //     blue.supplyCollateral(encode(this.testSupplyCollateralCallback.selector));
     // }
 
     // function testRepayCallback(uint256 amount) public {
     //     amount = bound(amount, 1, 2 ** 64);
 
     //     borrowableAsset.setBalance(address(this), amount);
-    //     blue.supply(market, amount, address(this), hex"");
+    //     supply(market, amount, address(this));
 
     //     uint256 collateralAmount = amount.divWadUp(LLTV);
     //     collateralAsset.setBalance(address(this), collateralAmount);
-    //     blue.supplyCollateral(market, collateralAmount, address(this), hex"");
+    //     supplyCollateral(market, collateralAmount, address(this));
     //     blue.borrow(market, amount, address(this), address(this));
 
     //     borrowableAsset.approve(address(blue), 0);
 
     //     vm.expectRevert("TRANSFER_FROM_FAILED");
-    //     blue.repay(market, amount, address(this), hex"");
-    //     blue.repay(market, amount, address(this), abi.encode(this.testRepayCallback.selector, hex""));
+    //     repay(market, amount, address(this));
+    //     repay(market, amount, address(this), abi.encode(this.testRepayCallback.selector));
     // }
 
     // function testLiquidateCallback(uint256 amount) public {
     //     amount = bound(amount, 10, 2 ** 64);
 
     //     borrowableAsset.setBalance(address(this), amount);
-    //     blue.supply(market, amount, address(this), hex"");
+    //     supply(market, amount, address(this));
 
     //     uint256 collateralAmount = amount.divWadUp(LLTV);
     //     collateralAsset.setBalance(address(this), collateralAmount);
-    //     blue.supplyCollateral(market, collateralAmount, address(this), hex"");
+    //     supplyCollateral(market, collateralAmount, address(this));
     //     blue.borrow(market, amount, address(this), address(this));
 
     //     oracle.setPrice(0.5e18);
@@ -929,8 +958,8 @@ contract BlueTest is Test, IFlashBlue {
     //     borrowableAsset.setBalance(address(this), amount);
     //     borrowableAsset.approve(address(blue), 0);
     //     vm.expectRevert("TRANSFER_FROM_FAILED");
-    //     blue.liquidate(market, address(this), collateralAmount, hex"");
-    //     blue.liquidate(market, address(this), collateralAmount, abi.encode(this.testLiquidateCallback.selector, hex""));
+    //     liquidate(market, address(this), collateralAmount);
+    //     liquidate(market, address(this), collateralAmount, abi.encode(this.testLiquidateCallback.selector));
     // }
 
     // function testFlashActions(uint256 amount) public {
@@ -939,7 +968,7 @@ contract BlueTest is Test, IFlashBlue {
     //     uint256 toBorrow = amount.mulWadDown(LLTV);
 
     //     borrowableAsset.setBalance(address(this), 2 * toBorrow);
-    //     blue.supply(market, toBorrow, address(this), hex"");
+    //     supply(market, toBorrow, address(this));
 
     //     blue.supplyCollateral(
     //         market, amount, address(this), abi.encode(this.testFlashActions.selector, abi.encode(toBorrow))
@@ -955,7 +984,7 @@ contract BlueTest is Test, IFlashBlue {
     //     assertEq(blue.collateral(market.id(), address(this)), 0, "no withdraw collateral");
     // }
 
-    // // Callback functions.
+    // Callback functions.
 
     // function onBlueSupply(uint256 amount, bytes memory data) external {
     //     require(msg.sender == address(blue));
