@@ -1,48 +1,47 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-/// @notice Arithmetic library with operations for fixed-point numbers.
-/// @author Solmate (https://github.com/transmissions11/solmate/blob/main/src/utils/FixedPointMathLib.sol)
-/// @author Inspired by USM (https://github.com/usmfum/USM/blob/master/contracts/WadMath.sol)
-library FixedPointMathLib {
-    /*//////////////////////////////////////////////////////////////
-                    SIMPLIFIED FIXED POINT OPERATIONS
-    //////////////////////////////////////////////////////////////*/
+import {UtilsLib} from "./UtilsLib.sol";
 
+uint256 constant WAD = 1e18;
+
+/// @notice Fixed-point arithmetic library.
+/// @dev Greatly inspired by Solmate (https://github.com/transmissions11/solmate/blob/main/src/utils/FixedPointMathLib.sol)
+/// and by USM (https://github.com/usmfum/USM/blob/master/contracts/WadMath.sol)
+library FixedPointMathLib {
     uint256 internal constant MAX_UINT256 = 2 ** 256 - 1;
 
-    uint256 internal constant WAD = 1e18; // The scalar of ETH and most ERC20s.
-
-    function mulWadDown(uint256 x, uint256 y) internal pure returns (uint256) {
-        return mulDivDown(x, y, WAD); // Equivalent to (x * y) / WAD rounded down.
+    /// @dev (x * y) / WAD rounded down.
+    function wMulDown(uint256 x, uint256 y) internal pure returns (uint256) {
+        return mulDivDown(x, y, WAD);
     }
 
-    function mulWadUp(uint256 x, uint256 y) internal pure returns (uint256) {
-        return mulDivUp(x, y, WAD); // Equivalent to (x * y) / WAD rounded up.
+    /// @dev (x * y) / WAD rounded up.
+    function wMulUp(uint256 x, uint256 y) internal pure returns (uint256) {
+        return mulDivUp(x, y, WAD);
     }
 
-    function divWadDown(uint256 x, uint256 y) internal pure returns (uint256) {
-        return mulDivDown(x, WAD, y); // Equivalent to (x * WAD) / y rounded down.
+    /// @dev (x * WAD) / y rounded down.
+    function wDivDown(uint256 x, uint256 y) internal pure returns (uint256) {
+        return mulDivDown(x, WAD, y);
     }
 
-    function divWadUp(uint256 x, uint256 y) internal pure returns (uint256) {
-        return mulDivUp(x, WAD, y); // Equivalent to (x * WAD) / y rounded up.
+    /// @dev (x * WAD) / y rounded up.
+    function wDivUp(uint256 x, uint256 y) internal pure returns (uint256) {
+        return mulDivUp(x, WAD, y);
     }
 
     /// @dev The sum of the last three terms in a four term taylor series expansion
     ///      to approximate a continuous compound interest rate: e^(nx) - 1.
     function wTaylorCompounded(uint256 x, uint256 n) internal pure returns (uint256) {
         uint256 firstTerm = x * n;
-        uint256 secondTerm = mulWadDown(firstTerm, firstTerm) / 2;
-        uint256 thirdTerm = mulWadDown(secondTerm, firstTerm) / 3;
+        uint256 secondTerm = wMulDown(firstTerm, firstTerm) / 2;
+        uint256 thirdTerm = wMulDown(secondTerm, firstTerm) / 3;
 
         return firstTerm + secondTerm + thirdTerm;
     }
 
-    /*//////////////////////////////////////////////////////////////
-                    LOW LEVEL FIXED POINT OPERATIONS
-    //////////////////////////////////////////////////////////////*/
-
+    /// @dev (x * y) / denominator rounded down.
     function mulDivDown(uint256 x, uint256 y, uint256 denominator) internal pure returns (uint256 z) {
         /// @solidity memory-safe-assembly
         assembly {
@@ -54,6 +53,7 @@ library FixedPointMathLib {
         }
     }
 
+    /// @dev (x * y) / denominator rounded up.
     function mulDivUp(uint256 x, uint256 y, uint256 denominator) internal pure returns (uint256 z) {
         /// @solidity memory-safe-assembly
         assembly {

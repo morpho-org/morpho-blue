@@ -7,7 +7,7 @@ import "forge-std/console.sol";
 import {SigUtils} from "./helpers/SigUtils.sol";
 
 import "src/Blue.sol";
-import {SharesMath} from "src/libraries/SharesMath.sol";
+import {SharesMathLib} from "src/libraries/SharesMathLib.sol";
 import {
     IBlueLiquidateCallback,
     IBlueRepayCallback,
@@ -26,7 +26,7 @@ contract BlueTest is
     IBlueLiquidateCallback
 {
     using MarketLib for Market;
-    using SharesMath for uint256;
+    using SharesMathLib for uint256;
     using stdStorage for StdStorage;
     using FixedPointMathLib for uint256;
 
@@ -40,8 +40,8 @@ contract BlueTest is
     ERC20 private collateralAsset;
     Oracle private oracle;
     Irm private irm;
-    Market public market;
-    Id public id;
+    Market private market;
+    Id private id;
 
     function setUp() public {
         // Create Blue.
@@ -63,7 +63,7 @@ contract BlueTest is
         blue.createMarket(market);
         vm.stopPrank();
 
-        oracle.setPrice(FixedPointMathLib.WAD);
+        oracle.setPrice(WAD);
 
         borrowableAsset.approve(address(blue), type(uint256).max);
         collateralAsset.approve(address(blue), type(uint256).max);
@@ -97,7 +97,7 @@ contract BlueTest is
 
         uint256 totalShares = blue.totalSupplyShares(id);
         uint256 totalSupply = blue.totalSupply(id);
-        return supplyShares.divWadDown(totalShares).mulWadDown(totalSupply);
+        return supplyShares.wDivDown(totalShares).wMulDown(totalSupply);
     }
 
     function borrowBalance(address user) internal view returns (uint256) {
@@ -106,7 +106,7 @@ contract BlueTest is
 
         uint256 totalShares = blue.totalBorrowShares(id);
         uint256 totalBorrow = blue.totalBorrow(id);
-        return borrowerShares.divWadUp(totalShares).mulWadUp(totalBorrow);
+        return borrowerShares.wDivUp(totalShares).wMulUp(totalBorrow);
     }
 
     // Invariants
@@ -149,7 +149,7 @@ contract BlueTest is
         Blue blue2 = new Blue(OWNER);
 
         vm.prank(attacker);
-        vm.expectRevert(bytes(Errors.NOT_OWNER));
+        vm.expectRevert(bytes(ErrorsLib.NOT_OWNER));
         blue2.setOwner(newOwner);
     }
 
@@ -157,7 +157,7 @@ contract BlueTest is
         vm.assume(attacker != blue.owner());
 
         vm.prank(attacker);
-        vm.expectRevert(bytes(Errors.NOT_OWNER));
+        vm.expectRevert(bytes(ErrorsLib.NOT_OWNER));
         blue.enableIrm(newIrm);
     }
 
@@ -181,7 +181,7 @@ contract BlueTest is
         vm.assume(marketFuzz.irm != address(irm));
 
         vm.prank(OWNER);
-        vm.expectRevert(bytes(Errors.IRM_NOT_ENABLED));
+        vm.expectRevert(bytes(ErrorsLib.IRM_NOT_ENABLED));
         blue.createMarket(marketFuzz);
     }
 
@@ -189,12 +189,12 @@ contract BlueTest is
         vm.assume(attacker != OWNER);
 
         vm.prank(attacker);
-        vm.expectRevert(bytes(Errors.NOT_OWNER));
+        vm.expectRevert(bytes(ErrorsLib.NOT_OWNER));
         blue.enableLltv(newLltv);
     }
 
     function testEnableLltv(uint256 newLltv) public {
-        newLltv = bound(newLltv, 0, FixedPointMathLib.WAD - 1);
+        newLltv = bound(newLltv, 0, WAD - 1);
 
         vm.prank(OWNER);
         blue.enableLltv(newLltv);
@@ -203,10 +203,10 @@ contract BlueTest is
     }
 
     function testEnableLltvShouldFailWhenLltvTooHigh(uint256 newLltv) public {
-        newLltv = bound(newLltv, FixedPointMathLib.WAD, type(uint256).max);
+        newLltv = bound(newLltv, WAD, type(uint256).max);
 
         vm.prank(OWNER);
-        vm.expectRevert(bytes(Errors.LLTV_TOO_HIGH));
+        vm.expectRevert(bytes(ErrorsLib.LLTV_TOO_HIGH));
         blue.enableLltv(newLltv);
     }
 
@@ -223,24 +223,24 @@ contract BlueTest is
         fee = bound(fee, MAX_FEE + 1, type(uint256).max);
 
         vm.prank(OWNER);
-        vm.expectRevert(bytes(Errors.MAX_FEE_EXCEEDED));
+        vm.expectRevert(bytes(ErrorsLib.MAX_FEE_EXCEEDED));
         blue.setFee(market, fee);
     }
 
     function testSetFeeShouldRevertIfMarketNotCreated(Market memory marketFuzz, uint256 fee) public {
         vm.assume(neq(marketFuzz, market));
-        fee = bound(fee, 0, FixedPointMathLib.WAD);
+        fee = bound(fee, 0, WAD);
 
         vm.prank(OWNER);
-        vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
+        vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
         blue.setFee(marketFuzz, fee);
     }
 
     function testSetFeeShouldRevertIfNotOwner(uint256 fee, address caller) public {
         vm.assume(caller != OWNER);
-        fee = bound(fee, 0, FixedPointMathLib.WAD);
+        fee = bound(fee, 0, WAD);
 
-        vm.expectRevert(bytes(Errors.NOT_OWNER));
+        vm.expectRevert(bytes(ErrorsLib.NOT_OWNER));
         blue.setFee(market, fee);
     }
 
@@ -254,7 +254,7 @@ contract BlueTest is
     function testSetFeeRecipientShouldRevertIfNotOwner(address caller, address recipient) public {
         vm.assume(caller != OWNER);
 
-        vm.expectRevert(bytes(Errors.NOT_OWNER));
+        vm.expectRevert(bytes(ErrorsLib.NOT_OWNER));
         vm.prank(caller);
         blue.setFeeRecipient(recipient);
     }
@@ -274,7 +274,7 @@ contract BlueTest is
         borrowableAsset.setBalance(address(this), amountLent);
         blue.supply(market, amountLent, 0, address(this), hex"");
 
-        uint256 collateralAmount = amountBorrowed.divWadUp(LLTV);
+        uint256 collateralAmount = amountBorrowed.wDivUp(LLTV);
         collateralAsset.setBalance(address(this), collateralAmount);
         blue.supplyCollateral(market, collateralAmount, BORROWER, hex"");
 
@@ -295,7 +295,7 @@ contract BlueTest is
         vm.assume(totalSupplyAfter > totalSupplyBefore);
 
         uint256 accrued = totalSupplyAfter - totalSupplyBefore;
-        uint256 expectedFee = accrued.mulWadDown(fee);
+        uint256 expectedFee = accrued.wMulDown(fee);
         uint256 expectedFeeShares = expectedFee.mulDivDown(totalSupplySharesBefore, totalSupplyAfter - expectedFee);
 
         assertEq(blue.supplyShares(id, recipient), expectedFeeShares);
@@ -306,7 +306,7 @@ contract BlueTest is
         marketFuzz.irm = address(irm);
 
         vm.prank(OWNER);
-        vm.expectRevert(bytes(Errors.LLTV_NOT_ENABLED));
+        vm.expectRevert(bytes(ErrorsLib.LLTV_NOT_ENABLED));
         blue.createMarket(marketFuzz);
     }
 
@@ -348,13 +348,13 @@ contract BlueTest is
         borrowableAsset.setBalance(address(this), amountLent);
         blue.supply(market, amountLent, 0, address(this), hex"");
 
-        uint256 collateralAmount = shares.toAssetsUp(blue.totalBorrow(id), blue.totalBorrowShares(id)).divWadUp(LLTV);
+        uint256 collateralAmount = shares.toAssetsUp(blue.totalBorrow(id), blue.totalBorrowShares(id)).wDivUp(LLTV);
         collateralAsset.setBalance(address(this), collateralAmount);
         blue.supplyCollateral(market, collateralAmount, BORROWER, hex"");
 
         if (amountBorrowed > amountLent) {
             vm.prank(BORROWER);
-            vm.expectRevert(bytes(Errors.INSUFFICIENT_LIQUIDITY));
+            vm.expectRevert(bytes(ErrorsLib.INSUFFICIENT_LIQUIDITY));
             blue.borrow(market, amountBorrowed, 0, BORROWER, receiver);
             return;
         }
@@ -362,7 +362,7 @@ contract BlueTest is
         vm.prank(BORROWER);
         blue.borrow(market, amountBorrowed, 0, BORROWER, receiver);
 
-        assertEq(blue.borrowShares(id, BORROWER), amountBorrowed * SharesMath.VIRTUAL_SHARES, "borrow share");
+        assertEq(blue.borrowShares(id, BORROWER), amountBorrowed * SharesMathLib.VIRTUAL_SHARES, "borrow share");
         assertEq(borrowableAsset.balanceOf(receiver), amountBorrowed, "receiver balance");
         assertEq(borrowableAsset.balanceOf(address(blue)), amountLent - amountBorrowed, "blue balance");
     }
@@ -374,7 +374,7 @@ contract BlueTest is
         borrowableAsset.setBalance(address(this), amount);
         if (amount > 0) blue.supply(market, amount, 0, address(this), hex"");
 
-        uint256 collateralAmount = shares.toAssetsUp(blue.totalBorrow(id), blue.totalBorrowShares(id)).divWadUp(LLTV);
+        uint256 collateralAmount = shares.toAssetsUp(blue.totalBorrow(id), blue.totalBorrowShares(id)).wDivUp(LLTV);
         collateralAsset.setBalance(address(this), collateralAmount);
         if (collateralAmount > 0) blue.supplyCollateral(market, collateralAmount, BORROWER, hex"");
 
@@ -411,7 +411,7 @@ contract BlueTest is
         _testWithdrawCommon(amountLent);
         amountBorrowed = bound(amountBorrowed, 1, blue.totalSupply(id));
 
-        uint256 collateralAmount = amountBorrowed.divWadUp(LLTV);
+        uint256 collateralAmount = amountBorrowed.wDivUp(LLTV);
         collateralAsset.setBalance(address(this), collateralAmount);
         blue.supplyCollateral(market, collateralAmount, BORROWER, hex"");
 
@@ -426,7 +426,7 @@ contract BlueTest is
             blue.withdraw(market, 0, sharesWithdrawn, address(this), receiver);
             return;
         } else if (amountWithdrawn > totalSupplyBefore - amountBorrowed) {
-            vm.expectRevert(bytes(Errors.INSUFFICIENT_LIQUIDITY));
+            vm.expectRevert(bytes(ErrorsLib.INSUFFICIENT_LIQUIDITY));
             blue.withdraw(market, 0, sharesWithdrawn, address(this), receiver);
             return;
         }
@@ -476,7 +476,7 @@ contract BlueTest is
         borrowableAsset.setBalance(address(this), 2 ** 66);
         blue.supply(market, amountBorrowed, 0, address(this), hex"");
 
-        uint256 collateralAmount = amountBorrowed.divWadUp(LLTV);
+        uint256 collateralAmount = amountBorrowed.wDivUp(LLTV);
         collateralAsset.setBalance(address(this), collateralAmount);
         blue.supplyCollateral(market, collateralAmount, borrower, hex"");
 
@@ -601,10 +601,10 @@ contract BlueTest is
         vm.prank(BORROWER);
         blue.supplyCollateral(market, amountCollateral, BORROWER, hex"");
 
-        uint256 maxBorrow = amountCollateral.mulWadDown(collateralPrice).mulWadDown(LLTV);
+        uint256 maxBorrow = amountCollateral.wMulDown(collateralPrice).wMulDown(LLTV);
 
         vm.prank(BORROWER);
-        if (maxBorrow < amountBorrowed) vm.expectRevert(bytes(Errors.INSUFFICIENT_COLLATERAL));
+        if (maxBorrow < amountBorrowed) vm.expectRevert(bytes(ErrorsLib.INSUFFICIENT_COLLATERAL));
         blue.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
     }
 
@@ -613,11 +613,10 @@ contract BlueTest is
         amountLent = bound(amountLent, 1000, 2 ** 64);
 
         uint256 amountCollateral = amountLent;
-        uint256 borrowingPower = amountCollateral.mulWadDown(LLTV);
-        uint256 amountBorrowed = borrowingPower.mulWadDown(0.8e18);
-        uint256 toSeize = amountCollateral.mulWadDown(LLTV);
-        uint256 incentive =
-            FixedPointMathLib.WAD + ALPHA.mulWadDown(FixedPointMathLib.WAD.divWadDown(LLTV) - FixedPointMathLib.WAD);
+        uint256 borrowingPower = amountCollateral.wMulDown(LLTV);
+        uint256 amountBorrowed = borrowingPower.wMulDown(0.8e18);
+        uint256 toSeize = amountCollateral.wMulDown(LLTV);
+        uint256 incentive = WAD + ALPHA.wMulDown(WAD.wDivDown(LLTV) - WAD);
 
         borrowableAsset.setBalance(address(this), amountLent);
         collateralAsset.setBalance(BORROWER, amountCollateral);
@@ -644,7 +643,7 @@ contract BlueTest is
         uint256 liquidatorNetWorthAfter = netWorth(LIQUIDATOR);
         (uint256 collateralPrice, uint256 priceScale) = IOracle(market.oracle).price();
 
-        uint256 expectedRepaid = toSeize.mulDivUp(collateralPrice, priceScale).divWadUp(incentive);
+        uint256 expectedRepaid = toSeize.mulDivUp(collateralPrice, priceScale).wDivUp(incentive);
         uint256 expectedNetWorthAfter =
             liquidatorNetWorthBefore + toSeize.mulDivDown(collateralPrice, priceScale) - expectedRepaid;
         assertEq(liquidatorNetWorthAfter, expectedNetWorthAfter, "LIQUIDATOR net worth");
@@ -657,11 +656,10 @@ contract BlueTest is
         amountLent = bound(amountLent, 1000, 2 ** 64);
 
         uint256 amountCollateral = amountLent;
-        uint256 borrowingPower = amountCollateral.mulWadDown(LLTV);
-        uint256 amountBorrowed = borrowingPower.mulWadDown(0.8e18);
+        uint256 borrowingPower = amountCollateral.wMulDown(LLTV);
+        uint256 amountBorrowed = borrowingPower.wMulDown(0.8e18);
         uint256 toSeize = amountCollateral;
-        uint256 incentive = FixedPointMathLib.WAD
-            + ALPHA.mulWadDown(FixedPointMathLib.WAD.divWadDown(market.lltv) - FixedPointMathLib.WAD);
+        uint256 incentive = WAD + ALPHA.wMulDown(WAD.wDivDown(market.lltv) - WAD);
 
         borrowableAsset.setBalance(address(this), amountLent);
         collateralAsset.setBalance(BORROWER, amountCollateral);
@@ -688,7 +686,7 @@ contract BlueTest is
         uint256 liquidatorNetWorthAfter = netWorth(LIQUIDATOR);
         (uint256 collateralPrice, uint256 priceScale) = IOracle(market.oracle).price();
 
-        uint256 expectedRepaid = toSeize.mulDivUp(collateralPrice, priceScale).divWadUp(incentive);
+        uint256 expectedRepaid = toSeize.mulDivUp(collateralPrice, priceScale).wDivUp(incentive);
         uint256 expectedNetWorthAfter =
             liquidatorNetWorthBefore + toSeize.mulDivDown(collateralPrice, priceScale) - expectedRepaid;
         assertEq(liquidatorNetWorthAfter, expectedNetWorthAfter, "LIQUIDATOR net worth");
@@ -713,12 +711,14 @@ contract BlueTest is
 
         assertApproxEqAbs(supplyBalance(address(this)), firstAmount, 100, "same balance first user");
         assertEq(
-            blue.supplyShares(id, address(this)), firstAmount * SharesMath.VIRTUAL_SHARES, "expected shares first user"
+            blue.supplyShares(id, address(this)),
+            firstAmount * SharesMathLib.VIRTUAL_SHARES,
+            "expected shares first user"
         );
         assertApproxEqAbs(supplyBalance(BORROWER), secondAmount, 100, "same balance second user");
         assertApproxEqAbs(
             blue.supplyShares(id, BORROWER),
-            secondAmount * SharesMath.VIRTUAL_SHARES,
+            secondAmount * SharesMathLib.VIRTUAL_SHARES,
             100,
             "expected shares second user"
         );
@@ -727,81 +727,81 @@ contract BlueTest is
     function testUnknownMarket(Market memory marketFuzz) public {
         vm.assume(neq(marketFuzz, market));
 
-        vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
+        vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
         blue.supply(marketFuzz, 1, 0, address(this), hex"");
 
-        vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
+        vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
         blue.withdraw(marketFuzz, 1, 0, address(this), address(this));
 
-        vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
+        vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
         blue.borrow(marketFuzz, 1, 0, address(this), address(this));
 
-        vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
+        vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
         blue.repay(marketFuzz, 1, 0, address(this), hex"");
 
-        vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
+        vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
         blue.supplyCollateral(marketFuzz, 1, address(this), hex"");
 
-        vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
+        vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
         blue.withdrawCollateral(marketFuzz, 1, address(this), address(this));
 
-        vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
+        vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
         blue.liquidate(marketFuzz, address(0), 1, hex"");
     }
 
     function testInputZero() public {
-        vm.expectRevert(bytes(Errors.INCONSISTENT_INPUT));
+        vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
         blue.supply(market, 0, 0, address(this), hex"");
-        vm.expectRevert(bytes(Errors.INCONSISTENT_INPUT));
+        vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
         blue.supply(market, 1, 1, address(this), hex"");
 
-        vm.expectRevert(bytes(Errors.INCONSISTENT_INPUT));
+        vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
         blue.withdraw(market, 0, 0, address(this), address(this));
-        vm.expectRevert(bytes(Errors.INCONSISTENT_INPUT));
+        vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
         blue.withdraw(market, 1, 1, address(this), address(this));
 
-        vm.expectRevert(bytes(Errors.INCONSISTENT_INPUT));
+        vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
         blue.borrow(market, 0, 0, address(this), address(this));
-        vm.expectRevert(bytes(Errors.INCONSISTENT_INPUT));
+        vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
         blue.borrow(market, 1, 1, address(this), address(this));
 
-        vm.expectRevert(bytes(Errors.INCONSISTENT_INPUT));
+        vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
         blue.repay(market, 0, 0, address(this), hex"");
-        vm.expectRevert(bytes(Errors.INCONSISTENT_INPUT));
+        vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
         blue.repay(market, 1, 1, address(this), hex"");
 
-        vm.expectRevert(bytes(Errors.ZERO_AMOUNT));
+        vm.expectRevert(bytes(ErrorsLib.ZERO_AMOUNT));
         blue.supplyCollateral(market, 0, address(this), hex"");
 
-        vm.expectRevert(bytes(Errors.ZERO_AMOUNT));
+        vm.expectRevert(bytes(ErrorsLib.ZERO_AMOUNT));
         blue.withdrawCollateral(market, 0, address(this), address(this));
 
-        vm.expectRevert(bytes(Errors.ZERO_AMOUNT));
+        vm.expectRevert(bytes(ErrorsLib.ZERO_AMOUNT));
         blue.liquidate(market, address(0), 0, hex"");
     }
 
     function testZeroAddress() public {
-        vm.expectRevert(bytes(Errors.ZERO_ADDRESS));
+        vm.expectRevert(bytes(ErrorsLib.ZERO_ADDRESS));
         blue.supply(market, 0, 1, address(0), hex"");
 
-        vm.expectRevert(bytes(Errors.ZERO_ADDRESS));
+        vm.expectRevert(bytes(ErrorsLib.ZERO_ADDRESS));
         blue.withdraw(market, 0, 1, address(this), address(0));
 
-        vm.expectRevert(bytes(Errors.ZERO_ADDRESS));
+        vm.expectRevert(bytes(ErrorsLib.ZERO_ADDRESS));
         blue.borrow(market, 0, 1, address(this), address(0));
 
-        vm.expectRevert(bytes(Errors.ZERO_ADDRESS));
+        vm.expectRevert(bytes(ErrorsLib.ZERO_ADDRESS));
         blue.repay(market, 0, 1, address(0), hex"");
 
-        vm.expectRevert(bytes(Errors.ZERO_ADDRESS));
+        vm.expectRevert(bytes(ErrorsLib.ZERO_ADDRESS));
         blue.supplyCollateral(market, 1, address(0), hex"");
 
-        vm.expectRevert(bytes(Errors.ZERO_ADDRESS));
+        vm.expectRevert(bytes(ErrorsLib.ZERO_ADDRESS));
         blue.withdrawCollateral(market, 1, address(this), address(0));
     }
 
     function testEmptyMarket(uint256 amount) public {
-        amount = bound(amount, 1, type(uint256).max / SharesMath.VIRTUAL_SHARES);
+        amount = bound(amount, 1, type(uint256).max / SharesMathLib.VIRTUAL_SHARES);
 
         vm.expectRevert(stdError.arithmeticError);
         blue.withdraw(market, amount, 0, address(this), address(this));
@@ -823,11 +823,11 @@ contract BlueTest is
 
         vm.startPrank(attacker);
 
-        vm.expectRevert(bytes(Errors.UNAUTHORIZED));
+        vm.expectRevert(bytes(ErrorsLib.UNAUTHORIZED));
         blue.withdraw(market, 0, 1, address(this), address(this));
-        vm.expectRevert(bytes(Errors.UNAUTHORIZED));
+        vm.expectRevert(bytes(ErrorsLib.UNAUTHORIZED));
         blue.withdrawCollateral(market, 1, address(this), address(this));
-        vm.expectRevert(bytes(Errors.UNAUTHORIZED));
+        vm.expectRevert(bytes(ErrorsLib.UNAUTHORIZED));
         blue.borrow(market, 0, 1, address(this), address(this));
 
         vm.stopPrank();
@@ -934,7 +934,7 @@ contract BlueTest is
         borrowableAsset.setBalance(address(this), amount);
         blue.supply(market, amount, 0, address(this), hex"");
 
-        uint256 collateralAmount = amount.divWadUp(LLTV);
+        uint256 collateralAmount = amount.wDivUp(LLTV);
         collateralAsset.setBalance(address(this), collateralAmount);
         blue.supplyCollateral(market, collateralAmount, address(this), hex"");
         blue.borrow(market, amount, 0, address(this), address(this));
@@ -952,10 +952,10 @@ contract BlueTest is
         borrowableAsset.setBalance(address(this), amount);
         blue.supply(market, amount, 0, address(this), hex"");
 
-        uint256 collateralAmount = amount.divWadUp(LLTV);
+        uint256 collateralAmount = amount.wDivUp(LLTV);
         collateralAsset.setBalance(address(this), collateralAmount);
         blue.supplyCollateral(market, collateralAmount, address(this), hex"");
-        blue.borrow(market, amount.mulWadDown(LLTV), 0, address(this), address(this));
+        blue.borrow(market, amount.wMulDown(LLTV), 0, address(this), address(this));
 
         oracle.setPrice(0.5e18);
 
@@ -969,7 +969,7 @@ contract BlueTest is
     function testFlashActions(uint256 amount) public {
         amount = bound(amount, 10, 2 ** 64);
         oracle.setPrice(1e18);
-        uint256 toBorrow = amount.mulWadDown(LLTV);
+        uint256 toBorrow = amount.wMulDown(LLTV);
 
         borrowableAsset.setBalance(address(this), 2 * toBorrow);
         blue.supply(market, toBorrow, 0, address(this), hex"");
