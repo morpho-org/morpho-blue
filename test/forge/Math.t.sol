@@ -22,8 +22,8 @@ contract MathTest is Test {
     function wPow(uint256 x, uint256 n) private pure returns (uint256 z) {
         z = WAD;
         for (; n != 0; n /= 2) {
-            z = n % 2 != 0 ? z.mulWadUp(x) : z;
-            x = x.mulWadUp(x);
+            z = n % 2 != 0 ? z.wMulUp(x) : z;
+            x = x.wMulUp(x);
         }
     }
 }

@@ -287,8 +287,8 @@ contract Blue is IBlue {
         require(!_isHealthy(market, id, borrower, collateralPrice, priceScale), ErrorsLib.HEALTHY_POSITION);
 
         // The liquidation incentive is 1 + ALPHA * (1 / LLTV - 1).
-        uint256 incentive = WAD + ALPHA.mulWadDown(WAD.divWadDown(market.lltv) - WAD);
-        uint256 repaid = seized.mulDivUp(collateralPrice, priceScale).divWadUp(incentive);
+        uint256 incentive = WAD + ALPHA.wMulDown(WAD.wDivDown(market.lltv) - WAD);
+        uint256 repaid = seized.mulDivUp(collateralPrice, priceScale).wDivUp(incentive);
         uint256 repaidShares = repaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
 
         borrowShares[id][borrower] -= repaidShares;
@@ -377,13 +377,13 @@ contract Blue is IBlue {
 
         if (marketTotalBorrow != 0) {
             uint256 borrowRate = IIrm(market.irm).borrowRate(market);
-            uint256 accruedInterests = marketTotalBorrow.mulWadDown(borrowRate.wTaylorCompounded(elapsed));
+            uint256 accruedInterests = marketTotalBorrow.wMulDown(borrowRate.wTaylorCompounded(elapsed));
             totalBorrow[id] = marketTotalBorrow + accruedInterests;
             totalSupply[id] += accruedInterests;
 
             uint256 feeShares;
             if (fee[id] != 0) {
-                uint256 feeAmount = accruedInterests.mulWadDown(fee[id]);
+                uint256 feeAmount = accruedInterests.wMulDown(fee[id]);
                 // The fee amount is subtracted from the total supply in this calculation to compensate for the fact that total supply is already updated.
                 feeShares = feeAmount.mulDivDown(totalSupplyShares[id], totalSupply[id] - feeAmount);
                 supplyShares[id][feeRecipient] += feeShares;
@@ -412,7 +412,7 @@ contract Blue is IBlue {
         returns (bool)
     {
         uint256 borrowed = borrowShares[id][user].toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
-        uint256 maxBorrow = collateral[id][user].mulDivDown(collateralPrice, priceScale).mulWadDown(market.lltv);
+        uint256 maxBorrow = collateral[id][user].mulDivDown(collateralPrice, priceScale).wMulDown(market.lltv);
 
         return maxBorrow >= borrowed;
     }

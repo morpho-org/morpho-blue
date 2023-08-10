@@ -10,22 +10,22 @@ library FixedPointMathLib {
     uint256 internal constant MAX_UINT256 = 2 ** 256 - 1;
 
     /// @dev (x * y) / WAD rounded down.
-    function mulWadDown(uint256 x, uint256 y) internal pure returns (uint256) {
+    function wMulDown(uint256 x, uint256 y) internal pure returns (uint256) {
         return mulDivDown(x, y, WAD);
     }
 
     /// @dev (x * y) / WAD rounded up.
-    function mulWadUp(uint256 x, uint256 y) internal pure returns (uint256) {
+    function wMulUp(uint256 x, uint256 y) internal pure returns (uint256) {
         return mulDivUp(x, y, WAD);
     }
 
     /// @dev (x * WAD) / y rounded down.
-    function divWadDown(uint256 x, uint256 y) internal pure returns (uint256) {
+    function wDivDown(uint256 x, uint256 y) internal pure returns (uint256) {
         return mulDivDown(x, WAD, y);
     }
 
     /// @dev (x * WAD) / y rounded up.
-    function divWadUp(uint256 x, uint256 y) internal pure returns (uint256) {
+    function wDivUp(uint256 x, uint256 y) internal pure returns (uint256) {
         return mulDivUp(x, WAD, y);
     }
 
@@ -58,8 +58,8 @@ library FixedPointMathLib {
     ///      to approximate a compound interest rate: (1 + x)^n - 1.
     function wTaylorCompounded(uint256 x, uint256 n) internal pure returns (uint256) {
         uint256 firstTerm = x * n;
-        uint256 secondTerm = mulWadDown(firstTerm, x * zeroFloorSub(n, 1)) / 2;
-        uint256 thirdTerm = mulWadDown(secondTerm, x * zeroFloorSub(n, 2)) / 3;
+        uint256 secondTerm = wMulDown(firstTerm, x * zeroFloorSub(n, 1)) / 2;
+        uint256 thirdTerm = wMulDown(secondTerm, x * zeroFloorSub(n, 2)) / 3;
 
         return firstTerm + secondTerm + thirdTerm;
     }
