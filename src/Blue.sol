@@ -16,7 +16,8 @@ import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
 import {FixedPointMathLib, WAD} from "./libraries/FixedPointMathLib.sol";
 
 uint256 constant MAX_FEE = 0.25e18;
-uint256 constant ALPHA = 0.5e18;
+uint256 constant BETA = 0.3e18;
+uint256 constant MAX_INCENTIVE = 0.15e18;
 
 /// @dev The EIP-712 typeHash for EIP712Domain.
 bytes32 constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
@@ -294,9 +295,9 @@ contract Blue is IBlue {
 
         require(!_isHealthy(market, id, borrower, collateralPrice, priceScale), ErrorsLib.HEALTHY_POSITION);
 
-        // The liquidation incentive is 1 + ALPHA * (1 / LLTV - 1).
-        uint256 incentive = WAD + ALPHA.wMulDown(WAD.wDivDown(market.lltv) - WAD);
-        uint256 repaid = seized.mulDivUp(collateralPrice, priceScale).wDivUp(incentive);
+        // The liquidation incentive is min(MAX_INCENTIVE, 1/(BETA * lltv + 1 - BETA) - 1).
+        uint256 incentive = UtilsLib.min(MAX_INCENTIVE, WAD.wDivDown(BETA.wMulDown(market.lltv) + WAD - BETA) - WAD);
+        uint256 repaid = seized.mulDivUp(collateralPrice, priceScale).wDivUp(WAD + incentive);
         uint256 repaidShares = repaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
 
         borrowShares[id][borrower] -= repaidShares;
