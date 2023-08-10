@@ -118,7 +118,7 @@ contract IntegrationCallbacksTest is
 
     function testLiquidateCallback(uint256 amount) public {
         amount = bound(amount, MIN_TEST_AMOUNT, MAX_TEST_AMOUNT);
-        oracle.setPrice(1e18);
+        oracle.setPrice(WAD);
         borrowableAsset.setBalance(address(this), amount);
         collateralAsset.setBalance(address(this), amount);
         blue.supply(market, amount, 0, address(this), hex"");
@@ -138,7 +138,7 @@ contract IntegrationCallbacksTest is
 
     function testFlashActions(uint256 amount) public {
         amount = bound(amount, 10, MAX_TEST_AMOUNT);
-        oracle.setPrice(1e18);
+        oracle.setPrice(WAD);
         uint256 toBorrow = amount.wMulDown(LLTV);
 
         borrowableAsset.setBalance(address(this), toBorrow);

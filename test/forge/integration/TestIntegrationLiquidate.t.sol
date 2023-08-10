@@ -74,7 +74,7 @@ contract IntegrationLiquidateTest is BaseTest {
         borrowableAsset.setBalance(LIQUIDATOR, amountBorrowed);
         collateralAsset.setBalance(BORROWER, amountCollateral);
 
-        oracle.setPrice((amountCollateral * 1e18).wMulUp(LLTV) * amountBorrowed);
+        oracle.setPrice((amountCollateral * WAD).wMulUp(LLTV) * amountBorrowed);
 
         vm.startPrank(BORROWER);
         blue.supplyCollateral(market, amountCollateral, BORROWER, hex"");
@@ -142,7 +142,7 @@ contract IntegrationLiquidateTest is BaseTest {
         borrowableAsset.setBalance(LIQUIDATOR, amountBorrowed);
         collateralAsset.setBalance(BORROWER, amountCollateral);
 
-        oracle.setPrice((amountCollateral * 1e18).wMulUp(LLTV) * amountBorrowed);
+        oracle.setPrice((amountCollateral * WAD).wMulUp(LLTV) * amountBorrowed);
 
         vm.startPrank(BORROWER);
         blue.supplyCollateral(market, amountCollateral, BORROWER, hex"");

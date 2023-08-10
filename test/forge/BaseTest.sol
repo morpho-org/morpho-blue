@@ -65,9 +65,7 @@ contract BaseTest is Test {
         blue.createMarket(market);
         vm.stopPrank();
 
-        // We set the price of the borrowable asset to zero so that borrowers
-        // don't need to deposit any collateral.
-        oracle.setPrice(1e18);
+        oracle.setPrice(WAD);
 
         borrowableAsset.approve(address(blue), type(uint256).max);
         collateralAsset.approve(address(blue), type(uint256).max);
