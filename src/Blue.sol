@@ -16,7 +16,7 @@ import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
 import {FixedPointMathLib, WAD} from "./libraries/FixedPointMathLib.sol";
 
 /// @dev The maximum fee a market can have (25%).
-uint256 constant MAX_FEE = 0.25e18;
+uint256 constant MAX_FEE = 25;
 /// @dev The alpha parameter used to compute the incentive during a liquidation.
 uint256 constant ALPHA = 0.5e18;
 
@@ -446,7 +446,7 @@ contract Blue is IBlue {
 
             uint256 feeShares;
             if (market.fee() != 0) {
-                uint256 feeAmount = accruedInterests.wMulDown(market.fee());
+                uint256 feeAmount = accruedInterests * market.fee() / 100;
                 // The fee amount is subtracted from the total supply in this calculation to compensate for the fact that total supply is already updated.
                 feeShares = feeAmount.mulDivDown(market.totalSupplyShares(), market.totalSupply() - feeAmount);
                 market.increaseSupplyShares(feeRecipient, feeShares);
