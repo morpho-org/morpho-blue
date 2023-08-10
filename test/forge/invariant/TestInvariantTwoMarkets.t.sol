@@ -19,7 +19,7 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
 
     function setUp() public virtual override {
         super.setUp();
-        
+
         irm2 = new Irm(blue);
         vm.label(address(irm2), "IRM2");
 
@@ -71,10 +71,10 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
     function supplyOnBlue(uint256 amount, bool changeMarket) public {
         Market memory chosenMarket;
         Id chosenId;
-        if (!changeMarket){
+        if (!changeMarket) {
             chosenMarket = market;
             chosenId = id;
-        } else{
+        } else {
             chosenMarket = market2;
             chosenId = id2;
         }
@@ -87,16 +87,18 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
     function withdrawOnBlue(uint256 amount, bool changeMarket) public {
         Market memory chosenMarket;
         Id chosenId;
-        if (!changeMarket){
+        if (!changeMarket) {
             chosenMarket = market;
             chosenId = id;
-        } else{
+        } else {
             chosenMarket = market2;
             chosenId = id2;
         }
         if (blue.supplyShares(chosenId, msg.sender) == 0) return;
         if (blue.totalSupply(chosenId) - blue.totalBorrow(chosenId) == 0) return;
-        uint256 supplierBalance = blue.supplyShares(chosenId, msg.sender).toAssetsDown(blue.totalSupply(chosenId), blue.totalSupplyShares(chosenId));
+        uint256 supplierBalance = blue.supplyShares(chosenId, msg.sender).toAssetsDown(
+            blue.totalSupply(chosenId), blue.totalSupplyShares(chosenId)
+        );
         uint256 availableLiquidity = blue.totalSupply(chosenId) - blue.totalBorrow(chosenId);
         amount = bound(amount, 1, min(supplierBalance, availableLiquidity));
         vm.prank(msg.sender);
@@ -106,10 +108,10 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
     function borrowOnBlue(uint256 amount, bool changeMarket) public {
         Market memory chosenMarket;
         Id chosenId;
-        if (!changeMarket){
+        if (!changeMarket) {
             chosenMarket = market;
             chosenId = id;
-        } else{
+        } else {
             chosenMarket = market2;
             chosenId = id2;
         }
@@ -122,16 +124,20 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
     function repayOnBlue(uint256 amount, bool changeMarket) public {
         Market memory chosenMarket;
         Id chosenId;
-        if (!changeMarket){
+        if (!changeMarket) {
             chosenMarket = market;
             chosenId = id;
-        } else{
+        } else {
             chosenMarket = market2;
             chosenId = id2;
         }
         if (blue.borrowShares(chosenId, msg.sender) == 0) return;
         amount = bound(
-            amount, 1, blue.borrowShares(chosenId, msg.sender).toAssetsDown(blue.totalBorrow(chosenId), blue.totalBorrowShares(chosenId))
+            amount,
+            1,
+            blue.borrowShares(chosenId, msg.sender).toAssetsDown(
+                blue.totalBorrow(chosenId), blue.totalBorrowShares(chosenId)
+            )
         );
         borrowableAsset.setBalance(msg.sender, amount);
         vm.prank(msg.sender);
@@ -141,10 +147,10 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
     function supplyCollateralOnBlue(uint256 amount, bool changeMarket) public {
         Market memory chosenMarket;
         Id chosenId;
-        if (!changeMarket){
+        if (!changeMarket) {
             chosenMarket = market;
             chosenId = id;
-        } else{
+        } else {
             chosenMarket = market2;
             chosenId = id2;
         }
@@ -157,10 +163,10 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
     function withdrawCollateralOnBlue(uint256 amount, bool changeMarket) public {
         Market memory chosenMarket;
         Id chosenId;
-        if (!changeMarket){
+        if (!changeMarket) {
             chosenMarket = market;
             chosenId = id;
-        } else{
+        } else {
             chosenMarket = market2;
             chosenId = id2;
         }

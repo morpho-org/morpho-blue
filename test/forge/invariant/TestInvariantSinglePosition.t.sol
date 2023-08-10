@@ -40,7 +40,8 @@ contract SinglePositionInvariantTest is InvariantBaseTest {
     function withdrawOnBlue(uint256 amount) public {
         if (blue.supplyShares(id, msg.sender) == 0) return;
         if (blue.totalSupply(id) - blue.totalBorrow(id) == 0) return;
-        uint256 supplierBalance = blue.supplyShares(id, msg.sender).toAssetsDown(blue.totalSupply(id), blue.totalSupplyShares(id));
+        uint256 supplierBalance =
+            blue.supplyShares(id, msg.sender).toAssetsDown(blue.totalSupply(id), blue.totalSupplyShares(id));
         uint256 availableLiquidity = blue.totalSupply(id) - blue.totalBorrow(id);
         amount = bound(amount, 1, min(supplierBalance, availableLiquidity));
         vm.prank(msg.sender);
@@ -87,12 +88,14 @@ contract SinglePositionInvariantTest is InvariantBaseTest {
     }
 
     function invariantTotalSupply() public {
-        uint256 suppliedAmount = blue.supplyShares(id, user).toAssetsDown(blue.totalSupply(id), blue.totalSupplyShares(id));
+        uint256 suppliedAmount =
+            blue.supplyShares(id, user).toAssetsDown(blue.totalSupply(id), blue.totalSupplyShares(id));
         assertLe(suppliedAmount, blue.totalSupply(id));
     }
 
     function invariantTotalBorrow() public {
-        uint256 borrowedAmount = blue.borrowShares(id, user).toAssetsUp(blue.totalBorrow(id), blue.totalBorrowShares(id));
+        uint256 borrowedAmount =
+            blue.borrowShares(id, user).toAssetsUp(blue.totalBorrow(id), blue.totalBorrowShares(id));
         assertGe(borrowedAmount, blue.totalBorrow(id));
     }
 

@@ -9,6 +9,8 @@ contract InvariantBaseTest is BaseTest {
 
     bytes4[] internal selectors;
 
+    address[] internal addressArray;
+
     function setUp() public virtual override {
         super.setUp();
 
@@ -29,6 +31,108 @@ contract InvariantBaseTest is BaseTest {
     function _weightSelector(bytes4 selector, uint256 weight) internal {
         for (uint256 i; i < weight; ++i) {
             selectors.push(selector);
+        }
+    }
+
+    function _randomSenderToWithdrawOnBehalf(address[] memory addresses, address seed, address sender)
+        internal
+        returns (address randomSenderToWithdrawOnBehalf)
+    {
+        for (uint256 i; i < addresses.length; ++i) {
+            if (blue.supplyShares(id, addresses[i]) != 0) {
+                addressArray.push(addresses[i]);
+            }
+        }
+        if (addressArray.length == 0) return address(0);
+
+        randomSenderToWithdrawOnBehalf = addressArray[uint256(uint160(seed)) % addressArray.length];
+
+        vm.prank(randomSenderToWithdrawOnBehalf);
+        blue.setAuthorization(sender, true);
+
+        for (uint256 i; i < addressArray.length; ++i) {
+            addressArray.pop();
+        }
+    }
+
+    function _randomSenderToBorrowOnBehalf(address[] memory addresses, address seed, address sender)
+        internal
+        returns (address randomSenderToBorrowOnBehalf)
+    {
+        for (uint256 i; i < addresses.length; ++i) {
+            if (blue.collateral(id, addresses[i]) != 0 && isHealthy(market, id, addresses[i])) {
+                addressArray.push(addresses[i]);
+            }
+        }
+        if (addressArray.length == 0) return address(0);
+
+        randomSenderToBorrowOnBehalf = addressArray[uint256(uint160(seed)) % addressArray.length];
+
+        vm.prank(randomSenderToBorrowOnBehalf);
+        blue.setAuthorization(sender, true);
+
+        for (uint256 i; i < addressArray.length; ++i) {
+            addressArray.pop();
+        }
+    }
+
+    function _randomSenderToRepayOnBehalf(address[] memory addresses, address seed, address sender)
+        internal
+        returns (address randomSenderToRepayOnBehalf)
+    {
+        for (uint256 i; i < addresses.length; ++i) {
+            if (blue.borrowShares(id, addresses[i]) != 0) {
+                addressArray.push(addresses[i]);
+            }
+        }
+        if (addressArray.length == 0) return address(0);
+
+        randomSenderToRepayOnBehalf = addressArray[uint256(uint160(seed)) % addressArray.length];
+
+        vm.prank(randomSenderToRepayOnBehalf);
+        blue.setAuthorization(sender, true);
+
+        for (uint256 i; i < addressArray.length; ++i) {
+            addressArray.pop();
+        }
+    }
+
+    function _randomSenderToWithdrawCollateralOnBehalf(address[] memory addresses, address seed, address sender)
+        internal
+        returns (address randomSenderToWithdrawCollateralOnBehalf)
+    {
+        for (uint256 i; i < addresses.length; ++i) {
+            if (blue.collateral(id, addresses[i]) != 0 && isHealthy(market, id, addresses[i])) {
+                addressArray.push(addresses[i]);
+            }
+        }
+        if (addressArray.length == 0) return address(0);
+
+        randomSenderToWithdrawCollateralOnBehalf = addressArray[uint256(uint160(seed)) % addressArray.length];
+
+        vm.prank(randomSenderToWithdrawCollateralOnBehalf);
+        blue.setAuthorization(sender, true);
+
+        for (uint256 i; i < addressArray.length; ++i) {
+            addressArray.pop();
+        }
+    }
+
+    function _randomSenderToLiquidate(address[] memory addresses, address seed)
+        internal
+        returns (address randomSenderToLiquidate)
+    {
+        for (uint256 i; i < addresses.length; ++i) {
+            if (blue.borrowShares(id, addresses[i]) != 0 && !isHealthy(market, id, addresses[i])) {
+                addressArray.push(addresses[i]);
+            }
+        }
+        if (addressArray.length == 0) return address(0);
+
+        randomSenderToLiquidate = addressArray[uint256(uint160(seed)) % addressArray.length];
+
+        for (uint256 i; i < addressArray.length; ++i) {
+            addressArray.pop();
         }
     }
 
@@ -56,13 +160,13 @@ contract InvariantBaseTest is BaseTest {
         }
     }
 
-    function isHealthy(Market memory market, Id id, address user) public returns(bool) {
+    function isHealthy(Market memory market, Id id, address user) public view returns (bool) {
         uint256 collateralPrice = IOracle(market.collateralOracle).price();
         uint256 borrowablePrice = IOracle(market.borrowableOracle).price();
 
-        uint256 borrowValue =
-            blue.borrowShares(id, user).toAssetsUp(blue.totalBorrow(id), blue.totalBorrowShares(id)).mulWadUp(borrowablePrice);
-        uint256 collateralValue = blue.collateral(id,user).mulWadDown(collateralPrice);
+        uint256 borrowValue = blue.borrowShares(id, user).toAssetsUp(blue.totalBorrow(id), blue.totalBorrowShares(id))
+            .mulWadUp(borrowablePrice);
+        uint256 collateralValue = blue.collateral(id, user).mulWadDown(collateralPrice);
 
         return collateralValue.mulWadDown(market.lltv) >= borrowValue;
     }

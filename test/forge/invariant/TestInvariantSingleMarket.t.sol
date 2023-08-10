@@ -57,7 +57,8 @@ contract SingleMarketInvariantTest is InvariantBaseTest {
     function withdrawOnBlue(uint256 amount) public {
         if (blue.supplyShares(id, msg.sender) == 0) return;
         if (blue.totalSupply(id) - blue.totalBorrow(id) == 0) return;
-        uint256 supplierBalance = blue.supplyShares(id, msg.sender).toAssetsDown(blue.totalSupply(id), blue.totalSupplyShares(id));
+        uint256 supplierBalance =
+            blue.supplyShares(id, msg.sender).toAssetsDown(blue.totalSupply(id), blue.totalSupplyShares(id));
         uint256 availableLiquidity = blue.totalSupply(id) - blue.totalBorrow(id);
         amount = bound(amount, 1, min(supplierBalance, availableLiquidity));
         vm.prank(msg.sender);

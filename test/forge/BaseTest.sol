@@ -33,7 +33,7 @@ contract BaseTest is Test {
     Market internal market;
     Id internal id;
 
-    function setUp() virtual public {
+    function setUp() public virtual {
         vm.label(OWNER, "Owner");
         vm.label(BORROWER, "Borrower");
         vm.label(LIQUIDATOR, "Liquidator");
