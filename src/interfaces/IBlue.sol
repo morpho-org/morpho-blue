@@ -239,14 +239,16 @@ interface IBlue is IFlashLender {
     /// @param amount The amount of assets to supply.
     /// @param onBehalf The address that will receive the position.
     /// @param data Arbitrary data to pass to the `onBlueSupply` callback. Pass empty data if not needed.
-    function supply(Market memory market, uint256 amount, address onBehalf, bytes memory data) external;
+    function supply(Market memory market, uint256 amount, uint256 shares, address onBehalf, bytes memory data)
+        external;
 
     /// @notice Withdraws assets from a market.
     /// @param market The market to withdraw assets from.
     /// @param onBehalf The address from which to withdraw.
     /// @param receiver The address that will receive the withdrawn assets.
     /// @dev If `msg.sender != onBehalf`, `msg.sender` must be authorized to withdraw from `onBehalf`.
-    function withdraw(Market memory market, uint256 amount, address onBehalf, address receiver) external;
+    function withdraw(Market memory market, uint256 amount, uint256 shares, address onBehalf, address receiver)
+        external;
 
     /// @notice Borrows assets from a market.
     /// @param market The market to borrow assets from.
@@ -254,13 +256,15 @@ interface IBlue is IFlashLender {
     /// @param onBehalf The address from which to borrow.
     /// @param receiver The address that will receive the borrowed assets.
     /// @dev If `msg.sender != onBehalf`, `msg.sender` must be authorized to withdraw from `onBehalf`.
-    function borrow(Market memory market, uint256 amount, address onBehalf, address receiver) external;
+    function borrow(Market memory market, uint256 amount, uint256 shares, address onBehalf, address receiver)
+        external;
 
     /// @notice Repays assets to a market.
     /// @param market The market to repay assets to.
     /// @param onBehalf The address for which to repay.
     /// @param data Arbitrary data to pass to the `onBlueRepay` callback. Pass empty data if not needed.
-    function repay(Market memory market, uint256 amount, address onBehalf, bytes memory data) external;
+    function repay(Market memory market, uint256 amount, uint256 shares, address onBehalf, bytes memory data)
+        external;
 
     /// @notice Supplies collateral to a market.
     /// @param market The market to supply collateral to.

@@ -1,11 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-/// @title Errors
-/// @author Morpho Labs
-/// @custom:contact security@morpho.xyz
-/// @notice Library exposing errors used in Blue.
-library Errors {
+library ErrorsLib {
     /// @notice Thrown when the caller is not the owner.
     string internal constant NOT_OWNER = "not owner";
 
@@ -26,6 +22,9 @@ library Errors {
 
     /// @notice Thrown when the market is not created.
     string internal constant MARKET_NOT_CREATED = "market not created";
+
+    /// @notice Thrown when one of the input is not consistent.
+    string constant INCONSISTENT_INPUT = "inconsistent input";
 
     /// @notice Thrown when a zero amount is passed as input.
     string internal constant ZERO_AMOUNT = "zero amount";
