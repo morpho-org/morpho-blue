@@ -14,6 +14,7 @@ import {IOracle} from "./interfaces/IOracle.sol";
 import {Id, Market, Signature, IBlue} from "./interfaces/IBlue.sol";
 
 import {Errors} from "./libraries/Errors.sol";
+import {UtilsLib} from "./libraries/UtilsLib.sol";
 import {SharesMath} from "./libraries/SharesMath.sol";
 import {FixedPointMathLib} from "./libraries/FixedPointMathLib.sol";
 import {MarketLib} from "./libraries/MarketLib.sol";
@@ -148,7 +149,7 @@ contract Blue is IBlue {
     {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
-        require(FixedPointMathLib.exactlyOneZero(amount, shares), Errors.NOT_EXACTLY_ONE_ZERO);
+        require(UtilsLib.exactlyOneZero(amount, shares), Errors.NOT_EXACTLY_ONE_ZERO);
         require(onBehalf != address(0), Errors.ZERO_ADDRESS);
 
         _accrueInterests(market, id);
@@ -172,7 +173,7 @@ contract Blue is IBlue {
     {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
-        require(FixedPointMathLib.exactlyOneZero(amount, shares), Errors.NOT_EXACTLY_ONE_ZERO);
+        require(UtilsLib.exactlyOneZero(amount, shares), Errors.NOT_EXACTLY_ONE_ZERO);
         // No need to verify that onBehalf != address(0) thanks to the authorization check.
         require(receiver != address(0), Errors.ZERO_ADDRESS);
         require(_isSenderAuthorized(onBehalf), Errors.UNAUTHORIZED);
@@ -200,7 +201,7 @@ contract Blue is IBlue {
     {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
-        require(FixedPointMathLib.exactlyOneZero(amount, shares), Errors.NOT_EXACTLY_ONE_ZERO);
+        require(UtilsLib.exactlyOneZero(amount, shares), Errors.NOT_EXACTLY_ONE_ZERO);
         // No need to verify that onBehalf != address(0) thanks to the authorization check.
         require(receiver != address(0), Errors.ZERO_ADDRESS);
         require(_isSenderAuthorized(onBehalf), Errors.UNAUTHORIZED);
@@ -227,7 +228,7 @@ contract Blue is IBlue {
     {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
-        require(FixedPointMathLib.exactlyOneZero(amount, shares), Errors.NOT_EXACTLY_ONE_ZERO);
+        require(UtilsLib.exactlyOneZero(amount, shares), Errors.NOT_EXACTLY_ONE_ZERO);
         require(onBehalf != address(0), Errors.ZERO_ADDRESS);
 
         _accrueInterests(market, id);
