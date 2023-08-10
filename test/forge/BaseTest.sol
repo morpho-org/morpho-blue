@@ -13,8 +13,10 @@ contract BaseTest is Test {
     using FixedPointMathLib for uint256;
     using MarketLib for Market;
 
+    uint256 internal constant HIGH_COLLATERAL_AMOUNT = 1e25;
     uint256 internal constant MIN_TEST_AMOUNT = 1000;
     uint256 internal constant MAX_TEST_AMOUNT = 2 ** 64;
+    uint256 internal constant MAX_TEST_SHARES = MAX_TEST_AMOUNT * 1e18;
     uint256 internal constant MIN_COLLATERAL_PRICE = 100;
     uint256 internal constant MAX_COLLATERAL_PRICE = 2 ** 64;
 
@@ -51,7 +53,7 @@ contract BaseTest is Test {
         oracle = new Oracle();
         vm.label(address(oracle), "Oracle");
 
-        oracle.setPrice(WAD);
+        oracle.setPrice(1e25);
 
         irm = new Irm(blue);
         vm.label(address(irm), "IRM");
@@ -65,7 +67,8 @@ contract BaseTest is Test {
         blue.createMarket(market);
         vm.stopPrank();
 
-        oracle.setPrice(WAD);
+        oracle.setPrice(1e25);
+        collateralAsset.setBalance(BORROWER, HIGH_COLLATERAL_AMOUNT);
 
         borrowableAsset.approve(address(blue), type(uint256).max);
         collateralAsset.approve(address(blue), type(uint256).max);
@@ -86,6 +89,14 @@ contract BaseTest is Test {
     function _provideLiquidity(uint256 amount) internal {
         borrowableAsset.setBalance(address(this), amount);
         blue.supply(market, amount, 0, address(this), hex"");
+    }
+
+    function _provideCollateralForBorrower(address borrower) internal {
+        collateralAsset.setBalance(borrower, HIGH_COLLATERAL_AMOUNT);
+        vm.startPrank(borrower);
+        collateralAsset.approve(address(blue), type(uint256).max);
+        blue.supplyCollateral(market, HIGH_COLLATERAL_AMOUNT, borrower, hex"");
+        vm.stopPrank();
     }
 
     function _boundHealthyPosition(uint256 amountCollateral, uint256 amountBorrowed, uint256 priceCollateral)
