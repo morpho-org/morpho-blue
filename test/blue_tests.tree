@@ -48,9 +48,9 @@
     ├── when irm is not enabled
     │   └── revert with IRM_NOT_ENABLED
     └── when irm is enabled
-        ├── when lltv is not enabled
+        ├── when market.lltv is not enabled
         │   └── revert with LLTV_NOT_ENABLED
-        └── when lltv is enabled
+        └── when market.lltv is enabled
             ├── when market is already created
             │   └── revert with MARKET_CREATED
             └── when market is not already created
@@ -205,7 +205,8 @@
             ├── when position is healthy
             │   └── revert with HEALTHY_POSITION
             └── when the position is not healthy
-                ├── it should compute repaid = seized.mulWadUp(collateralPrice).divWadUp(incentive).divWadUp(borrowablePrice);
+                ├── it should compute incentive = WAD + ALPHA.mulWadDown(WAD.divWadDown(market.lltv) - WAD)
+                ├── it should compute repaid = seized.mulDivUp(collateralPrice, priceScale).divWadUp(incentive)
                 ├── it should remove repaid.toSharesDown(totalBorrow[market.id], totalBorrowShares[market.id]) from borrowShares[market.id][borrower]
                 ├── it should remove repaid.toSharesDown(totalBorrow[market.id], totalBorrowShares[market.id]) from totalBorrowShares[market.id]
                 ├── it should remove repaid from totalBorrow[market.id]
@@ -213,8 +214,8 @@
                 ├── if after the liquidation the borrower's collateral is 0
                 │   └── it should realize bad debt
                 │       ├── it should compute badDebt = borrowShares[market.id][borrower].toAssetsUp(totalBorrow[market.id], totalBorrowShares[market.id])
-                │       ├── it should remove bad debt from totalSupply[market.id]
-                │       ├── it should remove bad debt from totalBorrow[market.id]
+                │       ├── it should remove badDebt from totalSupply[market.id]
+                │       ├── it should remove badDebt from totalBorrow[market.id]
                 │       ├── it should remove borrowShares[market.id][borrower] from totalBorrowShares[market.id]
                 │       └── it should set borrowShares[market.id][borrower] to 0
                 ├── it should transfer seized of collateral asset to the sender
@@ -229,7 +230,7 @@
     ├── it should emit FlashLoan(msg.sender, token, amount)
     └── it should transfer amount of token from the sender to Blue
 .
-└── setAuthorization(address authorizer, address authorizee, bool newIsAuthorized, uint256 deadline, Signature calldata signature) external
+└── setAuthorizationWithSig(address authorizer, address authorizee, bool newIsAuthorized, uint256 deadline, Signature calldata signature) external
     ├── when block.timestamp >= deadline
     │   └── revert with SIGNATURE_EXPIRED
     └── when block.timestamp < deadline
@@ -249,6 +250,7 @@
     └── when interests not already accrued in the block
         ├── it should set lastUpdate to block.timestamp
         └── when marketTotalBorrow is not 0
+            ├── it should compute accruedInterests = marketTotalBorrow.mulWadDown(borrowRate.wTaylorCompounded(elapsed))
             ├── it should add accruedInterests to totalBorrow
             ├── it should add accruedInterests to totalSupply
             └── when fee[id] != 0
