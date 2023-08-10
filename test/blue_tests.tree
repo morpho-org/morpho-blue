@@ -91,15 +91,14 @@
                 │   └── revert with UNAUTHORIZED
                 └── when sender or approved
                     ├── it should accrue the interests
-                    ├── when totalBorrow > totalSupply
-                    │   └── revert with INSUFFICIENT_LIQUIDITY
-                    └── when totalBorrow <= totalSupply
-                        ├── it should remove shares from supplyShares[market.id][onBehalf] 
-                        ├── it should remove shares from totalSupplyShares[market.id]
-                        ├── it should set amount to shares.toAssetsDown(totalSupply[market.id], totalSupplyShares[market.id])
-                        ├── it should remove amount from totalSupply[market.id]
-                        ├── it should emit Withdraw(market.id, msg.sender, onBehalf, receiver, amount, shares)
-                        └── it should transfer amount of the borrowable asset to the receiver
+                    ├── it should remove shares from supplyShares[market.id][onBehalf] 
+                    ├── it should remove shares from totalSupplyShares[market.id]
+                    ├── it should set amount to shares.toAssetsDown(totalSupply[market.id], totalSupplyShares[market.id])
+                    ├── it should remove amount from totalSupply[market.id]
+                    ├── it should emit Withdraw(market.id, msg.sender, onBehalf, receiver, amount, shares)
+                    ├── it should transfer amount of the borrowable asset to the receiver
+                    └── when totalBorrow[market.id] > totalSupply[market.id]
+                        └── revert with INSUFFICIENT_LIQUIDITY
 .
 └── borrow(Market memory market, uint256 amount, address onBehalf, address receiver) external
     ├── when market is not created
@@ -115,18 +114,17 @@
                 │   └── revert with UNAUTHORIZED
                 └── when sender or approved
                     ├── it should accrue the interests
-                    ├── when position not healthy
+                    ├── it should set shares to amount.toSharesUp(totalBorrow[market.id], totalBorrowShares[market.id])
+                    ├── it should add shares to borrowShares[market.id][onBehalf] 
+                    ├── it should add shares to totalBorrowShares[market.id]
+                    ├── it should add amount to totalBorrow[market.id]
+                    ├── it should emit Borrow(market.id, msg.sender, onBehalf, receiver, amount, shares)
+                    ├── it should transfer amount of the borrowable asset to the receiver
+                    ├── when position is not healthy
                     │   └── revert with INSUFFICIENT_COLLATERAL
-                    └── when position healthy
-                        ├── when totalBorrow > totalSupply
-                        │   └── revert with INSUFFICIENT_LIQUIDITY
-                        └── when totalBorrow <= totalSupply
-                            ├── it should set shares to amount.toSharesUp(totalBorrow[market.id], totalBorrowShares[market.id])
-                            ├── it should add shares to borrowShares[market.id][onBehalf] 
-                            ├── it should add shares to totalBorrowShares[market.id]
-                            ├── it should add amount to totalBorrow[market.id]
-                            ├── it should emit Borrow(market.id, msg.sender, onBehalf, receiver, amount, shares)
-                            └── it should transfer amount of the borrowable asset to the receiver
+                    └── when position is healthy
+                        └── when totalBorrow[market.id] > totalSupply[market.id]
+                            └── revert with INSUFFICIENT_LIQUIDITY
 .
 └── repay(Market memory market, uint256 shares, address onBehalf, bytes calldata data) external
     ├── when market is not created
@@ -178,12 +176,11 @@
                 │   └── revert with MANAGER_NOT_APPROVED
                 └── when sender or approved
                     ├── it should accrue the interests
-                    ├── when position not healthy
-                    │   └── revert with INSUFFICIENT_COLLATERAL
-                    └── when position healthy
-                        ├── it should remove amount from collateral[market.id][onBehalf]
-                        ├── it should emit WithdrawCollateral(market.id, msg.sender, onBehalf, receiver, amount)
-                        └── it should transfer amount of the collateral asset to the receiver
+                    ├── it should remove amount from collateral[market.id][onBehalf]
+                    ├── it should emit WithdrawCollateral(market.id, msg.sender, onBehalf, receiver, amount)
+                    ├── it should transfer amount of the collateral asset to the receiver
+                    └── when position is not healthy
+                        └── revert with INSUFFICIENT_COLLATERAL
 .
 └── liquidate(Market memory market, address borrower, uint256 seized, bytes calldata data) external
     ├── when market is not created
