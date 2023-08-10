@@ -55,7 +55,8 @@ contract BlueTest is
 
         irm = new Irm(blue);
 
-        marketParams = MarketParams(address(borrowableAsset), address(collateralAsset), address(oracle), address(irm), LLTV);
+        marketParams =
+            MarketParams(address(borrowableAsset), address(collateralAsset), address(oracle), address(irm), LLTV);
         id = marketParams.id();
 
         vm.startPrank(OWNER);
@@ -964,7 +965,9 @@ contract BlueTest is
         borrowableAsset.approve(address(blue), 0);
         vm.expectRevert("TRANSFER_FROM_FAILED");
         blue.liquidate(marketParams, address(this), collateralAmount, hex"");
-        blue.liquidate(marketParams, address(this), collateralAmount, abi.encode(this.testLiquidateCallback.selector, hex""));
+        blue.liquidate(
+            marketParams, address(this), collateralAmount, abi.encode(this.testLiquidateCallback.selector, hex"")
+        );
     }
 
     function testFlashActions(uint256 amount) public {
