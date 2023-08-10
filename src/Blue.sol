@@ -314,7 +314,7 @@ contract Blue is IBlue {
             + ALPHA.mulWadDown(FixedPointMathLib.WAD.divWadDown(market.lltv) - FixedPointMathLib.WAD);
         seized = amount.divWadDown(collateralPrice).mulWadDown(incentive);
 
-        // Liquidations are not guaranteed to be profitable: the collateral seized is capped to the borrower's collateral.
+        // Liquidations are not guaranteed to be profitable because the collateral seized is capped to the borrower's collateral.
         if (seized > collateral[id][borrower]) seized = collateral[id][borrower];
 
         collateral[id][borrower] -= seized;
