@@ -10,7 +10,7 @@ library UtilsLib {
         }
     }
 
-    /// @dev Returns true iff there is exaclty one zero.
+    /// @dev Returns true if there is exactly one zero.
     function exactlyOneZero(uint256 x, uint256 y) internal pure returns (bool z) {
         assembly {
             z := xor(iszero(x), iszero(y))
