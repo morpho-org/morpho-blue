@@ -9,5 +9,5 @@ import {Market} from "./IBlue.sol";
 /// @notice Interface that IRMs used by Blue must implement.
 interface IIrm {
     /// @notice Returns the borrow rate of a `market`.
-    function prevBorrowRate(Market memory market) external returns (uint256);
+    function borrowRate(Market memory market) external returns (uint256);
 }

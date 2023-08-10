@@ -410,8 +410,8 @@ contract Blue is IBlue {
         uint256 marketTotalBorrow = totalBorrow[id];
 
         if (marketTotalBorrow != 0) {
-            uint256 prevBorrowRate = IIrm(market.irm).prevBorrowRate(market);
-            uint256 accruedInterests = marketTotalBorrow.wMulDown(prevBorrowRate.wTaylorCompounded(elapsed));
+            uint256 borrowRate = IIrm(market.irm).borrowRate(market);
+            uint256 accruedInterests = marketTotalBorrow.wMulDown(borrowRate.wTaylorCompounded(elapsed));
             totalBorrow[id] = marketTotalBorrow + accruedInterests;
             totalSupply[id] += accruedInterests;
 
@@ -424,7 +424,7 @@ contract Blue is IBlue {
                 totalSupplyShares[id] += feeShares;
             }
 
-            emit EventsLib.AccrueInterests(id, prevBorrowRate, accruedInterests, feeShares);
+            emit EventsLib.AccrueInterests(id, borrowRate, accruedInterests, feeShares);
         }
 
         lastUpdate[id] = block.timestamp;
