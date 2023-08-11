@@ -32,11 +32,11 @@ library FixedPointMathLib {
     }
 
     /// @dev The sum of the last three terms in a four term taylor series expansion
-    ///      to approximate a compound interest rate: (1 + x)^n - 1.
+    ///      to approximate a continuous compound interest rate: e^(nx) - 1.
     function wTaylorCompounded(uint256 x, uint256 n) internal pure returns (uint256) {
         uint256 firstTerm = x * n;
-        uint256 secondTerm = wMulDown(firstTerm, x * UtilsLib.zeroFloorSub(n, 1)) / 2;
-        uint256 thirdTerm = wMulDown(secondTerm, x * UtilsLib.zeroFloorSub(n, 2)) / 3;
+        uint256 secondTerm = wMulDown(firstTerm, firstTerm) / 2;
+        uint256 thirdTerm = wMulDown(secondTerm, firstTerm) / 3;
 
         return firstTerm + secondTerm + thirdTerm;
     }
