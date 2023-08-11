@@ -40,11 +40,11 @@ struct Signature {
     bytes32 s;
 }
 
-/// @title IBlue
+/// @title IMorpho
 /// @author Morpho Labs
 /// @custom:contact security@morpho.xyz
-/// @notice Interface of Blue.
-interface IBlue is IFlashLender {
+/// @notice Interface of Morpho.
+interface IMorpho is IFlashLender {
     /// @notice The EIP-712 domain separator.
     function DOMAIN_SEPARATOR() external view returns (bytes32);
 
@@ -117,7 +117,7 @@ interface IBlue is IFlashLender {
     function createMarket(Market memory market) external;
 
     /// @notice Supplies the given `amount` of assets or `shares` to the given `market` on behalf of `onBehalf`,
-    ///         optionally calling back the caller's `onBlueSupply` function with the given `data`.
+    ///         optionally calling back the caller's `onMorphoSupply` function with the given `data`.
     /// @dev Either `amount` or `shares` should be zero.
     ///      Most usecases should rely on `amount` as an input so the caller
     ///      is guaranteed to have `amount` tokens pulled from their balance,
@@ -127,9 +127,12 @@ interface IBlue is IFlashLender {
     /// @param amount The amount of assets to supply.
     /// @param shares The amount of shares to mint.
     /// @param onBehalf The address that will receive the position.
-    /// @param data Arbitrary data to pass to the `onBlueSupply` callback. Pass empty data if not needed.
+    /// @param data Arbitrary data to pass to the `onMorphoSupply` callback. Pass empty data if not needed.
+    /// @return amountSupplied The amount of assets supplied.
+    /// @return sharesSupplied The amount of shares supplied.
     function supply(Market memory market, uint256 amount, uint256 shares, address onBehalf, bytes memory data)
-        external;
+        external
+        returns (uint256 amountSupplied, uint256 sharesSupplied);
 
     /// @notice Withdraws the given `amount` of assets or `shares` from the given `market` on behalf of `onBehalf`.
     /// @dev Either `amount` or `shares` should be zero.
@@ -140,8 +143,11 @@ interface IBlue is IFlashLender {
     /// @param shares The amount of shares to burn.
     /// @param onBehalf The address of the owner of the withdrawn assets.
     /// @param receiver The address that will receive the withdrawn assets.
+    /// @return amountWithdrawn The amount of assets withdrawn.
+    /// @return sharesWithdrawn The amount of shares withdrawn.
     function withdraw(Market memory market, uint256 amount, uint256 shares, address onBehalf, address receiver)
-        external;
+        external
+        returns (uint256 amountWithdrawn, uint256 sharesWithdrawn);
 
     /// @notice Borrows the given `amount` of assets or `shares` from the given `market` on behalf of `onBehalf`.
     /// @dev Either `amount` or `shares` should be zero.
@@ -155,28 +161,34 @@ interface IBlue is IFlashLender {
     /// @param shares The amount of shares to mint.
     /// @param onBehalf The address of the owner of the debt.
     /// @param receiver The address that will receive the debt.
+    /// @return amountBorrowed The amount of assets borrowed.
+    /// @return sharesBorrowed The amount of shares borrowed.
     function borrow(Market memory market, uint256 amount, uint256 shares, address onBehalf, address receiver)
-        external;
+        external
+        returns (uint256 amountBorrowed, uint256 sharesBorrowed);
 
     /// @notice Repays the given `amount` of assets or `shares` to the given `market` on behalf of `onBehalf`,
-    ///         optionally calling back the caller's `onBlueReplay` function with the given `data`.
+    ///         optionally calling back the caller's `onMorphoReplay` function with the given `data`.
     /// @dev Either `amount` or `shares` should be zero.
     ///      To repay the whole debt, pass the `shares`'s balance of `onBehalf`.
     /// @param market The market to repay assets to.
     /// @param amount The amount of assets to repay.
     /// @param shares The amount of shares to burn.
     /// @param onBehalf The address of the owner of the debt.
-    /// @param data Arbitrary data to pass to the `onBlueRepay` callback. Pass empty data if not needed.
+    /// @param data Arbitrary data to pass to the `onMorphoRepay` callback. Pass empty data if not needed.
+    /// @return amountRepaid The amount of assets repaid.
+    /// @return sharesRepaid The amount of shares repaid.
     function repay(Market memory market, uint256 amount, uint256 shares, address onBehalf, bytes memory data)
-        external;
+        external
+        returns (uint256 amountRepaid, uint256 sharesRepaid);
 
     /// @notice Supplies the given `amount` of collateral to the given `market` on behalf of `onBehalf`,
-    ///         optionally calling back the caller's `onBlueSupplyCollateral` function with the given `data`.
+    ///         optionally calling back the caller's `onMorphoSupplyCollateral` function with the given `data`.
     /// @dev Interests are not accrued since it's not required and it saves gas.
     /// @param market The market to supply collateral to.
     /// @param amount The amount of collateral to supply.
     /// @param onBehalf The address that will receive the collateral.
-    /// @param data Arbitrary data to pass to the `onBlueSupplyCollateral` callback. Pass empty data if not needed.
+    /// @param data Arbitrary data to pass to the `onMorphoSupplyCollateral` callback. Pass empty data if not needed.
     function supplyCollateral(Market memory market, uint256 amount, address onBehalf, bytes memory data) external;
 
     /// @notice Withdraws the given `amount` of collateral from the given `market` on behalf of `onBehalf`.
@@ -188,11 +200,11 @@ interface IBlue is IFlashLender {
     function withdrawCollateral(Market memory market, uint256 amount, address onBehalf, address receiver) external;
 
     /// @notice Liquidates the given `seized` amount to the given `market` of the given `borrower`'s position,
-    ///         optionally calling back the caller's `onBlueLiquidate` function with the given `data`.
+    ///         optionally calling back the caller's `onMorphoLiquidate` function with the given `data`.
     /// @param market The market of the position.
     /// @param borrower The owner of the position.
     /// @param seized The amount of collateral to seize.
-    /// @param data Arbitrary data to pass to the `onBlueLiquidate` callback. Pass empty data if not needed
+    /// @param data Arbitrary data to pass to the `onMorphoLiquidate` callback. Pass empty data if not needed
     function liquidate(Market memory market, address borrower, uint256 seized, bytes memory data) external;
 
     /// @notice Sets the authorization for `authorized` to manage `msg.sender`'s positions.

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import {Id, Market} from "../interfaces/IBlue.sol";
+import {Id, Market} from "../interfaces/IMorpho.sol";
 
 /// @title MarketLib
 /// @author Morpho Labs
