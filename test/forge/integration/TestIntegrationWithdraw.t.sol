@@ -95,6 +95,91 @@ contract IntegrationWithdrawTest is BaseTest {
         uint256 amountSupplied,
         uint256 amountBorrowed,
         uint256 amountWithdrawn,
+        address receiver
+    ) public {
+        vm.assume(receiver != address(0) && receiver != address(blue));
+        amountSupplied = bound(amountSupplied, 2, MAX_TEST_AMOUNT);
+        amountBorrowed = bound(amountBorrowed, 1, amountSupplied - 1);
+        amountWithdrawn = bound(amountWithdrawn, 1, amountSupplied - amountBorrowed);
+
+        borrowableAsset.setBalance(address(this), amountSupplied);
+        collateralAsset.setBalance(BORROWER, amountBorrowed.wDivUp(LLTV));
+        blue.supply(market, amountSupplied, 0, address(this), hex"");
+
+        vm.startPrank(BORROWER);
+        blue.supplyCollateral(market, amountBorrowed.wDivUp(LLTV), BORROWER, hex"");
+        blue.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
+        vm.stopPrank();
+
+        vm.expectEmit(true, true, true, true, address(blue));
+        emit EventsLib.Withdraw(
+            id, address(this), address(this), receiver, amountWithdrawn, amountWithdrawn * SharesMathLib.VIRTUAL_SHARES
+        );
+        blue.withdraw(market, amountWithdrawn, 0, address(this), receiver);
+
+        uint256 expectedSupplyShares = (amountSupplied - amountWithdrawn) * SharesMathLib.VIRTUAL_SHARES;
+        assertEq(blue.supplyShares(id, address(this)), expectedSupplyShares, "supply shares");
+        assertEq(blue.totalSupplyShares(id), expectedSupplyShares, "total supply shares");
+        assertEq(blue.totalSupply(id), amountSupplied - amountWithdrawn, "total supply");
+        assertEq(borrowableAsset.balanceOf(receiver), amountWithdrawn, "receiver balance");
+        assertEq(borrowableAsset.balanceOf(BORROWER), amountBorrowed, "borrower balance");
+        assertEq(
+            borrowableAsset.balanceOf(address(blue)), amountSupplied - amountBorrowed - amountWithdrawn, "blue balance"
+        );
+    }
+
+    function testWithdrawShares(
+        uint256 amountSupplied,
+        uint256 amountBorrowed,
+        uint256 sharesWithdrawn,
+        address receiver
+    ) public {
+        vm.assume(receiver != address(0) && receiver != address(blue));
+        amountSupplied = bound(amountSupplied, 2, MAX_TEST_AMOUNT);
+        amountBorrowed = bound(amountBorrowed, 1, amountSupplied - 1);
+
+        uint256 expectedSupplyShares = amountSupplied * SharesMathLib.VIRTUAL_SHARES;
+        uint256 availableLiquidity = amountSupplied - amountBorrowed;
+        uint256 withdrawableShares = availableLiquidity.mulDivDown(
+            expectedSupplyShares + SharesMathLib.VIRTUAL_SHARES, amountSupplied + SharesMathLib.VIRTUAL_ASSETS
+        );
+
+        vm.assume(withdrawableShares != 0);
+        sharesWithdrawn = bound(sharesWithdrawn, 1, withdrawableShares);
+        uint256 expectedAmountWithdrawn = sharesWithdrawn.mulDivDown(
+            amountSupplied + SharesMathLib.VIRTUAL_ASSETS, expectedSupplyShares + SharesMathLib.VIRTUAL_SHARES
+        );
+
+        borrowableAsset.setBalance(address(this), amountSupplied);
+        collateralAsset.setBalance(BORROWER, amountBorrowed.wDivUp(LLTV));
+        blue.supply(market, amountSupplied, 0, address(this), hex"");
+
+        vm.startPrank(BORROWER);
+        blue.supplyCollateral(market, amountBorrowed.wDivUp(LLTV), BORROWER, hex"");
+        blue.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
+        vm.stopPrank();
+
+        vm.expectEmit(true, true, true, true, address(blue));
+        emit EventsLib.Withdraw(id, address(this), address(this), receiver, expectedAmountWithdrawn, sharesWithdrawn);
+        blue.withdraw(market, 0, sharesWithdrawn, address(this), receiver);
+
+        expectedSupplyShares -= sharesWithdrawn;
+
+        assertEq(blue.supplyShares(id, address(this)), expectedSupplyShares, "supply shares");
+        assertEq(blue.totalSupply(id), amountSupplied - expectedAmountWithdrawn, "total supply");
+        assertEq(blue.totalSupplyShares(id), expectedSupplyShares, "total supply shares");
+        assertEq(borrowableAsset.balanceOf(receiver), expectedAmountWithdrawn, "receiver balance");
+        assertEq(
+            borrowableAsset.balanceOf(address(blue)),
+            amountSupplied - amountBorrowed - expectedAmountWithdrawn,
+            "blue balance"
+        );
+    }
+
+    function testWithdrawAmountOnBehalf(
+        uint256 amountSupplied,
+        uint256 amountBorrowed,
+        uint256 amountWithdrawn,
         address onBehalf,
         address receiver
     ) public {

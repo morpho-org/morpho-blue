@@ -25,6 +25,17 @@ contract IntegrationBorrowTest is BaseTest {
         blue.borrow(market, 0, 0, borrowerFuzz, receiver);
     }
 
+    function testBorrowInconsistentInput(address borrowerFuzz, uint256 amount, uint256 shares, address receiver)
+        public
+    {
+        amount = bound(amount, 1, MAX_TEST_AMOUNT);
+        shares = bound(shares, 1, MAX_TEST_SHARES);
+
+        vm.prank(borrowerFuzz);
+        vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
+        blue.borrow(market, amount, shares, borrowerFuzz, receiver);
+    }
+
     function testBorrowToZeroAddress(address borrowerFuzz, uint256 amount) public {
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
@@ -99,7 +110,7 @@ contract IntegrationBorrowTest is BaseTest {
         vm.stopPrank();
     }
 
-    function testBorrow(
+    function testBorrowAmount(
         uint256 amountCollateral,
         uint256 amountSupplied,
         uint256 amountBorrowed,
@@ -135,7 +146,47 @@ contract IntegrationBorrowTest is BaseTest {
         assertEq(borrowableAsset.balanceOf(address(blue)), amountSupplied - amountBorrowed, "blue balance");
     }
 
-    function testBorrowOnBehalf(
+    function testBorrowShares(
+        uint256 amountCollateral,
+        uint256 amountSupplied,
+        uint256 sharesBorrowed,
+        uint256 priceCollateral,
+        address receiver
+    ) public {
+        vm.assume(receiver != address(0) && receiver != address(blue));
+
+        priceCollateral = bound(priceCollateral, MIN_COLLATERAL_PRICE, MAX_COLLATERAL_PRICE);
+        sharesBorrowed = bound(sharesBorrowed, MIN_TEST_SHARES, MAX_TEST_SHARES);
+        uint256 expectedAmountBorrowed = sharesBorrowed.mulDivDown(1, SharesMathLib.VIRTUAL_SHARES);
+
+        uint256 expectedBorrowedValue =
+            sharesBorrowed.mulDivUp(expectedAmountBorrowed + 1, sharesBorrowed + SharesMathLib.VIRTUAL_SHARES);
+        uint256 minCollateral = expectedBorrowedValue.wDivUp(market.lltv).wDivUp(priceCollateral);
+        amountCollateral = bound(amountCollateral, minCollateral, max(minCollateral, MAX_TEST_AMOUNT));
+
+        amountSupplied = bound(amountSupplied, expectedAmountBorrowed, MAX_TEST_AMOUNT);
+        _provideLiquidity(amountSupplied);
+
+        oracle.setPrice(priceCollateral);
+
+        collateralAsset.setBalance(BORROWER, amountCollateral);
+
+        vm.startPrank(BORROWER);
+        blue.supplyCollateral(market, amountCollateral, BORROWER, hex"");
+
+        vm.expectEmit(true, true, true, true, address(blue));
+        emit EventsLib.Borrow(id, BORROWER, BORROWER, receiver, expectedAmountBorrowed, sharesBorrowed);
+        blue.borrow(market, 0, sharesBorrowed, BORROWER, receiver);
+        vm.stopPrank();
+
+        assertEq(blue.totalBorrow(id), expectedAmountBorrowed, "total borrow");
+        assertEq(blue.borrowShares(id, BORROWER), sharesBorrowed, "borrow shares");
+        assertEq(blue.borrowShares(id, BORROWER), sharesBorrowed, "total borrow shares");
+        assertEq(borrowableAsset.balanceOf(receiver), expectedAmountBorrowed, "borrower balance");
+        assertEq(borrowableAsset.balanceOf(address(blue)), amountSupplied - expectedAmountBorrowed, "blue balance");
+    }
+
+    function testBorrowAmountOnBehalf(
         uint256 amountCollateral,
         uint256 amountSupplied,
         uint256 amountBorrowed,
@@ -174,5 +225,50 @@ contract IntegrationBorrowTest is BaseTest {
         assertEq(blue.totalBorrowShares(id), expectedBorrowShares, "total borrow shares");
         assertEq(borrowableAsset.balanceOf(receiver), amountBorrowed, "borrower balance");
         assertEq(borrowableAsset.balanceOf(address(blue)), amountSupplied - amountBorrowed, "blue balance");
+    }
+
+    function testBorrowSharesOnBehalf(
+        uint256 amountCollateral,
+        uint256 amountSupplied,
+        uint256 sharesBorrowed,
+        uint256 priceCollateral,
+        address onBehalf,
+        address receiver
+    ) public {
+        vm.assume(onBehalf != address(0) && onBehalf != address(blue));
+        vm.assume(receiver != address(0) && receiver != address(blue));
+
+        priceCollateral = bound(priceCollateral, MIN_COLLATERAL_PRICE, MAX_COLLATERAL_PRICE);
+        sharesBorrowed = bound(sharesBorrowed, MIN_TEST_SHARES, MAX_TEST_SHARES);
+        uint256 expectedAmountBorrowed = sharesBorrowed.mulDivDown(1, SharesMathLib.VIRTUAL_SHARES);
+
+        uint256 expectedBorrowedValue =
+            sharesBorrowed.mulDivUp(expectedAmountBorrowed + 1, sharesBorrowed + SharesMathLib.VIRTUAL_SHARES);
+        uint256 minCollateral = expectedBorrowedValue.wDivUp(market.lltv).wDivUp(priceCollateral);
+        amountCollateral = bound(amountCollateral, minCollateral, max(minCollateral, MAX_TEST_AMOUNT));
+
+        amountSupplied = bound(amountSupplied, expectedAmountBorrowed, MAX_TEST_AMOUNT);
+        _provideLiquidity(amountSupplied);
+
+        oracle.setPrice(priceCollateral);
+
+        collateralAsset.setBalance(onBehalf, amountCollateral);
+
+        vm.startPrank(onBehalf);
+        collateralAsset.approve(address(blue), amountCollateral);
+        blue.supplyCollateral(market, amountCollateral, onBehalf, hex"");
+        blue.setAuthorization(BORROWER, true);
+        vm.stopPrank();
+
+        vm.prank(BORROWER);
+        vm.expectEmit(true, true, true, true, address(blue));
+        emit EventsLib.Borrow(id, BORROWER, onBehalf, receiver, expectedAmountBorrowed, sharesBorrowed);
+        blue.borrow(market, 0, sharesBorrowed, onBehalf, receiver);
+
+        assertEq(blue.borrowShares(id, onBehalf), sharesBorrowed, "borrow shares");
+        assertEq(blue.totalBorrow(id), expectedAmountBorrowed, "total borrow");
+        assertEq(blue.totalBorrowShares(id), sharesBorrowed, "total borrow shares");
+        assertEq(borrowableAsset.balanceOf(receiver), expectedAmountBorrowed, "borrower balance");
+        assertEq(borrowableAsset.balanceOf(address(blue)), amountSupplied - expectedAmountBorrowed, "blue balance");
     }
 }

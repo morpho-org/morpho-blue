@@ -16,6 +16,7 @@ contract BaseTest is Test {
     uint256 internal constant HIGH_COLLATERAL_AMOUNT = 1e25;
     uint256 internal constant MIN_TEST_AMOUNT = 1000;
     uint256 internal constant MAX_TEST_AMOUNT = 2 ** 64;
+    uint256 internal constant MIN_TEST_SHARES = MIN_TEST_AMOUNT * 1e18;
     uint256 internal constant MAX_TEST_SHARES = MAX_TEST_AMOUNT * 1e18;
     uint256 internal constant MIN_COLLATERAL_PRICE = 100;
     uint256 internal constant MAX_COLLATERAL_PRICE = 2 ** 64;
@@ -68,7 +69,6 @@ contract BaseTest is Test {
         vm.stopPrank();
 
         oracle.setPrice(1e25);
-        collateralAsset.setBalance(BORROWER, HIGH_COLLATERAL_AMOUNT);
 
         borrowableAsset.approve(address(blue), type(uint256).max);
         collateralAsset.approve(address(blue), type(uint256).max);
