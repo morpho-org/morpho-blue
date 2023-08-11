@@ -8,8 +8,9 @@ import "src/Blue.sol";
 import {ERC20Mock as ERC20} from "src/mocks/ERC20Mock.sol";
 import {OracleMock as Oracle} from "src/mocks/OracleMock.sol";
 import {IrmMock as Irm} from "src/mocks/IrmMock.sol";
+import {MathUtils} from "./helpers/MathUtils.sol";
 
-contract BaseTest is Test {
+contract BaseTest is Test, MathUtils {
     using FixedPointMathLib for uint256;
     using MarketLib for Market;
 
@@ -147,13 +148,5 @@ contract BaseTest is Test {
 
     function neq(Market memory a, Market memory b) internal pure returns (bool) {
         return (Id.unwrap(a.id()) != Id.unwrap(b.id()));
-    }
-
-    function max(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a > b ? a : b;
-    }
-
-    function min(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a < b ? a : b;
     }
 }
