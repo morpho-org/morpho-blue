@@ -1026,7 +1026,7 @@ contract BlueTest is
         }
     }
 
-    function onBlueLiquidate(uint256, uint256 repaid, bytes memory data) external {
+    function onBlueLiquidate(uint256 repaid, bytes memory data) external {
         require(msg.sender == address(blue));
         bytes4 selector;
         (selector, data) = abi.decode(data, (bytes4, bytes));
@@ -1035,8 +1035,8 @@ contract BlueTest is
         }
     }
 
-    function onBlueFlashLoan(address token, uint256 assets, bytes calldata) external {
-        ERC20(token).approve(address(blue), assets);
+    function onBlueFlashLoan(uint256 assets, bytes calldata) external {
+        borrowableAsset.approve(address(blue), assets);
     }
 }
 

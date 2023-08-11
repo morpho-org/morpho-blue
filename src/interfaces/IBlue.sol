@@ -5,6 +5,12 @@ import {IFlashLender} from "./IFlashLender.sol";
 
 type Id is bytes32;
 
+/// @notice Contains the parameters defining market.
+/// @param borrowableAsset The address of the borrowable asset.
+/// @param collateralAsset The address of the collateral asset.
+/// @param oracle The address of the oracle.
+/// @param irm The address of the interest rate model.
+/// @param lltv The Liquidation LTV.
 struct Market {
     address borrowableAsset;
     address collateralAsset;
@@ -33,36 +39,35 @@ interface IBlue is IFlashLender {
 
     /// @notice The fee recipient.
     /// @dev The recipient receives the fees through a supply position.
-    ///      As every other supplier, the recipient is subject to illiquidity risks.
     function feeRecipient() external view returns (address);
 
-    /// @notice The `user`'s supply shares on the market defined by the given `id`.
+    /// @notice The `user`'s supply shares on the market `id`.
     function supplyShares(Id id, address user) external view returns (uint256);
 
-    /// @notice The `user`'s borrow shares on the market defined by the given `id`.
+    /// @notice The `user`'s borrow shares on the market `id`.
     function borrowShares(Id, address user) external view returns (uint256);
 
-    /// @notice The `user`'s collateral balance on the market defined by the given `id`.
+    /// @notice The `user`'s collateral balance on the market `id`.
     function collateral(Id id, address user) external view returns (uint256);
 
-    /// @notice The total assets supplied to the market defined by the given `id`.
-    /// @dev The value can be incaccurate since it does not take into account the accrued interests.
+    /// @notice The total supply of the market `id`.
+    /// @dev Does not contain the accrued interest since the last interaction.
     function totalSupply(Id id) external view returns (uint256);
 
-    /// @notice The total supply shares of the market defined by the given `id`.
+    /// @notice The total supply shares of the market `id`.
     function totalSupplyShares(Id id) external view returns (uint256);
 
-    /// @notice The total assets borrowed from the market defined by the given `id`.
-    /// @dev The value can be incaccurate since it does not take into account the accrued interests.
+    /// @notice The total borrow of the market `id`.
+    /// @dev Does not contain the accrued interest since the last interaction.
     function totalBorrow(Id id) external view returns (uint256);
 
-    /// @notice The total borrow shares of the market defined by the given `id`.
+    /// @notice The total borrow shares of the market `id`.
     function totalBorrowShares(Id id) external view returns (uint256);
 
-    /// @notice The last update of the market defined by the given `id` (used to check if a market has been created).
+    /// @notice The last update timestamp of the market `id` (also used to check if a market has been created).
     function lastUpdate(Id id) external view returns (uint256);
 
-    /// @notice The fee of the market defined by the given `id`.
+    /// @notice The fee of the market `id`.
     function fee(Id id) external view returns (uint256);
 
     /// @notice Whether the `irm` is enabled.
@@ -71,8 +76,8 @@ interface IBlue is IFlashLender {
     /// @notice Whether the `lltv` is enabled.
     function isLltvEnabled(uint256 lltv) external view returns (bool);
 
-    /// @notice Whether `aurothized` is authorized to modify `authorizer`'s positions.
-    /// @dev By default, `msg.sender` is authorized by themself.
+    /// @notice Whether `authorized` is authorized to modify `authorizer`'s positions.
+    /// @dev Anyone is authorized to modify their own positions, regardless of this variable.
     function isAuthorized(address authorizer, address authorized) external view returns (bool);
 
     /// @notice The `user`'s current nonce. Used to prevent replay attacks with EIP-712 signatures.
@@ -115,7 +120,7 @@ interface IBlue is IFlashLender {
     /// @notice Withdraws the given `assets` or `shares` from the given `market` on behalf of `onBehalf`.
     /// @dev Either `assets` or `shares` should be zero.
     ///      To withdraw the whole position, pass the `shares`'s balance of `onBehalf`.
-    /// @dev If `msg.sender != onBehalf`, `msg.sender` must be authorized to withdraw from `onBehalf`.
+    /// @dev `msg.sender` must be authorized to manage `onBehalf`'s positions.
     /// @param market The market to withdraw assets from.
     /// @param shares The amount of assets to withdraw.
     /// @param shares The amount of shares to burn.
@@ -130,12 +135,12 @@ interface IBlue is IFlashLender {
     ///      is guaranteed to borrow `assets` of tokens,
     ///      but the possibility to burn a specific assets of shares is given
     ///      for full compatibility and precision.
+    /// @dev `msg.sender` must be authorized to manage `onBehalf`'s positions.
     /// @param market The market to borrow assets from.
     /// @param assets The amount of assets to borrow.
     /// @param shares The amount of shares to mint.
     /// @param onBehalf The address of the owner of the debt.
     /// @param receiver The address that will receive the debt.
-    /// @dev If `msg.sender != onBehalf`, `msg.sender` must be authorized to withdraw from `onBehalf`.
     function borrow(Market memory market, uint256 assets, uint256 shares, address onBehalf, address receiver)
         external;
 
@@ -160,8 +165,8 @@ interface IBlue is IFlashLender {
     /// @param data Arbitrary data to pass to the `onBlueSupplyCollateral` callback. Pass empty data if not needed.
     function supplyCollateral(Market memory market, uint256 assets, address onBehalf, bytes memory data) external;
 
-    /// @notice Withdraws the given `assets` of collateral from the given `market` on behalf of `onBehalf`.
-    /// @dev If `msg.sender != onBehalf`, `msg.sender` must be authorized to withdraw from `onBehalf`.
+    /// @notice Withdraws the given `amount` of collateral from the given `market` on behalf of `onBehalf`.
+    /// @dev `msg.sender` must be authorized to manage `onBehalf`'s positions.
     /// @param market The market to withdraw collateral from.
     /// @param assets The amount of collateral to withdraw.
     /// @param onBehalf The address of the owner of the collateral.

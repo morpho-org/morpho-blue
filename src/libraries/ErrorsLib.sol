@@ -23,14 +23,11 @@ library ErrorsLib {
     /// @notice Thrown when the market is not created.
     string internal constant MARKET_NOT_CREATED = "market not created";
 
-    /// @notice Thrown when one of the input is not consistent.
+    /// @notice Thrown when not exactly one of the amount inputs is zero.
     string constant INCONSISTENT_INPUT = "inconsistent input";
 
     /// @notice Thrown when a zero assets amount is passed as input.
     string internal constant ZERO_AMOUNT = "zero assets";
-
-    /// @notice Thrown when a zero shares amount is passed as input.
-    string internal constant ZERO_SHARES = "zero shares";
 
     /// @notice Thrown when a zero address is passed as input.
     string internal constant ZERO_ADDRESS = "zero address";
@@ -44,7 +41,7 @@ library ErrorsLib {
     /// @notice Thrown when the liquidity is insufficient to `withdraw` or `borrow`.
     string internal constant INSUFFICIENT_LIQUIDITY = "insufficient liquidity";
 
-    /// @notice Thrown when the position is healthy preventing its liquidation.
+    /// @notice Thrown when the position to liquidate is healthy.
     string internal constant HEALTHY_POSITION = "position is healthy";
 
     /// @notice Thrown when the authorization signature is invalid.

@@ -17,7 +17,6 @@ import {FixedPointMathLib, WAD} from "./libraries/FixedPointMathLib.sol";
 
 /// @dev The maximum fee a market can have (25%).
 uint256 constant MAX_FEE = 0.25e18;
-
 /// @dev The alpha parameter used to compute the incentive during a liquidation.
 uint256 constant ALPHA = 0.5e18;
 
@@ -342,7 +341,7 @@ contract Blue is IBlue {
 
         emit EventsLib.Liquidate(id, msg.sender, borrower, repaid, repaidShares, seized, badDebtShares);
 
-        if (data.length > 0) IBlueLiquidateCallback(msg.sender).onBlueLiquidate(seized, repaid, data);
+        if (data.length > 0) IBlueLiquidateCallback(msg.sender).onBlueLiquidate(repaid, data);
 
         IERC20(market.borrowableAsset).safeTransferFrom(msg.sender, address(this), repaid);
     }
@@ -355,7 +354,7 @@ contract Blue is IBlue {
 
         emit EventsLib.FlashLoan(msg.sender, token, assets);
 
-        IBlueFlashLoanCallback(msg.sender).onBlueFlashLoan(token, assets, data);
+        IBlueFlashLoanCallback(msg.sender).onBlueFlashLoan(assets, data);
 
         IERC20(token).safeTransferFrom(msg.sender, address(this), assets);
     }
@@ -432,7 +431,7 @@ contract Blue is IBlue {
 
     /* HEALTH CHECK */
 
-    /// @notice Returns whether the position of `user` is healthy in the given `market`.
+    /// @notice Returns whether the position of `user` in the given `market` is healthy.
     function _isHealthy(Market memory market, Id id, address user) internal view returns (bool) {
         if (borrowShares[id][user] == 0) return true;
 
@@ -441,7 +440,7 @@ contract Blue is IBlue {
         return _isHealthy(market, id, user, collateralPrice, priceScale);
     }
 
-    /// @notice Returns whether the position of `user` is healthy in the given `market` with the given `collateralPrice` and `priceScale`.
+    /// @notice Returns whether the position of `user` in the given `market` with the given `collateralPrice` and `priceScale` is healthy.
     function _isHealthy(Market memory market, Id id, address user, uint256 collateralPrice, uint256 priceScale)
         internal
         view
