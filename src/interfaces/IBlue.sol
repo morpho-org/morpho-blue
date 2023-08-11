@@ -5,6 +5,12 @@ import {IFlashLender} from "./IFlashLender.sol";
 
 type Id is bytes32;
 
+/// @notice Contains the parameters defining market.
+/// @param borrowableAsset The address of the borrowable asset.
+/// @param collateralAsset The address of the collateral asset.
+/// @param oracle The address of the oracle.
+/// @param irm The address of the interest rate model.
+/// @param lltv The Liquidation LTV.
 struct Market {
     address borrowableAsset;
     address collateralAsset;
@@ -114,7 +120,7 @@ interface IBlue is IFlashLender {
     /// @notice Withdraws the given `amount` of assets or `shares` from the given `market` on behalf of `onBehalf`.
     /// @dev Either `amount` or `shares` should be zero.
     ///      To withdraw the whole position, pass the `shares`'s balance of `onBehalf`.
-    /// @dev If `msg.sender != onBehalf`, `msg.sender` must be authorized to withdraw from `onBehalf`.
+    /// @dev `msg.sender` must be authorized to manage `onBehalf`'s positions.
     /// @param market The market to withdraw assets from.
     /// @param shares The amount of amount to withdraw.
     /// @param shares The amount of shares to burn.
@@ -129,12 +135,12 @@ interface IBlue is IFlashLender {
     ///      is guaranteed to borrow `amount` of tokens,
     ///      but the possibility to burn a specific amount of shares is given
     ///      for full compatibility and precision.
+    /// @dev `msg.sender` must be authorized to manage `onBehalf`'s positions.
     /// @param market The market to borrow assets from.
     /// @param amount The amount of assets to borrow.
     /// @param shares The amount of shares to mint.
     /// @param onBehalf The address of the owner of the debt.
     /// @param receiver The address that will receive the debt.
-    /// @dev If `msg.sender != onBehalf`, `msg.sender` must be authorized to withdraw from `onBehalf`.
     function borrow(Market memory market, uint256 amount, uint256 shares, address onBehalf, address receiver)
         external;
 
@@ -160,7 +166,7 @@ interface IBlue is IFlashLender {
     function supplyCollateral(Market memory market, uint256 amount, address onBehalf, bytes memory data) external;
 
     /// @notice Withdraws the given `amount` of collateral from the given `market` on behalf of `onBehalf`.
-    /// @dev If `msg.sender != onBehalf`, `msg.sender` must be authorized to withdraw from `onBehalf`.
+    /// @dev `msg.sender` must be authorized to manage `onBehalf`'s positions.
     /// @param market The market to withdraw collateral from.
     /// @param amount The amount of collateral to withdraw.
     /// @param onBehalf The address of the owner of the collateral.
