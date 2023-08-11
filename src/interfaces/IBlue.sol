@@ -54,7 +54,7 @@ interface IBlue {
         uint256 badDebtShares
     );
 
-    event FlashLoan(address indexed caller, address indexed token, uint256 amount);
+    event Take(address indexed caller, address indexed token, uint256 amount, address receiver);
 
     event SetOwner(address indexed newOwner);
 
@@ -106,13 +106,13 @@ interface IBlue {
     function interact(bytes calldata data) external;
 
     function supply(Market memory market, uint256 amount, address onBehalf) external;
-    function withdraw(Market memory market, uint256 amount, address onBehalf, address receiver) external;
-    function borrow(Market memory market, uint256 amount, address onBehalf, address receiver) external;
+    function withdraw(Market memory market, uint256 amount, address onBehalf) external;
+    function borrow(Market memory market, uint256 amount, address onBehalf) external;
     function repay(Market memory market, uint256 amount, address onBehalf) external returns (uint256);
     function supplyCollateral(Market memory market, uint256 amount, address onBehalf) external;
-    function withdrawCollateral(Market memory market, uint256 amount, address onBehalf, address receiver) external;
+    function withdrawCollateral(Market memory market, uint256 amount, address onBehalf) external;
     function liquidate(Market memory market, address borrower, uint256 seized) external returns (uint256);
-    function flashLoan(address token, uint256 amount) external;
+    function Take(address token, uint256 amount, receiver) external;
 
     function setAuthorization(address authorized, bool newIsAuthorized) external;
     function setAuthorizationWithSig(
