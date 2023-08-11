@@ -9,13 +9,13 @@ contract IntegrationAuthorization is BaseTest {
     function testSetAuthorization(address addressFuzz) public {
         vm.assume(addressFuzz != address(this));
 
-        blue.setAuthorization(addressFuzz, true);
+        morpho.setAuthorization(addressFuzz, true);
 
-        assertTrue(blue.isAuthorized(address(this), addressFuzz));
+        assertTrue(morpho.isAuthorized(address(this), addressFuzz));
 
-        blue.setAuthorization(addressFuzz, false);
+        morpho.setAuthorization(addressFuzz, false);
 
-        assertFalse(blue.isAuthorized(address(this), addressFuzz));
+        assertFalse(morpho.isAuthorized(address(this), addressFuzz));
     }
 
     function testSetAuthorizationWithSignatureDeadlineOutdated(
@@ -34,11 +34,11 @@ contract IntegrationAuthorization is BaseTest {
             authorizer: authorizer,
             authorized: authorized,
             isAuthorized: isAuthorized,
-            nonce: blue.nonce(authorizer),
+            nonce: morpho.nonce(authorizer),
             deadline: deadline
         });
 
-        bytes32 digest = SigUtils.getTypedDataHash(blue.DOMAIN_SEPARATOR(), authorization);
+        bytes32 digest = SigUtils.getTypedDataHash(morpho.DOMAIN_SEPARATOR(), authorization);
 
         Signature memory sig;
         (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
@@ -46,7 +46,7 @@ contract IntegrationAuthorization is BaseTest {
         vm.warp(block.timestamp + timeElapsed);
 
         vm.expectRevert(bytes(ErrorsLib.SIGNATURE_EXPIRED));
-        blue.setAuthorizationWithSig(
+        morpho.setAuthorizationWithSig(
             authorization.authorizer, authorization.authorized, authorization.isAuthorized, authorization.deadline, sig
         );
     }
@@ -66,17 +66,17 @@ contract IntegrationAuthorization is BaseTest {
             authorizer: authorizer,
             authorized: authorized,
             isAuthorized: isAuthorized,
-            nonce: blue.nonce(authorizer),
+            nonce: morpho.nonce(authorizer),
             deadline: deadline
         });
 
-        bytes32 digest = SigUtils.getTypedDataHash(blue.DOMAIN_SEPARATOR(), authorization);
+        bytes32 digest = SigUtils.getTypedDataHash(morpho.DOMAIN_SEPARATOR(), authorization);
 
         Signature memory sig;
         (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
 
         vm.expectRevert(bytes(ErrorsLib.INVALID_SIGNATURE));
-        blue.setAuthorizationWithSig(
+        morpho.setAuthorizationWithSig(
             address(this), authorization.authorized, authorization.isAuthorized, authorization.deadline, sig
         );
     }
@@ -95,25 +95,25 @@ contract IntegrationAuthorization is BaseTest {
             authorizer: authorizer,
             authorized: authorized,
             isAuthorized: isAuthorized,
-            nonce: blue.nonce(authorizer),
+            nonce: morpho.nonce(authorizer),
             deadline: deadline
         });
 
-        bytes32 digest = SigUtils.getTypedDataHash(blue.DOMAIN_SEPARATOR(), authorization);
+        bytes32 digest = SigUtils.getTypedDataHash(morpho.DOMAIN_SEPARATOR(), authorization);
 
         Signature memory sig;
         (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
 
-        vm.expectEmit(true, true, true, true, address(blue));
+        vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.SetAuthorization(
             address(this), authorization.authorizer, authorization.authorized, authorization.isAuthorized
         );
-        blue.setAuthorizationWithSig(
+        morpho.setAuthorizationWithSig(
             authorization.authorizer, authorization.authorized, authorization.isAuthorized, authorization.deadline, sig
         );
 
-        assertEq(blue.isAuthorized(authorizer, authorized), isAuthorized);
-        assertEq(blue.nonce(authorizer), 1);
+        assertEq(morpho.isAuthorized(authorizer, authorized), isAuthorized);
+        assertEq(morpho.nonce(authorizer), 1);
     }
 
     function testSetAuthorizationWithSignatureInvalidNonce(
@@ -126,7 +126,7 @@ contract IntegrationAuthorization is BaseTest {
         deadline = uint32(bound(deadline, block.timestamp + 1, type(uint32).max));
         privateKey = bound(privateKey, 1, SECP256K1_ORDER - 1);
         address authorizer = vm.addr(privateKey);
-        vm.assume(nonce != blue.nonce(authorizer));
+        vm.assume(nonce != morpho.nonce(authorizer));
 
         SigUtils.Authorization memory authorization = SigUtils.Authorization({
             authorizer: authorizer,
@@ -136,13 +136,13 @@ contract IntegrationAuthorization is BaseTest {
             deadline: deadline
         });
 
-        bytes32 digest = SigUtils.getTypedDataHash(blue.DOMAIN_SEPARATOR(), authorization);
+        bytes32 digest = SigUtils.getTypedDataHash(morpho.DOMAIN_SEPARATOR(), authorization);
 
         Signature memory sig;
         (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
 
         vm.expectRevert(bytes(ErrorsLib.INVALID_SIGNATURE));
-        blue.setAuthorizationWithSig(
+        morpho.setAuthorizationWithSig(
             authorization.authorizer, authorization.authorized, authorization.isAuthorized, authorization.deadline, sig
         );
     }
@@ -161,21 +161,21 @@ contract IntegrationAuthorization is BaseTest {
             authorizer: authorizer,
             authorized: authorized,
             isAuthorized: isAuthorized,
-            nonce: blue.nonce(authorizer),
+            nonce: morpho.nonce(authorizer),
             deadline: deadline
         });
 
-        bytes32 digest = SigUtils.getTypedDataHash(blue.DOMAIN_SEPARATOR(), authorization);
+        bytes32 digest = SigUtils.getTypedDataHash(morpho.DOMAIN_SEPARATOR(), authorization);
 
         Signature memory sig;
         (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
 
-        blue.setAuthorizationWithSig(
+        morpho.setAuthorizationWithSig(
             authorization.authorizer, authorization.authorized, authorization.isAuthorized, authorization.deadline, sig
         );
 
         vm.expectRevert(bytes(ErrorsLib.INVALID_SIGNATURE));
-        blue.setAuthorizationWithSig(
+        morpho.setAuthorizationWithSig(
             authorization.authorizer, authorization.authorized, authorization.isAuthorized, authorization.deadline, sig
         );
     }

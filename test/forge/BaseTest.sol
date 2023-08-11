@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
-import "src/Blue.sol";
+import "src/Morpho.sol";
 import {ERC20Mock as ERC20} from "src/mocks/ERC20Mock.sol";
 import {OracleMock as Oracle} from "src/mocks/OracleMock.sol";
 import {IrmMock as Irm} from "src/mocks/IrmMock.sol";
@@ -21,13 +21,13 @@ contract BaseTest is Test {
     uint256 internal constant MIN_COLLATERAL_PRICE = 100;
     uint256 internal constant MAX_COLLATERAL_PRICE = 2 ** 64;
 
-    address internal BORROWER = _addrFromHashedString("Morpho Blue Borrower");
-    address internal LIQUIDATOR = _addrFromHashedString("Morpho Blue Liquidator");
-    address internal OWNER = _addrFromHashedString("Morpho Blue Owner");
+    address internal BORROWER = _addrFromHashedString("Morpho Borrower");
+    address internal LIQUIDATOR = _addrFromHashedString("Morpho Liquidator");
+    address internal OWNER = _addrFromHashedString("Morpho Owner");
 
     uint256 internal constant LLTV = 0.8 ether;
 
-    Blue internal blue;
+    Morpho internal morpho;
     ERC20 internal borrowableAsset;
     ERC20 internal collateralAsset;
     Oracle internal oracle;
@@ -40,9 +40,9 @@ contract BaseTest is Test {
         vm.label(BORROWER, "Borrower");
         vm.label(LIQUIDATOR, "Liquidator");
 
-        // Create Blue.
-        blue = new Blue(OWNER);
-        vm.label(address(blue), "Blue");
+        // Create Morpho.
+        morpho = new Morpho(OWNER);
+        vm.label(address(morpho), "Morpho");
 
         // List a market.
         borrowableAsset = new ERC20("borrowable", "B", 18);
@@ -54,29 +54,31 @@ contract BaseTest is Test {
         oracle = new Oracle();
         vm.label(address(oracle), "Oracle");
 
-        irm = new Irm(blue);
+        oracle.setPrice(1e25);
+
+        irm = new Irm(morpho);
         vm.label(address(irm), "IRM");
 
         market = Market(address(borrowableAsset), address(collateralAsset), address(oracle), address(irm), LLTV);
         id = market.id();
 
         vm.startPrank(OWNER);
-        blue.enableIrm(address(irm));
-        blue.enableLltv(LLTV);
-        blue.createMarket(market);
+        morpho.enableIrm(address(irm));
+        morpho.enableLltv(LLTV);
+        morpho.createMarket(market);
         vm.stopPrank();
 
         oracle.setPrice(1e25);
 
-        borrowableAsset.approve(address(blue), type(uint256).max);
-        collateralAsset.approve(address(blue), type(uint256).max);
+        borrowableAsset.approve(address(morpho), type(uint256).max);
+        collateralAsset.approve(address(morpho), type(uint256).max);
         vm.startPrank(BORROWER);
-        borrowableAsset.approve(address(blue), type(uint256).max);
-        collateralAsset.approve(address(blue), type(uint256).max);
+        borrowableAsset.approve(address(morpho), type(uint256).max);
+        collateralAsset.approve(address(morpho), type(uint256).max);
         vm.stopPrank();
         vm.startPrank(LIQUIDATOR);
-        borrowableAsset.approve(address(blue), type(uint256).max);
-        collateralAsset.approve(address(blue), type(uint256).max);
+        borrowableAsset.approve(address(morpho), type(uint256).max);
+        collateralAsset.approve(address(morpho), type(uint256).max);
         vm.stopPrank();
 
         vm.roll(block.number + 1);
@@ -89,14 +91,14 @@ contract BaseTest is Test {
 
     function _provideLiquidity(uint256 amount) internal {
         borrowableAsset.setBalance(address(this), amount);
-        blue.supply(market, amount, 0, address(this), hex"");
+        morpho.supply(market, amount, 0, address(this), hex"");
     }
 
     function _provideCollateralForBorrower(address borrower) internal {
         collateralAsset.setBalance(borrower, HIGH_COLLATERAL_AMOUNT);
         vm.startPrank(borrower);
-        collateralAsset.approve(address(blue), type(uint256).max);
-        blue.supplyCollateral(market, HIGH_COLLATERAL_AMOUNT, borrower, hex"");
+        collateralAsset.approve(address(morpho), type(uint256).max);
+        morpho.supplyCollateral(market, HIGH_COLLATERAL_AMOUNT, borrower, hex"");
         vm.stopPrank();
     }
 

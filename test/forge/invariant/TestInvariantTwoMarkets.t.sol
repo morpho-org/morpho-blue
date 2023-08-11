@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import "test/forge/BlueInvariantBase.t.sol";
+import "test/forge/InvariantBase.sol";
 
 contract TwoMarketsInvariantTest is InvariantBaseTest {
     using FixedPointMathLib for uint256;
@@ -20,16 +20,16 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
     function setUp() public virtual override {
         super.setUp();
 
-        irm2 = new Irm(blue);
+        irm2 = new Irm(morpho);
         vm.label(address(irm2), "IRM2");
 
         market2 = Market(address(borrowableAsset), address(collateralAsset), address(oracle), address(irm2), LLTV + 1);
         id2 = market2.id();
 
         vm.startPrank(OWNER);
-        blue.enableIrm(address(irm2));
-        blue.enableLltv(LLTV + 1);
-        blue.createMarket(market2);
+        morpho.enableIrm(address(irm2));
+        morpho.enableLltv(LLTV + 1);
+        morpho.createMarket(market2);
         vm.stopPrank();
 
         _targetDefaultSenders();
@@ -38,12 +38,12 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
         _supplyHighAmountOfCollateralForAllSenders(targetSenders(), market);
         _supplyHighAmountOfCollateralForAllSenders(targetSenders(), market2);
 
-        _weightSelector(this.supplyOnBlue.selector, 20);
-        _weightSelector(this.borrowOnBlue.selector, 20);
-        _weightSelector(this.repayOnBlue.selector, 20);
-        _weightSelector(this.withdrawOnBlue.selector, 20);
-        _weightSelector(this.supplyCollateralOnBlue.selector, 20);
-        _weightSelector(this.withdrawCollateralOnBlue.selector, 20);
+        _weightSelector(this.supplyOnMorpho.selector, 20);
+        _weightSelector(this.borrowOnMorpho.selector, 20);
+        _weightSelector(this.repayOnMorpho.selector, 20);
+        _weightSelector(this.withdrawOnMorpho.selector, 20);
+        _weightSelector(this.supplyCollateralOnMorpho.selector, 20);
+        _weightSelector(this.withdrawCollateralOnMorpho.selector, 20);
         _weightSelector(this.newBlock.selector, 1);
 
         targetSelector(FuzzSelector({addr: address(this), selectors: selectors}));
@@ -54,7 +54,7 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
         vm.warp(block.timestamp + elapsed);
     }
 
-    function supplyOnBlue(uint256 amount, bool changeMarket) public {
+    function supplyOnMorpho(uint256 amount, bool changeMarket) public {
         Market memory chosenMarket;
         Id chosenId;
         if (!changeMarket) {
@@ -69,10 +69,10 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
 
         borrowableAsset.setBalance(msg.sender, amount);
         vm.prank(msg.sender);
-        blue.supply(chosenMarket, amount, 0, msg.sender, hex"");
+        morpho.supply(chosenMarket, amount, 0, msg.sender, hex"");
     }
 
-    function withdrawOnBlue(uint256 amount, bool changeMarket) public {
+    function withdrawOnMorpho(uint256 amount, bool changeMarket) public {
         Market memory chosenMarket;
         Id chosenId;
         if (!changeMarket) {
@@ -83,21 +83,21 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
             chosenId = id2;
         }
 
-        uint256 availableLiquidity = blue.totalSupply(chosenId) - blue.totalBorrow(chosenId);
-        if (blue.supplyShares(chosenId, msg.sender) == 0) return;
+        uint256 availableLiquidity = morpho.totalSupply(chosenId) - morpho.totalBorrow(chosenId);
+        if (morpho.supplyShares(chosenId, msg.sender) == 0) return;
         if (availableLiquidity == 0) return;
 
         _accrueInterest(chosenMarket);
-        uint256 supplierBalance = blue.supplyShares(chosenId, msg.sender).toAssetsDown(
-            blue.totalSupply(chosenId), blue.totalSupplyShares(chosenId)
+        uint256 supplierBalance = morpho.supplyShares(chosenId, msg.sender).toAssetsDown(
+            morpho.totalSupply(chosenId), morpho.totalSupplyShares(chosenId)
         );
         amount = bound(amount, 1, min(supplierBalance, availableLiquidity));
 
         vm.prank(msg.sender);
-        blue.withdraw(chosenMarket, amount, 0, msg.sender, msg.sender);
+        morpho.withdraw(chosenMarket, amount, 0, msg.sender, msg.sender);
     }
 
-    function borrowOnBlue(uint256 amount, bool changeMarket) public {
+    function borrowOnMorpho(uint256 amount, bool changeMarket) public {
         Market memory chosenMarket;
         Id chosenId;
         if (!changeMarket) {
@@ -108,17 +108,17 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
             chosenId = id2;
         }
 
-        uint256 availableLiquidity = blue.totalSupply(chosenId) - blue.totalBorrow(chosenId);
+        uint256 availableLiquidity = morpho.totalSupply(chosenId) - morpho.totalBorrow(chosenId);
         if (availableLiquidity == 0) return;
 
         _accrueInterest(chosenMarket);
         amount = bound(amount, 1, availableLiquidity);
 
         vm.prank(msg.sender);
-        blue.borrow(chosenMarket, amount, 0, msg.sender, msg.sender);
+        morpho.borrow(chosenMarket, amount, 0, msg.sender, msg.sender);
     }
 
-    function repayOnBlue(uint256 amount, bool changeMarket) public {
+    function repayOnMorpho(uint256 amount, bool changeMarket) public {
         Market memory chosenMarket;
         Id chosenId;
         if (!changeMarket) {
@@ -128,23 +128,23 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
             chosenMarket = market2;
             chosenId = id2;
         }
-        if (blue.borrowShares(chosenId, msg.sender) == 0) return;
+        if (morpho.borrowShares(chosenId, msg.sender) == 0) return;
 
         _accrueInterest(chosenMarket);
         amount = bound(
             amount,
             1,
-            blue.borrowShares(chosenId, msg.sender).toAssetsDown(
-                blue.totalBorrow(chosenId), blue.totalBorrowShares(chosenId)
+            morpho.borrowShares(chosenId, msg.sender).toAssetsDown(
+                morpho.totalBorrow(chosenId), morpho.totalBorrowShares(chosenId)
             )
         );
 
         borrowableAsset.setBalance(msg.sender, amount);
         vm.prank(msg.sender);
-        blue.repay(chosenMarket, amount, 0, msg.sender, hex"");
+        morpho.repay(chosenMarket, amount, 0, msg.sender, hex"");
     }
 
-    function supplyCollateralOnBlue(uint256 amount, bool changeMarket) public {
+    function supplyCollateralOnMorpho(uint256 amount, bool changeMarket) public {
         Market memory chosenMarket;
         Id chosenId;
         if (!changeMarket) {
@@ -159,10 +159,10 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
         collateralAsset.setBalance(msg.sender, amount);
 
         vm.prank(msg.sender);
-        blue.supplyCollateral(chosenMarket, amount, msg.sender, hex"");
+        morpho.supplyCollateral(chosenMarket, amount, msg.sender, hex"");
     }
 
-    function withdrawCollateralOnBlue(uint256 amount, bool changeMarket) public {
+    function withdrawCollateralOnMorpho(uint256 amount, bool changeMarket) public {
         Market memory chosenMarket;
         Id chosenId;
         if (!changeMarket) {
@@ -176,12 +176,12 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
         vm.prank(msg.sender);
-        blue.withdrawCollateral(chosenMarket, amount, msg.sender, msg.sender);
+        morpho.withdrawCollateral(chosenMarket, amount, msg.sender, msg.sender);
     }
 
-    function invariantBlueBalance() public {
-        uint256 marketAvailableAmount = blue.totalSupply(id) - blue.totalBorrow(id);
-        uint256 market2AvailableAmount = blue.totalSupply(id2) - blue.totalBorrow(id2);
-        assertEq(marketAvailableAmount + market2AvailableAmount, borrowableAsset.balanceOf(address(blue)));
+    function invariantMorphoBalance() public {
+        uint256 marketAvailableAmount = morpho.totalSupply(id) - morpho.totalBorrow(id);
+        uint256 market2AvailableAmount = morpho.totalSupply(id2) - morpho.totalBorrow(id2);
+        assertEq(marketAvailableAmount + market2AvailableAmount, borrowableAsset.balanceOf(address(morpho)));
     }
 }

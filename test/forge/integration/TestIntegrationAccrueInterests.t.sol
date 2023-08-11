@@ -12,31 +12,31 @@ contract IntegrationAccrueInterestsTest is BaseTest {
 
         // Set fee parameters.
         vm.prank(OWNER);
-        blue.setFeeRecipient(OWNER);
+        morpho.setFeeRecipient(OWNER);
 
         borrowableAsset.setBalance(address(this), amountSupplied);
-        blue.supply(market, amountSupplied, 0, address(this), hex"");
+        morpho.supply(market, amountSupplied, 0, address(this), hex"");
 
         collateralAsset.setBalance(BORROWER, amountBorrowed.wDivUp(LLTV));
 
         vm.startPrank(BORROWER);
-        blue.supplyCollateral(market, amountBorrowed.wDivUp(LLTV), BORROWER, hex"");
-        blue.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
+        morpho.supplyCollateral(market, amountBorrowed.wDivUp(LLTV), BORROWER, hex"");
+        morpho.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
         vm.stopPrank();
 
-        uint256 totalBorrowBeforeAccrued = blue.totalBorrow(id);
-        uint256 totalSupplyBeforeAccrued = blue.totalSupply(id);
-        uint256 totalSupplySharesBeforeAccrued = blue.totalSupplyShares(id);
+        uint256 totalBorrowBeforeAccrued = morpho.totalBorrow(id);
+        uint256 totalSupplyBeforeAccrued = morpho.totalSupply(id);
+        uint256 totalSupplySharesBeforeAccrued = morpho.totalSupplyShares(id);
 
         // Supply then withdraw collateral to trigger accrueInterests function.
         collateralAsset.setBalance(address(this), 1);
-        blue.supplyCollateral(market, 1, address(this), hex"");
-        blue.withdrawCollateral(market, 1, address(this), address(this));
+        morpho.supplyCollateral(market, 1, address(this), hex"");
+        morpho.withdrawCollateral(market, 1, address(this), address(this));
 
-        assertEq(blue.totalBorrow(id), totalBorrowBeforeAccrued, "total borrow");
-        assertEq(blue.totalSupply(id), totalSupplyBeforeAccrued, "total supply");
-        assertEq(blue.totalSupplyShares(id), totalSupplySharesBeforeAccrued, "total supply shares");
-        assertEq(blue.supplyShares(id, OWNER), 0, "feeRecipient's supply shares");
+        assertEq(morpho.totalBorrow(id), totalBorrowBeforeAccrued, "total borrow");
+        assertEq(morpho.totalSupply(id), totalSupplyBeforeAccrued, "total supply");
+        assertEq(morpho.totalSupplyShares(id), totalSupplySharesBeforeAccrued, "total supply shares");
+        assertEq(morpho.supplyShares(id, OWNER), 0, "feeRecipient's supply shares");
     }
 
     function testAccrueInterestsNoBorrow(uint256 amountSupplied, uint256 timeElapsed) public {
@@ -45,29 +45,29 @@ contract IntegrationAccrueInterestsTest is BaseTest {
 
         // Set fee parameters.
         vm.prank(OWNER);
-        blue.setFeeRecipient(OWNER);
+        morpho.setFeeRecipient(OWNER);
 
         borrowableAsset.setBalance(address(this), amountSupplied);
-        blue.supply(market, amountSupplied, 0, address(this), hex"");
+        morpho.supply(market, amountSupplied, 0, address(this), hex"");
 
         // New block.
         vm.roll(block.number + 1);
         vm.warp(block.timestamp + timeElapsed);
 
-        uint256 totalBorrowBeforeAccrued = blue.totalBorrow(id);
-        uint256 totalSupplyBeforeAccrued = blue.totalSupply(id);
-        uint256 totalSupplySharesBeforeAccrued = blue.totalSupplyShares(id);
+        uint256 totalBorrowBeforeAccrued = morpho.totalBorrow(id);
+        uint256 totalSupplyBeforeAccrued = morpho.totalSupply(id);
+        uint256 totalSupplySharesBeforeAccrued = morpho.totalSupplyShares(id);
 
         // Supply then withdraw collateral to trigger `_accrueInterests` function.
         collateralAsset.setBalance(address(this), 1);
-        blue.supplyCollateral(market, 1, address(this), hex"");
-        blue.withdrawCollateral(market, 1, address(this), address(this));
+        morpho.supplyCollateral(market, 1, address(this), hex"");
+        morpho.withdrawCollateral(market, 1, address(this), address(this));
 
-        assertEq(blue.totalBorrow(id), totalBorrowBeforeAccrued, "total borrow");
-        assertEq(blue.totalSupply(id), totalSupplyBeforeAccrued, "total supply");
-        assertEq(blue.totalSupplyShares(id), totalSupplySharesBeforeAccrued, "total supply shares");
-        assertEq(blue.supplyShares(id, OWNER), 0, "feeRecipient's supply shares");
-        assertEq(blue.lastUpdate(id), block.timestamp, "last update");
+        assertEq(morpho.totalBorrow(id), totalBorrowBeforeAccrued, "total borrow");
+        assertEq(morpho.totalSupply(id), totalSupplyBeforeAccrued, "total supply");
+        assertEq(morpho.totalSupplyShares(id), totalSupplySharesBeforeAccrued, "total supply shares");
+        assertEq(morpho.supplyShares(id, OWNER), 0, "feeRecipient's supply shares");
+        assertEq(morpho.lastUpdate(id), block.timestamp, "last update");
     }
 
     function testAccrueInterestNoFee(uint256 amountSupplied, uint256 amountBorrowed, uint256 timeElapsed) public {
@@ -77,43 +77,43 @@ contract IntegrationAccrueInterestsTest is BaseTest {
 
         // Set fee parameters.
         vm.prank(OWNER);
-        blue.setFeeRecipient(OWNER);
+        morpho.setFeeRecipient(OWNER);
 
         borrowableAsset.setBalance(address(this), amountSupplied);
         borrowableAsset.setBalance(address(this), amountSupplied);
-        blue.supply(market, amountSupplied, 0, address(this), hex"");
+        morpho.supply(market, amountSupplied, 0, address(this), hex"");
 
         collateralAsset.setBalance(BORROWER, amountBorrowed.wDivUp(LLTV));
 
         vm.startPrank(BORROWER);
-        blue.supplyCollateral(market, amountBorrowed.wDivUp(LLTV), BORROWER, hex"");
-        blue.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
+        morpho.supplyCollateral(market, amountBorrowed.wDivUp(LLTV), BORROWER, hex"");
+        morpho.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
         vm.stopPrank();
 
         // New block.
         vm.roll(block.number + 1);
         vm.warp(block.timestamp + timeElapsed);
 
-        uint256 borrowRate = (blue.totalBorrow(id).wDivDown(blue.totalSupply(id))) / 365 days;
-        uint256 totalBorrowBeforeAccrued = blue.totalBorrow(id);
-        uint256 totalSupplyBeforeAccrued = blue.totalSupply(id);
-        uint256 totalSupplySharesBeforeAccrued = blue.totalSupplyShares(id);
+        uint256 borrowRate = (morpho.totalBorrow(id).wDivDown(morpho.totalSupply(id))) / 365 days;
+        uint256 totalBorrowBeforeAccrued = morpho.totalBorrow(id);
+        uint256 totalSupplyBeforeAccrued = morpho.totalSupply(id);
+        uint256 totalSupplySharesBeforeAccrued = morpho.totalSupplyShares(id);
         uint256 expectedAccruedInterests = totalBorrowBeforeAccrued.wMulDown(borrowRate.wTaylorCompounded(timeElapsed));
 
         // Supply then withdraw collateral to trigger `_accrueInterests` function.
         collateralAsset.setBalance(address(this), 1);
 
-        blue.supplyCollateral(market, 1, address(this), hex"");
+        morpho.supplyCollateral(market, 1, address(this), hex"");
 
-        vm.expectEmit(true, true, true, true, address(blue));
+        vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.AccrueInterests(id, borrowRate, expectedAccruedInterests, 0);
-        blue.withdrawCollateral(market, 1, address(this), address(this));
+        morpho.withdrawCollateral(market, 1, address(this), address(this));
 
-        assertEq(blue.totalBorrow(id), totalBorrowBeforeAccrued + expectedAccruedInterests, "total borrow");
-        assertEq(blue.totalSupply(id), totalSupplyBeforeAccrued + expectedAccruedInterests, "total supply");
-        assertEq(blue.totalSupplyShares(id), totalSupplySharesBeforeAccrued, "total supply shares");
-        assertEq(blue.supplyShares(id, OWNER), 0, "feeRecipient's supply shares");
-        assertEq(blue.lastUpdate(id), block.timestamp, "last update");
+        assertEq(morpho.totalBorrow(id), totalBorrowBeforeAccrued + expectedAccruedInterests, "total borrow");
+        assertEq(morpho.totalSupply(id), totalSupplyBeforeAccrued + expectedAccruedInterests, "total supply");
+        assertEq(morpho.totalSupplyShares(id), totalSupplySharesBeforeAccrued, "total supply shares");
+        assertEq(morpho.supplyShares(id, OWNER), 0, "feeRecipient's supply shares");
+        assertEq(morpho.lastUpdate(id), block.timestamp, "last update");
     }
 
     struct AccrueInterestWithFeesTestParams {
@@ -141,28 +141,28 @@ contract IntegrationAccrueInterestsTest is BaseTest {
 
         // Set fee parameters.
         vm.startPrank(OWNER);
-        blue.setFeeRecipient(OWNER);
-        blue.setFee(market, fee);
+        morpho.setFeeRecipient(OWNER);
+        morpho.setFee(market, fee);
         vm.stopPrank();
 
         borrowableAsset.setBalance(address(this), amountSupplied);
-        blue.supply(market, amountSupplied, 0, address(this), hex"");
+        morpho.supply(market, amountSupplied, 0, address(this), hex"");
 
         collateralAsset.setBalance(BORROWER, amountBorrowed.wDivUp(LLTV));
 
         vm.startPrank(BORROWER);
-        blue.supplyCollateral(market, amountBorrowed.wDivUp(LLTV), BORROWER, hex"");
-        blue.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
+        morpho.supplyCollateral(market, amountBorrowed.wDivUp(LLTV), BORROWER, hex"");
+        morpho.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
         vm.stopPrank();
 
         // New block.
         vm.roll(block.number + 1);
         vm.warp(block.timestamp + timeElapsed);
 
-        params.borrowRate = (blue.totalBorrow(id).wDivDown(blue.totalSupply(id))) / 365 days;
-        params.totalBorrowBeforeAccrued = blue.totalBorrow(id);
-        params.totalSupplyBeforeAccrued = blue.totalSupply(id);
-        params.totalSupplySharesBeforeAccrued = blue.totalSupplyShares(id);
+        params.borrowRate = (morpho.totalBorrow(id).wDivDown(morpho.totalSupply(id))) / 365 days;
+        params.totalBorrowBeforeAccrued = morpho.totalBorrow(id);
+        params.totalSupplyBeforeAccrued = morpho.totalSupply(id);
+        params.totalSupplySharesBeforeAccrued = morpho.totalSupplyShares(id);
         params.expectedAccruedInterests =
             params.totalBorrowBeforeAccrued.wMulDown(params.borrowRate.wTaylorCompounded(timeElapsed));
         params.feeAmount = params.expectedAccruedInterests.wMulDown(fee);
@@ -173,22 +173,24 @@ contract IntegrationAccrueInterestsTest is BaseTest {
 
         // Supply then withdraw collateral to trigger `_accrueInterests` function.
         collateralAsset.setBalance(address(this), 1);
-        blue.supplyCollateral(market, 1, address(this), hex"");
+        morpho.supplyCollateral(market, 1, address(this), hex"");
 
-        vm.expectEmit(true, true, true, true, address(blue));
+        vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.AccrueInterests(id, params.borrowRate, params.expectedAccruedInterests, params.feeShares);
-        blue.withdrawCollateral(market, 1, address(this), address(this));
+        morpho.withdrawCollateral(market, 1, address(this), address(this));
 
         assertEq(
-            blue.totalBorrow(id), params.totalBorrowBeforeAccrued + params.expectedAccruedInterests, "total borrow"
+            morpho.totalBorrow(id), params.totalBorrowBeforeAccrued + params.expectedAccruedInterests, "total borrow"
         );
         assertEq(
-            blue.totalSupply(id), params.totalSupplyBeforeAccrued + params.expectedAccruedInterests, "total supply"
+            morpho.totalSupply(id), params.totalSupplyBeforeAccrued + params.expectedAccruedInterests, "total supply"
         );
         assertEq(
-            blue.totalSupplyShares(id), params.totalSupplySharesBeforeAccrued + params.feeShares, "total supply shares"
+            morpho.totalSupplyShares(id),
+            params.totalSupplySharesBeforeAccrued + params.feeShares,
+            "total supply shares"
         );
-        assertEq(blue.supplyShares(id, OWNER), params.feeShares, "feeRecipient's supply shares");
-        assertEq(blue.lastUpdate(id), block.timestamp, "last update");
+        assertEq(morpho.supplyShares(id, OWNER), params.feeShares, "feeRecipient's supply shares");
+        assertEq(morpho.lastUpdate(id), block.timestamp, "last update");
     }
 }

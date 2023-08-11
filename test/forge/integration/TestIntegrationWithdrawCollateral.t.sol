@@ -13,7 +13,7 @@ contract IntegrationWithdrawCollateralTest is BaseTest {
 
         vm.prank(supplier);
         vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
-        blue.withdrawCollateral(marketFuzz, 1, supplier, receiver);
+        morpho.withdrawCollateral(marketFuzz, 1, supplier, receiver);
     }
 
     function testWithdrawCollateralZeroAmount(address supplier, address receiver, uint256 amount) public {
@@ -23,11 +23,11 @@ contract IntegrationWithdrawCollateralTest is BaseTest {
         collateralAsset.setBalance(supplier, amount);
 
         vm.startPrank(supplier);
-        collateralAsset.approve(address(blue), amount);
-        blue.supplyCollateral(market, amount, supplier, hex"");
+        collateralAsset.approve(address(morpho), amount);
+        morpho.supplyCollateral(market, amount, supplier, hex"");
 
         vm.expectRevert(bytes(ErrorsLib.ZERO_AMOUNT));
-        blue.withdrawCollateral(market, 0, supplier, receiver);
+        morpho.withdrawCollateral(market, 0, supplier, receiver);
         vm.stopPrank();
     }
 
@@ -38,11 +38,11 @@ contract IntegrationWithdrawCollateralTest is BaseTest {
         collateralAsset.setBalance(supplier, amount);
 
         vm.startPrank(supplier);
-        collateralAsset.approve(address(blue), type(uint256).max);
-        blue.supplyCollateral(market, amount, supplier, hex"");
+        collateralAsset.approve(address(morpho), type(uint256).max);
+        morpho.supplyCollateral(market, amount, supplier, hex"");
 
         vm.expectRevert(bytes(ErrorsLib.ZERO_ADDRESS));
-        blue.withdrawCollateral(market, amount, supplier, address(0));
+        morpho.withdrawCollateral(market, amount, supplier, address(0));
         vm.stopPrank();
     }
 
@@ -55,13 +55,13 @@ contract IntegrationWithdrawCollateralTest is BaseTest {
         collateralAsset.setBalance(supplier, amount);
 
         vm.startPrank(supplier);
-        collateralAsset.approve(address(blue), amount);
-        blue.supplyCollateral(market, amount, supplier, hex"");
+        collateralAsset.approve(address(morpho), amount);
+        morpho.supplyCollateral(market, amount, supplier, hex"");
         vm.stopPrank();
 
         vm.prank(attacker);
         vm.expectRevert(bytes(ErrorsLib.UNAUTHORIZED));
-        blue.withdrawCollateral(market, amount, supplier, receiver);
+        morpho.withdrawCollateral(market, amount, supplier, receiver);
     }
 
     function testWithdrawCollateralUnhealthyPosition(
@@ -81,10 +81,10 @@ contract IntegrationWithdrawCollateralTest is BaseTest {
         collateralAsset.setBalance(BORROWER, amountCollateral);
 
         vm.startPrank(BORROWER);
-        blue.supplyCollateral(market, amountCollateral, BORROWER, hex"");
-        blue.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
+        morpho.supplyCollateral(market, amountCollateral, BORROWER, hex"");
+        morpho.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
         vm.expectRevert(bytes(ErrorsLib.INSUFFICIENT_COLLATERAL));
-        blue.withdrawCollateral(market, amountCollateral, BORROWER, BORROWER);
+        morpho.withdrawCollateral(market, amountCollateral, BORROWER, BORROWER);
         vm.stopPrank();
     }
 
@@ -96,7 +96,7 @@ contract IntegrationWithdrawCollateralTest is BaseTest {
         uint256 priceCollateral,
         address receiver
     ) public {
-        vm.assume(receiver != address(0) && receiver != address(blue));
+        vm.assume(receiver != address(0) && receiver != address(morpho));
 
         (amountCollateral, amountBorrowed, priceCollateral) =
             _boundHealthyPosition(amountCollateral, amountBorrowed, priceCollateral);
@@ -112,18 +112,18 @@ contract IntegrationWithdrawCollateralTest is BaseTest {
 
         vm.startPrank(BORROWER);
 
-        blue.supplyCollateral(market, amountCollateral + amountCollateralExcess, BORROWER, hex"");
-        blue.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
+        morpho.supplyCollateral(market, amountCollateral + amountCollateralExcess, BORROWER, hex"");
+        morpho.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
 
-        vm.expectEmit(true, true, true, true, address(blue));
+        vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.WithdrawCollateral(id, BORROWER, BORROWER, receiver, amountCollateralExcess);
-        blue.withdrawCollateral(market, amountCollateralExcess, BORROWER, receiver);
+        morpho.withdrawCollateral(market, amountCollateralExcess, BORROWER, receiver);
 
         vm.stopPrank();
 
-        assertEq(blue.collateral(id, BORROWER), amountCollateral, "collateral balance");
+        assertEq(morpho.collateral(id, BORROWER), amountCollateral, "collateral balance");
         assertEq(collateralAsset.balanceOf(receiver), amountCollateralExcess, "lender balance");
-        assertEq(collateralAsset.balanceOf(address(blue)), amountCollateral, "blue balance");
+        assertEq(collateralAsset.balanceOf(address(morpho)), amountCollateral, "morpho balance");
     }
 
     function testWithdrawCollateralOnBehalf(
@@ -135,8 +135,8 @@ contract IntegrationWithdrawCollateralTest is BaseTest {
         address onBehalf,
         address receiver
     ) public {
-        vm.assume(onBehalf != address(0) && onBehalf != address(blue));
-        vm.assume(receiver != address(0) && receiver != address(blue));
+        vm.assume(onBehalf != address(0) && onBehalf != address(morpho));
+        vm.assume(receiver != address(0) && receiver != address(morpho));
 
         (amountCollateral, amountBorrowed, priceCollateral) =
             _boundHealthyPosition(amountCollateral, amountBorrowed, priceCollateral);
@@ -152,20 +152,20 @@ contract IntegrationWithdrawCollateralTest is BaseTest {
 
         vm.startPrank(onBehalf);
 
-        collateralAsset.approve(address(blue), amountCollateral + amountCollateralExcess);
-        blue.supplyCollateral(market, amountCollateral + amountCollateralExcess, onBehalf, hex"");
-        blue.setAuthorization(BORROWER, true);
-        blue.borrow(market, amountBorrowed, 0, onBehalf, onBehalf);
+        collateralAsset.approve(address(morpho), amountCollateral + amountCollateralExcess);
+        morpho.supplyCollateral(market, amountCollateral + amountCollateralExcess, onBehalf, hex"");
+        morpho.setAuthorization(BORROWER, true);
+        morpho.borrow(market, amountBorrowed, 0, onBehalf, onBehalf);
         vm.stopPrank();
 
         vm.prank(BORROWER);
 
-        vm.expectEmit(true, true, true, true, address(blue));
+        vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.WithdrawCollateral(id, BORROWER, onBehalf, receiver, amountCollateralExcess);
-        blue.withdrawCollateral(market, amountCollateralExcess, onBehalf, receiver);
+        morpho.withdrawCollateral(market, amountCollateralExcess, onBehalf, receiver);
 
-        assertEq(blue.collateral(id, onBehalf), amountCollateral, "collateral balance");
+        assertEq(morpho.collateral(id, onBehalf), amountCollateral, "collateral balance");
         assertEq(collateralAsset.balanceOf(receiver), amountCollateralExcess, "lender balance");
-        assertEq(collateralAsset.balanceOf(address(blue)), amountCollateral, "blue balance");
+        assertEq(collateralAsset.balanceOf(address(morpho)), amountCollateral, "morpho balance");
     }
 }

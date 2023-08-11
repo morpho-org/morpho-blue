@@ -18,14 +18,14 @@ contract InvariantBaseTest is BaseTest {
     }
 
     function _targetDefaultSenders() internal {
-        targetSender(_addrFromHashedString("Morpho Blue address1"));
-        targetSender(_addrFromHashedString("Morpho Blue address2"));
-        targetSender(_addrFromHashedString("Morpho Blue address3"));
-        targetSender(_addrFromHashedString("Morpho Blue address4"));
-        targetSender(_addrFromHashedString("Morpho Blue address5"));
-        targetSender(_addrFromHashedString("Morpho Blue address6"));
-        targetSender(_addrFromHashedString("Morpho Blue address7"));
-        targetSender(_addrFromHashedString("Morpho Blue address8"));
+        targetSender(_addrFromHashedString("Morpho address1"));
+        targetSender(_addrFromHashedString("Morpho address2"));
+        targetSender(_addrFromHashedString("Morpho address3"));
+        targetSender(_addrFromHashedString("Morpho address4"));
+        targetSender(_addrFromHashedString("Morpho address5"));
+        targetSender(_addrFromHashedString("Morpho address6"));
+        targetSender(_addrFromHashedString("Morpho address7"));
+        targetSender(_addrFromHashedString("Morpho address8"));
     }
 
     function _weightSelector(bytes4 selector, uint256 weight) internal {
@@ -37,8 +37,8 @@ contract InvariantBaseTest is BaseTest {
     function _approveSendersTransfers(address[] memory senders) internal {
         for (uint256 i; i < senders.length; ++i) {
             vm.startPrank(senders[i]);
-            borrowableAsset.approve(address(blue), type(uint256).max);
-            collateralAsset.approve(address(blue), type(uint256).max);
+            borrowableAsset.approve(address(morpho), type(uint256).max);
+            collateralAsset.approve(address(morpho), type(uint256).max);
             vm.stopPrank();
         }
     }
@@ -47,7 +47,7 @@ contract InvariantBaseTest is BaseTest {
         for (uint256 i; i < senders.length; ++i) {
             collateralAsset.setBalance(senders[i], 1e30);
             vm.prank(senders[i]);
-            blue.supplyCollateral(market, 1e30, senders[i], hex"");
+            morpho.supplyCollateral(market, 1e30, senders[i], hex"");
         }
     }
 
@@ -56,7 +56,7 @@ contract InvariantBaseTest is BaseTest {
         returns (address randomSenderToWithdrawOnBehalf)
     {
         for (uint256 i; i < addresses.length; ++i) {
-            if (blue.supplyShares(id, addresses[i]) != 0) {
+            if (morpho.supplyShares(id, addresses[i]) != 0) {
                 addressArray.push(addresses[i]);
             }
         }
@@ -65,7 +65,7 @@ contract InvariantBaseTest is BaseTest {
         randomSenderToWithdrawOnBehalf = addressArray[uint256(uint160(seed)) % addressArray.length];
 
         vm.prank(randomSenderToWithdrawOnBehalf);
-        blue.setAuthorization(sender, true);
+        morpho.setAuthorization(sender, true);
 
         delete addressArray;
     }
@@ -75,7 +75,7 @@ contract InvariantBaseTest is BaseTest {
         returns (address randomSenderToBorrowOnBehalf)
     {
         for (uint256 i; i < addresses.length; ++i) {
-            if (blue.collateral(id, addresses[i]) != 0 && isHealthy(market, id, addresses[i])) {
+            if (morpho.collateral(id, addresses[i]) != 0 && isHealthy(market, id, addresses[i])) {
                 addressArray.push(addresses[i]);
             }
         }
@@ -84,7 +84,7 @@ contract InvariantBaseTest is BaseTest {
         randomSenderToBorrowOnBehalf = addressArray[uint256(uint160(seed)) % addressArray.length];
 
         vm.prank(randomSenderToBorrowOnBehalf);
-        blue.setAuthorization(sender, true);
+        morpho.setAuthorization(sender, true);
 
         delete addressArray;
     }
@@ -94,7 +94,7 @@ contract InvariantBaseTest is BaseTest {
         returns (address randomSenderToRepayOnBehalf)
     {
         for (uint256 i; i < addresses.length; ++i) {
-            if (blue.borrowShares(id, addresses[i]) != 0) {
+            if (morpho.borrowShares(id, addresses[i]) != 0) {
                 addressArray.push(addresses[i]);
             }
         }
@@ -110,7 +110,7 @@ contract InvariantBaseTest is BaseTest {
         returns (address randomSenderToWithdrawCollateralOnBehalf)
     {
         for (uint256 i; i < addresses.length; ++i) {
-            if (blue.collateral(id, addresses[i]) != 0 && isHealthy(market, id, addresses[i])) {
+            if (morpho.collateral(id, addresses[i]) != 0 && isHealthy(market, id, addresses[i])) {
                 addressArray.push(addresses[i]);
             }
         }
@@ -119,7 +119,7 @@ contract InvariantBaseTest is BaseTest {
         randomSenderToWithdrawCollateralOnBehalf = addressArray[uint256(uint160(seed)) % addressArray.length];
 
         vm.prank(randomSenderToWithdrawCollateralOnBehalf);
-        blue.setAuthorization(sender, true);
+        morpho.setAuthorization(sender, true);
 
         delete addressArray;
     }
@@ -129,7 +129,7 @@ contract InvariantBaseTest is BaseTest {
         returns (address randomSenderToLiquidate)
     {
         for (uint256 i; i < addresses.length; ++i) {
-            if (blue.borrowShares(id, addresses[i]) != 0 && !isHealthy(market, id, addresses[i])) {
+            if (morpho.borrowShares(id, addresses[i]) != 0 && !isHealthy(market, id, addresses[i])) {
                 addressArray.push(addresses[i]);
             }
         }
@@ -142,33 +142,36 @@ contract InvariantBaseTest is BaseTest {
 
     function sumUsersSupplyShares(address[] memory addresses) internal view returns (uint256 sum) {
         for (uint256 i; i < addresses.length; ++i) {
-            sum += blue.supplyShares(id, addresses[i]);
+            sum += morpho.supplyShares(id, addresses[i]);
         }
     }
 
     function sumUsersBorrowShares(address[] memory addresses) internal view returns (uint256 sum) {
         for (uint256 i; i < addresses.length; ++i) {
-            sum += blue.borrowShares(id, addresses[i]);
+            sum += morpho.borrowShares(id, addresses[i]);
         }
     }
 
     function sumUsersSuppliedAmounts(address[] memory addresses) internal view returns (uint256 sum) {
         for (uint256 i; i < addresses.length; ++i) {
-            sum += blue.supplyShares(id, addresses[i]).toAssetsDown(blue.totalSupply(id), blue.totalSupplyShares(id));
+            sum +=
+                morpho.supplyShares(id, addresses[i]).toAssetsDown(morpho.totalSupply(id), morpho.totalSupplyShares(id));
         }
     }
 
     function sumUsersBorrowedAmounts(address[] memory addresses) internal view returns (uint256 sum) {
         for (uint256 i; i < addresses.length; ++i) {
-            sum += blue.borrowShares(id, addresses[i]).toAssetsUp(blue.totalBorrow(id), blue.totalBorrowShares(id));
+            sum +=
+                morpho.borrowShares(id, addresses[i]).toAssetsUp(morpho.totalBorrow(id), morpho.totalBorrowShares(id));
         }
     }
 
     function isHealthy(Market memory market, Id id, address user) public view returns (bool) {
         (uint256 collateralPrice,) = IOracle(market.oracle).price();
 
-        uint256 borrowed = blue.borrowShares(id, user).toAssetsUp(blue.totalBorrow(id), blue.totalBorrowShares(id));
-        uint256 maxBorrow = blue.collateral(id, user).wMulDown(collateralPrice).wMulDown(market.lltv);
+        uint256 borrowed =
+            morpho.borrowShares(id, user).toAssetsUp(morpho.totalBorrow(id), morpho.totalBorrowShares(id));
+        uint256 maxBorrow = morpho.collateral(id, user).wMulDown(collateralPrice).wMulDown(market.lltv);
 
         return maxBorrow >= borrowed;
     }
@@ -176,7 +179,7 @@ contract InvariantBaseTest is BaseTest {
     function _accrueInterest(Market memory market) internal {
         //supply collateral accrue interests.
         collateralAsset.setBalance(address(this), 1);
-        blue.supplyCollateral(market, 1, address(this), hex"");
-        blue.withdrawCollateral(market, 1, address(this), address(this));
+        morpho.supplyCollateral(market, 1, address(this), hex"");
+        morpho.withdrawCollateral(market, 1, address(this), address(this));
     }
 }
