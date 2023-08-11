@@ -39,6 +39,8 @@ contract Blue is IBlue {
     address public owner;
     // Fee recipient.
     address public feeRecipient;
+    // The locking mechanism for flash accounting.
+    bool locked;
     // User' supply balances.
     mapping(Id => mapping(address => uint256)) public supplyShares;
     // User' borrow balances.
@@ -65,8 +67,8 @@ contract Blue is IBlue {
     mapping(address => mapping(address => bool)) public isAuthorized;
     // User's nonces. Used to prevent replay attacks with EIP-712 signatures.
     mapping(address => uint256) public nonce;
-    // The locking mechanism for flash accounting.
-    bool locked;
+    // Amounts to transfer From.
+    mapping(address => uint256) public amountsToTransferFrom;
     // Amounts to transfer.
     mapping(address => uint256) public amountsToTransfer;
     // Assets to transfer.
@@ -157,16 +159,27 @@ contract Blue is IBlue {
         while (assetsToTransfer.length != 0) {
             address asset = assetsToTransfer[assetsToTransfer.length - 1];
             assetsToTransfer.pop();
-            IERC20(asset).safeTransferFrom(msg.sender, address(this), amountsToTransfer[asset]);
+            if (amountsToTransferFrom[token] > amountsToTransfer[asset]){
+                IERC20(asset).safeTransferFrom(msg.sender, address(this), amountsToTransferFrom[asset] - amountsToTransfer[asset]);
+            }
+            else if (amountsToTransferFrom[token] < amountsToTransfer[asset]) {
+                IERC20(asset).safeTransfer(msg.sender, amountsToTransfer[asset] - amountsToTransferFrom[asset]);
+            }
+            delete amountsToTransferFrom[asset];
             delete amountsToTransfer[asset];
         }
     }
 
-    function deferredTransfer(address token, uint256 amount) internal {
-        if (amountsToTransfer[token] == 0) {
+    function deferredTransfer(address token, uint256 amount, bool transferFrom) internal {
+        if (amountsToTransferFrom[token] == 0 && amountsToTransfer[token] == 0) {
             assetsToTransfer.push(token);
         }
-        amountsToTransfer[token] += amount;
+        if (transferFrom) {
+            amountsToTransferFrom[token] += amount;
+        }
+        else {
+            amountsToTransfer[token] += amount;
+        }
     }
 
     // Supply management.
@@ -187,10 +200,10 @@ contract Blue is IBlue {
 
         emit Supply(id, msg.sender, onBehalf, amount, shares);
 
-        deferredTransfer(market.borrowableAsset, amount);
+        deferredTransfer(market.borrowableAsset, amount, true);
     }
 
-    function withdraw(Market memory market, uint256 shares, address onBehalf, address receiver) external {
+    function withdraw(Market memory market, uint256 shares, address onBehalf) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(shares != 0, Errors.ZERO_SHARES);
@@ -210,12 +223,12 @@ contract Blue is IBlue {
 
         require(totalBorrow[id] <= totalSupply[id], Errors.INSUFFICIENT_LIQUIDITY);
 
-        IERC20(market.borrowableAsset).safeTransfer(receiver, amount);
+        deferredTransfer(market.borrowableAsset, amount, false);
     }
 
     // Borrow management.
 
-    function borrow(Market memory market, uint256 amount, address onBehalf, address receiver) external {
+    function borrow(Market memory market, uint256 amount, address onBehalf) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
@@ -236,7 +249,7 @@ contract Blue is IBlue {
         require(_isHealthy(market, id, onBehalf), Errors.INSUFFICIENT_COLLATERAL);
         require(totalBorrow[id] <= totalSupply[id], Errors.INSUFFICIENT_LIQUIDITY);
 
-        IERC20(market.borrowableAsset).safeTransfer(receiver, amount);
+        deferredTransfer(market.borrowableAsset, amount, false);
     }
 
     function repay(Market memory market, uint256 shares, address onBehalf) external isLocked returns (uint256 amount) {
@@ -255,7 +268,7 @@ contract Blue is IBlue {
 
         emit Repay(id, msg.sender, onBehalf, amount, shares);
 
-        deferredTransfer(market.borrowableAsset, amount);
+        deferredTransfer(market.borrowableAsset, amount, true);
     }
 
     // Collateral management.
@@ -273,10 +286,10 @@ contract Blue is IBlue {
 
         emit SupplyCollateral(id, msg.sender, onBehalf, amount);
 
-        deferredTransfer(market.collateralAsset, amount);
+        deferredTransfer(market.collateralAsset, amount, true);
     }
 
-    function withdrawCollateral(Market memory market, uint256 amount, address onBehalf, address receiver) external {
+    function withdrawCollateral(Market memory market, uint256 amount, address onBehalf) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, Errors.MARKET_NOT_CREATED);
         require(amount != 0, Errors.ZERO_AMOUNT);
@@ -292,7 +305,7 @@ contract Blue is IBlue {
 
         require(_isHealthy(market, id, onBehalf), Errors.INSUFFICIENT_COLLATERAL);
 
-        IERC20(market.collateralAsset).safeTransfer(receiver, amount);
+        deferredTransfer(market.collateralAsset, amount, false);
     }
 
     // Liquidation.
@@ -342,14 +355,14 @@ contract Blue is IBlue {
         deferredTransfer(market.borrowableAsset, repaid);
     }
 
-    // Flash Loans.
+    // Take asset from the Blue
 
-    function flashLoan(address token, uint256 amount) external isLocked {
-        IERC20(token).safeTransfer(msg.sender, amount);
+    function take(address token, uint256 amount, address receiver) external isLocked {
+        deferredTransfer(token, amount, true);
 
-        emit FlashLoan(msg.sender, token, amount);
+        emit Take(msg.sender, token, amount, receiver);
 
-        deferredTransfer(token, amount);
+        IERC20(token).safeTransfer(receiver, amount);
     }
 
     // Authorizations.
