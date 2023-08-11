@@ -417,7 +417,7 @@ contract Blue is IBlue {
             uint256 feeShares;
             if (fee[id] != 0) {
                 uint256 feeAmount = accruedInterests.wMulDown(fee[id]);
-                // The fee assets is subtracted from the total supply in this calculation to compensate for the fact that total supply is already updated.
+                // The fee amount is subtracted from the total supply in this calculation to compensate for the fact that total supply is already updated.
                 feeShares = feeAmount.mulDivDown(totalSupplyShares[id], totalSupply[id] - feeAmount);
                 supplyShares[id][feeRecipient] += feeShares;
                 totalSupplyShares[id] += feeShares;
