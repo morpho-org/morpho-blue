@@ -618,7 +618,7 @@ contract MorphoTest is
         uint256 borrowingPower = amountCollateral.wMulDown(LLTV);
         uint256 amountBorrowed = borrowingPower.wMulDown(0.8e18);
         uint256 toSeize = amountCollateral.wMulDown(LLTV);
-        uint256 liquidationScalar = UtilsLib.min(
+        uint256 liquidationIncentiveFactor = UtilsLib.min(
             MAX_LIQUIDATION_INCENTIVE_FACTOR,
             WAD.wDivDown(LIQUIDATION_CURSOR.wMulDown(market.lltv) + WAD - LIQUIDATION_CURSOR)
         );
@@ -648,7 +648,7 @@ contract MorphoTest is
         uint256 liquidatorNetWorthAfter = netWorth(LIQUIDATOR);
         (uint256 collateralPrice, uint256 priceScale) = IOracle(market.oracle).price();
 
-        uint256 expectedRepaid = toSeize.mulDivUp(collateralPrice, priceScale).wDivUp(liquidationScalar);
+        uint256 expectedRepaid = toSeize.mulDivUp(collateralPrice, priceScale).wDivUp(liquidationIncentiveFactor);
         uint256 expectedNetWorthAfter =
             liquidatorNetWorthBefore + toSeize.mulDivDown(collateralPrice, priceScale) - expectedRepaid;
         assertEq(liquidatorNetWorthAfter, expectedNetWorthAfter, "LIQUIDATOR net worth");
@@ -664,7 +664,7 @@ contract MorphoTest is
         uint256 borrowingPower = amountCollateral.wMulDown(LLTV);
         uint256 amountBorrowed = borrowingPower.wMulDown(0.8e18);
         uint256 toSeize = amountCollateral;
-        uint256 liquidationScalar = UtilsLib.min(
+        uint256 liquidationIncentiveFactor = UtilsLib.min(
             MAX_LIQUIDATION_INCENTIVE_FACTOR,
             WAD.wDivDown(LIQUIDATION_CURSOR.wMulDown(market.lltv) + WAD - LIQUIDATION_CURSOR)
         );
@@ -694,7 +694,7 @@ contract MorphoTest is
         uint256 liquidatorNetWorthAfter = netWorth(LIQUIDATOR);
         (uint256 collateralPrice, uint256 priceScale) = IOracle(market.oracle).price();
 
-        uint256 expectedRepaid = toSeize.mulDivUp(collateralPrice, priceScale).wDivUp(liquidationScalar);
+        uint256 expectedRepaid = toSeize.mulDivUp(collateralPrice, priceScale).wDivUp(liquidationIncentiveFactor);
         uint256 expectedNetWorthAfter =
             liquidatorNetWorthBefore + toSeize.mulDivDown(collateralPrice, priceScale) - expectedRepaid;
         assertEq(liquidatorNetWorthAfter, expectedNetWorthAfter, "LIQUIDATOR net worth");
