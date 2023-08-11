@@ -851,30 +851,55 @@ contract BlueTest is
         vm.stopPrank();
     }
 
-    function testAuthorizationWithSig(uint32 deadline, address authorized, uint256 privateKey, bool isAuthorized)
-        public
-    {
-        deadline = uint32(bound(deadline, block.timestamp + 1, type(uint32).max));
-        privateKey = bound(privateKey, 1, type(uint32).max); // "Private key must be less than the secp256k1 curve order (115792089237316195423570985008687907852837564279074904382605163141518161494337)."
-        address authorizer = vm.addr(privateKey);
+    function testAuthorizationWithSig(Authorization memory authorization, uint256 privateKey) public {
+        vm.assume(authorization.deadline > block.timestamp);
 
-        Authorization memory authorization = Authorization({
-            authorizer: authorizer,
-            authorized: authorized,
-            isAuthorized: isAuthorized,
-            nonce: blue.nonce(authorizer),
-            deadline: block.timestamp + deadline
-        });
-
-        bytes32 digest = SigUtils.getTypedDataHash(blue.DOMAIN_SEPARATOR(), authorization);
+        // Private key must be less than the secp256k1 curve order.
+        privateKey = bound(privateKey, 1, type(uint32).max);
+        authorization.nonce = 0;
+        authorization.authorizer = vm.addr(privateKey);
 
         Signature memory sig;
+        bytes32 digest = SigUtils.getTypedDataHash(blue.DOMAIN_SEPARATOR(), authorization);
         (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
 
         blue.setAuthorizationWithSig(authorization, sig);
 
-        assertEq(blue.isAuthorized(authorizer, authorized), isAuthorized);
-        assertEq(blue.nonce(authorizer), 1);
+        assertEq(blue.isAuthorized(authorization.authorizer, authorization.authorized), authorization.isAuthorized);
+        assertEq(blue.nonce(authorization.authorizer), 1);
+    }
+
+    function testAuthorizationWithSigWrongSig(Authorization memory authorization, uint256 privateKey) public {
+        vm.assume(authorization.deadline > block.timestamp);
+
+        // Private key must be less than the secp256k1 curve order.
+        privateKey = bound(privateKey, 1, type(uint32).max);
+        authorization.nonce = 1;
+        authorization.authorizer = vm.addr(privateKey);
+
+        Signature memory sig;
+        bytes32 digest = SigUtils.getTypedDataHash(blue.DOMAIN_SEPARATOR(), authorization);
+        (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
+
+        blue.setAuthorizationWithSig(authorization, sig);
+
+        assertEq(blue.isAuthorized(authorization.authorizer, authorization.authorized), false);
+        assertEq(blue.nonce(authorization.authorizer), 0);
+    }
+
+    function testAuthorizationWithSigWrongNonce(Authorization memory authorization, uint256 privateKey) public {
+        vm.assume(authorization.deadline > block.timestamp);
+
+        // Private key must be less than the secp256k1 curve order.
+        privateKey = bound(privateKey, 1, type(uint32).max);
+        authorization.nonce = 1;
+
+        Signature memory sig;
+        bytes32 digest = SigUtils.getTypedDataHash(blue.DOMAIN_SEPARATOR(), authorization);
+        (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
+
+        vm.expectRevert(bytes(ErrorsLib.INVALID_SIGNATURE));
+        blue.setAuthorizationWithSig(authorization, sig);
     }
 
     function testFlashLoan(uint256 amount) public {
