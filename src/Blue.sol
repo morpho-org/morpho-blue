@@ -15,7 +15,9 @@ import {SharesMathLib} from "./libraries/SharesMathLib.sol";
 import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
 import {FixedPointMathLib, WAD} from "./libraries/FixedPointMathLib.sol";
 
+/// @dev The maximum fee a market can have (25%).
 uint256 constant MAX_FEE = 0.25e18;
+/// @dev The alpha parameter used to compute the incentive during a liquidation.
 uint256 constant ALPHA = 0.5e18;
 
 /// @dev The EIP-712 typeHash for EIP712Domain.
@@ -25,78 +27,89 @@ bytes32 constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,uint256 c
 bytes32 constant AUTHORIZATION_TYPEHASH =
     keccak256("Authorization(address authorizer,address authorized,bool isAuthorized,uint256 nonce,uint256 deadline)");
 
+/// @title Blue
+/// @author Morpho Labs
+/// @custom:contact security@morpho.xyz
+/// @notice The Blue contract.
 contract Blue is IBlue {
     using MarketLib for Market;
     using SharesMathLib for uint256;
     using SafeTransferLib for IERC20;
     using FixedPointMathLib for uint256;
 
-    // Immutables.
+    /* IMMUTABLES */
 
+    /// @inheritdoc IBlue
     bytes32 public immutable DOMAIN_SEPARATOR;
 
-    // Storage.
+    /* STORAGE */
 
-    // Owner.
+    /// @inheritdoc IBlue
     address public owner;
-    // Fee recipient.
+    /// @inheritdoc IBlue
     address public feeRecipient;
-    // User' supply balances.
+    /// @inheritdoc IBlue
     mapping(Id => mapping(address => uint256)) public supplyShares;
-    // User' borrow balances.
+    /// @inheritdoc IBlue
     mapping(Id => mapping(address => uint256)) public borrowShares;
-    // User' collateral balance.
+    /// @inheritdoc IBlue
     mapping(Id => mapping(address => uint256)) public collateral;
-    // Market total supply.
+    /// @inheritdoc IBlue
     mapping(Id => uint256) public totalSupply;
-    // Market total supply shares.
+    /// @inheritdoc IBlue
     mapping(Id => uint256) public totalSupplyShares;
-    // Market total borrow.
+    /// @inheritdoc IBlue
     mapping(Id => uint256) public totalBorrow;
-    // Market total borrow shares.
+    /// @inheritdoc IBlue
     mapping(Id => uint256) public totalBorrowShares;
-    // Interests last update (used to check if a market has been created).
+    /// @inheritdoc IBlue
     mapping(Id => uint256) public lastUpdate;
-    // Fee.
+    /// @inheritdoc IBlue
     mapping(Id => uint256) public fee;
-    // Enabled IRMs.
+    /// @inheritdoc IBlue
     mapping(address => bool) public isIrmEnabled;
-    // Enabled LLTVs.
+    /// @inheritdoc IBlue
     mapping(uint256 => bool) public isLltvEnabled;
-    // User's authorizations. Note that by default, msg.sender is authorized by themself.
+    /// @inheritdoc IBlue
     mapping(address => mapping(address => bool)) public isAuthorized;
-    // User's nonces. Used to prevent replay attacks with EIP-712 signatures.
+    /// @inheritdoc IBlue
     mapping(address => uint256) public nonce;
 
-    // Constructor.
+    /* CONSTRUCTOR */
 
+    /// @notice Initializes the contract.
+    /// @param newOwner The new owner of the contract.
     constructor(address newOwner) {
         owner = newOwner;
 
         DOMAIN_SEPARATOR = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256("Blue"), block.chainid, address(this)));
     }
 
-    // Modifiers.
+    /* MODIFIERS */
 
+    /// @notice Reverts if the caller is not the owner.
     modifier onlyOwner() {
         require(msg.sender == owner, ErrorsLib.NOT_OWNER);
         _;
     }
 
-    // Only owner functions.
+    /* ONLY OWNER FUNCTIONS */
 
+    /// @inheritdoc IBlue
     function setOwner(address newOwner) external onlyOwner {
         owner = newOwner;
 
         emit EventsLib.SetOwner(newOwner);
     }
 
+    /// @inheritdoc IBlue
     function enableIrm(address irm) external onlyOwner {
         isIrmEnabled[irm] = true;
 
         emit EventsLib.EnableIrm(address(irm));
     }
 
+    /// @inheritdoc IBlue
     function enableLltv(uint256 lltv) external onlyOwner {
         require(lltv < WAD, ErrorsLib.LLTV_TOO_HIGH);
         isLltvEnabled[lltv] = true;
@@ -104,7 +117,7 @@ contract Blue is IBlue {
         emit EventsLib.EnableLltv(lltv);
     }
 
-    /// @notice It is the owner's responsibility to ensure a fee recipient is set before setting a non-zero fee.
+    /// @inheritdoc IBlue
     function setFee(Market memory market, uint256 newFee) external onlyOwner {
         Id id = market.id();
         require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
@@ -118,14 +131,16 @@ contract Blue is IBlue {
         emit EventsLib.SetFee(id, newFee);
     }
 
+    /// @inheritdoc IBlue
     function setFeeRecipient(address recipient) external onlyOwner {
         feeRecipient = recipient;
 
         emit EventsLib.SetFeeRecipient(recipient);
     }
 
-    // Markets management.
+    /* MARKET CREATION */
 
+    /// @inheritdoc IBlue
     function createMarket(Market memory market) external {
         Id id = market.id();
         require(isIrmEnabled[market.irm], ErrorsLib.IRM_NOT_ENABLED);
@@ -137,8 +152,9 @@ contract Blue is IBlue {
         emit EventsLib.CreateMarket(id, market);
     }
 
-    // Supply management.
+    /* SUPPLY MANAGEMENT */
 
+    /// @inheritdoc IBlue
     function supply(Market memory market, uint256 amount, uint256 shares, address onBehalf, bytes calldata data)
         external
     {
@@ -163,6 +179,7 @@ contract Blue is IBlue {
         IERC20(market.borrowableAsset).safeTransferFrom(msg.sender, address(this), amount);
     }
 
+    /// @inheritdoc IBlue
     function withdraw(Market memory market, uint256 amount, uint256 shares, address onBehalf, address receiver)
         external
     {
@@ -189,8 +206,9 @@ contract Blue is IBlue {
         IERC20(market.borrowableAsset).safeTransfer(receiver, amount);
     }
 
-    // Borrow management.
+    /* BORROW MANAGEMENT */
 
+    /// @inheritdoc IBlue
     function borrow(Market memory market, uint256 amount, uint256 shares, address onBehalf, address receiver)
         external
     {
@@ -218,6 +236,7 @@ contract Blue is IBlue {
         IERC20(market.borrowableAsset).safeTransfer(receiver, amount);
     }
 
+    /// @inheritdoc IBlue
     function repay(Market memory market, uint256 amount, uint256 shares, address onBehalf, bytes calldata data)
         external
     {
@@ -242,9 +261,9 @@ contract Blue is IBlue {
         IERC20(market.borrowableAsset).safeTransferFrom(msg.sender, address(this), amount);
     }
 
-    // Collateral management.
+    /* COLLATERAL MANAGEMENT */
 
-    /// @dev Don't accrue interests because it's not required and it saves gas.
+    /// @inheritdoc IBlue
     function supplyCollateral(Market memory market, uint256 amount, address onBehalf, bytes calldata data) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
@@ -262,6 +281,7 @@ contract Blue is IBlue {
         IERC20(market.collateralAsset).safeTransferFrom(msg.sender, address(this), amount);
     }
 
+    /// @inheritdoc IBlue
     function withdrawCollateral(Market memory market, uint256 amount, address onBehalf, address receiver) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
@@ -281,8 +301,9 @@ contract Blue is IBlue {
         IERC20(market.collateralAsset).safeTransfer(receiver, amount);
     }
 
-    // Liquidation.
+    /* LIQUIDATION */
 
+    /// @inheritdoc IBlue
     function liquidate(Market memory market, address borrower, uint256 seized, bytes calldata data) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
@@ -320,31 +341,34 @@ contract Blue is IBlue {
 
         emit EventsLib.Liquidate(id, msg.sender, borrower, repaid, repaidShares, seized, badDebtShares);
 
-        if (data.length > 0) IBlueLiquidateCallback(msg.sender).onBlueLiquidate(seized, repaid, data);
+        if (data.length > 0) IBlueLiquidateCallback(msg.sender).onBlueLiquidate(repaid, data);
 
         IERC20(market.borrowableAsset).safeTransferFrom(msg.sender, address(this), repaid);
     }
 
-    // Flash Loans.
+    /* FLASH LOANS */
 
+    /// @inheritdoc IFlashLender
     function flashLoan(address token, uint256 amount, bytes calldata data) external {
         IERC20(token).safeTransfer(msg.sender, amount);
 
         emit EventsLib.FlashLoan(msg.sender, token, amount);
 
-        IBlueFlashLoanCallback(msg.sender).onBlueFlashLoan(token, amount, data);
+        IBlueFlashLoanCallback(msg.sender).onBlueFlashLoan(amount, data);
 
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
     }
 
-    // Authorizations.
+    /* AUTHORIZATION */
 
+    /// @inheritdoc IBlue
     function setAuthorization(address authorized, bool newIsAuthorized) external {
         isAuthorized[msg.sender][authorized] = newIsAuthorized;
 
         emit EventsLib.SetAuthorization(msg.sender, msg.sender, authorized, newIsAuthorized);
     }
 
+    /// @inheritdoc IBlue
     /// @dev The signature is malleable, but it has no impact on the security here.
     function setAuthorizationWithSig(Authorization calldata authorization, Signature calldata signature) external {
         require(block.timestamp < authorization.deadline, ErrorsLib.SIGNATURE_EXPIRED);
@@ -368,8 +392,9 @@ contract Blue is IBlue {
         return msg.sender == user || isAuthorized[user][msg.sender];
     }
 
-    // Interests management.
+    /* INTEREST MANAGEMENT */
 
+    /// @dev Accrues interests for `market`.
     function _accrueInterests(Market memory market, Id id) internal {
         uint256 elapsed = block.timestamp - lastUpdate[id];
 
@@ -398,8 +423,9 @@ contract Blue is IBlue {
         lastUpdate[id] = block.timestamp;
     }
 
-    // Health check.
+    /* HEALTH CHECK */
 
+    /// @notice Returns whether the position of `user` in the given `market` is healthy.
     function _isHealthy(Market memory market, Id id, address user) internal view returns (bool) {
         if (borrowShares[id][user] == 0) return true;
 
@@ -408,6 +434,7 @@ contract Blue is IBlue {
         return _isHealthy(market, id, user, collateralPrice, priceScale);
     }
 
+    /// @notice Returns whether the position of `user` in the given `market` with the given `collateralPrice` and `priceScale` is healthy.
     function _isHealthy(Market memory market, Id id, address user, uint256 collateralPrice, uint256 priceScale)
         internal
         view
@@ -419,8 +446,9 @@ contract Blue is IBlue {
         return maxBorrow >= borrowed;
     }
 
-    // Storage view.
+    /* STORAGE VIEW */
 
+    /// @inheritdoc IBlue
     function extsload(bytes32[] calldata slots) external view returns (bytes32[] memory res) {
         uint256 nSlots = slots.length;
 
