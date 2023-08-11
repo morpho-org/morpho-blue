@@ -1,52 +1,52 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.5.0;
 
-/// @title IBlueLiquidateCallback
+/// @title IMorphoLiquidateCallback
 /// @notice Interface that liquidators willing to use `liquidate`'s callback must implement.
-interface IBlueLiquidateCallback {
+interface IMorphoLiquidateCallback {
     /// @notice Callback called when a liquidation occurs.
     /// @dev The callback is called only if data is not empty.
     /// @param amount The amount of repaid tokens.
     /// @param data Arbitrary data passed to the `liquidate` function.
-    function onBlueLiquidate(uint256 amount, bytes calldata data) external;
+    function onMorphoLiquidate(uint256 amount, bytes calldata data) external;
 }
 
-/// @title IBlueRepayCallback
+/// @title IMorphoRepayCallback
 /// @notice Interface that users willing to use `repay`'s callback must implement.
-interface IBlueRepayCallback {
+interface IMorphoRepayCallback {
     /// @notice Callback called when a repayment occurs.
     /// @dev The callback is called only if data is not empty.
     /// @param amount The amount of repaid tokens.
     /// @param data Arbitrary data passed to the `repay` function.
-    function onBlueRepay(uint256 amount, bytes calldata data) external;
+    function onMorphoRepay(uint256 amount, bytes calldata data) external;
 }
 
-/// @title IBlueSupplyCallback
+/// @title IMorphoSupplyCallback
 /// @notice Interface that users willing to use `supply`'s callback must implement.
-interface IBlueSupplyCallback {
+interface IMorphoSupplyCallback {
     /// @notice Callback called when a supply occurs.
     /// @dev The callback is called only if data is not empty.
     /// @param amount The amount of supplied tokens.
     /// @param data Arbitrary data passed to the `supply` function.
-    function onBlueSupply(uint256 amount, bytes calldata data) external;
+    function onMorphoSupply(uint256 amount, bytes calldata data) external;
 }
 
-/// @title IBlueSupplyCollateralCallback
+/// @title IMorphoSupplyCollateralCallback
 /// @notice Interface that users willing to use `supplyCollateral`'s callback must implement.
-interface IBlueSupplyCollateralCallback {
+interface IMorphoSupplyCollateralCallback {
     /// @notice Callback called when a supply occurs.
     /// @dev The callback is called only if data is not empty.
     /// @param amount The amount of supplied tokens.
     /// @param data Arbitrary data passed to the `supplyCollateral` function.
-    function onBlueSupplyCollateral(uint256 amount, bytes calldata data) external;
+    function onMorphoSupplyCollateral(uint256 amount, bytes calldata data) external;
 }
 
-/// @title IBlueWithdrawCallback
+/// @title IMorphoWithdrawCallback
 /// @notice Interface that users willing to use `withdraw`'s callback must implement.
-interface IBlueFlashLoanCallback {
+interface IMorphoFlashLoanCallback {
     /// @notice Callback called when a flash loan occurs.
     /// @dev The callback is called only if data is not empty.
     /// @param amount The amount that was flash loaned.
     /// @param data Arbitrary data passed to the `flashLoan` function.
-    function onBlueFlashLoan(uint256 amount, bytes calldata data) external;
+    function onMorphoFlashLoan(uint256 amount, bytes calldata data) external;
 }

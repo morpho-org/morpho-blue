@@ -6,24 +6,24 @@ import "forge-std/console.sol";
 
 import {SigUtils} from "./helpers/SigUtils.sol";
 
-import "src/Blue.sol";
+import "src/Morpho.sol";
 import {SharesMathLib} from "src/libraries/SharesMathLib.sol";
 import {
-    IBlueLiquidateCallback,
-    IBlueRepayCallback,
-    IBlueSupplyCallback,
-    IBlueSupplyCollateralCallback
-} from "src/interfaces/IBlueCallbacks.sol";
+    IMorphoLiquidateCallback,
+    IMorphoRepayCallback,
+    IMorphoSupplyCallback,
+    IMorphoSupplyCollateralCallback
+} from "src/interfaces/IMorphoCallbacks.sol";
 import {ERC20Mock as ERC20} from "src/mocks/ERC20Mock.sol";
 import {OracleMock as Oracle} from "src/mocks/OracleMock.sol";
 import {IrmMock as Irm} from "src/mocks/IrmMock.sol";
 
-contract BlueTest is
+contract MorphoTest is
     Test,
-    IBlueSupplyCallback,
-    IBlueSupplyCollateralCallback,
-    IBlueRepayCallback,
-    IBlueLiquidateCallback
+    IMorphoSupplyCallback,
+    IMorphoSupplyCollateralCallback,
+    IMorphoRepayCallback,
+    IMorphoLiquidateCallback
 {
     using MarketLib for Market;
     using SharesMathLib for uint256;
@@ -35,7 +35,7 @@ contract BlueTest is
     uint256 private constant LLTV = 0.8 ether;
     address private constant OWNER = address(0xdead);
 
-    IBlue private blue;
+    IMorpho private morpho;
     ERC20 private borrowableAsset;
     ERC20 private collateralAsset;
     Oracle private oracle;
@@ -44,39 +44,39 @@ contract BlueTest is
     Id private id;
 
     function setUp() public {
-        // Create Blue.
-        blue = new Blue(OWNER);
+        // Create Morpho.
+        morpho = new Morpho(OWNER);
 
         // List a market.
         borrowableAsset = new ERC20("borrowable", "B", 18);
         collateralAsset = new ERC20("collateral", "C", 18);
         oracle = new Oracle();
 
-        irm = new Irm(blue);
+        irm = new Irm(morpho);
 
         market = Market(address(borrowableAsset), address(collateralAsset), address(oracle), address(irm), LLTV);
         id = market.id();
 
         vm.startPrank(OWNER);
-        blue.enableIrm(address(irm));
-        blue.enableLltv(LLTV);
-        blue.createMarket(market);
+        morpho.enableIrm(address(irm));
+        morpho.enableLltv(LLTV);
+        morpho.createMarket(market);
         vm.stopPrank();
 
         oracle.setPrice(WAD);
 
-        borrowableAsset.approve(address(blue), type(uint256).max);
-        collateralAsset.approve(address(blue), type(uint256).max);
+        borrowableAsset.approve(address(morpho), type(uint256).max);
+        collateralAsset.approve(address(morpho), type(uint256).max);
 
         vm.startPrank(BORROWER);
-        borrowableAsset.approve(address(blue), type(uint256).max);
-        collateralAsset.approve(address(blue), type(uint256).max);
-        blue.setAuthorization(address(this), true);
+        borrowableAsset.approve(address(morpho), type(uint256).max);
+        collateralAsset.approve(address(morpho), type(uint256).max);
+        morpho.setAuthorization(address(this), true);
         vm.stopPrank();
 
         vm.startPrank(LIQUIDATOR);
-        borrowableAsset.approve(address(blue), type(uint256).max);
-        collateralAsset.approve(address(blue), type(uint256).max);
+        borrowableAsset.approve(address(morpho), type(uint256).max);
+        collateralAsset.approve(address(morpho), type(uint256).max);
         vm.stopPrank();
     }
 
@@ -92,88 +92,88 @@ contract BlueTest is
     }
 
     function supplyBalance(address user) internal view returns (uint256) {
-        uint256 supplyShares = blue.supplyShares(id, user);
+        uint256 supplyShares = morpho.supplyShares(id, user);
         if (supplyShares == 0) return 0;
 
-        uint256 totalShares = blue.totalSupplyShares(id);
-        uint256 totalSupply = blue.totalSupply(id);
+        uint256 totalShares = morpho.totalSupplyShares(id);
+        uint256 totalSupply = morpho.totalSupply(id);
         return supplyShares.wDivDown(totalShares).wMulDown(totalSupply);
     }
 
     function borrowBalance(address user) internal view returns (uint256) {
-        uint256 borrowerShares = blue.borrowShares(id, user);
+        uint256 borrowerShares = morpho.borrowShares(id, user);
         if (borrowerShares == 0) return 0;
 
-        uint256 totalShares = blue.totalBorrowShares(id);
-        uint256 totalBorrow = blue.totalBorrow(id);
+        uint256 totalShares = morpho.totalBorrowShares(id);
+        uint256 totalBorrow = morpho.totalBorrow(id);
         return borrowerShares.wDivUp(totalShares).wMulUp(totalBorrow);
     }
 
     // Invariants
 
     function invariantLiquidity() public {
-        assertLe(blue.totalBorrow(id), blue.totalSupply(id), "liquidity");
+        assertLe(morpho.totalBorrow(id), morpho.totalSupply(id), "liquidity");
     }
 
     function invariantLltvEnabled() public {
-        assertTrue(blue.isLltvEnabled(LLTV));
+        assertTrue(morpho.isLltvEnabled(LLTV));
     }
 
     function invariantIrmEnabled() public {
-        assertTrue(blue.isIrmEnabled(address(irm)));
+        assertTrue(morpho.isIrmEnabled(address(irm)));
     }
 
     function invariantMarketCreated() public {
-        assertGt(blue.lastUpdate(id), 0);
+        assertGt(morpho.lastUpdate(id), 0);
     }
 
     // Tests
 
     function testOwner(address newOwner) public {
-        Blue blue2 = new Blue(newOwner);
+        Morpho morpho2 = new Morpho(newOwner);
 
-        assertEq(blue2.owner(), newOwner, "owner");
+        assertEq(morpho2.owner(), newOwner, "owner");
     }
 
     function testTransferOwnership(address oldOwner, address newOwner) public {
-        Blue blue2 = new Blue(oldOwner);
+        Morpho morpho2 = new Morpho(oldOwner);
 
         vm.prank(oldOwner);
-        blue2.setOwner(newOwner);
-        assertEq(blue2.owner(), newOwner, "owner");
+        morpho2.setOwner(newOwner);
+        assertEq(morpho2.owner(), newOwner, "owner");
     }
 
     function testTransferOwnershipWhenNotOwner(address attacker, address newOwner) public {
         vm.assume(attacker != OWNER);
 
-        Blue blue2 = new Blue(OWNER);
+        Morpho morpho2 = new Morpho(OWNER);
 
         vm.prank(attacker);
         vm.expectRevert(bytes(ErrorsLib.NOT_OWNER));
-        blue2.setOwner(newOwner);
+        morpho2.setOwner(newOwner);
     }
 
     function testEnableIrmWhenNotOwner(address attacker, address newIrm) public {
-        vm.assume(attacker != blue.owner());
+        vm.assume(attacker != morpho.owner());
 
         vm.prank(attacker);
         vm.expectRevert(bytes(ErrorsLib.NOT_OWNER));
-        blue.enableIrm(newIrm);
+        morpho.enableIrm(newIrm);
     }
 
     function testEnableIrm(address newIrm) public {
         vm.prank(OWNER);
-        blue.enableIrm(newIrm);
+        morpho.enableIrm(newIrm);
 
-        assertTrue(blue.isIrmEnabled(newIrm));
+        assertTrue(morpho.isIrmEnabled(newIrm));
     }
 
     function testCreateMarketWithEnabledIrm(Market memory marketFuzz) public {
         marketFuzz.lltv = LLTV;
 
         vm.startPrank(OWNER);
-        blue.enableIrm(marketFuzz.irm);
-        blue.createMarket(marketFuzz);
+        morpho.enableIrm(marketFuzz.irm);
+        morpho.createMarket(marketFuzz);
         vm.stopPrank();
     }
 
@@ -182,7 +182,7 @@ contract BlueTest is
 
         vm.prank(OWNER);
         vm.expectRevert(bytes(ErrorsLib.IRM_NOT_ENABLED));
-        blue.createMarket(marketFuzz);
+        morpho.createMarket(marketFuzz);
     }
 
     function testEnableLltvWhenNotOwner(address attacker, uint256 newLltv) public {
@@ -190,16 +190,16 @@ contract BlueTest is
 
         vm.prank(attacker);
         vm.expectRevert(bytes(ErrorsLib.NOT_OWNER));
-        blue.enableLltv(newLltv);
+        morpho.enableLltv(newLltv);
     }
 
     function testEnableLltv(uint256 newLltv) public {
         newLltv = bound(newLltv, 0, WAD - 1);
 
         vm.prank(OWNER);
-        blue.enableLltv(newLltv);
+        morpho.enableLltv(newLltv);
 
-        assertTrue(blue.isLltvEnabled(newLltv));
+        assertTrue(morpho.isLltvEnabled(newLltv));
     }
 
     function testEnableLltvShouldFailWhenLltvTooHigh(uint256 newLltv) public {
@@ -207,16 +207,16 @@ contract BlueTest is
 
         vm.prank(OWNER);
         vm.expectRevert(bytes(ErrorsLib.LLTV_TOO_HIGH));
-        blue.enableLltv(newLltv);
+        morpho.enableLltv(newLltv);
     }
 
     function testSetFee(uint256 fee) public {
         fee = bound(fee, 0, MAX_FEE);
 
         vm.prank(OWNER);
-        blue.setFee(market, fee);
+        morpho.setFee(market, fee);
 
-        assertEq(blue.fee(id), fee);
+        assertEq(morpho.fee(id), fee);
     }
 
     function testSetFeeShouldRevertIfTooHigh(uint256 fee) public {
@@ -224,7 +224,7 @@ contract BlueTest is
 
         vm.prank(OWNER);
         vm.expectRevert(bytes(ErrorsLib.MAX_FEE_EXCEEDED));
-        blue.setFee(market, fee);
+        morpho.setFee(market, fee);
     }
 
     function testSetFeeShouldRevertIfMarketNotCreated(Market memory marketFuzz, uint256 fee) public {
@@ -233,7 +233,7 @@ contract BlueTest is
 
         vm.prank(OWNER);
         vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
-        blue.setFee(marketFuzz, fee);
+        morpho.setFee(marketFuzz, fee);
     }
 
     function testSetFeeShouldRevertIfNotOwner(uint256 fee, address caller) public {
@@ -241,14 +241,14 @@ contract BlueTest is
         fee = bound(fee, 0, WAD);
 
         vm.expectRevert(bytes(ErrorsLib.NOT_OWNER));
-        blue.setFee(market, fee);
+        morpho.setFee(market, fee);
     }
 
     function testSetFeeRecipient(address recipient) public {
         vm.prank(OWNER);
-        blue.setFeeRecipient(recipient);
+        morpho.setFeeRecipient(recipient);
 
-        assertEq(blue.feeRecipient(), recipient);
+        assertEq(morpho.feeRecipient(), recipient);
     }
 
     function testSetFeeRecipientShouldRevertIfNotOwner(address caller, address recipient) public {
@@ -256,7 +256,7 @@ contract BlueTest is
 
         vm.expectRevert(bytes(ErrorsLib.NOT_OWNER));
         vm.prank(caller);
-        blue.setFeeRecipient(recipient);
+        morpho.setFeeRecipient(recipient);
     }
 
     function testFeeAccrues(uint256 amountLent, uint256 amountBorrowed, uint256 fee, uint256 timeElapsed) public {
@@ -267,38 +267,38 @@ contract BlueTest is
         address recipient = OWNER;
 
         vm.startPrank(OWNER);
-        blue.setFee(market, fee);
-        blue.setFeeRecipient(recipient);
+        morpho.setFee(market, fee);
+        morpho.setFeeRecipient(recipient);
         vm.stopPrank();
 
         borrowableAsset.setBalance(address(this), amountLent);
-        blue.supply(market, amountLent, 0, address(this), hex"");
+        morpho.supply(market, amountLent, 0, address(this), hex"");
 
         uint256 collateralAmount = amountBorrowed.wDivUp(LLTV);
         collateralAsset.setBalance(address(this), collateralAmount);
-        blue.supplyCollateral(market, collateralAmount, BORROWER, hex"");
+        morpho.supplyCollateral(market, collateralAmount, BORROWER, hex"");
 
         vm.prank(BORROWER);
-        blue.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
+        morpho.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
 
-        uint256 totalSupplyBefore = blue.totalSupply(id);
-        uint256 totalSupplySharesBefore = blue.totalSupplyShares(id);
+        uint256 totalSupplyBefore = morpho.totalSupply(id);
+        uint256 totalSupplySharesBefore = morpho.totalSupplyShares(id);
 
         // Trigger an accrue.
         vm.warp(block.timestamp + timeElapsed);
 
         collateralAsset.setBalance(address(this), 1);
-        blue.supplyCollateral(market, 1, address(this), hex"");
-        blue.withdrawCollateral(market, 1, address(this), address(this));
+        morpho.supplyCollateral(market, 1, address(this), hex"");
+        morpho.withdrawCollateral(market, 1, address(this), address(this));
 
-        uint256 totalSupplyAfter = blue.totalSupply(id);
+        uint256 totalSupplyAfter = morpho.totalSupply(id);
         vm.assume(totalSupplyAfter > totalSupplyBefore);
 
         uint256 accrued = totalSupplyAfter - totalSupplyBefore;
         uint256 expectedFee = accrued.wMulDown(fee);
         uint256 expectedFeeShares = expectedFee.mulDivDown(totalSupplySharesBefore, totalSupplyAfter - expectedFee);
 
-        assertEq(blue.supplyShares(id, recipient), expectedFeeShares);
+        assertEq(morpho.supplyShares(id, recipient), expectedFeeShares);
     }
 
     function testCreateMarketWithNotEnabledLltv(Market memory marketFuzz) public {
@@ -307,96 +307,96 @@ contract BlueTest is
 
         vm.prank(OWNER);
         vm.expectRevert(bytes(ErrorsLib.LLTV_NOT_ENABLED));
-        blue.createMarket(marketFuzz);
+        morpho.createMarket(marketFuzz);
     }
 
     function testSupplyAmount(uint256 amount, address onBehalf) public {
         vm.assume(onBehalf != address(0));
-        vm.assume(onBehalf != address(blue));
+        vm.assume(onBehalf != address(morpho));
         amount = bound(amount, 1, 2 ** 64);
-        uint256 shares = amount.toSharesDown(blue.totalSupply(id), blue.totalSupplyShares(id));
+        uint256 shares = amount.toSharesDown(morpho.totalSupply(id), morpho.totalSupplyShares(id));
 
         borrowableAsset.setBalance(address(this), amount);
-        blue.supply(market, amount, 0, onBehalf, hex"");
+        morpho.supply(market, amount, 0, onBehalf, hex"");
 
-        assertEq(blue.supplyShares(id, onBehalf), shares, "supply share");
+        assertEq(morpho.supplyShares(id, onBehalf), shares, "supply share");
         assertEq(borrowableAsset.balanceOf(onBehalf), 0, "lender balance");
-        assertEq(borrowableAsset.balanceOf(address(blue)), amount, "blue balance");
+        assertEq(borrowableAsset.balanceOf(address(morpho)), amount, "morpho balance");
     }
 
     function testSupplyShares(uint256 shares, address onBehalf) public {
         vm.assume(onBehalf != address(0));
-        vm.assume(onBehalf != address(blue));
+        vm.assume(onBehalf != address(morpho));
         shares = bound(shares, 1, 2 ** 64);
-        uint256 amount = shares.toAssetsUp(blue.totalSupply(id), blue.totalSupplyShares(id));
+        uint256 amount = shares.toAssetsUp(morpho.totalSupply(id), morpho.totalSupplyShares(id));
 
         borrowableAsset.setBalance(address(this), amount);
-        blue.supply(market, 0, shares, onBehalf, hex"");
+        morpho.supply(market, 0, shares, onBehalf, hex"");
 
-        assertEq(blue.supplyShares(id, onBehalf), shares, "supply share");
+        assertEq(morpho.supplyShares(id, onBehalf), shares, "supply share");
         assertEq(borrowableAsset.balanceOf(onBehalf), 0, "lender balance");
-        assertEq(borrowableAsset.balanceOf(address(blue)), amount, "blue balance");
+        assertEq(borrowableAsset.balanceOf(address(morpho)), amount, "morpho balance");
     }
 
     function testBorrowAmount(uint256 amountLent, uint256 amountBorrowed, address receiver) public {
         vm.assume(receiver != address(0));
-        vm.assume(receiver != address(blue));
+        vm.assume(receiver != address(morpho));
         amountLent = bound(amountLent, 1, 2 ** 64);
         amountBorrowed = bound(amountBorrowed, 1, 2 ** 64);
-        uint256 shares = amountBorrowed.toSharesUp(blue.totalBorrow(id), blue.totalBorrowShares(id));
+        uint256 shares = amountBorrowed.toSharesUp(morpho.totalBorrow(id), morpho.totalBorrowShares(id));
 
         borrowableAsset.setBalance(address(this), amountLent);
-        blue.supply(market, amountLent, 0, address(this), hex"");
+        morpho.supply(market, amountLent, 0, address(this), hex"");
 
-        uint256 collateralAmount = shares.toAssetsUp(blue.totalBorrow(id), blue.totalBorrowShares(id)).wDivUp(LLTV);
+        uint256 collateralAmount = shares.toAssetsUp(morpho.totalBorrow(id), morpho.totalBorrowShares(id)).wDivUp(LLTV);
         collateralAsset.setBalance(address(this), collateralAmount);
-        blue.supplyCollateral(market, collateralAmount, BORROWER, hex"");
+        morpho.supplyCollateral(market, collateralAmount, BORROWER, hex"");
 
         if (amountBorrowed > amountLent) {
             vm.prank(BORROWER);
             vm.expectRevert(bytes(ErrorsLib.INSUFFICIENT_LIQUIDITY));
-            blue.borrow(market, amountBorrowed, 0, BORROWER, receiver);
+            morpho.borrow(market, amountBorrowed, 0, BORROWER, receiver);
             return;
         }
 
         vm.prank(BORROWER);
-        blue.borrow(market, amountBorrowed, 0, BORROWER, receiver);
+        morpho.borrow(market, amountBorrowed, 0, BORROWER, receiver);
 
-        assertEq(blue.borrowShares(id, BORROWER), amountBorrowed * SharesMathLib.VIRTUAL_SHARES, "borrow share");
+        assertEq(morpho.borrowShares(id, BORROWER), amountBorrowed * SharesMathLib.VIRTUAL_SHARES, "borrow share");
         assertEq(borrowableAsset.balanceOf(receiver), amountBorrowed, "receiver balance");
-        assertEq(borrowableAsset.balanceOf(address(blue)), amountLent - amountBorrowed, "blue balance");
+        assertEq(borrowableAsset.balanceOf(address(morpho)), amountLent - amountBorrowed, "morpho balance");
     }
 
     function testBorrowShares(uint256 shares) public {
         shares = bound(shares, 1, 2 ** 64);
-        uint256 amount = shares.toAssetsDown(blue.totalBorrow(id), blue.totalBorrowShares(id));
+        uint256 amount = shares.toAssetsDown(morpho.totalBorrow(id), morpho.totalBorrowShares(id));
 
         borrowableAsset.setBalance(address(this), amount);
-        if (amount > 0) blue.supply(market, amount, 0, address(this), hex"");
+        if (amount > 0) morpho.supply(market, amount, 0, address(this), hex"");
 
-        uint256 collateralAmount = shares.toAssetsUp(blue.totalBorrow(id), blue.totalBorrowShares(id)).wDivUp(LLTV);
+        uint256 collateralAmount = shares.toAssetsUp(morpho.totalBorrow(id), morpho.totalBorrowShares(id)).wDivUp(LLTV);
         collateralAsset.setBalance(address(this), collateralAmount);
-        if (collateralAmount > 0) blue.supplyCollateral(market, collateralAmount, BORROWER, hex"");
+        if (collateralAmount > 0) morpho.supplyCollateral(market, collateralAmount, BORROWER, hex"");
 
         vm.prank(BORROWER);
-        blue.borrow(market, 0, shares, BORROWER, BORROWER);
+        morpho.borrow(market, 0, shares, BORROWER, BORROWER);
 
-        assertEq(blue.borrowShares(id, BORROWER), shares, "borrow share");
+        assertEq(morpho.borrowShares(id, BORROWER), shares, "borrow share");
         assertEq(borrowableAsset.balanceOf(BORROWER), amount, "receiver balance");
-        assertEq(borrowableAsset.balanceOf(address(blue)), 0, "blue balance");
+        assertEq(borrowableAsset.balanceOf(address(morpho)), 0, "morpho balance");
     }
 
     function _testWithdrawCommon(uint256 amountLent) public {
         amountLent = bound(amountLent, 1, 2 ** 64);
 
         borrowableAsset.setBalance(address(this), amountLent);
-        blue.supply(market, amountLent, 0, address(this), hex"");
+        morpho.supply(market, amountLent, 0, address(this), hex"");
 
         // Accrue interests.
-        stdstore.target(address(blue)).sig("totalSupply(bytes32)").with_key(Id.unwrap(id)).checked_write(
-            blue.totalSupply(id) * 4 / 3
+        stdstore.target(address(morpho)).sig("totalSupply(bytes32)").with_key(Id.unwrap(id)).checked_write(
+            morpho.totalSupply(id) * 4 / 3
         );
-        borrowableAsset.setBalance(address(blue), blue.totalSupply(id));
+        borrowableAsset.setBalance(address(morpho), morpho.totalSupply(id));
     }
 
     function testWithdrawShares(uint256 amountLent, uint256 sharesWithdrawn, uint256 amountBorrowed, address receiver)
@@ -404,184 +404,186 @@ contract BlueTest is
     {
         vm.assume(receiver != BORROWER);
         vm.assume(receiver != address(0));
-        vm.assume(receiver != address(blue));
+        vm.assume(receiver != address(morpho));
         vm.assume(receiver != address(this));
         sharesWithdrawn = bound(sharesWithdrawn, 1, 2 ** 64);
 
         _testWithdrawCommon(amountLent);
-        amountBorrowed = bound(amountBorrowed, 1, blue.totalSupply(id));
+        amountBorrowed = bound(amountBorrowed, 1, morpho.totalSupply(id));
 
         uint256 collateralAmount = amountBorrowed.wDivUp(LLTV);
         collateralAsset.setBalance(address(this), collateralAmount);
-        blue.supplyCollateral(market, collateralAmount, BORROWER, hex"");
+        morpho.supplyCollateral(market, collateralAmount, BORROWER, hex"");
 
-        blue.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
+        morpho.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
 
-        uint256 totalSupplyBefore = blue.totalSupply(id);
-        uint256 supplySharesBefore = blue.supplyShares(id, address(this));
-        uint256 amountWithdrawn = sharesWithdrawn.toAssetsDown(blue.totalSupply(id), blue.totalSupplyShares(id));
+        uint256 totalSupplyBefore = morpho.totalSupply(id);
+        uint256 supplySharesBefore = morpho.supplyShares(id, address(this));
+        uint256 amountWithdrawn = sharesWithdrawn.toAssetsDown(morpho.totalSupply(id), morpho.totalSupplyShares(id));
 
-        if (sharesWithdrawn > blue.supplyShares(id, address(this))) {
+        if (sharesWithdrawn > morpho.supplyShares(id, address(this))) {
             vm.expectRevert(stdError.arithmeticError);
-            blue.withdraw(market, 0, sharesWithdrawn, address(this), receiver);
+            morpho.withdraw(market, 0, sharesWithdrawn, address(this), receiver);
             return;
         } else if (amountWithdrawn > totalSupplyBefore - amountBorrowed) {
             vm.expectRevert(bytes(ErrorsLib.INSUFFICIENT_LIQUIDITY));
-            blue.withdraw(market, 0, sharesWithdrawn, address(this), receiver);
+            morpho.withdraw(market, 0, sharesWithdrawn, address(this), receiver);
             return;
         }
 
-        blue.withdraw(market, 0, sharesWithdrawn, address(this), receiver);
+        morpho.withdraw(market, 0, sharesWithdrawn, address(this), receiver);
 
-        assertEq(blue.supplyShares(id, address(this)), supplySharesBefore - sharesWithdrawn, "supply share");
+        assertEq(morpho.supplyShares(id, address(this)), supplySharesBefore - sharesWithdrawn, "supply share");
         assertEq(borrowableAsset.balanceOf(receiver), amountWithdrawn, "receiver balance");
         assertEq(
-            borrowableAsset.balanceOf(address(blue)),
+            borrowableAsset.balanceOf(address(morpho)),
             totalSupplyBefore - amountBorrowed - amountWithdrawn,
-            "blue balance"
+            "morpho balance"
         );
     }
 
     function testWithdrawAmount(uint256 amountLent, uint256 exactAmountWithdrawn) public {
         _testWithdrawCommon(amountLent);
 
-        uint256 totalSupplyBefore = blue.totalSupply(id);
-        uint256 supplySharesBefore = blue.supplyShares(id, address(this));
+        uint256 totalSupplyBefore = morpho.totalSupply(id);
+        uint256 supplySharesBefore = morpho.supplyShares(id, address(this));
         exactAmountWithdrawn = bound(
-            exactAmountWithdrawn, 1, supplySharesBefore.toAssetsDown(blue.totalSupply(id), blue.totalSupplyShares(id))
+            exactAmountWithdrawn,
+            1,
+            supplySharesBefore.toAssetsDown(morpho.totalSupply(id), morpho.totalSupplyShares(id))
         );
-        blue.withdraw(market, exactAmountWithdrawn, 0, address(this), address(this));
+        morpho.withdraw(market, exactAmountWithdrawn, 0, address(this), address(this));
 
-        // assertEq(blue.supplyShares(id, address(this)), supplySharesBefore - sharesWithdrawn, "supply share");
+        // assertEq(morpho.supplyShares(id, address(this)), supplySharesBefore - sharesWithdrawn, "supply share");
         assertEq(borrowableAsset.balanceOf(address(this)), exactAmountWithdrawn, "this balance");
-        assertEq(borrowableAsset.balanceOf(address(blue)), totalSupplyBefore - exactAmountWithdrawn, "blue balance");
+        assertEq(borrowableAsset.balanceOf(address(morpho)), totalSupplyBefore - exactAmountWithdrawn, "morpho balance");
     }
 
     function testWithdrawAll(uint256 amountLent) public {
         _testWithdrawCommon(amountLent);
 
-        uint256 totalSupplyBefore = blue.totalSupply(id);
+        uint256 totalSupplyBefore = morpho.totalSupply(id);
         uint256 amountWithdrawn =
-            blue.supplyShares(id, address(this)).toAssetsDown(blue.totalSupply(id), blue.totalSupplyShares(id));
-        blue.withdraw(market, 0, blue.supplyShares(id, address(this)), address(this), address(this));
+            morpho.supplyShares(id, address(this)).toAssetsDown(morpho.totalSupply(id), morpho.totalSupplyShares(id));
+        morpho.withdraw(market, 0, morpho.supplyShares(id, address(this)), address(this), address(this));
 
-        assertEq(blue.supplyShares(id, address(this)), 0, "supply share");
+        assertEq(morpho.supplyShares(id, address(this)), 0, "supply share");
         assertEq(borrowableAsset.balanceOf(address(this)), amountWithdrawn, "this balance");
-        assertEq(borrowableAsset.balanceOf(address(blue)), totalSupplyBefore - amountWithdrawn, "blue balance");
+        assertEq(borrowableAsset.balanceOf(address(morpho)), totalSupplyBefore - amountWithdrawn, "morpho balance");
     }
 
     function _testRepayCommon(uint256 amountBorrowed, address borrower) public {
         amountBorrowed = bound(amountBorrowed, 1, 2 ** 64);
 
         borrowableAsset.setBalance(address(this), 2 ** 66);
-        blue.supply(market, amountBorrowed, 0, address(this), hex"");
+        morpho.supply(market, amountBorrowed, 0, address(this), hex"");
 
         uint256 collateralAmount = amountBorrowed.wDivUp(LLTV);
         collateralAsset.setBalance(address(this), collateralAmount);
-        blue.supplyCollateral(market, collateralAmount, borrower, hex"");
+        morpho.supplyCollateral(market, collateralAmount, borrower, hex"");
 
         vm.prank(borrower);
-        blue.borrow(market, amountBorrowed, 0, borrower, borrower);
+        morpho.borrow(market, amountBorrowed, 0, borrower, borrower);
 
         // Accrue interests.
-        stdstore.target(address(blue)).sig("totalBorrow(bytes32)").with_key(Id.unwrap(id)).checked_write(
-            blue.totalBorrow(id) * 4 / 3
+        stdstore.target(address(morpho)).sig("totalBorrow(bytes32)").with_key(Id.unwrap(id)).checked_write(
+            morpho.totalBorrow(id) * 4 / 3
         );
     }
 
     function testRepayShares(uint256 amountBorrowed, uint256 sharesRepaid, address onBehalf) public {
         vm.assume(onBehalf != address(0));
-        vm.assume(onBehalf != address(blue));
+        vm.assume(onBehalf != address(morpho));
         _testRepayCommon(amountBorrowed, onBehalf);
 
         uint256 thisBalanceBefore = borrowableAsset.balanceOf(address(this));
-        uint256 borrowSharesBefore = blue.borrowShares(id, onBehalf);
+        uint256 borrowSharesBefore = morpho.borrowShares(id, onBehalf);
         sharesRepaid = bound(sharesRepaid, 1, borrowSharesBefore);
 
-        uint256 amountRepaid = sharesRepaid.toAssetsUp(blue.totalBorrow(id), blue.totalBorrowShares(id));
-        blue.repay(market, 0, sharesRepaid, onBehalf, hex"");
+        uint256 amountRepaid = sharesRepaid.toAssetsUp(morpho.totalBorrow(id), morpho.totalBorrowShares(id));
+        morpho.repay(market, 0, sharesRepaid, onBehalf, hex"");
 
-        assertEq(blue.borrowShares(id, onBehalf), borrowSharesBefore - sharesRepaid, "borrow share");
+        assertEq(morpho.borrowShares(id, onBehalf), borrowSharesBefore - sharesRepaid, "borrow share");
         assertEq(borrowableAsset.balanceOf(address(this)), thisBalanceBefore - amountRepaid, "this balance");
-        assertEq(borrowableAsset.balanceOf(address(blue)), amountRepaid, "blue balance");
+        assertEq(borrowableAsset.balanceOf(address(morpho)), amountRepaid, "morpho balance");
     }
 
     function testRepayAmount(uint256 amountBorrowed, uint256 exactAmountRepaid) public {
         _testRepayCommon(amountBorrowed, address(this));
 
         uint256 thisBalanceBefore = borrowableAsset.balanceOf(address(this));
-        uint256 borrowSharesBefore = blue.borrowShares(id, address(this));
+        uint256 borrowSharesBefore = morpho.borrowShares(id, address(this));
         exactAmountRepaid = bound(
-            exactAmountRepaid, 1, borrowSharesBefore.toAssetsDown(blue.totalBorrow(id), blue.totalBorrowShares(id))
+            exactAmountRepaid, 1, borrowSharesBefore.toAssetsDown(morpho.totalBorrow(id), morpho.totalBorrowShares(id))
         );
-        uint256 sharesRepaid = exactAmountRepaid.toSharesDown(blue.totalBorrow(id), blue.totalBorrowShares(id));
-        blue.repay(market, exactAmountRepaid, 0, address(this), hex"");
+        uint256 sharesRepaid = exactAmountRepaid.toSharesDown(morpho.totalBorrow(id), morpho.totalBorrowShares(id));
+        morpho.repay(market, exactAmountRepaid, 0, address(this), hex"");
 
-        assertEq(blue.borrowShares(id, address(this)), borrowSharesBefore - sharesRepaid, "borrow share");
+        assertEq(morpho.borrowShares(id, address(this)), borrowSharesBefore - sharesRepaid, "borrow share");
         assertEq(borrowableAsset.balanceOf(address(this)), thisBalanceBefore - exactAmountRepaid, "this balance");
-        assertEq(borrowableAsset.balanceOf(address(blue)), exactAmountRepaid, "blue balance");
+        assertEq(borrowableAsset.balanceOf(address(morpho)), exactAmountRepaid, "morpho balance");
     }
 
     function testRepayAll(uint256 amountBorrowed) public {
         _testRepayCommon(amountBorrowed, address(this));
 
         uint256 amountRepaid =
-            blue.borrowShares(id, address(this)).toAssetsUp(blue.totalBorrow(id), blue.totalBorrowShares(id));
+            morpho.borrowShares(id, address(this)).toAssetsUp(morpho.totalBorrow(id), morpho.totalBorrowShares(id));
         borrowableAsset.setBalance(address(this), amountRepaid);
-        blue.repay(market, 0, blue.borrowShares(id, address(this)), address(this), hex"");
+        morpho.repay(market, 0, morpho.borrowShares(id, address(this)), address(this), hex"");
 
-        assertEq(blue.borrowShares(id, address(this)), 0, "borrow share");
+        assertEq(morpho.borrowShares(id, address(this)), 0, "borrow share");
         assertEq(borrowableAsset.balanceOf(address(this)), 0, "this balance");
-        assertEq(borrowableAsset.balanceOf(address(blue)), amountRepaid, "blue balance");
+        assertEq(borrowableAsset.balanceOf(address(morpho)), amountRepaid, "morpho balance");
     }
 
     function testSupplyCollateralOnBehalf(uint256 amount, address onBehalf) public {
         vm.assume(onBehalf != address(0));
-        vm.assume(onBehalf != address(blue));
+        vm.assume(onBehalf != address(morpho));
         amount = bound(amount, 1, 2 ** 64);
 
         collateralAsset.setBalance(address(this), amount);
-        blue.supplyCollateral(market, amount, onBehalf, hex"");
+        morpho.supplyCollateral(market, amount, onBehalf, hex"");
 
-        assertEq(blue.collateral(id, onBehalf), amount, "collateral");
+        assertEq(morpho.collateral(id, onBehalf), amount, "collateral");
         assertEq(collateralAsset.balanceOf(onBehalf), 0, "onBehalf balance");
-        assertEq(collateralAsset.balanceOf(address(blue)), amount, "blue balance");
+        assertEq(collateralAsset.balanceOf(address(morpho)), amount, "morpho balance");
     }
 
     function testWithdrawCollateral(uint256 amountDeposited, uint256 amountWithdrawn, address receiver) public {
         vm.assume(receiver != address(0));
-        vm.assume(receiver != address(blue));
+        vm.assume(receiver != address(morpho));
         amountDeposited = bound(amountDeposited, 1, 2 ** 64);
         amountWithdrawn = bound(amountWithdrawn, 1, 2 ** 64);
 
         collateralAsset.setBalance(address(this), amountDeposited);
-        blue.supplyCollateral(market, amountDeposited, address(this), hex"");
+        morpho.supplyCollateral(market, amountDeposited, address(this), hex"");
 
         if (amountWithdrawn > amountDeposited) {
             vm.expectRevert(stdError.arithmeticError);
-            blue.withdrawCollateral(market, amountWithdrawn, address(this), receiver);
+            morpho.withdrawCollateral(market, amountWithdrawn, address(this), receiver);
             return;
         }
 
-        blue.withdrawCollateral(market, amountWithdrawn, address(this), receiver);
+        morpho.withdrawCollateral(market, amountWithdrawn, address(this), receiver);
 
-        assertEq(blue.collateral(id, address(this)), amountDeposited - amountWithdrawn, "this collateral");
+        assertEq(morpho.collateral(id, address(this)), amountDeposited - amountWithdrawn, "this collateral");
         assertEq(collateralAsset.balanceOf(receiver), amountWithdrawn, "receiver balance");
-        assertEq(collateralAsset.balanceOf(address(blue)), amountDeposited - amountWithdrawn, "blue balance");
+        assertEq(collateralAsset.balanceOf(address(morpho)), amountDeposited - amountWithdrawn, "morpho balance");
     }
 
     function testWithdrawCollateralAll(uint256 amountDeposited, address receiver) public {
         vm.assume(receiver != address(0));
-        vm.assume(receiver != address(blue));
+        vm.assume(receiver != address(morpho));
         amountDeposited = bound(amountDeposited, 1, 2 ** 64);
 
         collateralAsset.setBalance(address(this), amountDeposited);
-        blue.supplyCollateral(market, amountDeposited, address(this), hex"");
-        blue.withdrawCollateral(market, blue.collateral(id, address(this)), address(this), receiver);
+        morpho.supplyCollateral(market, amountDeposited, address(this), hex"");
+        morpho.withdrawCollateral(market, morpho.collateral(id, address(this)), address(this), receiver);
 
-        assertEq(blue.collateral(id, address(this)), 0, "this collateral");
+        assertEq(morpho.collateral(id, address(this)), 0, "this collateral");
         assertEq(collateralAsset.balanceOf(receiver), amountDeposited, "receiver balance");
-        assertEq(collateralAsset.balanceOf(address(blue)), 0, "blue balance");
+        assertEq(collateralAsset.balanceOf(address(morpho)), 0, "morpho balance");
     }
 
     function testCollateralRequirements(uint256 amountCollateral, uint256 amountBorrowed, uint256 collateralPrice)
@@ -596,16 +598,16 @@ contract BlueTest is
         borrowableAsset.setBalance(address(this), amountBorrowed);
         collateralAsset.setBalance(BORROWER, amountCollateral);
 
-        blue.supply(market, amountBorrowed, 0, address(this), hex"");
+        morpho.supply(market, amountBorrowed, 0, address(this), hex"");
 
         vm.prank(BORROWER);
-        blue.supplyCollateral(market, amountCollateral, BORROWER, hex"");
+        morpho.supplyCollateral(market, amountCollateral, BORROWER, hex"");
 
         uint256 maxBorrow = amountCollateral.wMulDown(collateralPrice).wMulDown(LLTV);
 
         vm.prank(BORROWER);
         if (maxBorrow < amountBorrowed) vm.expectRevert(bytes(ErrorsLib.INSUFFICIENT_COLLATERAL));
-        blue.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
+        morpho.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
     }
 
     function testLiquidate(uint256 amountLent) public {
@@ -623,12 +625,12 @@ contract BlueTest is
         borrowableAsset.setBalance(LIQUIDATOR, amountBorrowed);
 
         // Supply
-        blue.supply(market, amountLent, 0, address(this), hex"");
+        morpho.supply(market, amountLent, 0, address(this), hex"");
 
         // Borrow
         vm.startPrank(BORROWER);
-        blue.supplyCollateral(market, amountCollateral, BORROWER, hex"");
-        blue.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
+        morpho.supplyCollateral(market, amountCollateral, BORROWER, hex"");
+        morpho.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
         vm.stopPrank();
 
         // Price change
@@ -638,7 +640,7 @@ contract BlueTest is
 
         // Liquidate
         vm.prank(LIQUIDATOR);
-        blue.liquidate(market, BORROWER, toSeize, hex"");
+        morpho.liquidate(market, BORROWER, toSeize, hex"");
 
         uint256 liquidatorNetWorthAfter = netWorth(LIQUIDATOR);
         (uint256 collateralPrice, uint256 priceScale) = IOracle(market.oracle).price();
@@ -648,7 +650,7 @@ contract BlueTest is
             liquidatorNetWorthBefore + toSeize.mulDivDown(collateralPrice, priceScale) - expectedRepaid;
         assertEq(liquidatorNetWorthAfter, expectedNetWorthAfter, "LIQUIDATOR net worth");
         assertApproxEqAbs(borrowBalance(BORROWER), amountBorrowed - expectedRepaid, 100, "BORROWER balance");
-        assertEq(blue.collateral(id, BORROWER), amountCollateral - toSeize, "BORROWER collateral");
+        assertEq(morpho.collateral(id, BORROWER), amountCollateral - toSeize, "BORROWER collateral");
     }
 
     function testRealizeBadDebt(uint256 amountLent) public {
@@ -666,12 +668,12 @@ contract BlueTest is
         borrowableAsset.setBalance(LIQUIDATOR, amountBorrowed);
 
         // Supply
-        blue.supply(market, amountLent, 0, address(this), hex"");
+        morpho.supply(market, amountLent, 0, address(this), hex"");
 
         // Borrow
         vm.startPrank(BORROWER);
-        blue.supplyCollateral(market, amountCollateral, BORROWER, hex"");
-        blue.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
+        morpho.supplyCollateral(market, amountCollateral, BORROWER, hex"");
+        morpho.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
         vm.stopPrank();
 
         // Price change
@@ -681,7 +683,7 @@ contract BlueTest is
 
         // Liquidate
         vm.prank(LIQUIDATOR);
-        blue.liquidate(market, BORROWER, toSeize, hex"");
+        morpho.liquidate(market, BORROWER, toSeize, hex"");
 
         uint256 liquidatorNetWorthAfter = netWorth(LIQUIDATOR);
         (uint256 collateralPrice, uint256 priceScale) = IOracle(market.oracle).price();
@@ -691,11 +693,11 @@ contract BlueTest is
             liquidatorNetWorthBefore + toSeize.mulDivDown(collateralPrice, priceScale) - expectedRepaid;
         assertEq(liquidatorNetWorthAfter, expectedNetWorthAfter, "LIQUIDATOR net worth");
         assertEq(borrowBalance(BORROWER), 0, "BORROWER balance");
-        assertEq(blue.collateral(id, BORROWER), 0, "BORROWER collateral");
+        assertEq(morpho.collateral(id, BORROWER), 0, "BORROWER collateral");
         uint256 expectedBadDebt = amountBorrowed - expectedRepaid;
         assertGt(expectedBadDebt, 0, "bad debt");
         assertApproxEqAbs(supplyBalance(address(this)), amountLent - expectedBadDebt, 10, "lender supply balance");
-        assertApproxEqAbs(blue.totalBorrow(id), 0, 10, "total borrow");
+        assertApproxEqAbs(morpho.totalBorrow(id), 0, 10, "total borrow");
     }
 
     function testTwoUsersSupply(uint256 firstAmount, uint256 secondAmount) public {
@@ -703,21 +705,21 @@ contract BlueTest is
         secondAmount = bound(secondAmount, 1, 2 ** 64);
 
         borrowableAsset.setBalance(address(this), firstAmount);
-        blue.supply(market, firstAmount, 0, address(this), hex"");
+        morpho.supply(market, firstAmount, 0, address(this), hex"");
 
         borrowableAsset.setBalance(BORROWER, secondAmount);
         vm.prank(BORROWER);
-        blue.supply(market, secondAmount, 0, BORROWER, hex"");
+        morpho.supply(market, secondAmount, 0, BORROWER, hex"");
 
         assertApproxEqAbs(supplyBalance(address(this)), firstAmount, 100, "same balance first user");
         assertEq(
-            blue.supplyShares(id, address(this)),
+            morpho.supplyShares(id, address(this)),
             firstAmount * SharesMathLib.VIRTUAL_SHARES,
             "expected shares first user"
         );
         assertApproxEqAbs(supplyBalance(BORROWER), secondAmount, 100, "same balance second user");
         assertApproxEqAbs(
-            blue.supplyShares(id, BORROWER),
+            morpho.supplyShares(id, BORROWER),
             secondAmount * SharesMathLib.VIRTUAL_SHARES,
             100,
             "expected shares second user"
@@ -728,94 +730,94 @@ contract BlueTest is
         vm.assume(neq(marketFuzz, market));
 
         vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
-        blue.supply(marketFuzz, 1, 0, address(this), hex"");
+        morpho.supply(marketFuzz, 1, 0, address(this), hex"");
 
         vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
-        blue.withdraw(marketFuzz, 1, 0, address(this), address(this));
+        morpho.withdraw(marketFuzz, 1, 0, address(this), address(this));
 
         vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
-        blue.borrow(marketFuzz, 1, 0, address(this), address(this));
+        morpho.borrow(marketFuzz, 1, 0, address(this), address(this));
 
         vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
-        blue.repay(marketFuzz, 1, 0, address(this), hex"");
+        morpho.repay(marketFuzz, 1, 0, address(this), hex"");
 
         vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
-        blue.supplyCollateral(marketFuzz, 1, address(this), hex"");
+        morpho.supplyCollateral(marketFuzz, 1, address(this), hex"");
 
         vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
-        blue.withdrawCollateral(marketFuzz, 1, address(this), address(this));
+        morpho.withdrawCollateral(marketFuzz, 1, address(this), address(this));
 
         vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
-        blue.liquidate(marketFuzz, address(0), 1, hex"");
+        morpho.liquidate(marketFuzz, address(0), 1, hex"");
     }
 
     function testInputZero() public {
         vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
-        blue.supply(market, 0, 0, address(this), hex"");
+        morpho.supply(market, 0, 0, address(this), hex"");
         vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
-        blue.supply(market, 1, 1, address(this), hex"");
+        morpho.supply(market, 1, 1, address(this), hex"");
 
         vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
-        blue.withdraw(market, 0, 0, address(this), address(this));
+        morpho.withdraw(market, 0, 0, address(this), address(this));
         vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
-        blue.withdraw(market, 1, 1, address(this), address(this));
+        morpho.withdraw(market, 1, 1, address(this), address(this));
 
         vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
-        blue.borrow(market, 0, 0, address(this), address(this));
+        morpho.borrow(market, 0, 0, address(this), address(this));
         vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
-        blue.borrow(market, 1, 1, address(this), address(this));
+        morpho.borrow(market, 1, 1, address(this), address(this));
 
         vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
-        blue.repay(market, 0, 0, address(this), hex"");
+        morpho.repay(market, 0, 0, address(this), hex"");
         vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
-        blue.repay(market, 1, 1, address(this), hex"");
-
-        vm.expectRevert(bytes(ErrorsLib.ZERO_AMOUNT));
-        blue.supplyCollateral(market, 0, address(this), hex"");
+        morpho.repay(market, 1, 1, address(this), hex"");
 
         vm.expectRevert(bytes(ErrorsLib.ZERO_AMOUNT));
-        blue.withdrawCollateral(market, 0, address(this), address(this));
+        morpho.supplyCollateral(market, 0, address(this), hex"");
 
         vm.expectRevert(bytes(ErrorsLib.ZERO_AMOUNT));
-        blue.liquidate(market, address(0), 0, hex"");
+        morpho.withdrawCollateral(market, 0, address(this), address(this));
+
+        vm.expectRevert(bytes(ErrorsLib.ZERO_AMOUNT));
+        morpho.liquidate(market, address(0), 0, hex"");
     }
 
     function testZeroAddress() public {
         vm.expectRevert(bytes(ErrorsLib.ZERO_ADDRESS));
-        blue.supply(market, 0, 1, address(0), hex"");
+        morpho.supply(market, 0, 1, address(0), hex"");
 
         vm.expectRevert(bytes(ErrorsLib.ZERO_ADDRESS));
-        blue.withdraw(market, 0, 1, address(this), address(0));
+        morpho.withdraw(market, 0, 1, address(this), address(0));
 
         vm.expectRevert(bytes(ErrorsLib.ZERO_ADDRESS));
-        blue.borrow(market, 0, 1, address(this), address(0));
+        morpho.borrow(market, 0, 1, address(this), address(0));
 
         vm.expectRevert(bytes(ErrorsLib.ZERO_ADDRESS));
-        blue.repay(market, 0, 1, address(0), hex"");
+        morpho.repay(market, 0, 1, address(0), hex"");
 
         vm.expectRevert(bytes(ErrorsLib.ZERO_ADDRESS));
-        blue.supplyCollateral(market, 1, address(0), hex"");
+        morpho.supplyCollateral(market, 1, address(0), hex"");
 
         vm.expectRevert(bytes(ErrorsLib.ZERO_ADDRESS));
-        blue.withdrawCollateral(market, 1, address(this), address(0));
+        morpho.withdrawCollateral(market, 1, address(this), address(0));
     }
 
     function testEmptyMarket(uint256 amount) public {
         amount = bound(amount, 1, type(uint256).max / SharesMathLib.VIRTUAL_SHARES);
 
         vm.expectRevert(stdError.arithmeticError);
-        blue.withdraw(market, amount, 0, address(this), address(this));
+        morpho.withdraw(market, amount, 0, address(this), address(this));
 
         vm.expectRevert(stdError.arithmeticError);
-        blue.repay(market, amount, 0, address(this), hex"");
+        morpho.repay(market, amount, 0, address(this), hex"");
 
         vm.expectRevert(stdError.arithmeticError);
-        blue.withdrawCollateral(market, amount, address(this), address(this));
+        morpho.withdrawCollateral(market, amount, address(this), address(this));
     }
 
     function testSetAuthorization(address authorized, bool isAuthorized) public {
-        blue.setAuthorization(authorized, isAuthorized);
-        assertEq(blue.isAuthorized(address(this), authorized), isAuthorized);
+        morpho.setAuthorization(authorized, isAuthorized);
+        assertEq(morpho.isAuthorized(address(this), authorized), isAuthorized);
     }
 
     function testNotAuthorized(address attacker) public {
@@ -824,11 +826,11 @@ contract BlueTest is
         vm.startPrank(attacker);
 
         vm.expectRevert(bytes(ErrorsLib.UNAUTHORIZED));
-        blue.withdraw(market, 0, 1, address(this), address(this));
+        morpho.withdraw(market, 0, 1, address(this), address(this));
         vm.expectRevert(bytes(ErrorsLib.UNAUTHORIZED));
-        blue.withdrawCollateral(market, 1, address(this), address(this));
+        morpho.withdrawCollateral(market, 1, address(this), address(this));
         vm.expectRevert(bytes(ErrorsLib.UNAUTHORIZED));
-        blue.borrow(market, 0, 1, address(this), address(this));
+        morpho.borrow(market, 0, 1, address(this), address(this));
 
         vm.stopPrank();
     }
@@ -837,16 +839,16 @@ contract BlueTest is
         borrowableAsset.setBalance(address(this), 100 ether);
         collateralAsset.setBalance(address(this), 100 ether);
 
-        blue.supply(market, 100 ether, 0, address(this), hex"");
-        blue.supplyCollateral(market, 100 ether, address(this), hex"");
+        morpho.supply(market, 100 ether, 0, address(this), hex"");
+        morpho.supplyCollateral(market, 100 ether, address(this), hex"");
 
-        blue.setAuthorization(authorized, true);
+        morpho.setAuthorization(authorized, true);
 
         vm.startPrank(authorized);
 
-        blue.withdraw(market, 1 ether, 0, address(this), address(this));
-        blue.withdrawCollateral(market, 1 ether, address(this), address(this));
-        blue.borrow(market, 1 ether, 0, address(this), address(this));
+        morpho.withdraw(market, 1 ether, 0, address(this), address(this));
+        morpho.withdrawCollateral(market, 1 ether, address(this), address(this));
+        morpho.borrow(market, 1 ether, 0, address(this), address(this));
 
         vm.stopPrank();
     }
@@ -862,32 +864,32 @@ contract BlueTest is
             authorizer: authorizer,
             authorized: authorized,
             isAuthorized: isAuthorized,
-            nonce: blue.nonce(authorizer),
+            nonce: morpho.nonce(authorizer),
             deadline: block.timestamp + deadline
         });
 
-        bytes32 digest = SigUtils.getTypedDataHash(blue.DOMAIN_SEPARATOR(), authorization);
+        bytes32 digest = SigUtils.getTypedDataHash(morpho.DOMAIN_SEPARATOR(), authorization);
 
         Signature memory sig;
         (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
 
-        blue.setAuthorizationWithSig(
+        morpho.setAuthorizationWithSig(
             authorization.authorizer, authorization.authorized, authorization.isAuthorized, authorization.deadline, sig
         );
 
-        assertEq(blue.isAuthorized(authorizer, authorized), isAuthorized);
-        assertEq(blue.nonce(authorizer), 1);
+        assertEq(morpho.isAuthorized(authorizer, authorized), isAuthorized);
+        assertEq(morpho.nonce(authorizer), 1);
     }
 
     function testFlashLoan(uint256 amount) public {
         amount = bound(amount, 1, 2 ** 64);
 
         borrowableAsset.setBalance(address(this), amount);
-        blue.supply(market, amount, 0, address(this), hex"");
+        morpho.supply(market, amount, 0, address(this), hex"");
 
-        blue.flashLoan(address(borrowableAsset), amount, bytes(""));
+        morpho.flashLoan(address(borrowableAsset), amount, bytes(""));
 
-        assertEq(borrowableAsset.balanceOf(address(blue)), amount, "balanceOf");
+        assertEq(borrowableAsset.balanceOf(address(morpho)), amount, "balanceOf");
     }
 
     function testExtsLoad(uint256 slot, bytes32 value0) public {
@@ -896,10 +898,10 @@ contract BlueTest is
         slots[1] = bytes32(slot / 2);
 
         bytes32 value1 = keccak256(abi.encode(value0));
-        vm.store(address(blue), slots[0], value0);
-        vm.store(address(blue), slots[1], value1);
+        vm.store(address(morpho), slots[0], value0);
+        vm.store(address(morpho), slots[1], value1);
 
-        bytes32[] memory values = blue.extsload(slots);
+        bytes32[] memory values = morpho.extsload(slots);
 
         assertEq(values.length, 2, "values.length");
         assertEq(values[0], slot > 0 ? value0 : value1, "value0");
@@ -909,21 +911,21 @@ contract BlueTest is
     function testSupplyCallback(uint256 amount) public {
         amount = bound(amount, 1, 2 ** 64);
         borrowableAsset.setBalance(address(this), amount);
-        borrowableAsset.approve(address(blue), 0);
+        borrowableAsset.approve(address(morpho), 0);
 
         vm.expectRevert();
-        blue.supply(market, amount, 0, address(this), hex"");
-        blue.supply(market, amount, 0, address(this), abi.encode(this.testSupplyCallback.selector, hex""));
+        morpho.supply(market, amount, 0, address(this), hex"");
+        morpho.supply(market, amount, 0, address(this), abi.encode(this.testSupplyCallback.selector, hex""));
     }
 
     function testSupplyCollateralCallback(uint256 amount) public {
         amount = bound(amount, 1, 2 ** 64);
         collateralAsset.setBalance(address(this), amount);
-        collateralAsset.approve(address(blue), 0);
+        collateralAsset.approve(address(morpho), 0);
 
         vm.expectRevert();
-        blue.supplyCollateral(market, amount, address(this), hex"");
-        blue.supplyCollateral(
+        morpho.supplyCollateral(market, amount, address(this), hex"");
+        morpho.supplyCollateral(
             market, amount, address(this), abi.encode(this.testSupplyCollateralCallback.selector, hex"")
         );
     }
@@ -932,38 +934,40 @@ contract BlueTest is
         amount = bound(amount, 1, 2 ** 64);
 
         borrowableAsset.setBalance(address(this), amount);
-        blue.supply(market, amount, 0, address(this), hex"");
+        morpho.supply(market, amount, 0, address(this), hex"");
 
         uint256 collateralAmount = amount.wDivUp(LLTV);
         collateralAsset.setBalance(address(this), collateralAmount);
-        blue.supplyCollateral(market, collateralAmount, address(this), hex"");
-        blue.borrow(market, amount, 0, address(this), address(this));
+        morpho.supplyCollateral(market, collateralAmount, address(this), hex"");
+        morpho.borrow(market, amount, 0, address(this), address(this));
 
-        borrowableAsset.approve(address(blue), 0);
+        borrowableAsset.approve(address(morpho), 0);
 
         vm.expectRevert("TRANSFER_FROM_FAILED");
-        blue.repay(market, amount, 0, address(this), hex"");
-        blue.repay(market, amount, 0, address(this), abi.encode(this.testRepayCallback.selector, hex""));
+        morpho.repay(market, amount, 0, address(this), hex"");
+        morpho.repay(market, amount, 0, address(this), abi.encode(this.testRepayCallback.selector, hex""));
     }
 
     function testLiquidateCallback(uint256 amount) public {
         amount = bound(amount, 10, 2 ** 64);
 
         borrowableAsset.setBalance(address(this), amount);
-        blue.supply(market, amount, 0, address(this), hex"");
+        morpho.supply(market, amount, 0, address(this), hex"");
 
         uint256 collateralAmount = amount.wDivUp(LLTV);
         collateralAsset.setBalance(address(this), collateralAmount);
-        blue.supplyCollateral(market, collateralAmount, address(this), hex"");
-        blue.borrow(market, amount.wMulDown(LLTV), 0, address(this), address(this));
+        morpho.supplyCollateral(market, collateralAmount, address(this), hex"");
+        morpho.borrow(market, amount.wMulDown(LLTV), 0, address(this), address(this));
 
         oracle.setPrice(0.5e18);
 
         borrowableAsset.setBalance(address(this), amount);
-        borrowableAsset.approve(address(blue), 0);
+        borrowableAsset.approve(address(morpho), 0);
         vm.expectRevert("TRANSFER_FROM_FAILED");
-        blue.liquidate(market, address(this), collateralAmount, hex"");
-        blue.liquidate(market, address(this), collateralAmount, abi.encode(this.testLiquidateCallback.selector, hex""));
+        morpho.liquidate(market, address(this), collateralAmount, hex"");
+        morpho.liquidate(
+            market, address(this), collateralAmount, abi.encode(this.testLiquidateCallback.selector, hex"")
+        );
     }
 
     function testFlashActions(uint256 amount) public {
@@ -972,71 +976,71 @@ contract BlueTest is
         uint256 toBorrow = amount.wMulDown(LLTV);
 
         borrowableAsset.setBalance(address(this), 2 * toBorrow);
-        blue.supply(market, toBorrow, 0, address(this), hex"");
+        morpho.supply(market, toBorrow, 0, address(this), hex"");
 
-        blue.supplyCollateral(
+        morpho.supplyCollateral(
             market, amount, address(this), abi.encode(this.testFlashActions.selector, abi.encode(toBorrow))
         );
-        assertGt(blue.borrowShares(market.id(), address(this)), 0, "no borrow");
+        assertGt(morpho.borrowShares(market.id(), address(this)), 0, "no borrow");
 
-        blue.repay(
+        morpho.repay(
             market,
             0,
-            blue.borrowShares(id, address(this)),
+            morpho.borrowShares(id, address(this)),
             address(this),
             abi.encode(this.testFlashActions.selector, abi.encode(amount))
         );
-        assertEq(blue.collateral(market.id(), address(this)), 0, "no withdraw collateral");
+        assertEq(morpho.collateral(market.id(), address(this)), 0, "no withdraw collateral");
     }
 
     // Callback functions.
 
-    function onBlueSupply(uint256 amount, bytes memory data) external {
-        require(msg.sender == address(blue));
+    function onMorphoSupply(uint256 amount, bytes memory data) external {
+        require(msg.sender == address(morpho));
         bytes4 selector;
         (selector, data) = abi.decode(data, (bytes4, bytes));
         if (selector == this.testSupplyCallback.selector) {
-            borrowableAsset.approve(address(blue), amount);
+            borrowableAsset.approve(address(morpho), amount);
         }
     }
 
-    function onBlueSupplyCollateral(uint256 amount, bytes memory data) external {
-        require(msg.sender == address(blue));
+    function onMorphoSupplyCollateral(uint256 amount, bytes memory data) external {
+        require(msg.sender == address(morpho));
         bytes4 selector;
         (selector, data) = abi.decode(data, (bytes4, bytes));
         if (selector == this.testSupplyCollateralCallback.selector) {
-            collateralAsset.approve(address(blue), amount);
+            collateralAsset.approve(address(morpho), amount);
         } else if (selector == this.testFlashActions.selector) {
             uint256 toBorrow = abi.decode(data, (uint256));
             collateralAsset.setBalance(address(this), amount);
             borrowableAsset.setBalance(address(this), toBorrow);
-            blue.borrow(market, toBorrow, 0, address(this), address(this));
+            morpho.borrow(market, toBorrow, 0, address(this), address(this));
         }
     }
 
-    function onBlueRepay(uint256 amount, bytes memory data) external {
-        require(msg.sender == address(blue));
+    function onMorphoRepay(uint256 amount, bytes memory data) external {
+        require(msg.sender == address(morpho));
         bytes4 selector;
         (selector, data) = abi.decode(data, (bytes4, bytes));
         if (selector == this.testRepayCallback.selector) {
-            borrowableAsset.approve(address(blue), amount);
+            borrowableAsset.approve(address(morpho), amount);
         } else if (selector == this.testFlashActions.selector) {
             uint256 toWithdraw = abi.decode(data, (uint256));
-            blue.withdrawCollateral(market, toWithdraw, address(this), address(this));
+            morpho.withdrawCollateral(market, toWithdraw, address(this), address(this));
         }
     }
 
-    function onBlueLiquidate(uint256 repaid, bytes memory data) external {
-        require(msg.sender == address(blue));
+    function onMorphoLiquidate(uint256 repaid, bytes memory data) external {
+        require(msg.sender == address(morpho));
         bytes4 selector;
         (selector, data) = abi.decode(data, (bytes4, bytes));
         if (selector == this.testLiquidateCallback.selector) {
-            borrowableAsset.approve(address(blue), repaid);
+            borrowableAsset.approve(address(morpho), repaid);
         }
     }
 
-    function onBlueFlashLoan(uint256 amount, bytes calldata) external {
-        borrowableAsset.approve(address(blue), amount);
+    function onMorphoFlashLoan(uint256 amount, bytes calldata) external {
+        borrowableAsset.approve(address(morpho), amount);
     }
 }
 
