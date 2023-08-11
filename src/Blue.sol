@@ -156,150 +156,150 @@ contract Blue is IBlue {
     /* SUPPLY MANAGEMENT */
 
     /// @inheritdoc IBlue
-    function supply(Market memory market, uint256 amount, uint256 shares, address onBehalf, bytes calldata data)
+    function supply(Market memory market, uint256 assets, uint256 shares, address onBehalf, bytes calldata data)
         external
     {
         Id id = market.id();
         require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
-        require(UtilsLib.exactlyOneZero(amount, shares), ErrorsLib.INCONSISTENT_INPUT);
+        require(UtilsLib.exactlyOneZero(assets, shares), ErrorsLib.INCONSISTENT_INPUT);
         require(onBehalf != address(0), ErrorsLib.ZERO_ADDRESS);
 
         _accrueInterests(market, id);
 
-        if (amount > 0) shares = amount.toSharesDown(totalSupply[id], totalSupplyShares[id]);
-        else amount = shares.toAssetsUp(totalSupply[id], totalSupplyShares[id]);
+        if (assets > 0) shares = assets.toSharesDown(totalSupply[id], totalSupplyShares[id]);
+        else assets = shares.toAssetsUp(totalSupply[id], totalSupplyShares[id]);
 
         supplyShares[id][onBehalf] += shares;
         totalSupplyShares[id] += shares;
-        totalSupply[id] += amount;
+        totalSupply[id] += assets;
 
-        emit EventsLib.Supply(id, msg.sender, onBehalf, amount, shares);
+        emit EventsLib.Supply(id, msg.sender, onBehalf, assets, shares);
 
-        if (data.length > 0) IBlueSupplyCallback(msg.sender).onBlueSupply(amount, data);
+        if (data.length > 0) IBlueSupplyCallback(msg.sender).onBlueSupply(assets, data);
 
-        IERC20(market.borrowableAsset).safeTransferFrom(msg.sender, address(this), amount);
+        IERC20(market.borrowableAsset).safeTransferFrom(msg.sender, address(this), assets);
     }
 
     /// @inheritdoc IBlue
-    function withdraw(Market memory market, uint256 amount, uint256 shares, address onBehalf, address receiver)
+    function withdraw(Market memory market, uint256 assets, uint256 shares, address onBehalf, address receiver)
         external
     {
         Id id = market.id();
         require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
-        require(UtilsLib.exactlyOneZero(amount, shares), ErrorsLib.INCONSISTENT_INPUT);
+        require(UtilsLib.exactlyOneZero(assets, shares), ErrorsLib.INCONSISTENT_INPUT);
         // No need to verify that onBehalf != address(0) thanks to the authorization check.
         require(receiver != address(0), ErrorsLib.ZERO_ADDRESS);
         require(_isSenderAuthorized(onBehalf), ErrorsLib.UNAUTHORIZED);
 
         _accrueInterests(market, id);
 
-        if (amount > 0) shares = amount.toSharesUp(totalSupply[id], totalSupplyShares[id]);
-        else amount = shares.toAssetsDown(totalSupply[id], totalSupplyShares[id]);
+        if (assets > 0) shares = assets.toSharesUp(totalSupply[id], totalSupplyShares[id]);
+        else assets = shares.toAssetsDown(totalSupply[id], totalSupplyShares[id]);
 
         supplyShares[id][onBehalf] -= shares;
         totalSupplyShares[id] -= shares;
-        totalSupply[id] -= amount;
+        totalSupply[id] -= assets;
 
-        emit EventsLib.Withdraw(id, msg.sender, onBehalf, receiver, amount, shares);
+        emit EventsLib.Withdraw(id, msg.sender, onBehalf, receiver, assets, shares);
 
         require(totalBorrow[id] <= totalSupply[id], ErrorsLib.INSUFFICIENT_LIQUIDITY);
 
-        IERC20(market.borrowableAsset).safeTransfer(receiver, amount);
+        IERC20(market.borrowableAsset).safeTransfer(receiver, assets);
     }
 
     /* BORROW MANAGEMENT */
 
     /// @inheritdoc IBlue
-    function borrow(Market memory market, uint256 amount, uint256 shares, address onBehalf, address receiver)
+    function borrow(Market memory market, uint256 assets, uint256 shares, address onBehalf, address receiver)
         external
     {
         Id id = market.id();
         require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
-        require(UtilsLib.exactlyOneZero(amount, shares), ErrorsLib.INCONSISTENT_INPUT);
+        require(UtilsLib.exactlyOneZero(assets, shares), ErrorsLib.INCONSISTENT_INPUT);
         // No need to verify that onBehalf != address(0) thanks to the authorization check.
         require(receiver != address(0), ErrorsLib.ZERO_ADDRESS);
         require(_isSenderAuthorized(onBehalf), ErrorsLib.UNAUTHORIZED);
 
         _accrueInterests(market, id);
 
-        if (amount > 0) shares = amount.toSharesUp(totalBorrow[id], totalBorrowShares[id]);
-        else amount = shares.toAssetsDown(totalBorrow[id], totalBorrowShares[id]);
+        if (assets > 0) shares = assets.toSharesUp(totalBorrow[id], totalBorrowShares[id]);
+        else assets = shares.toAssetsDown(totalBorrow[id], totalBorrowShares[id]);
 
         borrowShares[id][onBehalf] += shares;
         totalBorrowShares[id] += shares;
-        totalBorrow[id] += amount;
+        totalBorrow[id] += assets;
 
-        emit EventsLib.Borrow(id, msg.sender, onBehalf, receiver, amount, shares);
+        emit EventsLib.Borrow(id, msg.sender, onBehalf, receiver, assets, shares);
 
         require(_isHealthy(market, id, onBehalf), ErrorsLib.INSUFFICIENT_COLLATERAL);
         require(totalBorrow[id] <= totalSupply[id], ErrorsLib.INSUFFICIENT_LIQUIDITY);
 
-        IERC20(market.borrowableAsset).safeTransfer(receiver, amount);
+        IERC20(market.borrowableAsset).safeTransfer(receiver, assets);
     }
 
     /// @inheritdoc IBlue
-    function repay(Market memory market, uint256 amount, uint256 shares, address onBehalf, bytes calldata data)
+    function repay(Market memory market, uint256 assets, uint256 shares, address onBehalf, bytes calldata data)
         external
     {
         Id id = market.id();
         require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
-        require(UtilsLib.exactlyOneZero(amount, shares), ErrorsLib.INCONSISTENT_INPUT);
+        require(UtilsLib.exactlyOneZero(assets, shares), ErrorsLib.INCONSISTENT_INPUT);
         require(onBehalf != address(0), ErrorsLib.ZERO_ADDRESS);
 
         _accrueInterests(market, id);
 
-        if (amount > 0) shares = amount.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
-        else amount = shares.toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
+        if (assets > 0) shares = assets.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
+        else assets = shares.toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
 
         borrowShares[id][onBehalf] -= shares;
         totalBorrowShares[id] -= shares;
-        totalBorrow[id] -= amount;
+        totalBorrow[id] -= assets;
 
-        emit EventsLib.Repay(id, msg.sender, onBehalf, amount, shares);
+        emit EventsLib.Repay(id, msg.sender, onBehalf, assets, shares);
 
-        if (data.length > 0) IBlueRepayCallback(msg.sender).onBlueRepay(amount, data);
+        if (data.length > 0) IBlueRepayCallback(msg.sender).onBlueRepay(assets, data);
 
-        IERC20(market.borrowableAsset).safeTransferFrom(msg.sender, address(this), amount);
+        IERC20(market.borrowableAsset).safeTransferFrom(msg.sender, address(this), assets);
     }
 
     /* COLLATERAL MANAGEMENT */
 
     /// @inheritdoc IBlue
-    function supplyCollateral(Market memory market, uint256 amount, address onBehalf, bytes calldata data) external {
+    function supplyCollateral(Market memory market, uint256 assets, address onBehalf, bytes calldata data) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
-        require(amount != 0, ErrorsLib.ZERO_AMOUNT);
+        require(assets != 0, ErrorsLib.ZERO_AMOUNT);
         require(onBehalf != address(0), ErrorsLib.ZERO_ADDRESS);
 
         // Don't accrue interests because it's not required and it saves gas.
 
-        collateral[id][onBehalf] += amount;
+        collateral[id][onBehalf] += assets;
 
-        emit EventsLib.SupplyCollateral(id, msg.sender, onBehalf, amount);
+        emit EventsLib.SupplyCollateral(id, msg.sender, onBehalf, assets);
 
-        if (data.length > 0) IBlueSupplyCollateralCallback(msg.sender).onBlueSupplyCollateral(amount, data);
+        if (data.length > 0) IBlueSupplyCollateralCallback(msg.sender).onBlueSupplyCollateral(assets, data);
 
-        IERC20(market.collateralAsset).safeTransferFrom(msg.sender, address(this), amount);
+        IERC20(market.collateralAsset).safeTransferFrom(msg.sender, address(this), assets);
     }
 
     /// @inheritdoc IBlue
-    function withdrawCollateral(Market memory market, uint256 amount, address onBehalf, address receiver) external {
+    function withdrawCollateral(Market memory market, uint256 assets, address onBehalf, address receiver) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
-        require(amount != 0, ErrorsLib.ZERO_AMOUNT);
+        require(assets != 0, ErrorsLib.ZERO_AMOUNT);
         // No need to verify that onBehalf != address(0) thanks to the authorization check.
         require(receiver != address(0), ErrorsLib.ZERO_ADDRESS);
         require(_isSenderAuthorized(onBehalf), ErrorsLib.UNAUTHORIZED);
 
         _accrueInterests(market, id);
 
-        collateral[id][onBehalf] -= amount;
+        collateral[id][onBehalf] -= assets;
 
-        emit EventsLib.WithdrawCollateral(id, msg.sender, onBehalf, receiver, amount);
+        emit EventsLib.WithdrawCollateral(id, msg.sender, onBehalf, receiver, assets);
 
         require(_isHealthy(market, id, onBehalf), ErrorsLib.INSUFFICIENT_COLLATERAL);
 
-        IERC20(market.collateralAsset).safeTransfer(receiver, amount);
+        IERC20(market.collateralAsset).safeTransfer(receiver, assets);
     }
 
     /* LIQUIDATION */
@@ -350,14 +350,14 @@ contract Blue is IBlue {
     /* FLASH LOANS */
 
     /// @inheritdoc IFlashLender
-    function flashLoan(address token, uint256 amount, bytes calldata data) external {
-        IERC20(token).safeTransfer(msg.sender, amount);
+    function flashLoan(address token, uint256 assets, bytes calldata data) external {
+        IERC20(token).safeTransfer(msg.sender, assets);
 
-        emit EventsLib.FlashLoan(msg.sender, token, amount);
+        emit EventsLib.FlashLoan(msg.sender, token, assets);
 
-        IBlueFlashLoanCallback(msg.sender).onBlueFlashLoan(token, amount, data);
+        IBlueFlashLoanCallback(msg.sender).onBlueFlashLoan(token, assets, data);
 
-        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
+        IERC20(token).safeTransferFrom(msg.sender, address(this), assets);
     }
 
     /* AUTHORIZATION */
@@ -418,7 +418,7 @@ contract Blue is IBlue {
             uint256 feeShares;
             if (fee[id] != 0) {
                 uint256 feeAmount = accruedInterests.wMulDown(fee[id]);
-                // The fee amount is subtracted from the total supply in this calculation to compensate for the fact that total supply is already updated.
+                // The fee assets is subtracted from the total supply in this calculation to compensate for the fact that total supply is already updated.
                 feeShares = feeAmount.mulDivDown(totalSupplyShares[id], totalSupply[id] - feeAmount);
                 supplyShares[id][feeRecipient] += feeShares;
                 totalSupplyShares[id] += feeShares;

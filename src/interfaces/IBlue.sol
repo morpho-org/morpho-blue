@@ -45,14 +45,14 @@ interface IBlue is IFlashLender {
     /// @notice The `user`'s collateral balance on the market defined by the given `id`.
     function collateral(Id id, address user) external view returns (uint256);
 
-    /// @notice The total amount of assets supplied to the market defined by the given `id`.
+    /// @notice The total assets supplied to the market defined by the given `id`.
     /// @dev The value can be incaccurate since it does not take into account the accrued interests.
     function totalSupply(Id id) external view returns (uint256);
 
     /// @notice The total supply shares of the market defined by the given `id`.
     function totalSupplyShares(Id id) external view returns (uint256);
 
-    /// @notice The total amount of assets borrowed from the market defined by the given `id`.
+    /// @notice The total assets borrowed from the market defined by the given `id`.
     /// @dev The value can be incaccurate since it does not take into account the accrued interests.
     function totalBorrow(Id id) external view returns (uint256);
 
@@ -97,78 +97,78 @@ interface IBlue is IFlashLender {
     /// @notice Creates `market`.
     function createMarket(Market memory market) external;
 
-    /// @notice Supplies the given `amount` of assets or `shares` to the given `market` on behalf of `onBehalf`,
+    /// @notice Supplies the given amount of `assets` or `shares` to the given `market` on behalf of `onBehalf`,
     ///         optionally calling back the caller's `onBlueSupply` function with the given `data`.
-    /// @dev Either `amount` or `shares` should be zero.
-    ///      Most usecases should rely on `amount` as an input so the caller
-    ///      is guaranteed to have `amount` tokens pulled from their balance,
-    ///      but the possibility to mint a specific amount of shares is given
+    /// @dev Either `assets` or `shares` should be zero.
+    ///      Most usecases should rely on `assets` as an input so the caller
+    ///      is guaranteed to have `assets` tokens pulled from their balance,
+    ///      but the possibility to mint a specific assets of shares is given
     ///      for full compatibility and precision.
     /// @param market The market to supply assets to.
-    /// @param amount The amount of assets to supply.
+    /// @param assets The amount of assets to supply.
     /// @param shares The amount of shares to mint.
     /// @param onBehalf The address that will receive the position.
     /// @param data Arbitrary data to pass to the `onBlueSupply` callback. Pass empty data if not needed.
-    function supply(Market memory market, uint256 amount, uint256 shares, address onBehalf, bytes memory data)
+    function supply(Market memory market, uint256 assets, uint256 shares, address onBehalf, bytes memory data)
         external;
 
-    /// @notice Withdraws the given `amount` of assets or `shares` from the given `market` on behalf of `onBehalf`.
-    /// @dev Either `amount` or `shares` should be zero.
+    /// @notice Withdraws the given `assets` or `shares` from the given `market` on behalf of `onBehalf`.
+    /// @dev Either `assets` or `shares` should be zero.
     ///      To withdraw the whole position, pass the `shares`'s balance of `onBehalf`.
     /// @dev If `msg.sender != onBehalf`, `msg.sender` must be authorized to withdraw from `onBehalf`.
     /// @param market The market to withdraw assets from.
-    /// @param shares The amount of amount to withdraw.
+    /// @param shares The amount of assets to withdraw.
     /// @param shares The amount of shares to burn.
     /// @param onBehalf The address of the owner of the withdrawn assets.
     /// @param receiver The address that will receive the withdrawn assets.
-    function withdraw(Market memory market, uint256 amount, uint256 shares, address onBehalf, address receiver)
+    function withdraw(Market memory market, uint256 assets, uint256 shares, address onBehalf, address receiver)
         external;
 
-    /// @notice Borrows the given `amount` of assets or `shares` from the given `market` on behalf of `onBehalf`.
-    /// @dev Either `amount` or `shares` should be zero.
-    ///      Most usecases should rely on `amount` as an input so the caller
-    ///      is guaranteed to borrow `amount` of tokens,
-    ///      but the possibility to burn a specific amount of shares is given
+    /// @notice Borrows the given `assets` or `shares` from the given `market` on behalf of `onBehalf`.
+    /// @dev Either `assets` or `shares` should be zero.
+    ///      Most usecases should rely on `assets` as an input so the caller
+    ///      is guaranteed to borrow `assets` of tokens,
+    ///      but the possibility to burn a specific assets of shares is given
     ///      for full compatibility and precision.
     /// @param market The market to borrow assets from.
-    /// @param amount The amount of assets to borrow.
+    /// @param assets The amount of assets to borrow.
     /// @param shares The amount of shares to mint.
     /// @param onBehalf The address of the owner of the debt.
     /// @param receiver The address that will receive the debt.
     /// @dev If `msg.sender != onBehalf`, `msg.sender` must be authorized to withdraw from `onBehalf`.
-    function borrow(Market memory market, uint256 amount, uint256 shares, address onBehalf, address receiver)
+    function borrow(Market memory market, uint256 assets, uint256 shares, address onBehalf, address receiver)
         external;
 
-    /// @notice Repays the given `amount` of assets or `shares` to the given `market` on behalf of `onBehalf`,
+    /// @notice Repays the given `assets` or `shares` to the given `market` on behalf of `onBehalf`,
     ///         optionally calling back the caller's `onBlueReplay` function with the given `data`.
-    /// @dev Either `amount` or `shares` should be zero.
+    /// @dev Either `assets` or `shares` should be zero.
     ///      To repay the whole debt, pass the `shares`'s balance of `onBehalf`.
     /// @param market The market to repay assets to.
-    /// @param amount The amount of assets to repay.
+    /// @param assets The amount of assets to repay.
     /// @param shares The amount of shares to burn.
     /// @param onBehalf The address of the owner of the debt.
     /// @param data Arbitrary data to pass to the `onBlueRepay` callback. Pass empty data if not needed.
-    function repay(Market memory market, uint256 amount, uint256 shares, address onBehalf, bytes memory data)
+    function repay(Market memory market, uint256 assets, uint256 shares, address onBehalf, bytes memory data)
         external;
 
-    /// @notice Supplies the given `amount` of collateral to the given `market` on behalf of `onBehalf`,
+    /// @notice Supplies the given `assets` of collateral to the given `market` on behalf of `onBehalf`,
     ///         optionally calling back the caller's `onBlueSupplyCollateral` function with the given `data`.
     /// @dev Interests are not accrued since it's not required and it saves gas.
     /// @param market The market to supply collateral to.
-    /// @param amount The amount of collateral to supply.
+    /// @param assets The amount of collateral to supply.
     /// @param onBehalf The address that will receive the collateral.
     /// @param data Arbitrary data to pass to the `onBlueSupplyCollateral` callback. Pass empty data if not needed.
-    function supplyCollateral(Market memory market, uint256 amount, address onBehalf, bytes memory data) external;
+    function supplyCollateral(Market memory market, uint256 assets, address onBehalf, bytes memory data) external;
 
-    /// @notice Withdraws the given `amount` of collateral from the given `market` on behalf of `onBehalf`.
+    /// @notice Withdraws the given `assets` of collateral from the given `market` on behalf of `onBehalf`.
     /// @dev If `msg.sender != onBehalf`, `msg.sender` must be authorized to withdraw from `onBehalf`.
     /// @param market The market to withdraw collateral from.
-    /// @param amount The amount of collateral to withdraw.
+    /// @param assets The amount of collateral to withdraw.
     /// @param onBehalf The address of the owner of the collateral.
     /// @param receiver The address that will receive the withdrawn collateral.
-    function withdrawCollateral(Market memory market, uint256 amount, address onBehalf, address receiver) external;
+    function withdrawCollateral(Market memory market, uint256 assets, address onBehalf, address receiver) external;
 
-    /// @notice Liquidates the given `seized` amount to the given `market` of the given `borrower`'s position,
+    /// @notice Liquidates the given `seized` assets to the given `market` of the given `borrower`'s position,
     ///         optionally calling back the caller's `onBlueLiquidate` function with the given `data`.
     /// @param market The market of the position.
     /// @param borrower The owner of the position.

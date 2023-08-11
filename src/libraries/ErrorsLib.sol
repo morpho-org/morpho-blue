@@ -26,8 +26,8 @@ library ErrorsLib {
     /// @notice Thrown when one of the input is not consistent.
     string constant INCONSISTENT_INPUT = "inconsistent input";
 
-    /// @notice Thrown when a zero amount is passed as input.
-    string internal constant ZERO_AMOUNT = "zero amount";
+    /// @notice Thrown when a zero assets amount is passed as input.
+    string internal constant ZERO_AMOUNT = "zero assets";
 
     /// @notice Thrown when a zero shares amount is passed as input.
     string internal constant ZERO_SHARES = "zero shares";

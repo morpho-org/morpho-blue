@@ -6,8 +6,8 @@ pragma solidity >=0.5.0;
 interface IBlueLiquidateCallback {
     /// @notice Callback called when a liquidation occurs.
     /// @dev The callback is called only if data is not empty.
-    /// @param seized The amount of seized tokens.
-    /// @param repaid The amount of repaid tokens.
+    /// @param seized The amount of seized assets.
+    /// @param repaid The amount of repaid assets.
     /// @param data Arbitrary data passed to the `liquidate` function.
     function onBlueLiquidate(uint256 seized, uint256 repaid, bytes calldata data) external;
 }
@@ -17,9 +17,9 @@ interface IBlueLiquidateCallback {
 interface IBlueRepayCallback {
     /// @notice Callback called when a repayment occurs.
     /// @dev The callback is called only if data is not empty.
-    /// @param amount The amount of repaid tokens.
+    /// @param assets The amount of repaid assets.
     /// @param data Arbitrary data passed to the `repay` function.
-    function onBlueRepay(uint256 amount, bytes calldata data) external;
+    function onBlueRepay(uint256 assets, bytes calldata data) external;
 }
 
 /// @title IBlueSupplyCallback
@@ -27,9 +27,9 @@ interface IBlueRepayCallback {
 interface IBlueSupplyCallback {
     /// @notice Callback called when a supply occurs.
     /// @dev The callback is called only if data is not empty.
-    /// @param amount The amount of supplied tokens.
+    /// @param assets The amount of supplied assets.
     /// @param data Arbitrary data passed to the `supply` function.
-    function onBlueSupply(uint256 amount, bytes calldata data) external;
+    function onBlueSupply(uint256 assets, bytes calldata data) external;
 }
 
 /// @title IBlueSupplyCollateralCallback
@@ -37,9 +37,9 @@ interface IBlueSupplyCallback {
 interface IBlueSupplyCollateralCallback {
     /// @notice Callback called when a supply occurs.
     /// @dev The callback is called only if data is not empty.
-    /// @param amount The amount of supplied tokens.
+    /// @param assets The amount of supplied assets.
     /// @param data Arbitrary data passed to the `supplyCollateral` function.
-    function onBlueSupplyCollateral(uint256 amount, bytes calldata data) external;
+    function onBlueSupplyCollateral(uint256 assets, bytes calldata data) external;
 }
 
 /// @title IBlueWithdrawCallback
@@ -48,7 +48,7 @@ interface IBlueFlashLoanCallback {
     /// @notice Callback called when a flash loan occurs.
     /// @dev The callback is called only if data is not empty.
     /// @param token The token that was flash loaned.
-    /// @param amount The amount that was flash loaned.
+    /// @param assets The amount that was flash loaned.
     /// @param data Arbitrary data passed to the `flashLoan` function.
-    function onBlueFlashLoan(address token, uint256 amount, bytes calldata data) external;
+    function onBlueFlashLoan(address token, uint256 assets, bytes calldata data) external;
 }

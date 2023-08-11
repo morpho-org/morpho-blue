@@ -34,23 +34,23 @@ library EventsLib {
     /// @param id The market id.
     /// @param caller The caller.
     /// @param onBehalf The address that will receive the position.
-    /// @param amount The amount of assets supplied.
+    /// @param assets The amount of assets supplied.
     /// @param shares The amount of shares minted.
-    event Supply(Id indexed id, address indexed caller, address indexed onBehalf, uint256 amount, uint256 shares);
+    event Supply(Id indexed id, address indexed caller, address indexed onBehalf, uint256 assets, uint256 shares);
 
     /// @notice Emitted on withdrawal of assets.
     /// @param id The market id.
     /// @param caller The caller.
     /// @param onBehalf The address from which the assets are withdrawn.
     /// @param receiver The address that will receive the withdrawn assets.
-    /// @param amount The amount of assets withdrawn.
+    /// @param assets The amount of assets withdrawn.
     /// @param shares The amount of shares burned.
     event Withdraw(
         Id indexed id,
         address caller,
         address indexed onBehalf,
         address indexed receiver,
-        uint256 amount,
+        uint256 assets,
         uint256 shares
     );
 
@@ -59,14 +59,14 @@ library EventsLib {
     /// @param caller The caller.
     /// @param onBehalf The address from which the assets are borrowed.
     /// @param receiver The address that will receive the borrowed assets.
-    /// @param amount The amount of assets borrowed.
+    /// @param assets The amount of assets borrowed.
     /// @param shares The amount of shares minted.
     event Borrow(
         Id indexed id,
         address caller,
         address indexed onBehalf,
         address indexed receiver,
-        uint256 amount,
+        uint256 assets,
         uint256 shares
     );
 
@@ -74,25 +74,25 @@ library EventsLib {
     /// @param id The market id.
     /// @param caller The caller.
     /// @param onBehalf The address for which the assets are repaid.
-    /// @param amount The amount of assets repaid.
+    /// @param assets The amount of assets repaid.
     /// @param shares The amount of shares burned.
-    event Repay(Id indexed id, address indexed caller, address indexed onBehalf, uint256 amount, uint256 shares);
+    event Repay(Id indexed id, address indexed caller, address indexed onBehalf, uint256 assets, uint256 shares);
 
     /// @notice Emitted on supply of collateral.
     /// @param id The market id.
     /// @param caller The caller.
     /// @param onBehalf The address that will receive the position.
-    /// @param amount The amount of collateral supplied.
-    event SupplyCollateral(Id indexed id, address indexed caller, address indexed onBehalf, uint256 amount);
+    /// @param assets The amount of collateral supplied.
+    event SupplyCollateral(Id indexed id, address indexed caller, address indexed onBehalf, uint256 assets);
 
     /// @notice Emitted on withdrawal of collateral.
     /// @param id The market id.
     /// @param caller The caller.
     /// @param onBehalf The address from which the collateral is withdrawn.
     /// @param receiver The address that will receive the withdrawn collateral.
-    /// @param amount The amount of collateral withdrawn.
+    /// @param assets The amount of collateral withdrawn.
     event WithdrawCollateral(
-        Id indexed id, address caller, address indexed onBehalf, address indexed receiver, uint256 amount
+        Id indexed id, address caller, address indexed onBehalf, address indexed receiver, uint256 assets
     );
 
     /// @notice Emitted on liquidation of a position.
@@ -116,8 +116,8 @@ library EventsLib {
     /// @notice Emitted on flash loan.
     /// @param caller The caller..
     /// @param token The token that was flash loaned.
-    /// @param amount The amount that was flash loaned.
-    event FlashLoan(address indexed caller, address indexed token, uint256 amount);
+    /// @param assets The amount of assets that was flash loaned.
+    event FlashLoan(address indexed caller, address indexed token, uint256 assets);
 
     /// @notice Emitted when setting an authorization.
     /// @param caller The caller.
