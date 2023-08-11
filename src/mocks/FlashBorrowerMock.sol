@@ -19,8 +19,9 @@ contract FlashBorrowerMock is IBlueFlashLoanCallback {
         BLUE.flashLoan(token, amount, data);
     }
 
-    function onBlueFlashLoan(address token, uint256 amount, bytes calldata) external {
+    function onBlueFlashLoan(uint256 amount, bytes calldata data) external {
         require(msg.sender == address(BLUE));
+        address token = abi.decode(data, (address));
         ERC20(token).safeApprove(address(BLUE), amount);
     }
 }
