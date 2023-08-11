@@ -1,0 +1,260 @@
+.
+└── setOwner(address newOwner) external
+    ├── when msg.sender not owner
+    │   └── revert with NOT_OWNER
+    └── when msg.sender is owner
+        ├── it should set owner to newOwner
+        └── it should emit SetOwner(newOwner)
+.
+└── enableIrm(address irm) external
+    ├── when msg.sender not owner
+    │   └── revert with NOT_OWNER
+    └── when msg.sender is owner
+        ├── it should set isIrmEnabled[irm] to true
+        └── it should emit EnableIrm(irm)
+.
+└── enableLltv(uint256 lltv) external
+    ├── when msg.sender not owner
+    │   └── revert with NOT_OWNER
+    └── when msg.sender is owner
+        ├── when lltv >= WAD
+        │   └── revert with LLTV_TOO_HIGH
+        └── when lltv < WAD
+            ├── it should set isLltvEnabled[lltv] to true
+            └── it should emit EnableLltv(lltv)
+.
+└── setFee(Market memory market, uint256 newFee) external
+    ├── when msg.sender not owner
+    │   └── revert with NOT_OWNER
+    └── when msg.sender is owner
+        ├── when market is not created
+        │   └── revert with MARKET_NOT_CREATED
+        └── when market is created
+            ├── when newFee > MAX_FEE
+            │   └── revert with MAX_FEE_EXCEEDED
+            └── when newFee <= MAX_FEE
+                ├── it should accrue the interests
+                ├── it should set fee[market.id] to newFee
+                └── it should emit SetFee(market.id, newFee)
+.
+└── setFeeRecipient(address recipient) external
+    ├── when msg.sender not owner
+    │   └── revert with NOT_OWNER
+    └── when msg.sender is owner
+        ├── it should set feeRecipient to recipient
+        └── it should emit SetFeeRecipient(recipient)
+.
+└── createMarket(Market memory market) external
+    ├── when irm is not enabled
+    │   └── revert with IRM_NOT_ENABLED
+    └── when irm is enabled
+        ├── when market.lltv is not enabled
+        │   └── revert with LLTV_NOT_ENABLED
+        └── when market.lltv is enabled
+            ├── when market is already created
+            │   └── revert with MARKET_CREATED
+            └── when market is not already created
+                ├── it should set lastUpdate[market.id] to block.timestamp
+                └── it should emit CreateMarket(market.id, market)
+.
+└── supply(Market memory market, uint256 amount, uint256 shares, address onBehalf, bytes calldata data) external
+    ├── when market is not created
+    │   └── revert with MARKET_NOT_CREATED
+    └── when market is created
+        ├── when both amount and shares are null or both amount and shares are not null
+        │   └─  revert with INCONSISTENT_INPUT
+        └── when one of amount or shares is null and one of amount or shares is not null
+            ├── when onBehalf is the zero address
+            │   └── revert with ZERO_ADDRESS
+            └── when onBehalf is not the zero address
+                ├── it should accrue the interests
+                ├── when amount is not zero
+                │   └── it should set shares to amount.toSharesUp(totalSupply[market.id], totalSupplyShares[market.id])
+                ├── when amount is zero
+                │   └── it should set amount to shares.toAssetsDown(totalSupply[id], totalSupplyShares[id])
+                ├── it should add shares to supplyShares[market.id][onBehalf] 
+                ├── it should add shares to totalSupplyShares[market.id]
+                ├── it should add amount to totalSupply[market.id]
+                ├── it should emit Supply(market.id, msg.sender, onBehalf, amount, shares)
+                ├── if data.length > 0
+                │   └── it should call sender's onMorphoSupply callback
+                └── it should transfer amount of the borrowable asset from the sender to Morpho
+.
+└── withdraw(Market memory market, uint256 amount, uint256 shares, address onBehalf, address receiver) external
+    ├── when market is not created
+    │   └── revert with MARKET_NOT_CREATED
+    └── when market is created
+        ├── when both amount and shares are null or both amount and shares are not null
+        │   └─  revert with INCONSISTENT_INPUT
+        └── when one of amount or shares is null and one of amount or shares is not null
+            ├── when receiver is the zero address
+            │   └── revert with ZERO_ADDRESS
+            └── when receiver is not the zero address
+                ├── when not sender and not approved
+                │   └── revert with UNAUTHORIZED
+                └── when sender or approved
+                    ├── it should accrue the interests
+                    ├── when amount is not zero
+                    │   └── it should set shares to amount.toSharesUp(totalSupply[market.id], totalSupplyShares[market.id])
+                    ├── when amount is zero
+                    │   └── it should set amount to shares.toAssetsDown(totalSupply[id], totalSupplyShares[id])
+                    ├── it should remove shares from supplyShares[market.id][onBehalf] 
+                    ├── it should remove shares from totalSupplyShares[market.id]
+                    ├── it should remove amount from totalSupply[market.id]
+                    ├── it should emit Withdraw(market.id, msg.sender, onBehalf, receiver, amount, shares)
+                    ├── it should transfer amount of the borrowable asset to the receiver
+                    └── when totalBorrow[market.id] > totalSupply[market.id]
+                        └── revert with INSUFFICIENT_LIQUIDITY
+.
+└── borrow(Market memory market, uint256 amount, uint256 shares, address onBehalf, address receiver) external
+    ├── when market is not created
+    │   └── revert with MARKET_NOT_CREATED
+    └── when market is created
+        ├── when both amount and shares are null or both amount and shares are not null
+        │   └─  revert with INCONSISTENT_INPUT
+        └── when one of amount or shares is null and one of amount or shares is not null
+            ├── when receiver is the zero address
+            │   └── revert with ZERO_ADDRESS
+            └── when receiver is not the zero address
+                ├── when not sender and not approved
+                │   └── revert with UNAUTHORIZED
+                └── when sender or approved
+                    ├── it should accrue the interests
+                    ├── when amount is not zero
+                    │   └── it should set shares to amount.toSharesUp(totalSupply[market.id], totalSupplyShares[market.id])
+                    ├── when amount is zero
+                    │   └── it should set amount to shares.toAssetsDown(totalSupply[id], totalSupplyShares[id])
+                    ├── it should add shares to borrowShares[market.id][onBehalf] 
+                    ├── it should add shares to totalBorrowShares[market.id]
+                    ├── it should add amount to totalBorrow[market.id]
+                    ├── it should emit Borrow(market.id, msg.sender, onBehalf, receiver, amount, shares)
+                    ├── it should transfer amount of the borrowable asset to the receiver
+                    ├── when position is not healthy
+                    │   └── revert with INSUFFICIENT_COLLATERAL
+                    └── when position is healthy
+                        └── when totalBorrow[market.id] > totalSupply[market.id]
+                            └── revert with INSUFFICIENT_LIQUIDITY
+.
+└── repay(Market memory market, uint256 amount, uint256 shares, address onBehalf, bytes calldata data) external
+    ├── when market is not created
+    │   └── revert with MARKET_NOT_CREATED
+    └── when market is created
+        ├── when both amount and shares are null or both amount and shares are not null
+        │   └─  revert with INCONSISTENT_INPUT
+        └── when one of amount or shares is null and one of amount or shares is not null
+            ├── when onBehalf is the zero address
+            │   └── revert with ZERO_ADDRESS
+            └── when onBehalf is not the zero address
+                ├── it should accrue the interests
+                ├── when amount is not zero
+                │   └── it should set shares to amount.toSharesUp(totalSupply[market.id], totalSupplyShares[market.id])
+                ├── when amount is zero
+                │   └── it should set amount to shares.toAssetsDown(totalSupply[id], totalSupplyShares[id])
+                ├── it should remove shares from borrowShares[market.id][onBehalf]
+                ├── it should remove shares from totalBorrowShares[market.id]
+                ├── it should remove amount from totalBorrow[market.id]
+                ├── it should emit Repay(market.id, msg.sender, onBehalf, amount, shares)
+                ├── if data.length > 0
+                │   └── it should call sender's onMorphoRepay callback
+                └── it should transfer amount of the borrowable asset from the sender to Morpho
+.
+└── supplyCollateral(Market memory market, uint256 amount, address onBehalf, bytes calldata data) external
+    ├── when market is not created
+    │   └── revert with MARKET_NOT_CREATED
+    └── when market is created
+        ├── when the amount to supply is zero
+        │   └── revert with ZERO_AMOUNT
+        └── when the amount to supply is not zero
+            ├── when onBehalf is the zero address
+            │   └── revert with ZERO_ADDRESS
+            └── when onBehalf is not the zero address
+                ├── it should add amount to collateral[market.id][onBehalf]
+                ├── it should emit SupplyCollateral(market.id, msg.sender, onBehalf, amount)
+                ├── if data.length > 0
+                │   └── it should call sender's onMorphoSupplyCollateral callback
+                └── it should transfer amount of the collateral asset from the sender to Morpho
+.
+└── withdrawCollateral(Market memory market, uint256 amount, address onBehalf, address receiver) external
+    ├── when market is not created
+    │   └── revert with MARKET_NOT_CREATED
+    └── when market is created
+        ├── when the amount to withdraw is zero
+        │   └── revert with ZERO_AMOUNT
+        └── when the amount to withdraw is not zero
+            ├── when receiver is the zero address
+            │   └── revert with ZERO_ADDRESS
+            └── when receiver is not the zero address
+                ├── when not sender and not approved
+                │   └── revert with MANAGER_NOT_APPROVED
+                └── when sender or approved
+                    ├── it should accrue the interests
+                    ├── it should remove amount from collateral[market.id][onBehalf]
+                    ├── it should emit WithdrawCollateral(market.id, msg.sender, onBehalf, receiver, amount)
+                    ├── it should transfer amount of the collateral asset to the receiver
+                    └── when position is not healthy
+                        └── revert with INSUFFICIENT_COLLATERAL
+.
+└── liquidate(Market memory market, address borrower, uint256 seized, bytes calldata data) external
+    ├── when market is not created
+    │   └── revert with MARKET_NOT_CREATED
+    └── when market is created
+        ├── when the amount to seized is zero
+        │   └── revert with ZERO_AMOUNT
+        └── when the amount to seized is not zero
+            ├── it should accrue the interests
+            ├── when position is healthy
+            │   └── revert with HEALTHY_POSITION
+            └── when the position is not healthy
+                ├── it should compute incentive = WAD + ALPHA.mulWadDown(WAD.divWadDown(market.lltv) - WAD)
+                ├── it should compute repaid = seized.mulDivUp(collateralPrice, priceScale).divWadUp(incentive)
+                ├── it should remove repaid.toSharesDown(totalBorrow[market.id], totalBorrowShares[market.id]) from borrowShares[market.id][borrower]
+                ├── it should remove repaid.toSharesDown(totalBorrow[market.id], totalBorrowShares[market.id]) from totalBorrowShares[market.id]
+                ├── it should remove repaid from totalBorrow[market.id]
+                ├── it should remove seized from collateral[market.id][borrower]
+                ├── if after the liquidation the borrower's collateral is 0
+                │   └── it should realize bad debt
+                │       ├── it should compute badDebt = borrowShares[market.id][borrower].toAssetsUp(totalBorrow[market.id], totalBorrowShares[market.id])
+                │       ├── it should remove badDebt from totalSupply[market.id]
+                │       ├── it should remove badDebt from totalBorrow[market.id]
+                │       ├── it should remove borrowShares[market.id][borrower] from totalBorrowShares[market.id]
+                │       └── it should set borrowShares[market.id][borrower] to 0
+                ├── it should transfer seized of collateral asset to the sender
+                ├── it should emit Liquidate(market.id, msg.sender, borrower, repaid, repaidShares, seized, badDebtShares)
+                ├── if data.length > 0
+                │   └── it should call sender's onMorphoLiquidate callback
+                └── it should transfer repaid of borrowable asset from the sender the Morpho
+.
+└── flashLoan(address token, uint256 amount, bytes calldata data) external
+    ├── it should transfer amount of token from Morpho to the sender
+    ├── it should call sender's onMorphoFlashLoan callback
+    ├── it should emit FlashLoan(msg.sender, token, amount)
+    └── it should transfer amount of token from the sender to Morpho
+.
+└── setAuthorizationWithSig(address authorizer, address authorizee, bool newIsAuthorized, uint256 deadline, Signature calldata signature) external
+    ├── when block.timestamp >= deadline
+    │   └── revert with SIGNATURE_EXPIRED
+    └── when block.timestamp < deadline
+        ├── when the signature is invalid or not signed by the authorizer
+        │   └── revert with INVALID_SIGNATURE
+        └── when the signature is valid and signed by the authorizer
+            ├── it should increment the authorizer's nonce
+            ├── it should emit IncrementNonce(msg.sender, authorizer, usedNonce)
+            ├── it should set isAuthorized[authorizer][authorized] to newIsAuthorized
+            └── it should emit SetAuthorization(msg.sender, authorizer, authorized, newIsAuthorized)
+.
+└── setAuthorization(address authorized, bool newIsAuthorized) external
+    ├── should set isApproved[msg.sender][authorized] to newIsAuthorized
+    └── it should emit SetAuthorization(msg.sender, msg.sender, authorized, newIsAuthorized)
+.
+└── _accrueInterests(Market memory market, Id id) internal
+    └── when interests not already accrued in the block
+        ├── it should set lastUpdate to block.timestamp
+        └── when marketTotalBorrow is not 0
+            ├── it should compute accruedInterests = marketTotalBorrow.mulWadDown(borrowRate.wTaylorCompounded(elapsed))
+            ├── it should add accruedInterests to totalBorrow
+            ├── it should add accruedInterests to totalSupply
+            └── when fee[id] != 0
+            │   ├── it should add accruedInterests.mulWadDown(fee[id]) to feeAmount
+            │   ├── it should add feeAmount.mulDivDown(totalSupplyShares[id], totalSupply[id] - feeAmount) to supplyShares[id][feeRecipient]
+            │   └── it should add feeAmount.mulDivDown(totalSupplyShares[id], totalSupply[id] - feeAmount) to totalSupplyShares[id]
+            └── it should emit AccrueInterests(id, borrowRate, accruedInterests, feeShares)

@@ -4,8 +4,8 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { BigNumber, constants, utils } from "ethers";
 import hre from "hardhat";
-import { Blue, OracleMock, ERC20Mock, IrmMock } from "types";
-import { MarketStruct } from "types/src/Blue";
+import { Morpho, OracleMock, ERC20Mock, IrmMock } from "types";
+import { MarketStruct } from "types/src/Morpho";
 import { FlashBorrowerMock } from "types/src/mocks/FlashBorrowerMock";
 
 const closePositions = false;
@@ -27,12 +27,12 @@ const identifier = (market: MarketStruct) => {
   return Buffer.from(utils.keccak256(encodedMarket).slice(2), "hex");
 };
 
-describe("Blue", () => {
+describe("Morpho", () => {
   let signers: SignerWithAddress[];
   let admin: SignerWithAddress;
   let liquidator: SignerWithAddress;
 
-  let blue: Blue;
+  let morpho: Morpho;
   let borrowable: ERC20Mock;
   let collateral: ERC20Mock;
   let oracle: OracleMock;
@@ -68,13 +68,13 @@ describe("Blue", () => {
 
     await oracle.setPrice(BigNumber.WAD);
 
-    const BlueFactory = await hre.ethers.getContractFactory("Blue", admin);
+    const MorphoFactory = await hre.ethers.getContractFactory("Morpho", admin);
 
-    blue = await BlueFactory.deploy(admin.address);
+    morpho = await MorphoFactory.deploy(admin.address);
 
     const IrmMockFactory = await hre.ethers.getContractFactory("IrmMock", admin);
 
-    irm = await IrmMockFactory.deploy(blue.address);
+    irm = await IrmMockFactory.deploy(morpho.address);
 
     updateMarket({
       borrowableAsset: borrowable.address,
@@ -84,26 +84,26 @@ describe("Blue", () => {
       lltv: BigNumber.WAD.div(2).add(1),
     });
 
-    await blue.enableLltv(market.lltv);
-    await blue.enableIrm(market.irm);
-    await blue.createMarket(market);
+    await morpho.enableLltv(market.lltv);
+    await morpho.enableIrm(market.irm);
+    await morpho.createMarket(market);
 
     for (const signer of signers) {
       await borrowable.setBalance(signer.address, initBalance);
-      await borrowable.connect(signer).approve(blue.address, constants.MaxUint256);
+      await borrowable.connect(signer).approve(morpho.address, constants.MaxUint256);
       await collateral.setBalance(signer.address, initBalance);
-      await collateral.connect(signer).approve(blue.address, constants.MaxUint256);
+      await collateral.connect(signer).approve(morpho.address, constants.MaxUint256);
     }
 
     await borrowable.setBalance(admin.address, initBalance);
-    await borrowable.connect(admin).approve(blue.address, constants.MaxUint256);
+    await borrowable.connect(admin).approve(morpho.address, constants.MaxUint256);
 
     await borrowable.setBalance(liquidator.address, initBalance);
-    await borrowable.connect(liquidator).approve(blue.address, constants.MaxUint256);
+    await borrowable.connect(liquidator).approve(morpho.address, constants.MaxUint256);
 
     const FlashBorrowerFactory = await hre.ethers.getContractFactory("FlashBorrowerMock", admin);
 
-    flashBorrower = await FlashBorrowerFactory.deploy(blue.address);
+    flashBorrower = await FlashBorrowerFactory.deploy(morpho.address);
   });
 
   it("should simulate gas cost [main]", async () => {
@@ -121,22 +121,22 @@ describe("Blue", () => {
 
       if (random() < 2 / 3) {
         Promise.all([
-          blue.connect(user).supply(market, amount, 0, user.address, []),
-          blue.connect(user).withdraw(market, amount.div(2), 0, user.address, user.address),
+          morpho.connect(user).supply(market, amount, 0, user.address, []),
+          morpho.connect(user).withdraw(market, amount.div(2), 0, user.address, user.address),
         ]);
       } else {
-        const totalSupply = await blue.totalSupply(id);
-        const totalBorrow = await blue.totalBorrow(id);
+        const totalSupply = await morpho.totalSupply(id);
+        const totalBorrow = await morpho.totalBorrow(id);
         const liquidity = BigNumber.from(totalSupply).sub(BigNumber.from(totalBorrow));
 
         amount = BigNumber.min(amount, BigNumber.from(liquidity).div(2));
 
         if (amount > BigNumber.from(0)) {
           Promise.all([
-            blue.connect(user).supplyCollateral(market, amount, user.address, []),
-            blue.connect(user).borrow(market, amount.div(2), 0, user.address, user.address),
-            blue.connect(user).repay(market, amount.div(4), 0, user.address, []),
-            blue.connect(user).withdrawCollateral(market, amount.div(8), user.address, user.address),
+            morpho.connect(user).supplyCollateral(market, amount, user.address, []),
+            morpho.connect(user).borrow(market, amount.div(2), 0, user.address, user.address),
+            morpho.connect(user).repay(market, amount.div(4), 0, user.address, []),
+            morpho.connect(user).withdrawCollateral(market, amount.div(8), user.address, user.address),
           ]);
         }
       }
@@ -156,30 +156,30 @@ describe("Blue", () => {
       const amount = BigNumber.WAD.mul(1 + Math.floor(random() * 100));
       const borrowedAmount = amount.wadMulDown(lltv.sub(1));
 
-      if (!(await blue.isLltvEnabled(lltv))) {
-        await blue.enableLltv(lltv);
-        await blue.enableIrm(market.irm);
-        await blue.createMarket({ ...market, lltv });
+      if (!(await morpho.isLltvEnabled(lltv))) {
+        await morpho.enableLltv(lltv);
+        await morpho.enableIrm(market.irm);
+        await morpho.createMarket({ ...market, lltv });
       }
 
       updateMarket({ lltv });
 
       // We use 2 different users to borrow from a market so that liquidations do not put the borrow storage back to 0 on that market.
-      await blue.connect(user).supply(market, amount, 0, user.address, "0x");
-      await blue.connect(user).supplyCollateral(market, amount, user.address, "0x");
-      await blue.connect(user).borrow(market, borrowedAmount, 0, user.address, user.address);
+      await morpho.connect(user).supply(market, amount, 0, user.address, "0x");
+      await morpho.connect(user).supplyCollateral(market, amount, user.address, "0x");
+      await morpho.connect(user).borrow(market, borrowedAmount, 0, user.address, user.address);
 
-      await blue.connect(borrower).supply(market, amount, 0, borrower.address, "0x");
-      await blue.connect(borrower).supplyCollateral(market, amount, borrower.address, "0x");
-      await blue.connect(borrower).borrow(market, borrowedAmount, 0, borrower.address, user.address);
+      await morpho.connect(borrower).supply(market, amount, 0, borrower.address, "0x");
+      await morpho.connect(borrower).supplyCollateral(market, amount, borrower.address, "0x");
+      await morpho.connect(borrower).borrow(market, borrowedAmount, 0, borrower.address, user.address);
 
       await oracle.setPrice(BigNumber.WAD.div(10));
 
       const seized = closePositions ? amount : amount.div(2);
 
-      await blue.connect(liquidator).liquidate(market, borrower.address, seized, "0x");
+      await morpho.connect(liquidator).liquidate(market, borrower.address, seized, "0x");
 
-      const remainingCollateral = await blue.collateral(id, borrower.address);
+      const remainingCollateral = await morpho.collateral(id, borrower.address);
 
       if (closePositions)
         expect(remainingCollateral.isZero(), "did not take the whole collateral when closing the position").to.be.true;
@@ -193,8 +193,9 @@ describe("Blue", () => {
     const user = signers[0];
     const amount = BigNumber.WAD;
 
-    await blue.connect(user).supply(market, amount, 0, user.address, "0x");
+    await morpho.connect(user).supply(market, amount, 0, user.address, "0x");
 
-    await flashBorrower.flashLoan(borrowable.address, amount.div(2), []);
+    const data = defaultAbiCoder.encode(["address"], [borrowable.address]);
+    await flashBorrower.flashLoan(borrowable.address, amount.div(2), data);
   });
 });
