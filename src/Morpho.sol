@@ -157,6 +157,7 @@ contract Morpho is IMorpho {
     /// @inheritdoc IMorpho
     function supply(Market memory market, uint256 amount, uint256 shares, address onBehalf, bytes calldata data)
         external
+        returns (uint256, uint256)
     {
         Id id = market.id();
         require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
@@ -177,11 +178,14 @@ contract Morpho is IMorpho {
         if (data.length > 0) IMorphoSupplyCallback(msg.sender).onMorphoSupply(amount, data);
 
         IERC20(market.borrowableAsset).safeTransferFrom(msg.sender, address(this), amount);
+
+        return (amount, shares);
     }
 
     /// @inheritdoc IMorpho
     function withdraw(Market memory market, uint256 amount, uint256 shares, address onBehalf, address receiver)
         external
+        returns (uint256, uint256)
     {
         Id id = market.id();
         require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
@@ -204,6 +208,8 @@ contract Morpho is IMorpho {
         require(totalBorrow[id] <= totalSupply[id], ErrorsLib.INSUFFICIENT_LIQUIDITY);
 
         IERC20(market.borrowableAsset).safeTransfer(receiver, amount);
+
+        return (amount, shares);
     }
 
     /* BORROW MANAGEMENT */
@@ -211,6 +217,7 @@ contract Morpho is IMorpho {
     /// @inheritdoc IMorpho
     function borrow(Market memory market, uint256 amount, uint256 shares, address onBehalf, address receiver)
         external
+        returns (uint256, uint256)
     {
         Id id = market.id();
         require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
@@ -234,11 +241,14 @@ contract Morpho is IMorpho {
         require(totalBorrow[id] <= totalSupply[id], ErrorsLib.INSUFFICIENT_LIQUIDITY);
 
         IERC20(market.borrowableAsset).safeTransfer(receiver, amount);
+
+        return (amount, shares);
     }
 
     /// @inheritdoc IMorpho
     function repay(Market memory market, uint256 amount, uint256 shares, address onBehalf, bytes calldata data)
         external
+        returns (uint256, uint256)
     {
         Id id = market.id();
         require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
@@ -259,6 +269,8 @@ contract Morpho is IMorpho {
         if (data.length > 0) IMorphoRepayCallback(msg.sender).onMorphoRepay(amount, data);
 
         IERC20(market.borrowableAsset).safeTransferFrom(msg.sender, address(this), amount);
+
+        return (amount, shares);
     }
 
     /* COLLATERAL MANAGEMENT */
