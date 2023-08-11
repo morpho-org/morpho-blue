@@ -157,6 +157,7 @@ contract Blue is IBlue {
     /// @inheritdoc IBlue
     function supply(Market memory market, uint256 assets, uint256 shares, address onBehalf, bytes calldata data)
         external
+        returns (uint256, uint256)
     {
         Id id = market.id();
         require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
@@ -177,11 +178,14 @@ contract Blue is IBlue {
         if (data.length > 0) IBlueSupplyCallback(msg.sender).onBlueSupply(assets, data);
 
         IERC20(market.borrowableToken).safeTransferFrom(msg.sender, address(this), assets);
+
+        return (assets, shares);
     }
 
     /// @inheritdoc IBlue
     function withdraw(Market memory market, uint256 assets, uint256 shares, address onBehalf, address receiver)
         external
+        returns (uint256, uint256)
     {
         Id id = market.id();
         require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
@@ -204,6 +208,8 @@ contract Blue is IBlue {
         require(totalBorrow[id] <= totalSupply[id], ErrorsLib.INSUFFICIENT_LIQUIDITY);
 
         IERC20(market.borrowableToken).safeTransfer(receiver, assets);
+
+        return (assets, shares);
     }
 
     /* BORROW MANAGEMENT */
@@ -211,6 +217,7 @@ contract Blue is IBlue {
     /// @inheritdoc IBlue
     function borrow(Market memory market, uint256 assets, uint256 shares, address onBehalf, address receiver)
         external
+        returns (uint256, uint256)
     {
         Id id = market.id();
         require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
@@ -234,11 +241,14 @@ contract Blue is IBlue {
         require(totalBorrow[id] <= totalSupply[id], ErrorsLib.INSUFFICIENT_LIQUIDITY);
 
         IERC20(market.borrowableToken).safeTransfer(receiver, assets);
+
+        return (assets, shares);
     }
 
     /// @inheritdoc IBlue
     function repay(Market memory market, uint256 assets, uint256 shares, address onBehalf, bytes calldata data)
         external
+        returns (uint256, uint256)
     {
         Id id = market.id();
         require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
@@ -259,6 +269,8 @@ contract Blue is IBlue {
         if (data.length > 0) IBlueRepayCallback(msg.sender).onBlueRepay(assets, data);
 
         IERC20(market.borrowableToken).safeTransferFrom(msg.sender, address(this), assets);
+
+        return (assets, shares);
     }
 
     /* COLLATERAL MANAGEMENT */
