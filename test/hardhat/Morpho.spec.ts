@@ -173,7 +173,7 @@ describe("Morpho", () => {
       await morpho.connect(borrower).supplyCollateral(market, amount, borrower.address, "0x");
       await morpho.connect(borrower).borrow(market, borrowedAmount, 0, borrower.address, user.address);
 
-      await oracle.setPrice(BigNumber.WAD.div(10));
+      await oracle.setPrice(BigNumber.WAD.div(100));
 
       const seized = closePositions ? amount : amount.div(2);
 
