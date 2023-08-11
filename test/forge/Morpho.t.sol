@@ -619,7 +619,8 @@ contract MorphoTest is
         uint256 amountBorrowed = borrowingPower.wMulDown(0.8e18);
         uint256 toSeize = amountCollateral.wMulDown(LLTV);
         uint256 liquidationScalar = UtilsLib.min(
-            MAX_LIQUIDATION_SCALAR, WAD.wDivDown(LIQUIDATION_CURSOR.wMulDown(market.lltv) + WAD - LIQUIDATION_CURSOR)
+            MAX_LIQUIDATION_INCENTIVE_FACTOR,
+            WAD.wDivDown(LIQUIDATION_CURSOR.wMulDown(market.lltv) + WAD - LIQUIDATION_CURSOR)
         );
 
         borrowableAsset.setBalance(address(this), amountLent);
@@ -664,7 +665,8 @@ contract MorphoTest is
         uint256 amountBorrowed = borrowingPower.wMulDown(0.8e18);
         uint256 toSeize = amountCollateral;
         uint256 liquidationScalar = UtilsLib.min(
-            MAX_LIQUIDATION_SCALAR, WAD.wDivDown(LIQUIDATION_CURSOR.wMulDown(market.lltv) + WAD - LIQUIDATION_CURSOR)
+            MAX_LIQUIDATION_INCENTIVE_FACTOR,
+            WAD.wDivDown(LIQUIDATION_CURSOR.wMulDown(market.lltv) + WAD - LIQUIDATION_CURSOR)
         );
 
         borrowableAsset.setBalance(address(this), amountLent);

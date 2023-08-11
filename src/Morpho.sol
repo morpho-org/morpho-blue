@@ -19,8 +19,8 @@ import {FixedPointMathLib, WAD} from "./libraries/FixedPointMathLib.sol";
 uint256 constant MAX_FEE = 0.25e18;
 /// @dev Liquidation cursor.
 uint256 constant LIQUIDATION_CURSOR = 0.3e18;
-/// @dev Max liquidation scalar (1 + maxLiquidationIncentive).
-uint256 constant MAX_LIQUIDATION_SCALAR = 1.15e18;
+/// @dev Max liquidation incentive factor (1 + maxLiquidationIncentive).
+uint256 constant MAX_LIQUIDATION_INCENTIVE_FACTOR = 1.15e18;
 
 /// @dev The EIP-712 typeHash for EIP712Domain.
 bytes32 constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
@@ -329,7 +329,7 @@ contract Morpho is IMorpho {
 
         require(!_isHealthy(market, id, borrower, collateralPrice, priceScale), ErrorsLib.HEALTHY_POSITION);
 
-        uint256 repaid = seized.mulDivUp(collateralPrice, priceScale).wDivUp(liquidationScalar(market.lltv));
+        uint256 repaid = seized.mulDivUp(collateralPrice, priceScale).wDivUp(liquidationIncentiveFactor(market.lltv));
         uint256 repaidShares = repaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
 
         borrowShares[id][borrower] -= repaidShares;
@@ -485,10 +485,10 @@ contract Morpho is IMorpho {
     // Liquidation scalar.
 
     /// @dev The liquidation incentive is min(maxIncentive, 1/(cursor * lltv + 1 - cursor) - 1).
-    /// @dev The liquidation scalar is 1 + incentive.
-    function liquidationScalar(uint256 lltv) private pure returns (uint256) {
+    /// @dev The liquidation incentive factor is 1 + incentive.
+    function liquidationIncentiveFactor(uint256 lltv) private pure returns (uint256) {
         return UtilsLib.min(
-            MAX_LIQUIDATION_SCALAR, WAD.wDivDown(LIQUIDATION_CURSOR.wMulDown(lltv) + WAD - LIQUIDATION_CURSOR)
+            MAX_LIQUIDATION_INCENTIVE_FACTOR, WAD.wDivDown(LIQUIDATION_CURSOR.wMulDown(lltv) + WAD - LIQUIDATION_CURSOR)
         );
     }
 }
