@@ -1,12 +1,18 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.20;
+pragma solidity ^0.8.0;
 
-import {IOracle} from "src/interfaces/IOracle.sol";
+import {IOracle} from "../interfaces/IOracle.sol";
+
+import {FixedPointMathLib, WAD} from "src/libraries/FixedPointMathLib.sol";
 
 contract OracleMock is IOracle {
-    uint256 public price;
+    uint256 internal _price;
+
+    function price() external view returns (uint256, uint256) {
+        return (_price, WAD);
+    }
 
     function setPrice(uint256 newPrice) external {
-        price = newPrice;
+        _price = newPrice;
     }
 }
