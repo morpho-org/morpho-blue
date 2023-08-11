@@ -176,7 +176,7 @@ contract Blue is IBlue {
 
         if (data.length > 0) IBlueSupplyCallback(msg.sender).onBlueSupply(assets, data);
 
-        IERC20(market.borrowableAsset).safeTransferFrom(msg.sender, address(this), assets);
+        IERC20(market.borrowableToken).safeTransferFrom(msg.sender, address(this), assets);
     }
 
     /// @inheritdoc IBlue
@@ -203,7 +203,7 @@ contract Blue is IBlue {
 
         require(totalBorrow[id] <= totalSupply[id], ErrorsLib.INSUFFICIENT_LIQUIDITY);
 
-        IERC20(market.borrowableAsset).safeTransfer(receiver, assets);
+        IERC20(market.borrowableToken).safeTransfer(receiver, assets);
     }
 
     /* BORROW MANAGEMENT */
@@ -233,7 +233,7 @@ contract Blue is IBlue {
         require(_isHealthy(market, id, onBehalf), ErrorsLib.INSUFFICIENT_COLLATERAL);
         require(totalBorrow[id] <= totalSupply[id], ErrorsLib.INSUFFICIENT_LIQUIDITY);
 
-        IERC20(market.borrowableAsset).safeTransfer(receiver, assets);
+        IERC20(market.borrowableToken).safeTransfer(receiver, assets);
     }
 
     /// @inheritdoc IBlue
@@ -258,7 +258,7 @@ contract Blue is IBlue {
 
         if (data.length > 0) IBlueRepayCallback(msg.sender).onBlueRepay(assets, data);
 
-        IERC20(market.borrowableAsset).safeTransferFrom(msg.sender, address(this), assets);
+        IERC20(market.borrowableToken).safeTransferFrom(msg.sender, address(this), assets);
     }
 
     /* COLLATERAL MANAGEMENT */
@@ -278,7 +278,7 @@ contract Blue is IBlue {
 
         if (data.length > 0) IBlueSupplyCollateralCallback(msg.sender).onBlueSupplyCollateral(assets, data);
 
-        IERC20(market.collateralAsset).safeTransferFrom(msg.sender, address(this), assets);
+        IERC20(market.collateralToken).safeTransferFrom(msg.sender, address(this), assets);
     }
 
     /// @inheritdoc IBlue
@@ -298,7 +298,7 @@ contract Blue is IBlue {
 
         require(_isHealthy(market, id, onBehalf), ErrorsLib.INSUFFICIENT_COLLATERAL);
 
-        IERC20(market.collateralAsset).safeTransfer(receiver, assets);
+        IERC20(market.collateralToken).safeTransfer(receiver, assets);
     }
 
     /* LIQUIDATION */
@@ -337,13 +337,13 @@ contract Blue is IBlue {
             borrowShares[id][borrower] = 0;
         }
 
-        IERC20(market.collateralAsset).safeTransfer(msg.sender, seized);
+        IERC20(market.collateralToken).safeTransfer(msg.sender, seized);
 
         emit EventsLib.Liquidate(id, msg.sender, borrower, repaid, repaidShares, seized, badDebtShares);
 
         if (data.length > 0) IBlueLiquidateCallback(msg.sender).onBlueLiquidate(repaid, data);
 
-        IERC20(market.borrowableAsset).safeTransferFrom(msg.sender, address(this), repaid);
+        IERC20(market.borrowableToken).safeTransferFrom(msg.sender, address(this), repaid);
     }
 
     /* FLASH LOANS */

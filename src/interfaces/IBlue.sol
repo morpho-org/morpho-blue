@@ -6,14 +6,14 @@ import {IFlashLender} from "./IFlashLender.sol";
 type Id is bytes32;
 
 /// @notice Contains the parameters defining market.
-/// @param borrowableAsset The address of the borrowable asset.
-/// @param collateralAsset The address of the collateral asset.
+/// @param borrowableToken The address of the borrowable token.
+/// @param collateralToken The address of the collateral token.
 /// @param oracle The address of the oracle.
 /// @param irm The address of the interest rate model.
 /// @param lltv The Liquidation LTV.
 struct Market {
-    address borrowableAsset;
-    address collateralAsset;
+    address borrowableToken;
+    address collateralToken;
     address oracle;
     address irm;
     uint256 lltv;

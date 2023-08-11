@@ -77,8 +77,8 @@ describe("Blue", () => {
     irm = await IrmMockFactory.deploy(blue.address);
 
     updateMarket({
-      borrowableAsset: borrowable.address,
-      collateralAsset: collateral.address,
+      borrowableToken: borrowable.address,
+      collateralToken: collateral.address,
       oracle: oracle.address,
       irm: irm.address,
       lltv: BigNumber.WAD.div(2).add(1),
