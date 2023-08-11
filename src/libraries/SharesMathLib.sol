@@ -12,7 +12,7 @@ import {FixedPointMathLib} from "./FixedPointMathLib.sol";
 library SharesMathLib {
     using FixedPointMathLib for uint256;
 
-    uint256 internal constant VIRTUAL_SHARES = 1;
+    uint256 internal constant VIRTUAL_SHARES = 1e3;
 
     uint256 internal constant VIRTUAL_ASSETS = 1;
 
