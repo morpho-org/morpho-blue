@@ -8,15 +8,15 @@ contract IntegrationSupplyCollateralTest is BaseTest {
         vm.assume(neq(marketFuzz, market) && supplier != address(0));
 
         vm.prank(supplier);
-        vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
-        blue.supply(marketFuzz, amount, supplier, hex"");
+        vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
+        blue.supply(marketFuzz, amount, 0, supplier, hex"");
     }
 
     function testSupplyCollateralZeroAmount(address supplier) public {
         vm.assume(supplier != address(0));
 
         vm.prank(supplier);
-        vm.expectRevert(bytes(Errors.ZERO_AMOUNT));
+        vm.expectRevert(bytes(ErrorsLib.ZERO_AMOUNT));
         blue.supplyCollateral(market, 0, supplier, hex"");
     }
 
@@ -24,7 +24,7 @@ contract IntegrationSupplyCollateralTest is BaseTest {
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
         vm.prank(supplier);
-        vm.expectRevert(bytes(Errors.ZERO_ADDRESS));
+        vm.expectRevert(bytes(ErrorsLib.ZERO_ADDRESS));
         blue.supplyCollateral(market, amount, address(0), hex"");
     }
 
@@ -38,7 +38,7 @@ contract IntegrationSupplyCollateralTest is BaseTest {
         collateralAsset.approve(address(blue), amount);
 
         vm.expectEmit(true, true, true, true, address(blue));
-        emit Events.SupplyCollateral(id, supplier, onBehalf, amount);
+        emit EventsLib.SupplyCollateral(id, supplier, onBehalf, amount);
         blue.supplyCollateral(market, amount, onBehalf, hex"");
         vm.stopPrank();
 

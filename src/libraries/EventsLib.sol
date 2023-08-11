@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import {Id, Market} from "src/libraries/MarketLib.sol";
+import {Id, Market} from "../interfaces/IBlue.sol";
 
-library Events {
+library EventsLib {
     event SupplyCollateral(Id indexed id, address indexed caller, address indexed onBehalf, uint256 amount);
     event WithdrawCollateral(
         Id indexed id, address caller, address indexed onBehalf, address indexed receiver, uint256 amount

@@ -11,7 +11,7 @@ contract IntegrationCreateMarketTest is BaseTest {
         vm.assume(marketFuzz.irm != address(irm) && marketFuzz.lltv != LLTV);
 
         vm.prank(OWNER);
-        vm.expectRevert(bytes(Errors.IRM_NOT_ENABLED));
+        vm.expectRevert(bytes(ErrorsLib.IRM_NOT_ENABLED));
         blue.createMarket(marketFuzz);
     }
 
@@ -22,10 +22,10 @@ contract IntegrationCreateMarketTest is BaseTest {
         vm.startPrank(OWNER);
 
         vm.expectEmit(true, true, true, true, address(blue));
-        emit Events.EnableLltv(marketFuzz.lltv);
+        emit EventsLib.EnableLltv(marketFuzz.lltv);
         blue.enableLltv(marketFuzz.lltv);
 
-        vm.expectRevert(bytes(Errors.IRM_NOT_ENABLED));
+        vm.expectRevert(bytes(ErrorsLib.IRM_NOT_ENABLED));
         blue.createMarket(marketFuzz);
         vm.stopPrank();
     }
@@ -36,10 +36,10 @@ contract IntegrationCreateMarketTest is BaseTest {
         vm.startPrank(OWNER);
 
         vm.expectEmit(true, true, true, true, address(blue));
-        emit Events.EnableIrm(marketFuzz.irm);
+        emit EventsLib.EnableIrm(marketFuzz.irm);
         blue.enableIrm(marketFuzz.irm);
 
-        vm.expectRevert(bytes(Errors.LLTV_NOT_ENABLED));
+        vm.expectRevert(bytes(ErrorsLib.LLTV_NOT_ENABLED));
         blue.createMarket(marketFuzz);
         vm.stopPrank();
     }
@@ -50,11 +50,11 @@ contract IntegrationCreateMarketTest is BaseTest {
 
         vm.prank(OWNER);
         vm.expectEmit(true, true, true, true, address(blue));
-        emit Events.EnableIrm(marketFuzz.irm);
+        emit EventsLib.EnableIrm(marketFuzz.irm);
         blue.enableIrm(marketFuzz.irm);
 
         vm.expectEmit(true, true, true, true, address(blue));
-        emit Events.CreateMarket(marketFuzz.id(), marketFuzz);
+        emit EventsLib.CreateMarket(marketFuzz.id(), marketFuzz);
         blue.createMarket(marketFuzz);
 
         assertEq(blue.lastUpdate(marketFuzzId), block.timestamp, "lastUpdate != block.timestamp");

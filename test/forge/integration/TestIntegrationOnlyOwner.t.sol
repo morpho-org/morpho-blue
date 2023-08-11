@@ -11,7 +11,7 @@ contract IntegrationOnlyOwnerTest is BaseTest {
         vm.assume(addressFuzz != OWNER);
 
         vm.prank(addressFuzz);
-        vm.expectRevert(bytes(Errors.NOT_OWNER));
+        vm.expectRevert(bytes(ErrorsLib.NOT_OWNER));
         blue.setOwner(addressFuzz);
     }
 
@@ -20,7 +20,7 @@ contract IntegrationOnlyOwnerTest is BaseTest {
 
         vm.prank(OWNER);
         vm.expectEmit(true, true, true, true, address(blue));
-        emit Events.SetOwner(newOwner);
+        emit EventsLib.SetOwner(newOwner);
         blue.setOwner(newOwner);
 
         assertEq(blue.owner(), newOwner, "owner is not set");
@@ -31,7 +31,7 @@ contract IntegrationOnlyOwnerTest is BaseTest {
         vm.assume(irmFuzz != address(irm));
 
         vm.prank(addressFuzz);
-        vm.expectRevert(bytes(Errors.NOT_OWNER));
+        vm.expectRevert(bytes(ErrorsLib.NOT_OWNER));
         blue.enableIrm(irmFuzz);
     }
 
@@ -40,7 +40,7 @@ contract IntegrationOnlyOwnerTest is BaseTest {
 
         vm.prank(OWNER);
         vm.expectEmit(true, true, true, true, address(blue));
-        emit Events.EnableIrm(irmFuzz);
+        emit EventsLib.EnableIrm(irmFuzz);
         blue.enableIrm(irmFuzz);
 
         assertTrue(blue.isIrmEnabled(irmFuzz), "IRM is not enabled");
@@ -51,7 +51,7 @@ contract IntegrationOnlyOwnerTest is BaseTest {
         vm.assume(lltvFuzz != LLTV);
 
         vm.prank(addressFuzz);
-        vm.expectRevert(bytes(Errors.NOT_OWNER));
+        vm.expectRevert(bytes(ErrorsLib.NOT_OWNER));
         blue.enableLltv(lltvFuzz);
     }
 
@@ -59,7 +59,7 @@ contract IntegrationOnlyOwnerTest is BaseTest {
         lltvFuzz = _boundInvalidLltv(lltvFuzz);
 
         vm.prank(OWNER);
-        vm.expectRevert(bytes(Errors.LLTV_TOO_HIGH));
+        vm.expectRevert(bytes(ErrorsLib.LLTV_TOO_HIGH));
         blue.enableLltv(lltvFuzz);
     }
 
@@ -68,7 +68,7 @@ contract IntegrationOnlyOwnerTest is BaseTest {
 
         vm.prank(OWNER);
         vm.expectEmit(true, true, true, true, address(blue));
-        emit Events.EnableLltv(lltvFuzz);
+        emit EventsLib.EnableLltv(lltvFuzz);
         blue.enableLltv(lltvFuzz);
 
         assertTrue(blue.isLltvEnabled(lltvFuzz), "LLTV is not enabled");
@@ -78,7 +78,7 @@ contract IntegrationOnlyOwnerTest is BaseTest {
         vm.assume(addressFuzz != OWNER);
 
         vm.prank(addressFuzz);
-        vm.expectRevert(bytes(Errors.NOT_OWNER));
+        vm.expectRevert(bytes(ErrorsLib.NOT_OWNER));
         blue.setFee(market, feeFuzz);
     }
 
@@ -86,7 +86,7 @@ contract IntegrationOnlyOwnerTest is BaseTest {
         vm.assume(neq(marketFuzz, market));
 
         vm.prank(OWNER);
-        vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
+        vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
         blue.setFee(marketFuzz, feeFuzz);
     }
 
@@ -94,7 +94,7 @@ contract IntegrationOnlyOwnerTest is BaseTest {
         feeFuzz = bound(feeFuzz, MAX_FEE + 1, type(uint256).max);
 
         vm.prank(OWNER);
-        vm.expectRevert(bytes(Errors.MAX_FEE_EXCEEDED));
+        vm.expectRevert(bytes(ErrorsLib.MAX_FEE_EXCEEDED));
         blue.setFee(market, feeFuzz);
     }
 
@@ -103,7 +103,7 @@ contract IntegrationOnlyOwnerTest is BaseTest {
 
         vm.prank(OWNER);
         vm.expectEmit(true, true, true, true, address(blue));
-        emit Events.SetFee(id, feeFuzz);
+        emit EventsLib.SetFee(id, feeFuzz);
         blue.setFee(market, feeFuzz);
 
         assertEq(blue.fee(id), feeFuzz);
@@ -113,7 +113,7 @@ contract IntegrationOnlyOwnerTest is BaseTest {
         vm.assume(addressFuzz != OWNER);
 
         vm.prank(addressFuzz);
-        vm.expectRevert(bytes(Errors.NOT_OWNER));
+        vm.expectRevert(bytes(ErrorsLib.NOT_OWNER));
         blue.setFeeRecipient(addressFuzz);
     }
 
@@ -122,7 +122,7 @@ contract IntegrationOnlyOwnerTest is BaseTest {
 
         vm.prank(OWNER);
         vm.expectEmit(true, true, true, true, address(blue));
-        emit Events.SetFeeRecipient(newFeeRecipient);
+        emit EventsLib.SetFeeRecipient(newFeeRecipient);
         blue.setFeeRecipient(newFeeRecipient);
 
         assertEq(blue.feeRecipient(), newFeeRecipient);

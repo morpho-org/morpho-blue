@@ -4,78 +4,144 @@ pragma solidity ^0.8.0;
 import "../BaseTest.sol";
 
 contract IntegrationRepayTest is BaseTest {
+    using FixedPointMathLib for uint256;
+
     function testRepayMarketNotCreated(Market memory marketFuzz) public {
         vm.assume(neq(marketFuzz, market));
 
-        vm.expectRevert(bytes(Errors.MARKET_NOT_CREATED));
-        blue.repay(marketFuzz, 1, address(this), hex"");
+        vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
+        blue.repay(marketFuzz, 1, 0, address(this), hex"");
     }
 
     function testRepayZeroAmount() public {
-        vm.expectRevert(bytes(Errors.ZERO_AMOUNT));
-        blue.repay(market, 0, address(this), hex"");
+        vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
+        blue.repay(market, 0, 0, address(this), hex"");
     }
 
-    function testRepayOnBehalfZeroAddress() public {
-        vm.expectRevert(bytes(Errors.ZERO_ADDRESS));
-        blue.repay(market, 1, address(0), hex"");
+    function testRepayInconsistentInput(uint256 amount, uint256 shares) public {
+        amount = bound(amount, 1, MAX_TEST_AMOUNT);
+        shares = bound(shares, 1, MAX_TEST_SHARES);
+
+        vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
+        blue.repay(market, amount, shares, address(this), hex"");
     }
 
-    function testRepay(uint256 amountLent, uint256 amountBorrowed, uint256 amountRepaid) public {
-        amountLent = bound(amountLent, 1, MAX_TEST_AMOUNT);
-        amountBorrowed = bound(amountBorrowed, 1, amountLent);
+    function testRepayOnBehalfZeroAddress(uint256 input, bool isAmount) public {
+        input = bound(input, 1, type(uint256).max);
+        vm.expectRevert(bytes(ErrorsLib.ZERO_ADDRESS));
+        blue.repay(market, isAmount ? input : 0, isAmount ? 0 : input, address(0), hex"");
+    }
+
+    function testRepayAmount(
+        uint256 amountSupplied,
+        uint256 amountCollateral,
+        uint256 amountBorrowed,
+        uint256 amountRepaid,
+        uint256 priceCollateral,
+        address repayer,
+        address onBehalf,
+        address receiver
+    ) public {
+        vm.assume(repayer != address(0) && repayer != address(blue));
+        vm.assume(onBehalf != address(0) && onBehalf != address(blue));
+        vm.assume(receiver != address(0) && receiver != address(blue));
+
+        (amountCollateral, amountBorrowed, priceCollateral) =
+            _boundHealthyPosition(amountCollateral, amountBorrowed, priceCollateral);
+
+        amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
+        _provideLiquidity(amountSupplied);
+
+        oracle.setPrice(priceCollateral);
+
         amountRepaid = bound(amountRepaid, 1, amountBorrowed);
 
-        borrowableAsset.setBalance(address(this), amountLent);
-        blue.supply(market, amountLent, address(this), hex"");
-
-        vm.startPrank(BORROWER);
-        blue.borrow(market, amountBorrowed, BORROWER, BORROWER);
-
-        vm.expectEmit(true, true, true, true, address(blue));
-        emit Events.Repay(id, BORROWER, BORROWER, amountRepaid, amountRepaid * SharesMath.VIRTUAL_SHARES);
-        blue.repay(market, amountRepaid, BORROWER, hex"");
-
-        vm.stopPrank();
-
-        uint256 expectedBorrowShares = (amountBorrowed - amountRepaid) * SharesMath.VIRTUAL_SHARES;
-
-        assertEq(blue.borrowShares(id, BORROWER), expectedBorrowShares, "borrow shares");
-        assertEq(blue.totalBorrow(id), amountBorrowed - amountRepaid, "total borrow");
-        assertEq(blue.totalBorrowShares(id), expectedBorrowShares, "total borrow shares");
-        assertEq(borrowableAsset.balanceOf(BORROWER), amountBorrowed - amountRepaid, "borrower balance");
-        assertEq(borrowableAsset.balanceOf(address(blue)), amountLent - amountBorrowed + amountRepaid, "blue balance");
-    }
-
-    function testRepayOnBehalf(uint256 amountLent, uint256 amountBorrowed, uint256 amountRepaid, address onBehalf)
-        public
-    {
-        amountLent = bound(amountLent, 1, MAX_TEST_AMOUNT);
-        amountBorrowed = bound(amountBorrowed, 1, amountLent);
-        amountRepaid = bound(amountRepaid, 1, amountBorrowed);
-
-        borrowableAsset.setBalance(address(this), amountLent);
-        borrowableAsset.setBalance(onBehalf, amountRepaid);
-        blue.supply(market, amountLent, address(this), hex"");
-
-        vm.prank(BORROWER);
-        blue.borrow(market, amountBorrowed, BORROWER, BORROWER);
+        collateralAsset.setBalance(onBehalf, amountCollateral);
+        borrowableAsset.setBalance(repayer, amountRepaid);
 
         vm.startPrank(onBehalf);
+        collateralAsset.approve(address(blue), amountCollateral);
+        blue.supplyCollateral(market, amountCollateral, onBehalf, hex"");
+        blue.borrow(market, amountBorrowed, 0, onBehalf, receiver);
+        vm.stopPrank();
+
+        vm.startPrank(repayer);
         borrowableAsset.approve(address(blue), amountRepaid);
 
         vm.expectEmit(true, true, true, true, address(blue));
-        emit Events.Repay(id, onBehalf, BORROWER, amountRepaid, amountRepaid * SharesMath.VIRTUAL_SHARES);
-        blue.repay(market, amountRepaid, BORROWER, hex"");
+        emit EventsLib.Repay(id, repayer, onBehalf, amountRepaid, amountRepaid * SharesMathLib.VIRTUAL_SHARES);
+        blue.repay(market, amountRepaid, 0, onBehalf, hex"");
 
         vm.stopPrank();
 
-        uint256 expectedBorrowShares = (amountBorrowed - amountRepaid) * SharesMath.VIRTUAL_SHARES;
+        uint256 expectedBorrowShares = (amountBorrowed - amountRepaid) * SharesMathLib.VIRTUAL_SHARES;
 
-        assertEq(blue.borrowShares(id, BORROWER), expectedBorrowShares, "borrow shares");
+        assertEq(blue.borrowShares(id, onBehalf), expectedBorrowShares, "borrow shares");
         assertEq(blue.totalBorrow(id), amountBorrowed - amountRepaid, "total borrow");
         assertEq(blue.totalBorrowShares(id), expectedBorrowShares, "total borrow shares");
-        assertEq(borrowableAsset.balanceOf(BORROWER), amountBorrowed, "BORROWER balance");
-        assertEq(borrowableAsset.balanceOf(address(blue)), amountLent - amountBorrowed + amountRepaid, "blue balance");
+        assertEq(borrowableAsset.balanceOf(receiver), amountBorrowed, "receiver balance");
+        assertEq(
+            borrowableAsset.balanceOf(address(blue)), amountSupplied - amountBorrowed + amountRepaid, "blue balance"
+        );
+    }
+
+    function testRepayShares(
+        uint256 amountSupplied,
+        uint256 amountCollateral,
+        uint256 amountBorrowed,
+        uint256 sharesRepaid,
+        uint256 priceCollateral,
+        address repayer,
+        address onBehalf,
+        address receiver
+    ) public {
+        vm.assume(repayer != address(0) && repayer != address(blue));
+        vm.assume(onBehalf != address(0) && onBehalf != address(blue));
+        vm.assume(receiver != address(0) && receiver != address(blue));
+
+        (amountCollateral, amountBorrowed, priceCollateral) =
+            _boundHealthyPosition(amountCollateral, amountBorrowed, priceCollateral);
+
+        amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
+        _provideLiquidity(amountSupplied);
+
+        oracle.setPrice(priceCollateral);
+
+        uint256 expectedBorrowShares = amountBorrowed * SharesMathLib.VIRTUAL_SHARES;
+        vm.assume(expectedBorrowShares != 0);
+
+        sharesRepaid = bound(sharesRepaid, 1, expectedBorrowShares);
+        uint256 expectedAmountRepaid =
+            sharesRepaid.mulDivUp(amountBorrowed + 1, expectedBorrowShares + SharesMathLib.VIRTUAL_SHARES);
+
+        collateralAsset.setBalance(onBehalf, amountCollateral);
+        borrowableAsset.setBalance(repayer, expectedAmountRepaid);
+
+        vm.startPrank(onBehalf);
+        collateralAsset.approve(address(blue), amountCollateral);
+        blue.supplyCollateral(market, amountCollateral, onBehalf, hex"");
+        blue.borrow(market, amountBorrowed, 0, onBehalf, receiver);
+        vm.stopPrank();
+
+        vm.startPrank(repayer);
+        borrowableAsset.approve(address(blue), expectedAmountRepaid);
+
+        vm.expectEmit(true, true, true, true, address(blue));
+        emit EventsLib.Repay(id, repayer, onBehalf, expectedAmountRepaid, sharesRepaid);
+        blue.repay(market, 0, sharesRepaid, onBehalf, hex"");
+
+        vm.stopPrank();
+
+        expectedBorrowShares -= sharesRepaid;
+
+        assertEq(blue.borrowShares(id, onBehalf), expectedBorrowShares, "borrow shares");
+        assertEq(blue.totalBorrow(id), amountBorrowed - expectedAmountRepaid, "total borrow");
+        assertEq(blue.totalBorrowShares(id), expectedBorrowShares, "total borrow shares");
+        assertEq(borrowableAsset.balanceOf(receiver), amountBorrowed, "receiver balance");
+        assertEq(
+            borrowableAsset.balanceOf(address(blue)),
+            amountSupplied - amountBorrowed + expectedAmountRepaid,
+            "blue balance"
+        );
     }
 }
