@@ -858,7 +858,7 @@ contract BlueTest is
         privateKey = bound(privateKey, 1, type(uint32).max); // "Private key must be less than the secp256k1 curve order (115792089237316195423570985008687907852837564279074904382605163141518161494337)."
         address authorizer = vm.addr(privateKey);
 
-        SigUtils.Authorization memory authorization = SigUtils.Authorization({
+        Authorization memory authorization = Authorization({
             authorizer: authorizer,
             authorized: authorized,
             isAuthorized: isAuthorized,
@@ -871,9 +871,7 @@ contract BlueTest is
         Signature memory sig;
         (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
 
-        blue.setAuthorizationWithSig(
-            authorization.authorizer, authorization.authorized, authorization.isAuthorized, authorization.deadline, sig
-        );
+        blue.setAuthorizationWithSig(authorization, sig);
 
         assertEq(blue.isAuthorized(authorizer, authorized), isAuthorized);
         assertEq(blue.nonce(authorizer), 1);

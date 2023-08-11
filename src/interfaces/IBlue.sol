@@ -13,6 +13,14 @@ struct Market {
     uint256 lltv;
 }
 
+struct Authorization {
+    address authorizer;
+    address authorized;
+    bool isAuthorized;
+    uint256 nonce;
+    uint256 deadline;
+}
+
 /// @notice Contains the `v`, `r` and `s` parameters of an ECDSA signature.
 struct Signature {
     uint8 v;
@@ -62,13 +70,7 @@ interface IBlue is IFlashLender {
     function flashLoan(address token, uint256 amount, bytes calldata data) external;
 
     function setAuthorization(address authorized, bool newIsAuthorized) external;
-    function setAuthorizationWithSig(
-        address authorizer,
-        address authorized,
-        bool newIsAuthorized,
-        uint256 deadline,
-        Signature calldata signature
-    ) external;
+    function setAuthorizationWithSig(Authorization calldata authorization, Signature calldata signature) external;
 
     function extsload(bytes32[] memory slots) external view returns (bytes32[] memory res);
 }

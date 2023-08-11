@@ -346,30 +346,21 @@ contract Blue is IBlue {
     }
 
     /// @dev The signature is malleable, but it has no impact on the security here.
-    function setAuthorizationWithSig(
-        address authorizer,
-        address authorized,
-        bool newIsAuthorized,
-        uint256 deadline,
-        Signature calldata signature
-    ) external {
-        require(block.timestamp < deadline, ErrorsLib.SIGNATURE_EXPIRED);
+    function setAuthorizationWithSig(Authorization calldata authorization, Signature calldata signature) external {
+        require(block.timestamp < authorization.deadline, ErrorsLib.SIGNATURE_EXPIRED);
 
-        uint256 usedNonce = nonce[authorizer];
-        bytes32 hashStruct =
-            keccak256(abi.encode(AUTHORIZATION_TYPEHASH, authorizer, authorized, newIsAuthorized, usedNonce, deadline));
+        bytes32 hashStruct = keccak256(abi.encode(AUTHORIZATION_TYPEHASH, authorization));
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, hashStruct));
         address signatory = ecrecover(digest, signature.v, signature.r, signature.s);
 
-        if (signatory != address(0) && authorizer == signatory) {
-            nonce[authorizer]++;
-            emit EventsLib.IncrementNonce(msg.sender, authorizer, usedNonce);
+        require(signatory != address(0) && authorization.authorizer == signatory, ErrorsLib.INVALID_SIGNATURE);
 
-            isAuthorized[authorizer][authorized] = newIsAuthorized;
-            emit EventsLib.SetAuthorization(msg.sender, authorizer, authorized, newIsAuthorized);
-        } else {
-            // To avoid potential frontrun attacks, when the signature is not verified, only prevent attempts that actually change the authorization.
-            require(isAuthorized[authorizer][authorized] == newIsAuthorized, ErrorsLib.INVALID_SIGNATURE);
+        if (authorization.nonce == nonce[authorization.authorizer]) {
+            emit EventsLib.IncrementNonce(msg.sender, authorization.authorizer, nonce[authorization.authorizer]++);
+            isAuthorized[authorization.authorizer][authorization.authorized] = authorization.isAuthorized;
+            emit EventsLib.SetAuthorization(
+                msg.sender, authorization.authorizer, authorization.authorized, authorization.isAuthorized
+            );
         }
     }
 
