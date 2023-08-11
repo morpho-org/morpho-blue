@@ -9,7 +9,7 @@ contract IntegrationSupplyCollateralTest is BaseTest {
 
         vm.prank(supplier);
         vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
-        blue.supply(marketFuzz, amount, 0, supplier, hex"");
+        morpho.supply(marketFuzz, amount, 0, supplier, hex"");
     }
 
     function testSupplyCollateralZeroAmount(address supplier) public {
@@ -17,7 +17,7 @@ contract IntegrationSupplyCollateralTest is BaseTest {
 
         vm.prank(supplier);
         vm.expectRevert(bytes(ErrorsLib.ZERO_AMOUNT));
-        blue.supplyCollateral(market, 0, supplier, hex"");
+        morpho.supplyCollateral(market, 0, supplier, hex"");
     }
 
     function testSupplyCollateralOnBehalfZeroAddress(address supplier, uint256 amount) public {
@@ -25,25 +25,25 @@ contract IntegrationSupplyCollateralTest is BaseTest {
 
         vm.prank(supplier);
         vm.expectRevert(bytes(ErrorsLib.ZERO_ADDRESS));
-        blue.supplyCollateral(market, amount, address(0), hex"");
+        morpho.supplyCollateral(market, amount, address(0), hex"");
     }
 
     function testSupplyCollateral(address supplier, address onBehalf, uint256 amount) public {
-        vm.assume(supplier != address(blue) && onBehalf != address(blue) && onBehalf != address(0));
+        vm.assume(supplier != address(morpho) && onBehalf != address(morpho) && onBehalf != address(0));
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
         collateralAsset.setBalance(supplier, amount);
 
         vm.startPrank(supplier);
-        collateralAsset.approve(address(blue), amount);
+        collateralAsset.approve(address(morpho), amount);
 
-        vm.expectEmit(true, true, true, true, address(blue));
+        vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.SupplyCollateral(id, supplier, onBehalf, amount);
-        blue.supplyCollateral(market, amount, onBehalf, hex"");
+        morpho.supplyCollateral(market, amount, onBehalf, hex"");
         vm.stopPrank();
 
-        assertEq(blue.collateral(id, onBehalf), amount, "collateral");
+        assertEq(morpho.collateral(id, onBehalf), amount, "collateral");
         assertEq(collateralAsset.balanceOf(supplier), 0, "supplier balance");
-        assertEq(collateralAsset.balanceOf(address(blue)), amount, "blue balance");
+        assertEq(collateralAsset.balanceOf(address(morpho)), amount, "morpho balance");
     }
 }

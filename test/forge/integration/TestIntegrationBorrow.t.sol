@@ -16,13 +16,13 @@ contract IntegrationBorrowTest is BaseTest {
 
         vm.prank(borrowerFuzz);
         vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
-        blue.borrow(marketFuzz, amount, 0, borrowerFuzz, receiver);
+        morpho.borrow(marketFuzz, amount, 0, borrowerFuzz, receiver);
     }
 
     function testBorrowZeroAmount(address borrowerFuzz, address receiver) public {
         vm.prank(borrowerFuzz);
         vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
-        blue.borrow(market, 0, 0, borrowerFuzz, receiver);
+        morpho.borrow(market, 0, 0, borrowerFuzz, receiver);
     }
 
     function testBorrowInconsistentInput(address borrowerFuzz, uint256 amount, uint256 shares, address receiver)
@@ -33,7 +33,7 @@ contract IntegrationBorrowTest is BaseTest {
 
         vm.prank(borrowerFuzz);
         vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
-        blue.borrow(market, amount, shares, borrowerFuzz, receiver);
+        morpho.borrow(market, amount, shares, borrowerFuzz, receiver);
     }
 
     function testBorrowToZeroAddress(address borrowerFuzz, uint256 amount) public {
@@ -43,7 +43,7 @@ contract IntegrationBorrowTest is BaseTest {
 
         vm.prank(borrowerFuzz);
         vm.expectRevert(bytes(ErrorsLib.ZERO_ADDRESS));
-        blue.borrow(market, amount, 0, borrowerFuzz, address(0));
+        morpho.borrow(market, amount, 0, borrowerFuzz, address(0));
     }
 
     function testBorrowUnauthorized(address supplier, address attacker, address receiver, uint256 amount) public {
@@ -55,13 +55,13 @@ contract IntegrationBorrowTest is BaseTest {
         collateralAsset.setBalance(supplier, amount);
 
         vm.startPrank(supplier);
-        collateralAsset.approve(address(blue), amount);
-        blue.supplyCollateral(market, amount, supplier, hex"");
+        collateralAsset.approve(address(morpho), amount);
+        morpho.supplyCollateral(market, amount, supplier, hex"");
         vm.stopPrank();
 
         vm.prank(attacker);
         vm.expectRevert(bytes(ErrorsLib.UNAUTHORIZED));
-        blue.borrow(market, amount, 0, supplier, receiver);
+        morpho.borrow(market, amount, 0, supplier, receiver);
     }
 
     function testBorrowUnhealthyPosition(
@@ -81,9 +81,9 @@ contract IntegrationBorrowTest is BaseTest {
         collateralAsset.setBalance(BORROWER, amountCollateral);
 
         vm.startPrank(BORROWER);
-        blue.supplyCollateral(market, amountCollateral, BORROWER, hex"");
+        morpho.supplyCollateral(market, amountCollateral, BORROWER, hex"");
         vm.expectRevert(bytes(ErrorsLib.INSUFFICIENT_COLLATERAL));
-        blue.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
+        morpho.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
         vm.stopPrank();
     }
 
@@ -104,9 +104,9 @@ contract IntegrationBorrowTest is BaseTest {
         collateralAsset.setBalance(BORROWER, amountCollateral);
 
         vm.startPrank(BORROWER);
-        blue.supplyCollateral(market, amountCollateral, BORROWER, hex"");
+        morpho.supplyCollateral(market, amountCollateral, BORROWER, hex"");
         vm.expectRevert(bytes(ErrorsLib.INSUFFICIENT_LIQUIDITY));
-        blue.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
+        morpho.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
         vm.stopPrank();
     }
 
@@ -117,7 +117,7 @@ contract IntegrationBorrowTest is BaseTest {
         uint256 priceCollateral,
         address receiver
     ) public {
-        vm.assume(receiver != address(0) && receiver != address(blue));
+        vm.assume(receiver != address(0) && receiver != address(morpho));
 
         (amountCollateral, amountBorrowed, priceCollateral) =
             _boundHealthyPosition(amountCollateral, amountBorrowed, priceCollateral);
@@ -130,20 +130,20 @@ contract IntegrationBorrowTest is BaseTest {
         collateralAsset.setBalance(BORROWER, amountCollateral);
 
         vm.startPrank(BORROWER);
-        blue.supplyCollateral(market, amountCollateral, BORROWER, hex"");
+        morpho.supplyCollateral(market, amountCollateral, BORROWER, hex"");
 
         uint256 expectedBorrowShares = amountBorrowed * SharesMathLib.VIRTUAL_SHARES;
 
-        vm.expectEmit(true, true, true, true, address(blue));
+        vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.Borrow(id, BORROWER, BORROWER, receiver, amountBorrowed, expectedBorrowShares);
-        blue.borrow(market, amountBorrowed, 0, BORROWER, receiver);
+        morpho.borrow(market, amountBorrowed, 0, BORROWER, receiver);
         vm.stopPrank();
 
-        assertEq(blue.totalBorrow(id), amountBorrowed, "total borrow");
-        assertEq(blue.borrowShares(id, BORROWER), expectedBorrowShares, "borrow shares");
-        assertEq(blue.borrowShares(id, BORROWER), expectedBorrowShares, "total borrow shares");
+        assertEq(morpho.totalBorrow(id), amountBorrowed, "total borrow");
+        assertEq(morpho.borrowShares(id, BORROWER), expectedBorrowShares, "borrow shares");
+        assertEq(morpho.borrowShares(id, BORROWER), expectedBorrowShares, "total borrow shares");
         assertEq(borrowableAsset.balanceOf(receiver), amountBorrowed, "borrower balance");
-        assertEq(borrowableAsset.balanceOf(address(blue)), amountSupplied - amountBorrowed, "blue balance");
+        assertEq(borrowableAsset.balanceOf(address(morpho)), amountSupplied - amountBorrowed, "morpho balance");
     }
 
     function testBorrowShares(
@@ -153,7 +153,7 @@ contract IntegrationBorrowTest is BaseTest {
         uint256 priceCollateral,
         address receiver
     ) public {
-        vm.assume(receiver != address(0) && receiver != address(blue));
+        vm.assume(receiver != address(0) && receiver != address(morpho));
 
         priceCollateral = bound(priceCollateral, MIN_COLLATERAL_PRICE, MAX_COLLATERAL_PRICE);
         sharesBorrowed = bound(sharesBorrowed, MIN_TEST_SHARES, MAX_TEST_SHARES);
@@ -172,18 +172,18 @@ contract IntegrationBorrowTest is BaseTest {
         collateralAsset.setBalance(BORROWER, amountCollateral);
 
         vm.startPrank(BORROWER);
-        blue.supplyCollateral(market, amountCollateral, BORROWER, hex"");
+        morpho.supplyCollateral(market, amountCollateral, BORROWER, hex"");
 
-        vm.expectEmit(true, true, true, true, address(blue));
+        vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.Borrow(id, BORROWER, BORROWER, receiver, expectedAmountBorrowed, sharesBorrowed);
-        blue.borrow(market, 0, sharesBorrowed, BORROWER, receiver);
+        morpho.borrow(market, 0, sharesBorrowed, BORROWER, receiver);
         vm.stopPrank();
 
-        assertEq(blue.totalBorrow(id), expectedAmountBorrowed, "total borrow");
-        assertEq(blue.borrowShares(id, BORROWER), sharesBorrowed, "borrow shares");
-        assertEq(blue.borrowShares(id, BORROWER), sharesBorrowed, "total borrow shares");
+        assertEq(morpho.totalBorrow(id), expectedAmountBorrowed, "total borrow");
+        assertEq(morpho.borrowShares(id, BORROWER), sharesBorrowed, "borrow shares");
+        assertEq(morpho.borrowShares(id, BORROWER), sharesBorrowed, "total borrow shares");
         assertEq(borrowableAsset.balanceOf(receiver), expectedAmountBorrowed, "borrower balance");
-        assertEq(borrowableAsset.balanceOf(address(blue)), amountSupplied - expectedAmountBorrowed, "blue balance");
+        assertEq(borrowableAsset.balanceOf(address(morpho)), amountSupplied - expectedAmountBorrowed, "morpho balance");
     }
 
     function testBorrowAmountOnBehalf(
@@ -194,8 +194,8 @@ contract IntegrationBorrowTest is BaseTest {
         address onBehalf,
         address receiver
     ) public {
-        vm.assume(onBehalf != address(0) && onBehalf != address(blue));
-        vm.assume(receiver != address(0) && receiver != address(blue));
+        vm.assume(onBehalf != address(0) && onBehalf != address(morpho));
+        vm.assume(receiver != address(0) && receiver != address(morpho));
 
         (amountCollateral, amountBorrowed, priceCollateral) =
             _boundHealthyPosition(amountCollateral, amountBorrowed, priceCollateral);
@@ -208,23 +208,23 @@ contract IntegrationBorrowTest is BaseTest {
         collateralAsset.setBalance(onBehalf, amountCollateral);
 
         vm.startPrank(onBehalf);
-        collateralAsset.approve(address(blue), amountCollateral);
-        blue.supplyCollateral(market, amountCollateral, onBehalf, hex"");
-        blue.setAuthorization(BORROWER, true);
+        collateralAsset.approve(address(morpho), amountCollateral);
+        morpho.supplyCollateral(market, amountCollateral, onBehalf, hex"");
+        morpho.setAuthorization(BORROWER, true);
         vm.stopPrank();
 
         uint256 expectedBorrowShares = amountBorrowed * SharesMathLib.VIRTUAL_SHARES;
 
         vm.prank(BORROWER);
-        vm.expectEmit(true, true, true, true, address(blue));
+        vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.Borrow(id, BORROWER, onBehalf, receiver, amountBorrowed, expectedBorrowShares);
-        blue.borrow(market, amountBorrowed, 0, onBehalf, receiver);
+        morpho.borrow(market, amountBorrowed, 0, onBehalf, receiver);
 
-        assertEq(blue.borrowShares(id, onBehalf), expectedBorrowShares, "borrow shares");
-        assertEq(blue.totalBorrow(id), amountBorrowed, "total borrow");
-        assertEq(blue.totalBorrowShares(id), expectedBorrowShares, "total borrow shares");
+        assertEq(morpho.borrowShares(id, onBehalf), expectedBorrowShares, "borrow shares");
+        assertEq(morpho.totalBorrow(id), amountBorrowed, "total borrow");
+        assertEq(morpho.totalBorrowShares(id), expectedBorrowShares, "total borrow shares");
         assertEq(borrowableAsset.balanceOf(receiver), amountBorrowed, "borrower balance");
-        assertEq(borrowableAsset.balanceOf(address(blue)), amountSupplied - amountBorrowed, "blue balance");
+        assertEq(borrowableAsset.balanceOf(address(morpho)), amountSupplied - amountBorrowed, "morpho balance");
     }
 
     function testBorrowSharesOnBehalf(
@@ -235,8 +235,8 @@ contract IntegrationBorrowTest is BaseTest {
         address onBehalf,
         address receiver
     ) public {
-        vm.assume(onBehalf != address(0) && onBehalf != address(blue));
-        vm.assume(receiver != address(0) && receiver != address(blue));
+        vm.assume(onBehalf != address(0) && onBehalf != address(morpho));
+        vm.assume(receiver != address(0) && receiver != address(morpho));
 
         priceCollateral = bound(priceCollateral, MIN_COLLATERAL_PRICE, MAX_COLLATERAL_PRICE);
         sharesBorrowed = bound(sharesBorrowed, MIN_TEST_SHARES, MAX_TEST_SHARES);
@@ -255,20 +255,20 @@ contract IntegrationBorrowTest is BaseTest {
         collateralAsset.setBalance(onBehalf, amountCollateral);
 
         vm.startPrank(onBehalf);
-        collateralAsset.approve(address(blue), amountCollateral);
-        blue.supplyCollateral(market, amountCollateral, onBehalf, hex"");
-        blue.setAuthorization(BORROWER, true);
+        collateralAsset.approve(address(morpho), amountCollateral);
+        morpho.supplyCollateral(market, amountCollateral, onBehalf, hex"");
+        morpho.setAuthorization(BORROWER, true);
         vm.stopPrank();
 
         vm.prank(BORROWER);
-        vm.expectEmit(true, true, true, true, address(blue));
+        vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.Borrow(id, BORROWER, onBehalf, receiver, expectedAmountBorrowed, sharesBorrowed);
-        blue.borrow(market, 0, sharesBorrowed, onBehalf, receiver);
+        morpho.borrow(market, 0, sharesBorrowed, onBehalf, receiver);
 
-        assertEq(blue.borrowShares(id, onBehalf), sharesBorrowed, "borrow shares");
-        assertEq(blue.totalBorrow(id), expectedAmountBorrowed, "total borrow");
-        assertEq(blue.totalBorrowShares(id), sharesBorrowed, "total borrow shares");
+        assertEq(morpho.borrowShares(id, onBehalf), sharesBorrowed, "borrow shares");
+        assertEq(morpho.totalBorrow(id), expectedAmountBorrowed, "total borrow");
+        assertEq(morpho.totalBorrowShares(id), sharesBorrowed, "total borrow shares");
         assertEq(borrowableAsset.balanceOf(receiver), expectedAmountBorrowed, "borrower balance");
-        assertEq(borrowableAsset.balanceOf(address(blue)), amountSupplied - expectedAmountBorrowed, "blue balance");
+        assertEq(borrowableAsset.balanceOf(address(morpho)), amountSupplied - expectedAmountBorrowed, "morpho balance");
     }
 }

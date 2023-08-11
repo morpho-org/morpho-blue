@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import {AUTHORIZATION_TYPEHASH} from "src/Blue.sol";
+import {AUTHORIZATION_TYPEHASH} from "src/Morpho.sol";
 
 library SigUtils {
     struct Authorization {

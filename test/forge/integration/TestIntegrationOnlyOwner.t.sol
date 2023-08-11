@@ -12,18 +12,18 @@ contract IntegrationOnlyOwnerTest is BaseTest {
 
         vm.prank(addressFuzz);
         vm.expectRevert(bytes(ErrorsLib.NOT_OWNER));
-        blue.setOwner(addressFuzz);
+        morpho.setOwner(addressFuzz);
     }
 
     function testSetOwner(address newOwner) public {
         vm.assume(newOwner != OWNER);
 
         vm.prank(OWNER);
-        vm.expectEmit(true, true, true, true, address(blue));
+        vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.SetOwner(newOwner);
-        blue.setOwner(newOwner);
+        morpho.setOwner(newOwner);
 
-        assertEq(blue.owner(), newOwner, "owner is not set");
+        assertEq(morpho.owner(), newOwner, "owner is not set");
     }
 
     function testEnableIrmWhenNotOwner(address addressFuzz, address irmFuzz) public {
@@ -32,18 +32,18 @@ contract IntegrationOnlyOwnerTest is BaseTest {
 
         vm.prank(addressFuzz);
         vm.expectRevert(bytes(ErrorsLib.NOT_OWNER));
-        blue.enableIrm(irmFuzz);
+        morpho.enableIrm(irmFuzz);
     }
 
     function testEnableIrm(address irmFuzz) public {
         vm.assume(irmFuzz != address(irm));
 
         vm.prank(OWNER);
-        vm.expectEmit(true, true, true, true, address(blue));
+        vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.EnableIrm(irmFuzz);
-        blue.enableIrm(irmFuzz);
+        morpho.enableIrm(irmFuzz);
 
-        assertTrue(blue.isIrmEnabled(irmFuzz), "IRM is not enabled");
+        assertTrue(morpho.isIrmEnabled(irmFuzz), "IRM is not enabled");
     }
 
     function testEnableLltvWhenNotOwner(address addressFuzz, uint256 lltvFuzz) public {
@@ -52,7 +52,7 @@ contract IntegrationOnlyOwnerTest is BaseTest {
 
         vm.prank(addressFuzz);
         vm.expectRevert(bytes(ErrorsLib.NOT_OWNER));
-        blue.enableLltv(lltvFuzz);
+        morpho.enableLltv(lltvFuzz);
     }
 
     function testEnableTooHighLltv(uint256 lltvFuzz) public {
@@ -60,18 +60,18 @@ contract IntegrationOnlyOwnerTest is BaseTest {
 
         vm.prank(OWNER);
         vm.expectRevert(bytes(ErrorsLib.LLTV_TOO_HIGH));
-        blue.enableLltv(lltvFuzz);
+        morpho.enableLltv(lltvFuzz);
     }
 
     function testEnableLltv(uint256 lltvFuzz) public {
         lltvFuzz = _boundValidLltv(lltvFuzz);
 
         vm.prank(OWNER);
-        vm.expectEmit(true, true, true, true, address(blue));
+        vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.EnableLltv(lltvFuzz);
-        blue.enableLltv(lltvFuzz);
+        morpho.enableLltv(lltvFuzz);
 
-        assertTrue(blue.isLltvEnabled(lltvFuzz), "LLTV is not enabled");
+        assertTrue(morpho.isLltvEnabled(lltvFuzz), "LLTV is not enabled");
     }
 
     function testSetFeeWhenNotOwner(address addressFuzz, uint256 feeFuzz) public {
@@ -79,7 +79,7 @@ contract IntegrationOnlyOwnerTest is BaseTest {
 
         vm.prank(addressFuzz);
         vm.expectRevert(bytes(ErrorsLib.NOT_OWNER));
-        blue.setFee(market, feeFuzz);
+        morpho.setFee(market, feeFuzz);
     }
 
     function testSetFeeWhenMarketNotCreated(Market memory marketFuzz, uint256 feeFuzz) public {
@@ -87,7 +87,7 @@ contract IntegrationOnlyOwnerTest is BaseTest {
 
         vm.prank(OWNER);
         vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
-        blue.setFee(marketFuzz, feeFuzz);
+        morpho.setFee(marketFuzz, feeFuzz);
     }
 
     function testSetTooHighFee(uint256 feeFuzz) public {
@@ -95,18 +95,18 @@ contract IntegrationOnlyOwnerTest is BaseTest {
 
         vm.prank(OWNER);
         vm.expectRevert(bytes(ErrorsLib.MAX_FEE_EXCEEDED));
-        blue.setFee(market, feeFuzz);
+        morpho.setFee(market, feeFuzz);
     }
 
     function testSetFee(uint256 feeFuzz) public {
         feeFuzz = bound(feeFuzz, 0, MAX_FEE);
 
         vm.prank(OWNER);
-        vm.expectEmit(true, true, true, true, address(blue));
+        vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.SetFee(id, feeFuzz);
-        blue.setFee(market, feeFuzz);
+        morpho.setFee(market, feeFuzz);
 
-        assertEq(blue.fee(id), feeFuzz);
+        assertEq(morpho.fee(id), feeFuzz);
     }
 
     function testSetFeeRecipientWhenNotOwner(address addressFuzz) public {
@@ -114,17 +114,17 @@ contract IntegrationOnlyOwnerTest is BaseTest {
 
         vm.prank(addressFuzz);
         vm.expectRevert(bytes(ErrorsLib.NOT_OWNER));
-        blue.setFeeRecipient(addressFuzz);
+        morpho.setFeeRecipient(addressFuzz);
     }
 
     function testSetFeeRecipient(address newFeeRecipient) public {
         vm.assume(newFeeRecipient != OWNER);
 
         vm.prank(OWNER);
-        vm.expectEmit(true, true, true, true, address(blue));
+        vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.SetFeeRecipient(newFeeRecipient);
-        blue.setFeeRecipient(newFeeRecipient);
+        morpho.setFeeRecipient(newFeeRecipient);
 
-        assertEq(blue.feeRecipient(), newFeeRecipient);
+        assertEq(morpho.feeRecipient(), newFeeRecipient);
     }
 }

@@ -12,7 +12,7 @@ contract IntegrationCreateMarketTest is BaseTest {
 
         vm.prank(OWNER);
         vm.expectRevert(bytes(ErrorsLib.IRM_NOT_ENABLED));
-        blue.createMarket(marketFuzz);
+        morpho.createMarket(marketFuzz);
     }
 
     function testCreateMarketWithNotEnabledIrmAndEnabledLltv(Market memory marketFuzz) public {
@@ -21,12 +21,12 @@ contract IntegrationCreateMarketTest is BaseTest {
 
         vm.startPrank(OWNER);
 
-        vm.expectEmit(true, true, true, true, address(blue));
+        vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.EnableLltv(marketFuzz.lltv);
-        blue.enableLltv(marketFuzz.lltv);
+        morpho.enableLltv(marketFuzz.lltv);
 
         vm.expectRevert(bytes(ErrorsLib.IRM_NOT_ENABLED));
-        blue.createMarket(marketFuzz);
+        morpho.createMarket(marketFuzz);
         vm.stopPrank();
     }
 
@@ -35,12 +35,12 @@ contract IntegrationCreateMarketTest is BaseTest {
 
         vm.startPrank(OWNER);
 
-        vm.expectEmit(true, true, true, true, address(blue));
+        vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.EnableIrm(marketFuzz.irm);
-        blue.enableIrm(marketFuzz.irm);
+        morpho.enableIrm(marketFuzz.irm);
 
         vm.expectRevert(bytes(ErrorsLib.LLTV_NOT_ENABLED));
-        blue.createMarket(marketFuzz);
+        morpho.createMarket(marketFuzz);
         vm.stopPrank();
     }
 
@@ -49,19 +49,19 @@ contract IntegrationCreateMarketTest is BaseTest {
         Id marketFuzzId = marketFuzz.id();
 
         vm.prank(OWNER);
-        vm.expectEmit(true, true, true, true, address(blue));
+        vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.EnableIrm(marketFuzz.irm);
-        blue.enableIrm(marketFuzz.irm);
+        morpho.enableIrm(marketFuzz.irm);
 
-        vm.expectEmit(true, true, true, true, address(blue));
+        vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.CreateMarket(marketFuzz.id(), marketFuzz);
-        blue.createMarket(marketFuzz);
+        morpho.createMarket(marketFuzz);
 
-        assertEq(blue.lastUpdate(marketFuzzId), block.timestamp, "lastUpdate != block.timestamp");
-        assertEq(blue.totalSupply(marketFuzzId), 0, "totalSupply != 0");
-        assertEq(blue.totalSupplyShares(marketFuzzId), 0, "totalSupplyShares != 0");
-        assertEq(blue.totalBorrow(marketFuzzId), 0, "totalBorrow != 0");
-        assertEq(blue.totalBorrowShares(marketFuzzId), 0, "totalBorrowShares != 0");
-        assertEq(blue.fee(marketFuzzId), 0, "fee != 0");
+        assertEq(morpho.lastUpdate(marketFuzzId), block.timestamp, "lastUpdate != block.timestamp");
+        assertEq(morpho.totalSupply(marketFuzzId), 0, "totalSupply != 0");
+        assertEq(morpho.totalSupplyShares(marketFuzzId), 0, "totalSupplyShares != 0");
+        assertEq(morpho.totalBorrow(marketFuzzId), 0, "totalBorrow != 0");
+        assertEq(morpho.totalBorrowShares(marketFuzzId), 0, "totalBorrowShares != 0");
+        assertEq(morpho.fee(marketFuzzId), 0, "fee != 0");
     }
 }
