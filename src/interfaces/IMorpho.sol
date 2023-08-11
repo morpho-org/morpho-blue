@@ -83,6 +83,12 @@ interface IMorpho is IFlashLender {
     /// @notice The `user`'s current nonce. Used to prevent replay attacks with EIP-712 signatures.
     function nonce(address user) external view returns (uint256);
 
+    /// @notice The market configuration corresponding to `id`.
+    function idToMarket(Id id)
+        external
+        view
+        returns (address borrowableAsset, address collateralAsset, address oracle, address irm, uint256 lltv);
+
     /// @notice Sets `newOwner` as owner of the contract.
     function setOwner(address newOwner) external;
 
