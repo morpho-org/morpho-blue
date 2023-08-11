@@ -51,7 +51,7 @@ contract IntegrationCallbacksTest is
         }
     }
 
-    function onBlueLiquidate(uint256, uint256 repaid, bytes memory data) external {
+    function onBlueLiquidate(uint256 repaid, bytes memory data) external {
         require(msg.sender == address(blue));
         bytes4 selector;
         (selector, data) = abi.decode(data, (bytes4, bytes));
@@ -60,8 +60,8 @@ contract IntegrationCallbacksTest is
         }
     }
 
-    function onBlueFlashLoan(address token, uint256 amount, bytes calldata) external {
-        ERC20(token).approve(address(blue), amount);
+    function onBlueFlashLoan(uint256 amount, bytes calldata) external {
+        borrowableAsset.approve(address(blue), amount);
     }
 
     // Tests.
@@ -72,7 +72,7 @@ contract IntegrationCallbacksTest is
         borrowableAsset.setBalance(address(this), amount);
         blue.supply(market, amount, 0, address(this), hex"");
 
-        blue.flashLoan(address(borrowableAsset), amount, bytes(""));
+        blue.flashLoan(address(borrowableAsset), amount, hex"");
 
         assertEq(borrowableAsset.balanceOf(address(blue)), amount, "balanceOf");
     }

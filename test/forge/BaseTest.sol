@@ -80,6 +80,9 @@ contract BaseTest is Test {
         borrowableAsset.approve(address(blue), type(uint256).max);
         collateralAsset.approve(address(blue), type(uint256).max);
         vm.stopPrank();
+
+        vm.roll(block.number + 1);
+        vm.warp(block.timestamp + 1 days);
     }
 
     function _addrFromHashedString(string memory str) internal pure returns (address) {
