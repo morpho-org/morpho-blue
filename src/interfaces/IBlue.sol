@@ -19,6 +19,12 @@ struct Market {
     uint256 lltv;
 }
 
+/// @notice Authorization struct.
+/// @param authorizer Authorizer address.
+/// @param authorized Authorized address.
+/// @param isAuthorized isAuthorized to set.
+/// @param nonce Signature nonce.
+/// @param deadline Signature deadline.
 struct Authorization {
     address authorizer;
     address authorized;
