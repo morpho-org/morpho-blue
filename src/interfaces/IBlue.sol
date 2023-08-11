@@ -33,36 +33,35 @@ interface IBlue is IFlashLender {
 
     /// @notice The fee recipient.
     /// @dev The recipient receives the fees through a supply position.
-    ///      As every other supplier, the recipient is subject to illiquidity risks.
     function feeRecipient() external view returns (address);
 
-    /// @notice The `user`'s supply shares on the market defined by the given `id`.
+    /// @notice The `user`'s supply shares on the market `id`.
     function supplyShares(Id id, address user) external view returns (uint256);
 
-    /// @notice The `user`'s borrow shares on the market defined by the given `id`.
+    /// @notice The `user`'s borrow shares on the market `id`.
     function borrowShares(Id, address user) external view returns (uint256);
 
-    /// @notice The `user`'s collateral balance on the market defined by the given `id`.
+    /// @notice The `user`'s collateral balance on the market `id`.
     function collateral(Id id, address user) external view returns (uint256);
 
-    /// @notice The total amount of assets supplied to the market defined by the given `id`.
-    /// @dev The value can be incaccurate since it does not take into account the accrued interests.
+    /// @notice The total supply of the market `id`.
+    /// @dev Does not contain the accrued interest since the last interaction.
     function totalSupply(Id id) external view returns (uint256);
 
-    /// @notice The total supply shares of the market defined by the given `id`.
+    /// @notice The total supply shares of the market `id`.
     function totalSupplyShares(Id id) external view returns (uint256);
 
-    /// @notice The total amount of assets borrowed from the market defined by the given `id`.
-    /// @dev The value can be incaccurate since it does not take into account the accrued interests.
+    /// @notice The total borrow of the market `id`.
+    /// @dev Does not contain the accrued interest since the last interaction.
     function totalBorrow(Id id) external view returns (uint256);
 
-    /// @notice The total borrow shares of the market defined by the given `id`.
+    /// @notice The total borrow shares of the market `id`.
     function totalBorrowShares(Id id) external view returns (uint256);
 
-    /// @notice The last update of the market defined by the given `id` (used to check if a market has been created).
+    /// @notice The last update timestamp of the market `id` (also used to check if a market has been created).
     function lastUpdate(Id id) external view returns (uint256);
 
-    /// @notice The fee of the market defined by the given `id`.
+    /// @notice The fee of the market `id`.
     function fee(Id id) external view returns (uint256);
 
     /// @notice Whether the `irm` is enabled.
@@ -71,8 +70,8 @@ interface IBlue is IFlashLender {
     /// @notice Whether the `lltv` is enabled.
     function isLltvEnabled(uint256 lltv) external view returns (bool);
 
-    /// @notice Whether `aurothized` is authorized to modify `authorizer`'s positions.
-    /// @dev By default, `msg.sender` is authorized by themself.
+    /// @notice Whether `authorized` is authorized to modify `authorizer`'s positions.
+    /// @dev Anyone is authorized to modify their own positions, regardless of this variable.
     function isAuthorized(address authorizer, address authorized) external view returns (bool);
 
     /// @notice The `user`'s current nonce. Used to prevent replay attacks with EIP-712 signatures.
