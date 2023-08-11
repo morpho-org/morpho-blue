@@ -267,7 +267,7 @@ contract Blue is IBlue {
     function supplyCollateral(Market memory market, uint256 assets, address onBehalf, bytes calldata data) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
-        require(assets != 0, ErrorsLib.ZERO_AMOUNT);
+        require(assets != 0, ErrorsLib.ZERO_ASSETS);
         require(onBehalf != address(0), ErrorsLib.ZERO_ADDRESS);
 
         // Don't accrue interests because it's not required and it saves gas.
@@ -285,7 +285,7 @@ contract Blue is IBlue {
     function withdrawCollateral(Market memory market, uint256 assets, address onBehalf, address receiver) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
-        require(assets != 0, ErrorsLib.ZERO_AMOUNT);
+        require(assets != 0, ErrorsLib.ZERO_ASSETS);
         // No need to verify that onBehalf != address(0) thanks to the authorization check.
         require(receiver != address(0), ErrorsLib.ZERO_ADDRESS);
         require(_isSenderAuthorized(onBehalf), ErrorsLib.UNAUTHORIZED);
@@ -307,7 +307,7 @@ contract Blue is IBlue {
     function liquidate(Market memory market, address borrower, uint256 seized, bytes calldata data) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
-        require(seized != 0, ErrorsLib.ZERO_AMOUNT);
+        require(seized != 0, ErrorsLib.ZERO_ASSETS);
 
         _accrueInterests(market, id);
 

@@ -770,13 +770,13 @@ contract BlueTest is
         vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
         blue.repay(market, 1, 1, address(this), hex"");
 
-        vm.expectRevert(bytes(ErrorsLib.ZERO_AMOUNT));
+        vm.expectRevert(bytes(ErrorsLib.ZERO_ASSETS));
         blue.supplyCollateral(market, 0, address(this), hex"");
 
-        vm.expectRevert(bytes(ErrorsLib.ZERO_AMOUNT));
+        vm.expectRevert(bytes(ErrorsLib.ZERO_ASSETS));
         blue.withdrawCollateral(market, 0, address(this), address(this));
 
-        vm.expectRevert(bytes(ErrorsLib.ZERO_AMOUNT));
+        vm.expectRevert(bytes(ErrorsLib.ZERO_ASSETS));
         blue.liquidate(market, address(0), 0, hex"");
     }
 

@@ -163,7 +163,7 @@
     │   └── revert with MARKET_NOT_CREATED
     └── when market is created
         ├── when the amount to supply is zero
-        │   └── revert with ZERO_AMOUNT
+        │   └── revert with ZERO_ASSETS
         └── when the amount to supply is not zero
             ├── when onBehalf is the zero address
             │   └── revert with ZERO_ADDRESS
@@ -179,7 +179,7 @@
     │   └── revert with MARKET_NOT_CREATED
     └── when market is created
         ├── when the amount to withdraw is zero
-        │   └── revert with ZERO_AMOUNT
+        │   └── revert with ZERO_ASSETS
         └── when the amount to withdraw is not zero
             ├── when receiver is the zero address
             │   └── revert with ZERO_ADDRESS
@@ -199,7 +199,7 @@
     │   └── revert with MARKET_NOT_CREATED
     └── when market is created
         ├── when the amount to seized is zero
-        │   └── revert with ZERO_AMOUNT
+        │   └── revert with ZERO_ASSETS
         └── when the amount to seized is not zero
             ├── it should accrue the interests
             ├── when position is healthy

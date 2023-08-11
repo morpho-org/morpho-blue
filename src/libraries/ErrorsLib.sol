@@ -27,7 +27,7 @@ library ErrorsLib {
     string constant INCONSISTENT_INPUT = "inconsistent input";
 
     /// @notice Thrown when a zero assets amount is passed as input.
-    string internal constant ZERO_AMOUNT = "zero assets";
+    string internal constant ZERO_ASSETS = "zero assets";
 
     /// @notice Thrown when a zero address is passed as input.
     string internal constant ZERO_ADDRESS = "zero address";
