@@ -5,7 +5,7 @@ import "test/forge/BlueInvariantBase.t.sol";
 
 contract SinglePositionInvariantTest is InvariantBaseTest {
     using FixedPointMathLib for uint256;
-    using SharesMath for uint256;
+    using SharesMathLib for uint256;
 
     address user;
 
@@ -15,9 +15,11 @@ contract SinglePositionInvariantTest is InvariantBaseTest {
         user = _addrFromHashedString("Morpho Blue user");
         targetSender(user);
 
+        collateralAsset.setBalance(user, 1e30);
         vm.startPrank(user);
         borrowableAsset.approve(address(blue), type(uint256).max);
         collateralAsset.approve(address(blue), type(uint256).max);
+        blue.supplyCollateral(market, 1e30, user, hex"");
         vm.stopPrank();
 
         _weightSelector(this.supplyOnBlue.selector, 20);
@@ -31,50 +33,62 @@ contract SinglePositionInvariantTest is InvariantBaseTest {
     }
 
     function supplyOnBlue(uint256 amount) public {
-        amount = bound(amount, 1, 2 ** 64);
+        amount = bound(amount, 1, MAX_TEST_AMOUNT);
+
         borrowableAsset.setBalance(msg.sender, amount);
         vm.prank(msg.sender);
-        blue.supply(market, amount, msg.sender, hex"");
+        blue.supply(market, amount, 0, msg.sender, hex"");
     }
 
     function withdrawOnBlue(uint256 amount) public {
+        uint256 availableLiquidity = blue.totalSupply(id) - blue.totalBorrow(id);
         if (blue.supplyShares(id, msg.sender) == 0) return;
-        if (blue.totalSupply(id) - blue.totalBorrow(id) == 0) return;
+        if (availableLiquidity == 0) return;
+
+        _accrueInterest(market);
         uint256 supplierBalance =
             blue.supplyShares(id, msg.sender).toAssetsDown(blue.totalSupply(id), blue.totalSupplyShares(id));
-        uint256 availableLiquidity = blue.totalSupply(id) - blue.totalBorrow(id);
         amount = bound(amount, 1, min(supplierBalance, availableLiquidity));
+
         vm.prank(msg.sender);
-        blue.withdraw(market, amount, msg.sender, msg.sender);
+        blue.withdraw(market, amount, 0, msg.sender, msg.sender);
     }
 
     function borrowOnBlue(uint256 amount) public {
-        if (blue.totalSupply(id) - blue.totalBorrow(id) == 0) return;
-        amount = bound(amount, 1, blue.totalSupply(id) - blue.totalBorrow(id));
+        uint256 availableLiquidity = blue.totalSupply(id) - blue.totalBorrow(id);
+        if (availableLiquidity == 0) return;
+
+        _accrueInterest(market);
+        amount = bound(amount, 1, availableLiquidity);
+
         vm.prank(msg.sender);
-        blue.borrow(market, amount, msg.sender, msg.sender);
+        blue.borrow(market, amount, 0, msg.sender, msg.sender);
     }
 
     function repayOnBlue(uint256 amount) public {
         if (blue.borrowShares(id, msg.sender) == 0) return;
+
+        _accrueInterest(market);
         amount = bound(
             amount, 1, blue.borrowShares(id, msg.sender).toAssetsDown(blue.totalBorrow(id), blue.totalBorrowShares(id))
         );
+
         borrowableAsset.setBalance(msg.sender, amount);
         vm.prank(msg.sender);
-        blue.repay(market, amount, msg.sender, hex"");
+        blue.repay(market, amount, 0, msg.sender, hex"");
     }
 
     function supplyCollateralOnBlue(uint256 amount) public {
-        amount = bound(amount, 1, 2 ** 64);
+        amount = bound(amount, 1, MAX_TEST_AMOUNT);
+
         collateralAsset.setBalance(msg.sender, amount);
         vm.prank(msg.sender);
         blue.supplyCollateral(market, amount, msg.sender, hex"");
     }
 
     function withdrawCollateralOnBlue(uint256 amount) public {
-        if (blue.collateral(id, msg.sender) == 0) return;
-        amount = bound(amount, 1, blue.collateral(id, msg.sender));
+        amount = bound(amount, 1, MAX_TEST_AMOUNT);
+
         vm.prank(msg.sender);
         blue.withdrawCollateral(market, amount, msg.sender, msg.sender);
     }
@@ -109,12 +123,12 @@ contract SinglePositionInvariantTest is InvariantBaseTest {
 
     function invariantSupplySharesRatio() public {
         if (blue.totalSupply(id) == 0) return;
-        assertGe(blue.totalSupplyShares(id) / blue.totalSupply(id), SharesMath.VIRTUAL_SHARES);
+        assertGe(blue.totalSupplyShares(id) / blue.totalSupply(id), SharesMathLib.VIRTUAL_SHARES);
     }
 
     function invariantBorrowSharesRatio() public {
         if (blue.totalBorrow(id) == 0) return;
-        assertGe(blue.totalBorrowShares(id) / blue.totalBorrow(id), SharesMath.VIRTUAL_SHARES);
+        assertGe(blue.totalBorrowShares(id) / blue.totalBorrow(id), SharesMathLib.VIRTUAL_SHARES);
     }
 
     //No price changes, and no new blocks so position has to remain healthy

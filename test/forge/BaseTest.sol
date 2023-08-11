@@ -54,8 +54,6 @@ contract BaseTest is Test {
         oracle = new Oracle();
         vm.label(address(oracle), "Oracle");
 
-        oracle.setPrice(1e25);
-
         irm = new Irm(blue);
         vm.label(address(irm), "IRM");
 

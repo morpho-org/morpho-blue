@@ -5,7 +5,7 @@ import "test/forge/BlueInvariantBase.t.sol";
 
 contract SinglePositionConstantPriceInvariantTest is InvariantBaseTest {
     using FixedPointMathLib for uint256;
-    using SharesMath for uint256;
+    using SharesMathLib for uint256;
 
     address user;
 
@@ -32,17 +32,7 @@ contract SinglePositionConstantPriceInvariantTest is InvariantBaseTest {
 
         targetSelector(FuzzSelector({addr: address(this), selectors: selectors}));
 
-        borrowableOracle.setPrice(1e18);
-        collateralOracle.setPrice(1e18);
-    }
-
-    function _approveSendersTransfers(address[] memory senders) internal {
-        for (uint256 i; i < senders.length; ++i) {
-            vm.startPrank(senders[i]);
-            borrowableAsset.approve(address(blue), type(uint256).max);
-            collateralAsset.approve(address(blue), type(uint256).max);
-            vm.stopPrank();
-        }
+        oracle.setPrice(1e18);
     }
 
     function newBlock(uint8 elapsed) public {
@@ -50,25 +40,15 @@ contract SinglePositionConstantPriceInvariantTest is InvariantBaseTest {
         vm.warp(block.timestamp + elapsed);
     }
 
-    function changePrice(uint256 variation, bool add, bool borrowable) public {
+    function changePrice(uint256 variation, bool add) public {
         // price variation bounded between 2% and 20%
         variation = bound(variation, 2e16, 2e17);
-        if (borrowable) {
-            uint256 currentPrice = IOracle(market.borrowableOracle).price();
-            uint256 priceVariation = variation.mulWadDown(currentPrice);
-            if (add) {
-                borrowableOracle.setPrice(currentPrice + priceVariation);
-            } else {
-                borrowableOracle.setPrice(currentPrice - priceVariation);
-            }
+        (uint256 currentPrice,) = IOracle(market.oracle).price();
+        uint256 priceVariation = currentPrice.wMulDown(variation);
+        if (add) {
+            oracle.setPrice(currentPrice + priceVariation);
         } else {
-            uint256 currentPrice = IOracle(market.collateralOracle).price();
-            uint256 priceVariation = variation.mulWadDown(currentPrice);
-            if (add) {
-                collateralOracle.setPrice(currentPrice + priceVariation);
-            } else {
-                collateralOracle.setPrice(currentPrice - priceVariation);
-            }
+            oracle.setPrice(currentPrice - priceVariation);
         }
     }
 
@@ -84,7 +64,7 @@ contract SinglePositionConstantPriceInvariantTest is InvariantBaseTest {
         borrowableAsset.setBalance(msg.sender, amount);
 
         vm.prank(msg.sender);
-        blue.supply(market, amount, msg.sender, hex"");
+        blue.supply(market, amount, 0, msg.sender, hex"");
     }
 
     function withdrawOnBlue(uint256 amount) public {
@@ -92,114 +72,114 @@ contract SinglePositionConstantPriceInvariantTest is InvariantBaseTest {
         if (blue.supplyShares(id, msg.sender) == 0) return;
         if (availableLiquidity == 0) return;
 
+        _accrueInterest(market);
         uint256 supplierBalance =
             blue.supplyShares(id, msg.sender).toAssetsDown(blue.totalSupply(id), blue.totalSupplyShares(id));
-        if (supplierBalance.mulWadDown(95e16) == 0) return;
-        if (availableLiquidity.mulWadDown(95e16) == 0) return;
-        amount = bound(amount, 1, min(supplierBalance.mulWadDown(95e16), availableLiquidity.mulWadDown(95e16)));
+        if (supplierBalance.wMulDown(95e16) == 0) return;
+        if (availableLiquidity.wMulDown(95e16) == 0) return;
+        amount = bound(amount, 1, min(supplierBalance.wMulDown(95e16), availableLiquidity.wMulDown(95e16)));
 
         vm.prank(msg.sender);
-        blue.withdraw(market, amount, msg.sender, msg.sender);
+        blue.withdraw(market, amount, 0, msg.sender, msg.sender);
     }
 
     function withdrawOnBlueOnBehalf(uint256 amount, address seed) public {
+        _accrueInterest(market);
+
         uint256 availableLiquidity = blue.totalSupply(id) - blue.totalBorrow(id);
         if (availableLiquidity == 0) return;
 
-        address[] memory senders = targetSenders();
-        address onBehalf = _randomSenderToWithdrawOnBehalf(senders, seed, msg.sender);
+        address onBehalf = _randomSenderToWithdrawOnBehalf(targetSenders(), seed, msg.sender);
         if (onBehalf == address(0)) return;
         if (blue.supplyShares(id, onBehalf) != 0) return;
 
         uint256 supplierBalance =
             blue.supplyShares(id, onBehalf).toAssetsDown(blue.totalSupply(id), blue.totalSupplyShares(id));
-        if (supplierBalance.mulWadDown(95e16) == 0) return;
-        if (availableLiquidity.mulWadDown(95e16) == 0) return;
-        amount = bound(amount, 1, min(supplierBalance.mulWadDown(95e16), availableLiquidity.mulWadDown(95e16)));
+        if (supplierBalance.wMulDown(95e16) == 0) return;
+        if (availableLiquidity.wMulDown(95e16) == 0) return;
+        amount = bound(amount, 1, min(supplierBalance.wMulDown(95e16), availableLiquidity.wMulDown(95e16)));
 
         vm.prank(msg.sender);
-        blue.withdraw(market, amount, onBehalf, msg.sender);
+        blue.withdraw(market, amount, 0, onBehalf, msg.sender);
     }
 
     function borrowOnBlue(uint256 amount) public {
-        //supply collateral to accrue interests
-        collateralAsset.setBalance(address(this), 1);
-        blue.supplyCollateral(market, 1, address(this), hex"");
-
         uint256 availableLiquidity = blue.totalSupply(id) - blue.totalBorrow(id);
-        if (availableLiquidity == 0 || blue.collateral(id, msg.sender) == 0 || !isHealthy(market, id, msg.sender)) return;
+        if (availableLiquidity == 0 || blue.collateral(id, msg.sender) == 0 || !isHealthy(market, id, msg.sender)) {
+            return;
+        }
 
-        uint256 collateralPrice = IOracle(market.collateralOracle).price();
-        uint256 borrowablePrice = IOracle(market.borrowableOracle).price();
+        _accrueInterest(market);
+        (uint256 collateralPrice,) = IOracle(market.oracle).price();
 
-        uint256 totalBorrowPower = blue.collateral(id, msg.sender).mulWadDown(collateralPrice).mulWadDown(market.lltv);
-        uint256 alreadyBorrowed = blue.borrowShares(id, msg.sender).toAssetsUp(
-            blue.totalBorrow(id), blue.totalBorrowShares(id)
-        ).mulWadUp(borrowablePrice);
+        uint256 totalBorrowPower = blue.collateral(id, msg.sender).wMulDown(collateralPrice).wMulDown(market.lltv);
+        uint256 alreadyBorrowed =
+            blue.borrowShares(id, msg.sender).toAssetsUp(blue.totalBorrow(id), blue.totalBorrowShares(id));
         uint256 currentBorrowPower = totalBorrowPower - alreadyBorrowed;
 
-        if (currentBorrowPower.mulWadDown(95e16) == 0) return;
-        if (availableLiquidity.mulWadDown(95e16) == 0) return;
+        if (currentBorrowPower.wMulDown(95e16) == 0) return;
+        if (availableLiquidity.wMulDown(95e16) == 0) return;
 
-        amount = bound(amount, 1, min(currentBorrowPower.mulWadDown(95e16), availableLiquidity.mulWadDown(95e16)));
+        amount = bound(amount, 1, min(currentBorrowPower.wMulDown(95e16), availableLiquidity.wMulDown(95e16)));
 
         vm.prank(msg.sender);
-        blue.borrow(market, amount, msg.sender, msg.sender);
+        blue.borrow(market, amount, 0, msg.sender, msg.sender);
     }
 
     function borrowOnBlueOnBehalf(uint256 amount, address seed) public {
-        //supply collateral to accrue interests
-        collateralAsset.setBalance(address(this), 1);
-        blue.supplyCollateral(market, 1, address(this), hex"");
+        _accrueInterest(market);
 
         uint256 availableLiquidity = blue.totalSupply(id) - blue.totalBorrow(id);
         if (availableLiquidity == 0) return;
 
-        address[] memory senders = targetSenders();
-        address onBehalf = _randomSenderToBorrowOnBehalf(senders, seed, msg.sender);
+        address onBehalf = _randomSenderToBorrowOnBehalf(targetSenders(), seed, msg.sender);
         if (onBehalf == address(0)) return;
 
-        uint256 collateralPrice = IOracle(market.collateralOracle).price();
-        uint256 borrowablePrice = IOracle(market.borrowableOracle).price();
-        uint256 totalBorrowPower = blue.collateral(id, onBehalf).mulWadDown(collateralPrice).mulWadDown(market.lltv);
-        uint256 alreadyBorrowed = blue.borrowShares(id, onBehalf).toAssetsUp(
-            blue.totalBorrow(id), blue.totalBorrowShares(id)
-        ).mulWadUp(borrowablePrice);
+        (uint256 collateralPrice,) = IOracle(market.oracle).price();
+
+        uint256 totalBorrowPower = blue.collateral(id, onBehalf).wMulDown(collateralPrice).wMulDown(market.lltv);
+        uint256 alreadyBorrowed =
+            blue.borrowShares(id, onBehalf).toAssetsUp(blue.totalBorrow(id), blue.totalBorrowShares(id));
         uint256 currentBorrowPower = totalBorrowPower - alreadyBorrowed;
 
-        if (currentBorrowPower.mulWadDown(95e16) == 0) return;
-        if (availableLiquidity.mulWadDown(95e16) == 0) return;
+        if (currentBorrowPower.wMulDown(95e16) == 0) return;
+        if (availableLiquidity.wMulDown(95e16) == 0) return;
 
-        amount = bound(amount, 1, min(currentBorrowPower.mulWadDown(95e16), availableLiquidity.mulWadDown(95e16)));
-
-        vm.prank(msg.sender);
-        blue.borrow(market, amount, onBehalf, msg.sender);
-    }
-
-    function repayOnBlue(uint256 amount) public {
-        uint256 borrowedAmount =
-            blue.borrowShares(id, msg.sender).toAssetsDown(blue.totalBorrow(id), blue.totalBorrowShares(id));
-        if (borrowedAmount == 0) return;
-        amount = bound(amount, 1, borrowedAmount);
-        borrowableAsset.setBalance(msg.sender, amount);
+        amount = bound(amount, 1, min(currentBorrowPower.wMulDown(95e16), availableLiquidity.wMulDown(95e16)));
 
         vm.prank(msg.sender);
-        blue.repay(market, amount, msg.sender, hex"");
+        blue.borrow(market, amount, 0, onBehalf, msg.sender);
     }
 
-    function repayOnBlueOnBehalf(uint256 amount, address seed) public {
-        address[] memory senders = targetSenders();
-        address onBehalf = _randomSenderToRepayOnBehalf(senders, seed, msg.sender);
+    function repayOnBlue(uint256 shares) public {
+        uint256 borrowShares = blue.borrowShares(id, msg.sender);
+        if (borrowShares == 0) return;
+
+        _accrueInterest(market);
+        shares = bound(shares, 1, borrowShares);
+        uint256 repaidAmount = shares.toAssetsUp(blue.totalBorrow(id), blue.totalBorrowShares(id));
+        if (repaidAmount == 0) return;
+
+        borrowableAsset.setBalance(msg.sender, repaidAmount);
+
+        vm.prank(msg.sender);
+        blue.repay(market, 0, shares, msg.sender, hex"");
+    }
+
+    function repayOnBlueOnBehalf(uint256 shares, address seed) public {
+        _accrueInterest(market);
+
+        address onBehalf = _randomSenderToRepayOnBehalf(targetSenders(), seed);
         if (onBehalf == address(0)) return;
 
-        uint256 borrowedAmount =
-            blue.borrowShares(id, onBehalf).toAssetsDown(blue.totalBorrow(id), blue.totalBorrowShares(id));
-        if (borrowedAmount == 0) return;
-        amount = bound(amount, 1, borrowedAmount);
+        uint256 borrowShares = blue.borrowShares(id, onBehalf);
+        shares = bound(shares, 1, borrowShares);
+        uint256 repaidAmount = shares.toAssetsUp(blue.totalBorrow(id), blue.totalBorrowShares(id));
+        if (repaidAmount == 0) return;
 
-        borrowableAsset.setBalance(msg.sender, amount);
+        borrowableAsset.setBalance(msg.sender, repaidAmount);
         vm.prank(msg.sender);
-        blue.repay(market, amount, onBehalf, hex"");
+        blue.repay(market, 0, shares, onBehalf, hex"");
     }
 
     function supplyCollateralOnBlue(uint256 amount) public {
@@ -211,20 +191,16 @@ contract SinglePositionConstantPriceInvariantTest is InvariantBaseTest {
     }
 
     function withdrawCollateralOnBlue(uint256 amount) public {
-        //supply collateral to accrue interests
-        collateralAsset.setBalance(address(this), 1);
-        blue.supplyCollateral(market, 1, address(this), hex"");
-
         if (blue.collateral(id, msg.sender) == 0 || !isHealthy(market, id, msg.sender)) return;
 
-        uint256 collateralPrice = IOracle(market.collateralOracle).price();
-        uint256 borrowablePrice = IOracle(market.borrowableOracle).price();
+        _accrueInterest(market);
 
-        uint256 borrowPower = blue.collateral(id, msg.sender).mulWadDown(collateralPrice).mulWadDown(market.lltv);
-        uint256 borrowed = blue.borrowShares(id, msg.sender).toAssetsUp(
-            blue.totalBorrow(id), blue.totalBorrowShares(id)
-        ).mulWadUp(borrowablePrice);
-        uint256 withdrawableCollateral = (borrowPower - borrowed).divWadDown(collateralPrice);
+        (uint256 collateralPrice,) = IOracle(market.oracle).price();
+
+        uint256 borrowPower = blue.collateral(id, msg.sender).wMulDown(collateralPrice).wMulDown(market.lltv);
+        uint256 borrowed =
+            blue.borrowShares(id, msg.sender).toAssetsUp(blue.totalBorrow(id), blue.totalBorrowShares(id));
+        uint256 withdrawableCollateral = (borrowPower - borrowed).wDivDown(collateralPrice).wDivDown(market.lltv);
 
         if (withdrawableCollateral == 0) return;
         amount = bound(amount, 1, withdrawableCollateral);
@@ -234,21 +210,16 @@ contract SinglePositionConstantPriceInvariantTest is InvariantBaseTest {
     }
 
     function withdrawCollateralOnBlueOnBehalf(uint256 amount, address seed) public {
-        //supply collateral to accrue interests
-        collateralAsset.setBalance(address(this), 1);
-        blue.supplyCollateral(market, 1, address(this), hex"");
+        _accrueInterest(market);
 
-        address[] memory senders = targetSenders();
-        address onBehalf = _randomSenderToWithdrawCollateralOnBehalf(senders, seed, msg.sender);
+        address onBehalf = _randomSenderToWithdrawCollateralOnBehalf(targetSenders(), seed, msg.sender);
         if (onBehalf == address(0)) return;
 
-        uint256 collateralPrice = IOracle(market.collateralOracle).price();
-        uint256 borrowablePrice = IOracle(market.borrowableOracle).price();
+        (uint256 collateralPrice,) = IOracle(market.oracle).price();
 
-        uint256 borrowPower = blue.collateral(id, onBehalf).mulWadDown(collateralPrice).mulWadDown(market.lltv);
-        uint256 borrowed = blue.borrowShares(id, onBehalf).toAssetsUp(blue.totalBorrow(id), blue.totalBorrowShares(id))
-            .mulWadUp(borrowablePrice);
-        uint256 withdrawableCollateral = (borrowPower - borrowed).divWadDown(collateralPrice);
+        uint256 borrowPower = blue.collateral(id, onBehalf).wMulDown(collateralPrice).wMulDown(market.lltv);
+        uint256 borrowed = blue.borrowShares(id, onBehalf).toAssetsUp(blue.totalBorrow(id), blue.totalBorrowShares(id));
+        uint256 withdrawableCollateral = (borrowPower - borrowed).wDivDown(collateralPrice).wDivDown(market.lltv);
 
         if (withdrawableCollateral == 0) return;
         amount = bound(amount, 1, withdrawableCollateral);
@@ -258,17 +229,15 @@ contract SinglePositionConstantPriceInvariantTest is InvariantBaseTest {
     }
 
     function liquidateOnBlue(uint256 seized, address seed) public {
-        address[] memory senders = targetSenders();
-        user = _randomSenderToLiquidate(senders, seed);
+        _accrueInterest(market);
+
+        user = _randomSenderToLiquidate(targetSenders(), seed);
         if (user == address(0)) return;
-        seized = bound(seized, 1, blue.collateral(id, user));
 
-        uint256 collateralPrice = IOracle(market.collateralOracle).price();
-        uint256 borrowablePrice = IOracle(market.borrowableOracle).price();
+        (uint256 collateralPrice,) = IOracle(market.oracle).price();
 
-        uint256 incentive = FixedPointMathLib.WAD
-            + ALPHA.mulWadDown(FixedPointMathLib.WAD.divWadDown(market.lltv) - FixedPointMathLib.WAD);
-        uint256 repaid = seized.mulWadUp(collateralPrice).divWadUp(incentive).divWadUp(borrowablePrice);
+        uint256 incentive = WAD + ALPHA.wMulDown(WAD.wDivDown(market.lltv) - WAD);
+        uint256 repaid = seized.wMulDown(collateralPrice).wDivDown(incentive);
         uint256 repaidShares = repaid.toSharesDown(blue.totalBorrow(id), blue.totalBorrowShares(id));
 
         if (repaidShares > blue.borrowShares(id, user)) {
@@ -281,23 +250,19 @@ contract SinglePositionConstantPriceInvariantTest is InvariantBaseTest {
     }
 
     function invariantSupplyShares() public {
-        address[] memory senders = targetSenders();
-        assertEq(sumUsersSupplyShares(senders), blue.totalSupplyShares(id));
+        assertEq(sumUsersSupplyShares(targetSenders()), blue.totalSupplyShares(id));
     }
 
     function invariantBorrowShares() public {
-        address[] memory senders = targetSenders();
-        assertEq(sumUsersBorrowShares(senders), blue.totalBorrowShares(id));
+        assertEq(sumUsersBorrowShares(targetSenders()), blue.totalBorrowShares(id));
     }
 
     function invariantTotalSupply() public {
-        address[] memory senders = targetSenders();
-        assertLe(sumUsersSuppliedAmounts(senders), blue.totalSupply(id));
+        assertLe(sumUsersSuppliedAmounts(targetSenders()), blue.totalSupply(id));
     }
 
     function invariantTotalBorrow() public {
-        address[] memory senders = targetSenders();
-        assertGe(sumUsersBorrowedAmounts(senders), blue.totalBorrow(id));
+        assertGe(sumUsersBorrowedAmounts(targetSenders()), blue.totalBorrow(id));
     }
 
     function invariantTotalBorrowLessThanTotalSupply() public {

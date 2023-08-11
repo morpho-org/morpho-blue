@@ -5,7 +5,7 @@ import "test/forge/BlueInvariantBase.t.sol";
 
 contract TwoMarketsInvariantTest is InvariantBaseTest {
     using FixedPointMathLib for uint256;
-    using SharesMath for uint256;
+    using SharesMathLib for uint256;
     using MarketLib for Market;
 
     Irm internal irm2;
@@ -23,14 +23,7 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
         irm2 = new Irm(blue);
         vm.label(address(irm2), "IRM2");
 
-        market2 = Market(
-            address(borrowableAsset),
-            address(collateralAsset),
-            address(borrowableOracle),
-            address(collateralOracle),
-            address(irm2),
-            LLTV + 1
-        );
+        market2 = Market(address(borrowableAsset), address(collateralAsset), address(oracle), address(irm2), LLTV + 1);
         id2 = market2.id();
 
         vm.startPrank(OWNER);
@@ -42,6 +35,8 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
         _targetDefaultSenders();
 
         _approveSendersTransfers(targetSenders());
+        _supplyHighAmountOfCollateralForAllSenders(targetSenders(), market);
+        _supplyHighAmountOfCollateralForAllSenders(targetSenders(), market2);
 
         _weightSelector(this.supplyOnBlue.selector, 20);
         _weightSelector(this.borrowOnBlue.selector, 20);
@@ -52,15 +47,6 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
         _weightSelector(this.newBlock.selector, 1);
 
         targetSelector(FuzzSelector({addr: address(this), selectors: selectors}));
-    }
-
-    function _approveSendersTransfers(address[] memory senders) internal {
-        for (uint256 i; i < senders.length; ++i) {
-            vm.startPrank(senders[i]);
-            borrowableAsset.approve(address(blue), type(uint256).max);
-            collateralAsset.approve(address(blue), type(uint256).max);
-            vm.stopPrank();
-        }
     }
 
     function newBlock(uint8 elapsed) public {
@@ -78,10 +64,12 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
             chosenMarket = market2;
             chosenId = id2;
         }
-        amount = bound(amount, 1, 2 ** 64);
+
+        amount = bound(amount, 1, MAX_TEST_AMOUNT);
+
         borrowableAsset.setBalance(msg.sender, amount);
         vm.prank(msg.sender);
-        blue.supply(chosenMarket, amount, msg.sender, hex"");
+        blue.supply(chosenMarket, amount, 0, msg.sender, hex"");
     }
 
     function withdrawOnBlue(uint256 amount, bool changeMarket) public {
@@ -94,15 +82,19 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
             chosenMarket = market2;
             chosenId = id2;
         }
+
+        uint256 availableLiquidity = blue.totalSupply(chosenId) - blue.totalBorrow(chosenId);
         if (blue.supplyShares(chosenId, msg.sender) == 0) return;
-        if (blue.totalSupply(chosenId) - blue.totalBorrow(chosenId) == 0) return;
+        if (availableLiquidity == 0) return;
+
+        _accrueInterest(chosenMarket);
         uint256 supplierBalance = blue.supplyShares(chosenId, msg.sender).toAssetsDown(
             blue.totalSupply(chosenId), blue.totalSupplyShares(chosenId)
         );
-        uint256 availableLiquidity = blue.totalSupply(chosenId) - blue.totalBorrow(chosenId);
         amount = bound(amount, 1, min(supplierBalance, availableLiquidity));
+
         vm.prank(msg.sender);
-        blue.withdraw(chosenMarket, amount, msg.sender, msg.sender);
+        blue.withdraw(chosenMarket, amount, 0, msg.sender, msg.sender);
     }
 
     function borrowOnBlue(uint256 amount, bool changeMarket) public {
@@ -115,10 +107,15 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
             chosenMarket = market2;
             chosenId = id2;
         }
-        if (blue.totalSupply(chosenId) - blue.totalBorrow(chosenId) == 0) return;
-        amount = bound(amount, 1, blue.totalSupply(chosenId) - blue.totalBorrow(chosenId));
+
+        uint256 availableLiquidity = blue.totalSupply(chosenId) - blue.totalBorrow(chosenId);
+        if (availableLiquidity == 0) return;
+
+        _accrueInterest(chosenMarket);
+        amount = bound(amount, 1, availableLiquidity);
+
         vm.prank(msg.sender);
-        blue.borrow(chosenMarket, amount, msg.sender, msg.sender);
+        blue.borrow(chosenMarket, amount, 0, msg.sender, msg.sender);
     }
 
     function repayOnBlue(uint256 amount, bool changeMarket) public {
@@ -132,6 +129,8 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
             chosenId = id2;
         }
         if (blue.borrowShares(chosenId, msg.sender) == 0) return;
+
+        _accrueInterest(chosenMarket);
         amount = bound(
             amount,
             1,
@@ -139,9 +138,10 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
                 blue.totalBorrow(chosenId), blue.totalBorrowShares(chosenId)
             )
         );
+
         borrowableAsset.setBalance(msg.sender, amount);
         vm.prank(msg.sender);
-        blue.repay(chosenMarket, amount, msg.sender, hex"");
+        blue.repay(chosenMarket, amount, 0, msg.sender, hex"");
     }
 
     function supplyCollateralOnBlue(uint256 amount, bool changeMarket) public {
@@ -154,8 +154,10 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
             chosenMarket = market2;
             chosenId = id2;
         }
-        amount = bound(amount, 1, 2 ** 64);
+
+        amount = bound(amount, 1, MAX_TEST_AMOUNT);
         collateralAsset.setBalance(msg.sender, amount);
+
         vm.prank(msg.sender);
         blue.supplyCollateral(chosenMarket, amount, msg.sender, hex"");
     }
@@ -170,8 +172,9 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
             chosenMarket = market2;
             chosenId = id2;
         }
-        if (blue.collateral(chosenId, msg.sender) == 0) return;
-        amount = bound(amount, 1, blue.collateral(chosenId, msg.sender));
+
+        amount = bound(amount, 1, MAX_TEST_AMOUNT);
+
         vm.prank(msg.sender);
         blue.withdrawCollateral(chosenMarket, amount, msg.sender, msg.sender);
     }

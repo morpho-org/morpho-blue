@@ -5,7 +5,7 @@ import "test/forge/BaseTest.sol";
 
 contract InvariantBaseTest is BaseTest {
     using FixedPointMathLib for uint256;
-    using SharesMath for uint256;
+    using SharesMathLib for uint256;
 
     bytes4[] internal selectors;
 
@@ -31,6 +31,23 @@ contract InvariantBaseTest is BaseTest {
     function _weightSelector(bytes4 selector, uint256 weight) internal {
         for (uint256 i; i < weight; ++i) {
             selectors.push(selector);
+        }
+    }
+
+    function _approveSendersTransfers(address[] memory senders) internal {
+        for (uint256 i; i < senders.length; ++i) {
+            vm.startPrank(senders[i]);
+            borrowableAsset.approve(address(blue), type(uint256).max);
+            collateralAsset.approve(address(blue), type(uint256).max);
+            vm.stopPrank();
+        }
+    }
+
+    function _supplyHighAmountOfCollateralForAllSenders(address[] memory senders, Market memory market) internal {
+        for (uint256 i; i < senders.length; ++i) {
+            collateralAsset.setBalance(senders[i], 1e30);
+            vm.prank(senders[i]);
+            blue.supplyCollateral(market, 1e30, senders[i], hex"");
         }
     }
 
@@ -69,10 +86,10 @@ contract InvariantBaseTest is BaseTest {
         vm.prank(randomSenderToBorrowOnBehalf);
         blue.setAuthorization(sender, true);
 
-        delete addressArray; 
+        delete addressArray;
     }
 
-    function _randomSenderToRepayOnBehalf(address[] memory addresses, address seed, address sender)
+    function _randomSenderToRepayOnBehalf(address[] memory addresses, address seed)
         internal
         returns (address randomSenderToRepayOnBehalf)
     {
@@ -104,7 +121,7 @@ contract InvariantBaseTest is BaseTest {
         vm.prank(randomSenderToWithdrawCollateralOnBehalf);
         blue.setAuthorization(sender, true);
 
-        delete addressArray; 
+        delete addressArray;
     }
 
     function _randomSenderToLiquidate(address[] memory addresses, address seed)
@@ -148,13 +165,18 @@ contract InvariantBaseTest is BaseTest {
     }
 
     function isHealthy(Market memory market, Id id, address user) public view returns (bool) {
-        uint256 collateralPrice = IOracle(market.collateralOracle).price();
-        uint256 borrowablePrice = IOracle(market.borrowableOracle).price();
+        (uint256 collateralPrice,) = IOracle(market.oracle).price();
 
-        uint256 borrowValue = blue.borrowShares(id, user).toAssetsUp(blue.totalBorrow(id), blue.totalBorrowShares(id))
-            .mulWadUp(borrowablePrice);
-        uint256 collateralValue = blue.collateral(id, user).mulWadDown(collateralPrice);
+        uint256 borrowed = blue.borrowShares(id, user).toAssetsUp(blue.totalBorrow(id), blue.totalBorrowShares(id));
+        uint256 maxBorrow = blue.collateral(id, user).wMulDown(collateralPrice).wMulDown(market.lltv);
 
-        return collateralValue.mulWadDown(market.lltv) >= borrowValue;
+        return maxBorrow >= borrowed;
+    }
+
+    function _accrueInterest(Market memory market) internal {
+        //supply collateral accrue interests.
+        collateralAsset.setBalance(address(this), 1);
+        blue.supplyCollateral(market, 1, address(this), hex"");
+        blue.withdrawCollateral(market, 1, address(this), address(this));
     }
 }
