@@ -6,10 +6,9 @@ pragma solidity >=0.5.0;
 interface IBlueLiquidateCallback {
     /// @notice Callback called when a liquidation occurs.
     /// @dev The callback is called only if data is not empty.
-    /// @param seized The amount of seized tokens.
-    /// @param repaid The amount of repaid tokens.
+    /// @param amount The amount of repaid tokens.
     /// @param data Arbitrary data passed to the `liquidate` function.
-    function onBlueLiquidate(uint256 seized, uint256 repaid, bytes calldata data) external;
+    function onBlueLiquidate(uint256 amount, bytes calldata data) external;
 }
 
 /// @title IBlueRepayCallback
@@ -47,8 +46,7 @@ interface IBlueSupplyCollateralCallback {
 interface IBlueFlashLoanCallback {
     /// @notice Callback called when a flash loan occurs.
     /// @dev The callback is called only if data is not empty.
-    /// @param token The token that was flash loaned.
     /// @param amount The amount that was flash loaned.
     /// @param data Arbitrary data passed to the `flashLoan` function.
-    function onBlueFlashLoan(address token, uint256 amount, bytes calldata data) external;
+    function onBlueFlashLoan(uint256 amount, bytes calldata data) external;
 }

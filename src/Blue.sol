@@ -341,7 +341,7 @@ contract Blue is IBlue {
 
         emit EventsLib.Liquidate(id, msg.sender, borrower, repaid, repaidShares, seized, badDebtShares);
 
-        if (data.length > 0) IBlueLiquidateCallback(msg.sender).onBlueLiquidate(seized, repaid, data);
+        if (data.length > 0) IBlueLiquidateCallback(msg.sender).onBlueLiquidate(repaid, data);
 
         IERC20(market.borrowableAsset).safeTransferFrom(msg.sender, address(this), repaid);
     }
@@ -354,7 +354,7 @@ contract Blue is IBlue {
 
         emit EventsLib.FlashLoan(msg.sender, token, amount);
 
-        IBlueFlashLoanCallback(msg.sender).onBlueFlashLoan(token, amount, data);
+        IBlueFlashLoanCallback(msg.sender).onBlueFlashLoan(amount, data);
 
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
     }
