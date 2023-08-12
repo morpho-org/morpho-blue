@@ -57,36 +57,36 @@
                 ├── it should set lastUpdate[market.id] to block.timestamp
                 └── it should emit CreateMarket(market.id, market)
 .
-└── supply(Market memory market, uint256 amount, uint256 shares, address onBehalf, bytes calldata data) external
+└── supply(Market memory market, uint256 assets, uint256 shares, address onBehalf, bytes calldata data) external
     ├── when market is not created
     │   └── revert with MARKET_NOT_CREATED
     └── when market is created
-        ├── when both amount and shares are null or both amount and shares are not null
+        ├── when both assets and shares are null or both assets and shares are not null
         │   └─  revert with INCONSISTENT_INPUT
-        └── when one of amount or shares is null and one of amount or shares is not null
+        └── when one of assets or shares is null and one of assets or shares is not null
             ├── when onBehalf is the zero address
             │   └── revert with ZERO_ADDRESS
             └── when onBehalf is not the zero address
                 ├── it should accrue the interests
-                ├── when amount is not zero
-                │   └── it should set shares to amount.toSharesUp(totalSupply[market.id], totalSupplyShares[market.id])
-                ├── when amount is zero
-                │   └── it should set amount to shares.toAssetsDown(totalSupply[id], totalSupplyShares[id])
+                ├── when assets is not zero
+                │   └── it should set shares to assets.toSharesUp(totalSupply[market.id], totalSupplyShares[market.id])
+                ├── when assets is zero
+                │   └── it should set assets to shares.toAssetsDown(totalSupply[id], totalSupplyShares[id])
                 ├── it should add shares to supplyShares[market.id][onBehalf] 
                 ├── it should add shares to totalSupplyShares[market.id]
-                ├── it should add amount to totalSupply[market.id]
-                ├── it should emit Supply(market.id, msg.sender, onBehalf, amount, shares)
+                ├── it should add assets to totalSupply[market.id]
+                ├── it should emit Supply(market.id, msg.sender, onBehalf, assets, shares)
                 ├── if data.length > 0
                 │   └── it should call sender's onMorphoSupply callback
-                └── it should transfer amount of the borrowable asset from the sender to Morpho
+                └── it should transfer assets of the borrowable asset from the sender to Morpho
 .
-└── withdraw(Market memory market, uint256 amount, uint256 shares, address onBehalf, address receiver) external
+└── withdraw(Market memory market, uint256 assets, uint256 shares, address onBehalf, address receiver) external
     ├── when market is not created
     │   └── revert with MARKET_NOT_CREATED
     └── when market is created
-        ├── when both amount and shares are null or both amount and shares are not null
+        ├── when both assets and shares are null or both assets and shares are not null
         │   └─  revert with INCONSISTENT_INPUT
-        └── when one of amount or shares is null and one of amount or shares is not null
+        └── when one of assets or shares is null and one of assets or shares is not null
             ├── when receiver is the zero address
             │   └── revert with ZERO_ADDRESS
             └── when receiver is not the zero address
@@ -94,25 +94,25 @@
                 │   └── revert with UNAUTHORIZED
                 └── when sender or approved
                     ├── it should accrue the interests
-                    ├── when amount is not zero
-                    │   └── it should set shares to amount.toSharesUp(totalSupply[market.id], totalSupplyShares[market.id])
-                    ├── when amount is zero
-                    │   └── it should set amount to shares.toAssetsDown(totalSupply[id], totalSupplyShares[id])
+                    ├── when assets is not zero
+                    │   └── it should set shares to assets.toSharesUp(totalSupply[market.id], totalSupplyShares[market.id])
+                    ├── when assets is zero
+                    │   └── it should set assets to shares.toAssetsDown(totalSupply[id], totalSupplyShares[id])
                     ├── it should remove shares from supplyShares[market.id][onBehalf] 
                     ├── it should remove shares from totalSupplyShares[market.id]
-                    ├── it should remove amount from totalSupply[market.id]
-                    ├── it should emit Withdraw(market.id, msg.sender, onBehalf, receiver, amount, shares)
-                    ├── it should transfer amount of the borrowable asset to the receiver
+                    ├── it should remove assets from totalSupply[market.id]
+                    ├── it should emit Withdraw(market.id, msg.sender, onBehalf, receiver, assets, shares)
+                    ├── it should transfer assets of the borrowable asset to the receiver
                     └── when totalBorrow[market.id] > totalSupply[market.id]
                         └── revert with INSUFFICIENT_LIQUIDITY
 .
-└── borrow(Market memory market, uint256 amount, uint256 shares, address onBehalf, address receiver) external
+└── borrow(Market memory market, uint256 assets, uint256 shares, address onBehalf, address receiver) external
     ├── when market is not created
     │   └── revert with MARKET_NOT_CREATED
     └── when market is created
-        ├── when both amount and shares are null or both amount and shares are not null
+        ├── when both assets and shares are null or both assets and shares are not null
         │   └─  revert with INCONSISTENT_INPUT
-        └── when one of amount or shares is null and one of amount or shares is not null
+        └── when one of assets or shares is null and one of assets or shares is not null
             ├── when receiver is the zero address
             │   └── revert with ZERO_ADDRESS
             └── when receiver is not the zero address
@@ -120,67 +120,67 @@
                 │   └── revert with UNAUTHORIZED
                 └── when sender or approved
                     ├── it should accrue the interests
-                    ├── when amount is not zero
-                    │   └── it should set shares to amount.toSharesUp(totalSupply[market.id], totalSupplyShares[market.id])
-                    ├── when amount is zero
-                    │   └── it should set amount to shares.toAssetsDown(totalSupply[id], totalSupplyShares[id])
+                    ├── when assets is not zero
+                    │   └── it should set shares to assets.toSharesUp(totalSupply[market.id], totalSupplyShares[market.id])
+                    ├── when assets is zero
+                    │   └── it should set assets to shares.toAssetsDown(totalSupply[id], totalSupplyShares[id])
                     ├── it should add shares to borrowShares[market.id][onBehalf] 
                     ├── it should add shares to totalBorrowShares[market.id]
-                    ├── it should add amount to totalBorrow[market.id]
-                    ├── it should emit Borrow(market.id, msg.sender, onBehalf, receiver, amount, shares)
-                    ├── it should transfer amount of the borrowable asset to the receiver
+                    ├── it should add assets to totalBorrow[market.id]
+                    ├── it should emit Borrow(market.id, msg.sender, onBehalf, receiver, assets, shares)
+                    ├── it should transfer assets of the borrowable asset to the receiver
                     ├── when position is not healthy
                     │   └── revert with INSUFFICIENT_COLLATERAL
                     └── when position is healthy
                         └── when totalBorrow[market.id] > totalSupply[market.id]
                             └── revert with INSUFFICIENT_LIQUIDITY
 .
-└── repay(Market memory market, uint256 amount, uint256 shares, address onBehalf, bytes calldata data) external
+└── repay(Market memory market, uint256 assets, uint256 shares, address onBehalf, bytes calldata data) external
     ├── when market is not created
     │   └── revert with MARKET_NOT_CREATED
     └── when market is created
-        ├── when both amount and shares are null or both amount and shares are not null
+        ├── when both assets and shares are null or both assets and shares are not null
         │   └─  revert with INCONSISTENT_INPUT
-        └── when one of amount or shares is null and one of amount or shares is not null
+        └── when one of assets or shares is null and one of assets or shares is not null
             ├── when onBehalf is the zero address
             │   └── revert with ZERO_ADDRESS
             └── when onBehalf is not the zero address
                 ├── it should accrue the interests
-                ├── when amount is not zero
-                │   └── it should set shares to amount.toSharesUp(totalSupply[market.id], totalSupplyShares[market.id])
-                ├── when amount is zero
-                │   └── it should set amount to shares.toAssetsDown(totalSupply[id], totalSupplyShares[id])
+                ├── when assets is not zero
+                │   └── it should set shares to assets.toSharesUp(totalSupply[market.id], totalSupplyShares[market.id])
+                ├── when assets is zero
+                │   └── it should set assets to shares.toAssetsDown(totalSupply[id], totalSupplyShares[id])
                 ├── it should remove shares from borrowShares[market.id][onBehalf]
                 ├── it should remove shares from totalBorrowShares[market.id]
-                ├── it should remove amount from totalBorrow[market.id]
-                ├── it should emit Repay(market.id, msg.sender, onBehalf, amount, shares)
+                ├── it should remove assets from totalBorrow[market.id]
+                ├── it should emit Repay(market.id, msg.sender, onBehalf, assets, shares)
                 ├── if data.length > 0
                 │   └── it should call sender's onMorphoRepay callback
-                └── it should transfer amount of the borrowable asset from the sender to Morpho
+                └── it should transfer assets of the borrowable asset from the sender to Morpho
 .
-└── supplyCollateral(Market memory market, uint256 amount, address onBehalf, bytes calldata data) external
+└── supplyCollateral(Market memory market, uint256 assets, address onBehalf, bytes calldata data) external
     ├── when market is not created
     │   └── revert with MARKET_NOT_CREATED
     └── when market is created
-        ├── when the amount to supply is zero
-        │   └── revert with ZERO_AMOUNT
-        └── when the amount to supply is not zero
+        ├── when the assets to supply is zero
+        │   └── revert with ZERO_ASSETS
+        └── when the assets to supply is not zero
             ├── when onBehalf is the zero address
             │   └── revert with ZERO_ADDRESS
             └── when onBehalf is not the zero address
-                ├── it should add amount to collateral[market.id][onBehalf]
-                ├── it should emit SupplyCollateral(market.id, msg.sender, onBehalf, amount)
+                ├── it should add assets to collateral[market.id][onBehalf]
+                ├── it should emit SupplyCollateral(market.id, msg.sender, onBehalf, assets)
                 ├── if data.length > 0
                 │   └── it should call sender's onMorphoSupplyCollateral callback
-                └── it should transfer amount of the collateral asset from the sender to Morpho
+                └── it should transfer assets of the collateral asset from the sender to Morpho
 .
-└── withdrawCollateral(Market memory market, uint256 amount, address onBehalf, address receiver) external
+└── withdrawCollateral(Market memory market, uint256 assets, address onBehalf, address receiver) external
     ├── when market is not created
     │   └── revert with MARKET_NOT_CREATED
     └── when market is created
-        ├── when the amount to withdraw is zero
-        │   └── revert with ZERO_AMOUNT
-        └── when the amount to withdraw is not zero
+        ├── when the assets to withdraw is zero
+        │   └── revert with ZERO_ASSETS
+        └── when the assets to withdraw is not zero
             ├── when receiver is the zero address
             │   └── revert with ZERO_ADDRESS
             └── when receiver is not the zero address
@@ -188,9 +188,9 @@
                 │   └── revert with MANAGER_NOT_APPROVED
                 └── when sender or approved
                     ├── it should accrue the interests
-                    ├── it should remove amount from collateral[market.id][onBehalf]
-                    ├── it should emit WithdrawCollateral(market.id, msg.sender, onBehalf, receiver, amount)
-                    ├── it should transfer amount of the collateral asset to the receiver
+                    ├── it should remove assets from collateral[market.id][onBehalf]
+                    ├── it should emit WithdrawCollateral(market.id, msg.sender, onBehalf, receiver, assets)
+                    ├── it should transfer assets of the collateral asset to the receiver
                     └── when position is not healthy
                         └── revert with INSUFFICIENT_COLLATERAL
 .
@@ -198,9 +198,9 @@
     ├── when market is not created
     │   └── revert with MARKET_NOT_CREATED
     └── when market is created
-        ├── when the amount to seized is zero
-        │   └── revert with ZERO_AMOUNT
-        └── when the amount to seized is not zero
+        ├── when the assets to seized is zero
+        │   └── revert with ZERO_ASSETS
+        └── when the assets to seized is not zero
             ├── it should accrue the interests
             ├── when position is healthy
             │   └── revert with HEALTHY_POSITION
@@ -224,11 +224,11 @@
                 │   └── it should call sender's onMorphoLiquidate callback
                 └── it should transfer repaid of borrowable asset from the sender the Morpho
 .
-└── flashLoan(address token, uint256 amount, bytes calldata data) external
-    ├── it should transfer amount of token from Morpho to the sender
+└── flashLoan(address token, uint256 assets, bytes calldata data) external
+    ├── it should transfer assets of token from Morpho to the sender
     ├── it should call sender's onMorphoFlashLoan callback
-    ├── it should emit FlashLoan(msg.sender, token, amount)
-    └── it should transfer amount of token from the sender to Morpho
+    ├── it should emit FlashLoan(msg.sender, token, assets)
+    └── it should transfer assets of token from the sender to Morpho
 .
 └── setAuthorizationWithSig(address authorizer, address authorizee, bool newIsAuthorized, uint256 deadline, Signature calldata signature) external
     ├── when block.timestamp >= deadline
