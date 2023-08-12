@@ -23,7 +23,7 @@ library ErrorsLib {
     /// @notice Thrown when the market is not created.
     string internal constant MARKET_NOT_CREATED = "market not created";
 
-    /// @notice Thrown when not exactly one of the assets amount is zero.
+    /// @notice Thrown when not exactly one of the input amount is zero.
     string constant INCONSISTENT_INPUT = "inconsistent input";
 
     /// @notice Thrown when zero assets is passed as input.

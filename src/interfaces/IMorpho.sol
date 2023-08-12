@@ -102,7 +102,7 @@ interface IMorpho is IFlashLender {
     /// @notice Creates `market`.
     function createMarket(Market memory market) external;
 
-    /// @notice Supplies the given `assets` of assets or `shares` to the given `market` on behalf of `onBehalf`,
+    /// @notice Supplies the given `assets` or `shares` to the given `market` on behalf of `onBehalf`,
     ///         optionally calling back the caller's `onMorphoSupply` function with the given `data`.
     /// @dev Either `assets` or `shares` should be zero.
     ///      Most usecases should rely on `assets` as an input so the caller
@@ -120,7 +120,7 @@ interface IMorpho is IFlashLender {
         external
         returns (uint256 assetsSupplied, uint256 sharesSupplied);
 
-    /// @notice Withdraws the given `assets` of assets or `shares` from the given `market` on behalf of `onBehalf`.
+    /// @notice Withdraws the given `assets` or `shares` from the given `market` on behalf of `onBehalf`.
     /// @dev Either `assets` or `shares` should be zero.
     ///      To withdraw the whole position, pass the `shares`'s balance of `onBehalf`.
     /// @dev `msg.sender` must be authorized to manage `onBehalf`'s positions.
@@ -135,7 +135,7 @@ interface IMorpho is IFlashLender {
         external
         returns (uint256 assetsWithdrawn, uint256 sharesWithdrawn);
 
-    /// @notice Borrows the given `assets` of assets or `shares` from the given `market` on behalf of `onBehalf`.
+    /// @notice Borrows the given `assets` or `shares` from the given `market` on behalf of `onBehalf`.
     /// @dev Either `assets` or `shares` should be zero.
     ///      Most usecases should rely on `assets` as an input so the caller
     ///      is guaranteed to borrow `assets` of tokens,
@@ -153,7 +153,7 @@ interface IMorpho is IFlashLender {
         external
         returns (uint256 assetsBorrowed, uint256 sharesBorrowed);
 
-    /// @notice Repays the given `assets` of assets or `shares` to the given `market` on behalf of `onBehalf`,
+    /// @notice Repays the given `assets` or `shares` to the given `market` on behalf of `onBehalf`,
     ///         optionally calling back the caller's `onMorphoReplay` function with the given `data`.
     /// @dev Either `assets` or `shares` should be zero.
     ///      To repay the whole debt, pass the `shares`'s balance of `onBehalf`.
