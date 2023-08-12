@@ -11,6 +11,11 @@ struct Market {
     uint256 lltv;
 }
 
+struct Delta{
+    uint128 transferFrom;
+    uint128 transferTo;
+}
+
 /// @notice Contains the `v`, `r` and `s` parameters of an ECDSA signature.
 struct Signature {
     uint8 v;

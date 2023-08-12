@@ -67,10 +67,8 @@ contract Blue is IBlue {
     mapping(address => mapping(address => bool)) public isAuthorized;
     // User's nonces. Used to prevent replay attacks with EIP-712 signatures.
     mapping(address => uint256) public nonce;
-    // Amounts to transfer From.
-    mapping(address => uint256) public amountsToTransferFrom;
-    // Amounts to transfer.
-    mapping(address => uint256) public amountsToTransfer;
+    // FlashAccounting deltas.
+    mapping(address => Delta) public deltas;
     // Assets to transfer.
     address[] public assetsToTransfer;
 
@@ -159,26 +157,26 @@ contract Blue is IBlue {
         while (assetsToTransfer.length != 0) {
             address asset = assetsToTransfer[assetsToTransfer.length - 1];
             assetsToTransfer.pop();
-            if (amountsToTransferFrom[token] > amountsToTransfer[asset]){
-                IERC20(asset).safeTransferFrom(msg.sender, address(this), amountsToTransferFrom[asset] - amountsToTransfer[asset]);
+            if (deltas[asset].transferFrom > deltas[asset].transferTo){
+                IERC20(asset).safeTransferFrom(msg.sender, address(this), deltas[toassetken].transferFrom - deltas[asset].transferTo);
             }
-            else if (amountsToTransferFrom[token] < amountsToTransfer[asset]) {
-                IERC20(asset).safeTransfer(msg.sender, amountsToTransfer[asset] - amountsToTransferFrom[asset]);
+            else if (deltas[asset].transferFrom < deltas[asset].transferTo) {
+                IERC20(asset).safeTransfer(msg.sender, deltas[asset].transferTo - deltas[asset].transferFrom);
             }
-            delete amountsToTransferFrom[asset];
-            delete amountsToTransfer[asset];
+            delete deltas[asset];
         }
     }
 
     function deferredTransfer(address token, uint256 amount, bool transferFrom) internal {
-        if (amountsToTransferFrom[token] == 0 && amountsToTransfer[token] == 0) {
+        Delta tokenDelta = deltas[token];
+        if (tokenDelta[token].transferFrom == 0 && tokenDelta[token].transferTo == 0) {
             assetsToTransfer.push(token);
         }
         if (transferFrom) {
-            amountsToTransferFrom[token] += amount;
+            deltas[token].transferFrom += amount;
         }
         else {
-            amountsToTransfer[token] += amount;
+            deltas[token].transferTo += amount;
         }
     }
 
