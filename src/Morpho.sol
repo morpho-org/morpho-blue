@@ -150,7 +150,7 @@ contract Morpho is IMorpho {
         require(lastUpdate[id] == 0, ErrorsLib.MARKET_CREATED);
 
         lastUpdate[id] = block.timestamp;
-        idToMarket[id] = Market(market.borrowableAsset, market.collateralAsset, market.oracle, market.irm, market.lltv);
+        idToMarket[id] = market;
 
         emit EventsLib.CreateMarket(id, market);
     }
