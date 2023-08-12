@@ -618,10 +618,8 @@ contract MorphoTest is
         uint256 borrowingPower = amountCollateral.wMulDown(LLTV);
         uint256 amountBorrowed = borrowingPower.wMulDown(0.8e18);
         uint256 toSeize = amountCollateral.wMulDown(LLTV);
-        uint256 liquidationIncentiveFactor = UtilsLib.min(
-            MAX_LIQUIDATION_INCENTIVE_FACTOR,
-            WAD.wDivDown(LIQUIDATION_CURSOR.wMulDown(market.lltv) + WAD - LIQUIDATION_CURSOR)
-        );
+        uint256 liquidationIncentiveFactor =
+            UtilsLib.min(MAX_LIQUIDATION_INCENTIVE_FACTOR, WAD.wDivDown(WAD - LIQUIDATION_CURSOR.wMulDown(WAD - LLTV)));
 
         borrowableAsset.setBalance(address(this), amountLent);
         collateralAsset.setBalance(BORROWER, amountCollateral);
@@ -664,10 +662,8 @@ contract MorphoTest is
         uint256 borrowingPower = amountCollateral.wMulDown(LLTV);
         uint256 amountBorrowed = borrowingPower.wMulDown(0.8e18);
         uint256 toSeize = amountCollateral;
-        uint256 liquidationIncentiveFactor = UtilsLib.min(
-            MAX_LIQUIDATION_INCENTIVE_FACTOR,
-            WAD.wDivDown(LIQUIDATION_CURSOR.wMulDown(market.lltv) + WAD - LIQUIDATION_CURSOR)
-        );
+        uint256 liquidationIncentiveFactor =
+            UtilsLib.min(MAX_LIQUIDATION_INCENTIVE_FACTOR, WAD.wDivDown(WAD - LIQUIDATION_CURSOR.wMulDown(WAD - LLTV)));
 
         borrowableAsset.setBalance(address(this), amountLent);
         collateralAsset.setBalance(BORROWER, amountCollateral);
