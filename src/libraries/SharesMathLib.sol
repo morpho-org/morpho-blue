@@ -8,7 +8,7 @@ import {FixedPointMathLib} from "./FixedPointMathLib.sol";
 /// @custom:contact security@morpho.xyz
 /// @notice Shares management library.
 /// @dev This implementation mitigates share price manipulations, using OpenZeppelin's method of virtual shares:
-/// https://docs.openzeppelin.com/contracts/4.x/erc4626#inflation-attack.
+///      https://docs.openzeppelin.com/contracts/4.x/erc4626#inflation-attack.
 library SharesMathLib {
     using FixedPointMathLib for uint256;
 
