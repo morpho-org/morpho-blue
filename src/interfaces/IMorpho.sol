@@ -109,6 +109,7 @@ interface IMorpho is IFlashLender {
     ///      is guaranteed to have `amount` tokens pulled from their balance,
     ///      but the possibility to mint a specific amount of shares is given
     ///      for full compatibility and precision.
+    /// @dev Supplying huge amount will revert without any error message.
     /// @param market The market to supply assets to.
     /// @param amount The amount of assets to supply.
     /// @param shares The amount of shares to mint.
@@ -124,7 +125,7 @@ interface IMorpho is IFlashLender {
     /// @dev Either `amount` or `shares` should be zero.
     ///      To withdraw the whole position, pass the `shares`'s balance of `onBehalf`.
     /// @dev `msg.sender` must be authorized to manage `onBehalf`'s positions.
-    /// @dev Withdrawing more than the available balance will revert.
+    /// @dev Withdrawing more than the available balance will revert without any error message.
     /// @param market The market to withdraw assets from.
     /// @param shares The amount of amount to withdraw.
     /// @param shares The amount of shares to burn.
@@ -143,6 +144,7 @@ interface IMorpho is IFlashLender {
     ///      but the possibility to burn a specific amount of shares is given
     ///      for full compatibility and precision.
     /// @dev `msg.sender` must be authorized to manage `onBehalf`'s positions.
+    /// @dev Borrowing huge amount will revert without any error message.
     /// @param market The market to borrow assets from.
     /// @param amount The amount of assets to borrow.
     /// @param shares The amount of shares to mint.
@@ -158,7 +160,7 @@ interface IMorpho is IFlashLender {
     ///         optionally calling back the caller's `onMorphoReplay` function with the given `data`.
     /// @dev Either `amount` or `shares` should be zero.
     ///      To repay the whole debt, pass the `shares`'s balance of `onBehalf`.
-    /// @dev Repaying more than the available balance will revert.
+    /// @dev Repaying more than the borrow balance will revert without any error message.
     /// @param market The market to repay assets to.
     /// @param amount The amount of assets to repay.
     /// @param shares The amount of shares to burn.
@@ -173,6 +175,7 @@ interface IMorpho is IFlashLender {
     /// @notice Supplies the given `amount` of collateral to the given `market` on behalf of `onBehalf`,
     ///         optionally calling back the caller's `onMorphoSupplyCollateral` function with the given `data`.
     /// @dev Interests are not accrued since it's not required and it saves gas.
+    /// @dev Supplying huge amount will revert without any error message.
     /// @param market The market to supply collateral to.
     /// @param amount The amount of collateral to supply.
     /// @param onBehalf The address that will receive the collateral.
@@ -181,7 +184,7 @@ interface IMorpho is IFlashLender {
 
     /// @notice Withdraws the given `amount` of collateral from the given `market` on behalf of `onBehalf`.
     /// @dev `msg.sender` must be authorized to manage `onBehalf`'s positions.
-    /// @dev Withdrawing more than the available balance will revert.
+    /// @dev Withdrawing more than the available balance will revert without any error message.
     /// @param market The market to withdraw collateral from.
     /// @param amount The amount of collateral to withdraw.
     /// @param onBehalf The address of the owner of the collateral.
@@ -190,6 +193,8 @@ interface IMorpho is IFlashLender {
 
     /// @notice Liquidates the given `seized` amount to the given `market` of the given `borrower`'s position,
     ///         optionally calling back the caller's `onMorphoLiquidate` function with the given `data`.
+    /// @dev Seizing more than the collateral balance will revert without any error message.
+    /// @dev Repaying more than the borrow balance will revert without any error message.
     /// @param market The market of the position.
     /// @param borrower The owner of the position.
     /// @param seized The amount of collateral to seize.
