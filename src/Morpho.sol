@@ -482,7 +482,7 @@ contract Morpho is IMorpho {
         }
     }
 
-    // Liquidation incentive factor.
+    /* LIQUIDATION INCENTIVE FACTOR */
 
     /// @dev The liquidation incentive is min(maxIncentive, 1/(1 - cursor(1 - lltv)) - 1).
     /// @dev The liquidation incentive factor is 1 + incentive.
