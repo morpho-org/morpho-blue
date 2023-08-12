@@ -3,11 +3,11 @@ pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
 
-import "src/libraries/FixedPointMathLib.sol";
+import "src/libraries/MathLib.sol";
 import "test/forge/helpers/WadMath.sol";
 
 contract MathTest is Test {
-    using FixedPointMathLib for uint256;
+    using MathLib for uint256;
 
     function testWTaylorCompounded(uint256 rate, uint256 timeElapsed) public {
         // Assume rate is less than a ~500% APY. (~180% APR)

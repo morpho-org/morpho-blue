@@ -25,10 +25,10 @@ contract MorphoTest is
     IMorphoRepayCallback,
     IMorphoLiquidateCallback
 {
+    using MathLib for uint256;
     using MarketLib for Market;
     using SharesMathLib for uint256;
     using stdStorage for StdStorage;
-    using FixedPointMathLib for uint256;
 
     address private constant BORROWER = address(0x1234);
     address private constant LIQUIDATOR = address(0x5678);
