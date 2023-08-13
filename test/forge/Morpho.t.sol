@@ -853,32 +853,37 @@ contract MorphoTest is
         vm.stopPrank();
     }
 
-    function testAuthorizationWithSig(uint32 deadline, address authorized, uint256 privateKey, bool isAuthorized)
-        public
-    {
-        deadline = uint32(bound(deadline, block.timestamp + 1, type(uint32).max));
-        privateKey = bound(privateKey, 1, type(uint32).max); // "Private key must be less than the secp256k1 curve order (115792089237316195423570985008687907852837564279074904382605163141518161494337)."
-        address authorizer = vm.addr(privateKey);
+    function testAuthorizationWithSig(Authorization memory authorization, uint256 privateKey) public {
+        vm.assume(authorization.deadline > block.timestamp);
 
-        SigUtils.Authorization memory authorization = SigUtils.Authorization({
-            authorizer: authorizer,
-            authorized: authorized,
-            isAuthorized: isAuthorized,
-            nonce: morpho.nonce(authorizer),
-            deadline: block.timestamp + deadline
-        });
-
-        bytes32 digest = SigUtils.getTypedDataHash(morpho.DOMAIN_SEPARATOR(), authorization);
+        // Private key must be less than the secp256k1 curve order.
+        privateKey = bound(privateKey, 1, type(uint32).max);
+        authorization.nonce = 0;
+        authorization.authorizer = vm.addr(privateKey);
 
         Signature memory sig;
+        bytes32 digest = SigUtils.getTypedDataHash(morpho.DOMAIN_SEPARATOR(), authorization);
         (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
 
-        morpho.setAuthorizationWithSig(
-            authorization.authorizer, authorization.authorized, authorization.isAuthorized, authorization.deadline, sig
-        );
+        morpho.setAuthorizationWithSig(authorization, sig);
 
-        assertEq(morpho.isAuthorized(authorizer, authorized), isAuthorized);
-        assertEq(morpho.nonce(authorizer), 1);
+        assertEq(morpho.isAuthorized(authorization.authorizer, authorization.authorized), authorization.isAuthorized);
+        assertEq(morpho.nonce(authorization.authorizer), 1);
+    }
+
+    function testAuthorizationWithSigWrongPK(Authorization memory authorization, uint256 privateKey) public {
+        vm.assume(authorization.deadline > block.timestamp);
+
+        // Private key must be less than the secp256k1 curve order.
+        privateKey = bound(privateKey, 1, type(uint32).max);
+        authorization.nonce = 0;
+
+        Signature memory sig;
+        bytes32 digest = SigUtils.getTypedDataHash(morpho.DOMAIN_SEPARATOR(), authorization);
+        (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
+
+        vm.expectRevert(bytes(ErrorsLib.INVALID_SIGNATURE));
+        morpho.setAuthorizationWithSig(authorization, sig);
     }
 
     function testFlashLoan(uint256 assets) public {
