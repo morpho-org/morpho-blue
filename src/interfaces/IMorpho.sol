@@ -144,7 +144,7 @@ interface IMorpho is IFlashLender {
     ///      but the possibility to burn a specific assets of shares is given
     ///      for full compatibility and precision.
     /// @dev `msg.sender` must be authorized to manage `onBehalf`'s positions.
-    /// @dev Borrowing a large amount can underflow and revert without any error message.
+    /// @dev Borrowing a large amount can overflow and revert without any error message.
     /// @param market The market to borrow assets from.
     /// @param assets The assets of assets to borrow.
     /// @param shares The assets of shares to mint.
@@ -193,7 +193,7 @@ interface IMorpho is IFlashLender {
 
     /// @notice Liquidates the given `seized` assets to the given `market` of the given `borrower`'s position,
     ///         optionally calling back the caller's `onMorphoLiquidate` function with the given `data`.
-    /// @dev Seizing more than the collateral balance will revert without any error message.
+    /// @dev Seizing more than the collateral balance will underflow and revert without any error message.
     /// @dev Repaying more than the borrow balance will overflow and revert without any error message.
     /// @param market The market of the position.
     /// @param borrower The owner of the position.
