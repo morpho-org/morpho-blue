@@ -412,6 +412,14 @@ contract Morpho is IMorpho {
 
     /* INTEREST MANAGEMENT */
 
+    /// @inheritdoc IMorpho
+    function accrueInterests(Market memory market) external {
+        Id id = market.id();
+        require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
+
+        _accrueInterests(market, id);
+    }
+
     /// @dev Accrues interests for `market`.
     function _accrueInterests(Market memory market, Id id) internal {
         uint256 elapsed = block.timestamp - lastUpdate[id];

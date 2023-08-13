@@ -220,6 +220,9 @@ interface IMorpho is IFlashLender {
         Signature calldata signature
     ) external;
 
+    /// @notice Accrues interests for `market`.
+    function accrueInterests(Market memory market) external;
+
     /// @notice Returns the data stored on the different `slots`.
     function extsload(bytes32[] memory slots) external view returns (bytes32[] memory res);
 }
