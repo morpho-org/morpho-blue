@@ -17,8 +17,10 @@ import {FixedPointMathLib, WAD} from "./libraries/FixedPointMathLib.sol";
 
 /// @dev The maximum fee a market can have (25%).
 uint256 constant MAX_FEE = 0.25e18;
-/// @dev The alpha parameter used to compute the incentive during a liquidation.
-uint256 constant ALPHA = 0.5e18;
+/// @dev Liquidation cursor.
+uint256 constant LIQUIDATION_CURSOR = 0.3e18;
+/// @dev Max liquidation incentive factor.
+uint256 constant MAX_LIQUIDATION_INCENTIVE_FACTOR = 1.15e18;
 
 /// @dev The EIP-712 typeHash for EIP712Domain.
 bytes32 constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
@@ -327,9 +329,7 @@ contract Morpho is IMorpho {
 
         require(!_isHealthy(market, id, borrower, collateralPrice, priceScale), ErrorsLib.HEALTHY_POSITION);
 
-        // The liquidation incentive is 1 + ALPHA * (1 / LLTV - 1).
-        uint256 incentive = WAD + ALPHA.wMulDown(WAD.wDivDown(market.lltv) - WAD);
-        uint256 repaid = seized.mulDivUp(collateralPrice, priceScale).wDivUp(incentive);
+        uint256 repaid = seized.mulDivUp(collateralPrice, priceScale).wDivUp(liquidationIncentiveFactor(market.lltv));
         uint256 repaidShares = repaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
 
         borrowShares[id][borrower] -= repaidShares;
@@ -480,5 +480,13 @@ contract Morpho is IMorpho {
                 mstore(add(res, mul(i, 32)), sload(slot))
             }
         }
+    }
+
+    /* LIQUIDATION INCENTIVE FACTOR */
+
+    /// @dev The liquidation incentive factor is min(maxIncentiveFactor, 1/(1 - cursor(1 - lltv))).
+    function liquidationIncentiveFactor(uint256 lltv) private pure returns (uint256) {
+        return
+            UtilsLib.min(MAX_LIQUIDATION_INCENTIVE_FACTOR, WAD.wDivDown(WAD - LIQUIDATION_CURSOR.wMulDown(WAD - lltv)));
     }
 }
