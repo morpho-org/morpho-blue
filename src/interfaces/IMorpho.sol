@@ -22,7 +22,7 @@ struct Market {
 /// @notice Authorization struct.
 /// @param authorizer Authorizer address.
 /// @param authorized Authorized address.
-/// @param isAuthorized isAuthorized to set.
+/// @param isAuthorized The authorization status to set.
 /// @param nonce Signature nonce.
 /// @param deadline Signature deadline.
 struct Authorization {
@@ -213,7 +213,7 @@ interface IMorpho is IFlashLender {
     function setAuthorization(address authorized, bool newIsAuthorized) external;
 
     /// @notice Sets the authorization for `authorization.authorized` to manage `authorization.authorizer`'s positions.
-    /// @param authorization The Authorization struct.
+    /// @param authorization The `Authorization` struct.
     /// @param signature The signature.
     function setAuthorizationWithSig(Authorization calldata authorization, Signature calldata signature) external;
 
