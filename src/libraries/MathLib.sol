@@ -32,7 +32,7 @@ library MathLib {
         //     x * y > type(uint256).max
         // <=> y > 0 and x > type(uint256).max / y
         assembly {
-            if mul(y, gt(x, div(MAX_UINT256, y))) { revert(0, 0) }
+            if or(mul(y, gt(x, div(MAX_UINT256, y))), iszero(denominator)) { revert(0, 0) }
 
             z := div(mul(x, y), denominator)
         }
@@ -40,12 +40,13 @@ library MathLib {
 
     /// @dev (x * y) / denominator rounded up.
     function mulDivUp(uint256 x, uint256 y, uint256 denominator) internal pure returns (uint256 z) {
+        // Underflow if denominator == 0.
         // Overflow if
         //     x * y + denominator - 1 > type(uint256).max
         // <=> x * y > type(uint256).max - denominator - 1
         // <=> y > 0 and x > (type(uint256).max - denominator - 1) / y
         assembly {
-            if mul(y, gt(x, div(sub(MAX_UINT256, sub(denominator, 1)), y))) { revert(0, 0) }
+            if or(mul(y, gt(x, div(sub(MAX_UINT256, sub(denominator, 1)), y))), iszero(denominator)) { revert(0, 0) }
 
             z := div(add(mul(x, y), sub(denominator, 1)), denominator)
         }
