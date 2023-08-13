@@ -1,12 +1,12 @@
 #!/bin/sh
 
 certoraRun \
-    src/Blue.sol \
-    --verify Blue:certora/specs/Blue.spec \
+    certora/harness/MorphoHarness.sol \
+    --verify MorphoHarness:certora/specs/Blue.spec \
     --solc_allow_path src \
-    --solc solc \
+    --solc solc8.19 \
     --loop_iter 3 \
     --optimistic_loop \
-    --msg "Blue" \
+    --msg "Morpho Blue" \
     --send_only \
     "$@"
