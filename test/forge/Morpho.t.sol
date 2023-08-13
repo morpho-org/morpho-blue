@@ -297,7 +297,7 @@ contract MorphoTest is
         vm.assume(totalSupplyAfter > totalSupplyBefore);
 
         uint256 accrued = totalSupplyAfter - totalSupplyBefore;
-        uint256 expectedFee = accrued * fee / 100;
+        uint256 expectedFee = accrued.wMulDown(fee);
         uint256 expectedFeeShares = expectedFee.mulDivDown(totalSupplySharesBefore, totalSupplyAfter - expectedFee);
 
         assertEq(morpho.supplyShares(id, recipient), expectedFeeShares);

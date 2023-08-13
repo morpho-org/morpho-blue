@@ -6,22 +6,18 @@ import {SafeCastLib} from "solmate/utils/SafeCastLib.sol";
 
 struct Market {
     mapping(address => UserBalances) userBalances;
-    MarketState marketState;
+    uint128 totalSupply; // Market total supply.
+    uint128 totalSupplyShares; // Market total supply shares.
+    uint128 totalBorrow; // Market total borrow.
+    uint128 totalBorrowShares; // Market total borrow shares.
+    uint128 lastUpdate; // Interests last update (used to check if a market has been created).
+    uint128 fee; // Fee.
 }
 
 struct UserBalances {
     uint128 borrowShares; // User' borrow balances.
     uint128 collateral; // User' collateral balance.
     uint128 supplyShares; // User' supply balances.
-}
-
-struct MarketState {
-    uint128 totalSupply; // Market total supply.
-    uint128 totalSupplyShares; // Market total supply shares.
-    uint128 totalBorrow; // Market total borrow.
-    uint128 totalBorrowShares; // Market total borrow shares.
-    uint64 lastUpdate; // Interests last update (used to check if a market has been created).
-    uint8 fee; // Fee.
 }
 
 /// @title MarketLib
@@ -36,39 +32,15 @@ library MarketLib {
     }
 
     function supplyShares(Market storage market, address user) internal view returns (uint256) {
-        return uint256(market.userBalances[user].supplyShares);
+        return market.userBalances[user].supplyShares;
     }
 
     function borrowShares(Market storage market, address user) internal view returns (uint256) {
-        return uint256(market.userBalances[user].borrowShares);
+        return market.userBalances[user].borrowShares;
     }
 
     function collateral(Market storage market, address user) internal view returns (uint256) {
-        return uint256(market.userBalances[user].collateral);
-    }
-
-    function totalSupply(Market storage market) internal view returns (uint256) {
-        return uint256(market.marketState.totalSupply);
-    }
-
-    function totalSupplyShares(Market storage market) internal view returns (uint256) {
-        return uint256(market.marketState.totalSupplyShares);
-    }
-
-    function totalBorrow(Market storage market) internal view returns (uint256) {
-        return uint256(market.marketState.totalBorrow);
-    }
-
-    function totalBorrowShares(Market storage market) internal view returns (uint256) {
-        return uint256(market.marketState.totalBorrowShares);
-    }
-
-    function lastUpdate(Market storage market) internal view returns (uint256) {
-        return uint256(market.marketState.lastUpdate);
-    }
-
-    function fee(Market storage market) internal view returns (uint256) {
-        return uint256(market.marketState.fee);
+        return market.userBalances[user].collateral;
     }
 
     function setSupplyShares(Market storage market, address user, uint256 amount) internal {
@@ -108,58 +80,58 @@ library MarketLib {
     }
 
     function setTotalSupply(Market storage market, uint256 amount) internal {
-        market.marketState.totalSupply = amount.safeCastTo128();
+        market.totalSupply = amount.safeCastTo128();
     }
 
     function increaseTotalSupply(Market storage market, uint256 amount) internal {
-        setTotalSupply(market, totalSupply(market) + amount);
+        setTotalSupply(market, market.totalSupply + amount);
     }
 
     function decreaseTotalSupply(Market storage market, uint256 amount) internal {
-        setTotalSupply(market, totalSupply(market) - amount);
+        setTotalSupply(market, market.totalSupply - amount);
     }
 
     function setTotalSupplyShares(Market storage market, uint256 amount) internal {
-        market.marketState.totalSupplyShares = amount.safeCastTo128();
+        market.totalSupplyShares = amount.safeCastTo128();
     }
 
     function increaseTotalSupplyShares(Market storage market, uint256 amount) internal {
-        setTotalSupplyShares(market, totalSupplyShares(market) + amount);
+        setTotalSupplyShares(market, market.totalSupplyShares + amount);
     }
 
     function decreaseTotalSupplyShares(Market storage market, uint256 amount) internal {
-        setTotalSupplyShares(market, totalSupplyShares(market) - amount);
+        setTotalSupplyShares(market, market.totalSupplyShares - amount);
     }
 
     function setTotalBorrow(Market storage market, uint256 amount) internal {
-        market.marketState.totalBorrow = amount.safeCastTo128();
+        market.totalBorrow = amount.safeCastTo128();
     }
 
     function increaseTotalBorrow(Market storage market, uint256 amount) internal {
-        setTotalBorrow(market, totalBorrow(market) + amount);
+        setTotalBorrow(market, market.totalBorrow + amount);
     }
 
     function decreaseTotalBorrow(Market storage market, uint256 amount) internal {
-        setTotalBorrow(market, totalBorrow(market) - amount);
+        setTotalBorrow(market, market.totalBorrow - amount);
     }
 
     function setTotalBorrowShares(Market storage market, uint256 amount) internal {
-        market.marketState.totalBorrowShares = amount.safeCastTo128();
+        market.totalBorrowShares = amount.safeCastTo128();
     }
 
     function increaseTotalBorrowShares(Market storage market, uint256 amount) internal {
-        setTotalBorrowShares(market, totalBorrowShares(market) + amount);
+        setTotalBorrowShares(market, market.totalBorrowShares + amount);
     }
 
     function decreaseTotalBorrowShares(Market storage market, uint256 amount) internal {
-        setTotalBorrowShares(market, totalBorrowShares(market) - amount);
+        setTotalBorrowShares(market, market.totalBorrowShares - amount);
     }
 
     function setLastUpdate(Market storage market, uint256 amount) internal {
-        market.marketState.lastUpdate = amount.safeCastTo64();
+        market.lastUpdate = amount.safeCastTo128();
     }
 
     function setFee(Market storage market, uint256 amount) internal {
-        market.marketState.fee = amount.safeCastTo8();
+        market.fee = amount.safeCastTo128();
     }
 }
