@@ -7,10 +7,27 @@ on:
   pull_request:
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
 jobs:
   forge-test:
     strategy:
       fail-fast: true
+      matrix:
+        type: ["slow", "fast"]
+        include:
+          - type: "slow"
+            fuzz-runs: 10000
+            max-test-rejects: 500000
+            invariant-runs: 100
+            invariant-depth: 100
+          - type: "fast"
+            fuzz-runs: 256
+            max-test-rejects: 65536
+            invariant-runs: 256
+            invariant-depth: 15
 
     runs-on: ubuntu-latest
     steps:
@@ -21,10 +38,10 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
 
-      - name: Run Forge tests
+      - name: Run Forge tests in ${{ matrix.type }} mode
         run: forge test -vvv
         env:
-          FOUNDRY_FUZZ_RUNS: 100000
-          FOUNDRY_FUZZ_MAX_TEST_REJECTS: 500000
-          FOUNDRY_INVARIANT_RUNS: 1000
-          FOUNDRY_INVARIANT_DEPTH: 100
+          FOUNDRY_FUZZ_RUNS: ${{ matrix.fuzz-runs }}
+          FOUNDRY_FUZZ_MAX_TEST_REJECTS: ${{ matrix.max-test-rejects }}
+          FOUNDRY_INVARIANT_RUNS: ${{ matrix.invariant-runs }}
+          FOUNDRY_INVARIANT_DEPTH: ${{ matrix.invariant-depth }}
