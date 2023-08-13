@@ -10,7 +10,7 @@ import {IOracle} from "./interfaces/IOracle.sol";
 import {UtilsLib} from "./libraries/UtilsLib.sol";
 import {EventsLib} from "./libraries/EventsLib.sol";
 import {ErrorsLib} from "./libraries/ErrorsLib.sol";
-import {MarketLib, Market, UserBalances, MarketState} from "./libraries/MarketLib.sol";
+import {MarketLib, Market} from "./libraries/MarketLib.sol";
 import {SharesMathLib} from "./libraries/SharesMathLib.sol";
 import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
 import {FixedPointMathLib, WAD} from "./libraries/FixedPointMathLib.sol";
