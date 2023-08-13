@@ -6,7 +6,7 @@ import "forge-std/Test.sol";
 import "src/libraries/MathLib.sol";
 import "test/forge/helpers/WadMath.sol";
 
-contract MathTest is Test {
+contract MathLibTest is Test {
     using MathLib for uint256;
 
     function testWTaylorCompounded(uint256 rate, uint256 timeElapsed) public {
