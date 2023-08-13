@@ -109,6 +109,7 @@ interface IMorpho is IFlashLender {
     ///      is guaranteed to have `assets` tokens pulled from their balance,
     ///      but the possibility to mint a specific assets of shares is given
     ///      for full compatibility and precision.
+    /// @dev Supplying a large amount can overflow and revert without any error message.
     /// @param market The market to supply assets to.
     /// @param assets The assets of assets to supply.
     /// @param shares The assets of shares to mint.
@@ -124,6 +125,7 @@ interface IMorpho is IFlashLender {
     /// @dev Either `assets` or `shares` should be zero.
     ///      To withdraw the whole position, pass the `shares`'s balance of `onBehalf`.
     /// @dev `msg.sender` must be authorized to manage `onBehalf`'s positions.
+    /// @dev Withdrawing an amount corresponding to more shares than supplied will underflow and revert without any error message.
     /// @param market The market to withdraw assets from.
     /// @param shares The assets of assets to withdraw.
     /// @param shares The assets of shares to burn.
@@ -142,6 +144,7 @@ interface IMorpho is IFlashLender {
     ///      but the possibility to burn a specific assets of shares is given
     ///      for full compatibility and precision.
     /// @dev `msg.sender` must be authorized to manage `onBehalf`'s positions.
+    /// @dev Borrowing a large amount can underflow and revert without any error message.
     /// @param market The market to borrow assets from.
     /// @param assets The assets of assets to borrow.
     /// @param shares The assets of shares to mint.
@@ -157,6 +160,7 @@ interface IMorpho is IFlashLender {
     ///         optionally calling back the caller's `onMorphoReplay` function with the given `data`.
     /// @dev Either `assets` or `shares` should be zero.
     ///      To repay the whole debt, pass the `shares`'s balance of `onBehalf`.
+    /// @dev Repaying an amount corresponding to more shares than borrowed will underflow and revert without any error message.
     /// @param market The market to repay assets to.
     /// @param assets The assets of assets to repay.
     /// @param shares The assets of shares to burn.
@@ -171,6 +175,7 @@ interface IMorpho is IFlashLender {
     /// @notice Supplies the given `assets` of collateral to the given `market` on behalf of `onBehalf`,
     ///         optionally calling back the caller's `onMorphoSupplyCollateral` function with the given `data`.
     /// @dev Interests are not accrued since it's not required and it saves gas.
+    /// @dev Supplying a large amount can overflow and revert without any error message.
     /// @param market The market to supply collateral to.
     /// @param assets The assets of collateral to supply.
     /// @param onBehalf The address that will receive the collateral.
@@ -179,6 +184,7 @@ interface IMorpho is IFlashLender {
 
     /// @notice Withdraws the given `assets` of collateral from the given `market` on behalf of `onBehalf`.
     /// @dev `msg.sender` must be authorized to manage `onBehalf`'s positions.
+    /// @dev Withdrawing an amount corresponding to more collateral than supplied will underflow and revert without any error message.
     /// @param market The market to withdraw collateral from.
     /// @param assets The assets of collateral to withdraw.
     /// @param onBehalf The address of the owner of the collateral.
@@ -187,6 +193,8 @@ interface IMorpho is IFlashLender {
 
     /// @notice Liquidates the given `seized` assets to the given `market` of the given `borrower`'s position,
     ///         optionally calling back the caller's `onMorphoLiquidate` function with the given `data`.
+    /// @dev Seizing more than the collateral balance will revert without any error message.
+    /// @dev Repaying more than the borrow balance will overflow and revert without any error message.
     /// @param market The market of the position.
     /// @param borrower The owner of the position.
     /// @param seized The assets of collateral to seize.
@@ -211,6 +219,9 @@ interface IMorpho is IFlashLender {
         uint256 deadline,
         Signature calldata signature
     ) external;
+
+    /// @notice Accrues interests for `market`.
+    function accrueInterests(Market memory market) external;
 
     /// @notice Returns the data stored on the different `slots`.
     function extsload(bytes32[] memory slots) external view returns (bytes32[] memory res);

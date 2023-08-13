@@ -618,7 +618,8 @@ contract MorphoTest is
         uint256 borrowingPower = assetsCollateral.wMulDown(LLTV);
         uint256 assetsBorrowed = borrowingPower.wMulDown(0.8e18);
         uint256 toSeize = assetsCollateral.wMulDown(LLTV);
-        uint256 incentive = WAD + ALPHA.wMulDown(WAD.wDivDown(LLTV) - WAD);
+        uint256 liquidationIncentiveFactor =
+            UtilsLib.min(MAX_LIQUIDATION_INCENTIVE_FACTOR, WAD.wDivDown(WAD - LIQUIDATION_CURSOR.wMulDown(WAD - LLTV)));
 
         borrowableToken.setBalance(address(this), assetsLent);
         collateralToken.setBalance(BORROWER, assetsCollateral);
@@ -645,7 +646,7 @@ contract MorphoTest is
         uint256 liquidatorNetWorthAfter = netWorth(LIQUIDATOR);
         (uint256 collateralPrice, uint256 priceScale) = IOracle(market.oracle).price();
 
-        uint256 expectedRepaid = toSeize.mulDivUp(collateralPrice, priceScale).wDivUp(incentive);
+        uint256 expectedRepaid = toSeize.mulDivUp(collateralPrice, priceScale).wDivUp(liquidationIncentiveFactor);
         uint256 expectedNetWorthAfter =
             liquidatorNetWorthBefore + toSeize.mulDivDown(collateralPrice, priceScale) - expectedRepaid;
         assertEq(liquidatorNetWorthAfter, expectedNetWorthAfter, "LIQUIDATOR net worth");
@@ -661,7 +662,8 @@ contract MorphoTest is
         uint256 borrowingPower = assetsCollateral.wMulDown(LLTV);
         uint256 assetsBorrowed = borrowingPower.wMulDown(0.8e18);
         uint256 toSeize = assetsCollateral;
-        uint256 incentive = WAD + ALPHA.wMulDown(WAD.wDivDown(market.lltv) - WAD);
+        uint256 liquidationIncentiveFactor =
+            UtilsLib.min(MAX_LIQUIDATION_INCENTIVE_FACTOR, WAD.wDivDown(WAD - LIQUIDATION_CURSOR.wMulDown(WAD - LLTV)));
 
         borrowableToken.setBalance(address(this), assetsLent);
         collateralToken.setBalance(BORROWER, assetsCollateral);
@@ -688,7 +690,7 @@ contract MorphoTest is
         uint256 liquidatorNetWorthAfter = netWorth(LIQUIDATOR);
         (uint256 collateralPrice, uint256 priceScale) = IOracle(market.oracle).price();
 
-        uint256 expectedRepaid = toSeize.mulDivUp(collateralPrice, priceScale).wDivUp(incentive);
+        uint256 expectedRepaid = toSeize.mulDivUp(collateralPrice, priceScale).wDivUp(liquidationIncentiveFactor);
         uint256 expectedNetWorthAfter =
             liquidatorNetWorthBefore + toSeize.mulDivDown(collateralPrice, priceScale) - expectedRepaid;
         assertEq(liquidatorNetWorthAfter, expectedNetWorthAfter, "LIQUIDATOR net worth");
