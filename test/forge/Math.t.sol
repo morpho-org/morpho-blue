@@ -19,4 +19,55 @@ contract MathTest is Test {
         assertGe(result, WAD + timeElapsed * rate, "rate should be greater than the simple interest rate");
         assertLe((toCompare - result) * 100_00 / toCompare, 8_00, "The error should be less than or equal to 8%");
     }
+
+    function testMulDivDown(uint256 x, uint256 y, uint256 denominator) public {
+        // Ignore cases where x * y overflows or denominator is 0.
+        unchecked {
+            if (denominator == 0 || (x != 0 && (x * y) / x != y)) return;
+        }
+
+        assertEq(MathLib.mulDivDown(x, y, denominator), (x * y) / denominator);
+    }
+
+    function testMulDivDownOverflow(uint256 x, uint256 y, uint256 denominator) public {
+        vm.assume(denominator > 0 && y > 0 && x > type(uint256).max / y);
+
+        vm.expectRevert();
+        MathLib.mulDivDown(x, y, denominator);
+    }
+
+    function testMulDivDownZeroDenominator(uint256 x, uint256 y) public {
+        vm.expectRevert();
+        MathLib.mulDivDown(x, y, 0);
+    }
+
+    function testMulDivUp(uint256 x, uint256 y, uint256 denominator) public {
+        vm.assume(
+            denominator > 0 && denominator < type(uint256).max && y > 0
+                && x <= (type(uint256).max - denominator - 1) / y
+        );
+
+        assertEq(MathLib.mulDivUp(x, y, denominator), x * y == 0 ? 0 : (x * y - 1) / denominator + 1);
+    }
+
+    function testMulDivUpOverflow(uint256 x, uint256 y, uint256 denominator) public {
+        denominator = bound(denominator, 1, type(uint256).max);
+        uint256 denominatorMinusOne = denominator - 1; // Needed to avoid overflow in the next line.
+        vm.assume(y > 0 && x > (type(uint256).max - denominatorMinusOne) / y);
+
+        vm.expectRevert();
+        MathLib.mulDivUp(x, y, denominator);
+    }
+
+    function testMulDivUpUnderverflow(uint256 x, uint256 y) public {
+        vm.assume(x > 0 && y > 0);
+
+        vm.expectRevert();
+        MathLib.mulDivUp(x, y, 0);
+    }
+
+    function testMulDivUpZeroDenominator(uint256 x, uint256 y) public {
+        vm.expectRevert();
+        MathLib.mulDivUp(x, y, 0);
+    }
 }
