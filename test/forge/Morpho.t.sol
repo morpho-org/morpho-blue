@@ -48,8 +48,8 @@ contract MorphoTest is
         morpho = new Morpho(OWNER);
 
         // List a market.
-        borrowableAsset = new ERC20("borrowable", "B", 18);
-        collateralAsset = new ERC20("collateral", "C", 18);
+        borrowableAsset = new ERC20("borrowable", "B");
+        collateralAsset = new ERC20("collateral", "C");
         oracle = new Oracle();
 
         irm = new Irm(morpho);

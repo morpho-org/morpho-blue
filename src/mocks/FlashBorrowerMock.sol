@@ -4,10 +4,10 @@ pragma solidity ^0.8.0;
 import {IFlashLender} from "../interfaces/IFlashLender.sol";
 import {IMorphoFlashLoanCallback} from "../interfaces/IMorphoCallbacks.sol";
 
-import {ERC20, SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
+import {IERC20, SafeTransferLib} from "../libraries/SafeTransferLib.sol";
 
 contract FlashBorrowerMock is IMorphoFlashLoanCallback {
-    using SafeTransferLib for ERC20;
+    using SafeTransferLib for IERC20;
 
     IFlashLender private immutable MORPHO;
 
@@ -22,6 +22,6 @@ contract FlashBorrowerMock is IMorphoFlashLoanCallback {
     function onMorphoFlashLoan(uint256 amount, bytes calldata data) external {
         require(msg.sender == address(MORPHO));
         address token = abi.decode(data, (address));
-        ERC20(token).safeApprove(address(MORPHO), amount);
+        IERC20(token).safeApprove(address(MORPHO), amount);
     }
 }
