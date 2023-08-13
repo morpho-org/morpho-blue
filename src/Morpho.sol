@@ -484,8 +484,7 @@ contract Morpho is IMorpho {
 
     /* LIQUIDATION INCENTIVE FACTOR */
 
-    /// @dev The liquidation incentive is min(maxIncentive, 1/(1 - cursor(1 - lltv)) - 1).
-    /// @dev The liquidation incentive factor is 1 + incentive.
+    /// @dev The liquidation incentive factor is min(maxIncentiveFactor, 1/(1 - cursor(1 - lltv))).
     function liquidationIncentiveFactor(uint256 lltv) private pure returns (uint256) {
         return
             UtilsLib.min(MAX_LIQUIDATION_INCENTIVE_FACTOR, WAD.wDivDown(WAD - LIQUIDATION_CURSOR.wMulDown(WAD - lltv)));
