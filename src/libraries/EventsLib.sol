@@ -3,6 +3,10 @@ pragma solidity ^0.8.0;
 
 import {Id, Market} from "../interfaces/IMorpho.sol";
 
+/// @title EventsLib
+/// @author Morpho Labs
+/// @custom:contact security@morpho.xyz
+/// @notice Library exposing events.
 library EventsLib {
     /// @notice Emitted when setting a new owner.
     /// @param newOwner The new owner of the contract.

@@ -3,6 +3,11 @@ pragma solidity ^0.8.0;
 
 uint256 constant WAD = 1e18;
 
+/// @title MathLib
+/// @author Morpho Labs
+/// @custom:contact security@morpho.xyz
+/// @notice Library to manage fixed-point arithmetic.
+/// @dev Inspired by https://github.com/morpho-org/morpho-utils.
 library MathLib {
     uint256 internal constant MAX_UINT256 = 2 ** 256 - 1;
 

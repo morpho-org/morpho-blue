@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import {MathLib} from "./MathLib.sol";
 
-/// @title SharesMath
+/// @title SharesMathLib
 /// @author Morpho Labs
 /// @custom:contact security@morpho.xyz
 /// @notice Shares management library.
