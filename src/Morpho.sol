@@ -18,9 +18,9 @@ import {UtilsLib} from "./libraries/UtilsLib.sol";
 import {EventsLib} from "./libraries/EventsLib.sol";
 import {ErrorsLib} from "./libraries/ErrorsLib.sol";
 import {MarketLib} from "./libraries/MarketLib.sol";
+import {MathLib, WAD} from "./libraries/MathLib.sol";
 import {SharesMathLib} from "./libraries/SharesMathLib.sol";
 import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
-import {FixedPointMathLib, WAD} from "./libraries/FixedPointMathLib.sol";
 
 /// @dev The maximum fee a market can have (25%).
 uint256 constant MAX_FEE = 0.25e18;
@@ -43,10 +43,10 @@ bytes32 constant AUTHORIZATION_TYPEHASH =
 /// @custom:contact security@morpho.xyz
 /// @notice The Morpho contract.
 contract Morpho is IMorpho {
+    using MathLib for uint256;
     using MarketLib for Market;
     using SharesMathLib for uint256;
     using SafeTransferLib for IERC20;
-    using FixedPointMathLib for uint256;
 
     /* IMMUTABLES */
 
