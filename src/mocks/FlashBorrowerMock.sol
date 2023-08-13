@@ -4,11 +4,9 @@ pragma solidity ^0.8.0;
 import {IFlashLender} from "../interfaces/IFlashLender.sol";
 import {IMorphoFlashLoanCallback} from "../interfaces/IMorphoCallbacks.sol";
 
-import {IERC20, SafeTransferLib} from "../libraries/SafeTransferLib.sol";
+import {ERC20} from "openzeppelin-contracts/token/ERC20/ERC20.sol";
 
 contract FlashBorrowerMock is IMorphoFlashLoanCallback {
-    using SafeTransferLib for IERC20;
-
     IFlashLender private immutable MORPHO;
 
     constructor(IFlashLender newMorpho) {
@@ -22,6 +20,6 @@ contract FlashBorrowerMock is IMorphoFlashLoanCallback {
     function onMorphoFlashLoan(uint256 assets, bytes calldata data) external {
         require(msg.sender == address(MORPHO));
         address token = abi.decode(data, (address));
-        IERC20(token).approve(address(MORPHO), assets);
+        ERC20(token).approve(address(MORPHO), assets);
     }
 }
