@@ -7,14 +7,14 @@ import {Market, Id} from "../libraries/MarketLib.sol";
 type Id is bytes32;
 
 /// @notice Contains the parameters defining market.
-/// @param borrowableAsset The address of the borrowable asset.
-/// @param collateralAsset The address of the collateral asset.
+/// @param borrowableToken The address of the borrowable token.
+/// @param collateralToken The address of the collateral token.
 /// @param oracle The address of the oracle.
 /// @param irm The address of the interest rate model.
 /// @param lltv The Liquidation LTV.
 struct MarketParams {
-    address borrowableAsset;
-    address collateralAsset;
+    address borrowableToken;
+    address collateralToken;
     address oracle;
     address irm;
     uint256 lltv;
@@ -27,11 +27,11 @@ struct Signature {
     bytes32 s;
 }
 
-/// @title IBlue
+/// @title IMorpho
 /// @author Morpho Labs
 /// @custom:contact security@morpho.xyz
-/// @notice Interface of Blue.
-interface IBlue is IFlashLender {
+/// @notice Interface of Morpho.
+interface IMorpho is IFlashLender {
     /// @notice The EIP-712 domain separator.
     function DOMAIN_SEPARATOR() external view returns (bytes32);
 
@@ -95,7 +95,7 @@ interface IBlue is IFlashLender {
 
     /// @notice Sets the `newFee` for `marketParams`.
     /// @dev It is the `owner`'s responsibility to ensure `feeRecipient` is set before setting a non-zero fee.
-    function setFee(MarketParams memory market, uint256 newFee) external;
+    function setFee(MarketParams memory marketParams, uint256 newFee) external;
 
     /// @notice Sets `recipient` as recipient of the fee.
     function setFeeRecipient(address recipient) external;
@@ -103,105 +103,121 @@ interface IBlue is IFlashLender {
     /// @notice Creates `marketParams`.
     function createMarket(MarketParams memory marketParams) external;
 
-    /// @notice Supplies the given `amount` of assets or `shares` to the given `marketParams` on behalf of `onBehalf`,
-    ///         optionally calling back the caller's `onBlueSupply` function with the given `data`.
-    /// @dev Either `amount` or `shares` should be zero.
-    ///      Most usecases should rely on `amount` as an input so the caller
-    ///      is guaranteed to have `amount` tokens pulled from their balance,
-    ///      but the possibility to mint a specific amount of shares is given
+    /// @notice Supplies the given `assets` or `shares` to the given `market` on behalf of `onBehalf`,
+    ///         optionally calling back the caller's `onMorphoSupply` function with the given `data`.
+    /// @dev Either `assets` or `shares` should be zero.
+    ///      Most usecases should rely on `assets` as an input so the caller
+    ///      is guaranteed to have `assets` tokens pulled from their balance,
+    ///      but the possibility to mint a specific assets of shares is given
     ///      for full compatibility and precision.
-    /// @param marketParams The marketParams to supply assets to.
-    /// @param amount The amount of assets to supply.
-    /// @param shares The amount of shares to mint.
+    /// @dev Supplying a large amount can overflow and revert without any error message.
+    /// @param marketParams The market to supply assets to.
+    /// @param assets The assets of assets to supply.
+    /// @param shares The assets of shares to mint.
     /// @param onBehalf The address that will receive the position.
-    /// @param data Arbitrary data to pass to the `onBlueSupply` callback. Pass empty data if not needed.
+    /// @param data Arbitrary data to pass to the `onMorphoSupply` callback. Pass empty data if not needed.
+    /// @return assetsSupplied The assets of assets supplied.
+    /// @return sharesSupplied The assets of shares supplied.
     function supply(
         MarketParams memory marketParams,
-        uint256 amount,
+        uint256 assets,
         uint256 shares,
         address onBehalf,
         bytes memory data
-    ) external;
+    ) external returns (uint256 assetsSupplied, uint256 sharesSupplied);
 
-    /// @notice Withdraws the given `amount` of assets or `shares` from the given `marketParams` on behalf of `onBehalf`.
-    /// @dev Either `amount` or `shares` should be zero.
+    /// @notice Withdraws the given `assets` or `shares` from the given `market` on behalf of `onBehalf`.
+    /// @dev Either `assets` or `shares` should be zero.
     ///      To withdraw the whole position, pass the `shares`'s balance of `onBehalf`.
     /// @dev `msg.sender` must be authorized to manage `onBehalf`'s positions.
-    /// @param marketParams The marketParams to withdraw assets from.
-    /// @param shares The amount of amount to withdraw.
-    /// @param shares The amount of shares to burn.
+    /// @dev Withdrawing an amount corresponding to more shares than supplied will underflow and revert without any error message.
+    /// @param marketParams The market to withdraw assets from.
+    /// @param assets The assets of assets to withdraw.
+    /// @param shares The assets of shares to burn.
     /// @param onBehalf The address of the owner of the withdrawn assets.
     /// @param receiver The address that will receive the withdrawn assets.
+    /// @return assetsWithdrawn The assets of assets withdrawn.
+    /// @return sharesWithdrawn The assets of shares withdrawn.
     function withdraw(
         MarketParams memory marketParams,
-        uint256 amount,
+        uint256 assets,
         uint256 shares,
         address onBehalf,
         address receiver
-    ) external;
+    ) external returns (uint256 assetsWithdrawn, uint256 sharesWithdrawn);
 
-    /// @notice Borrows the given `amount` of assets or `shares` from the given `marketParams` on behalf of `onBehalf`.
-    /// @dev Either `amount` or `shares` should be zero.
-    ///      Most usecases should rely on `amount` as an input so the caller
-    ///      is guaranteed to borrow `amount` of tokens,
-    ///      but the possibility to burn a specific amount of shares is given
+    /// @notice Borrows the given `assets` or `shares` from the given `market` on behalf of `onBehalf`.
+    /// @dev Either `assets` or `shares` should be zero.
+    ///      Most usecases should rely on `assets` as an input so the caller
+    ///      is guaranteed to borrow `assets` of tokens,
+    ///      but the possibility to burn a specific assets of shares is given
     ///      for full compatibility and precision.
     /// @dev `msg.sender` must be authorized to manage `onBehalf`'s positions.
-    /// @param marketParams The marketParams to borrow assets from.
-    /// @param amount The amount of assets to borrow.
-    /// @param shares The amount of shares to mint.
+    /// @dev Borrowing a large amount can underflow and revert without any error message.
+    /// @param marketParams The market to borrow assets from.
+    /// @param assets The assets of assets to borrow.
+    /// @param shares The assets of shares to mint.
     /// @param onBehalf The address of the owner of the debt.
     /// @param receiver The address that will receive the debt.
+    /// @return assetsBorrowed The assets of assets borrowed.
+    /// @return sharesBorrowed The assets of shares borrowed.
     function borrow(
         MarketParams memory marketParams,
-        uint256 amount,
+        uint256 assets,
         uint256 shares,
         address onBehalf,
         address receiver
-    ) external;
+    ) external returns (uint256 assetsBorrowed, uint256 sharesBorrowed);
 
-    /// @notice Repays the given `amount` of assets or `shares` to the given `marketParams` on behalf of `onBehalf`,
-    ///         optionally calling back the caller's `onBlueReplay` function with the given `data`.
-    /// @dev Either `amount` or `shares` should be zero.
+    /// @notice Repays the given `assets` or `shares` to the given `market` on behalf of `onBehalf`,
+    ///         optionally calling back the caller's `onMorphoReplay` function with the given `data`.
+    /// @dev Either `assets` or `shares` should be zero.
     ///      To repay the whole debt, pass the `shares`'s balance of `onBehalf`.
-    /// @param marketParams The marketParams to repay assets to.
-    /// @param amount The amount of assets to repay.
-    /// @param shares The amount of shares to burn.
+    /// @dev Repaying an amount corresponding to more shares than borrowed will underflow and revert without any error message.
+    /// @param marketParams The market to repay assets to.
+    /// @param assets The assets of assets to repay.
+    /// @param shares The assets of shares to burn.
     /// @param onBehalf The address of the owner of the debt.
-    /// @param data Arbitrary data to pass to the `onBlueRepay` callback. Pass empty data if not needed.
+    /// @param data Arbitrary data to pass to the `onMorphoRepay` callback. Pass empty data if not needed.
+    /// @return assetsRepaid The assets of assets repaid.
+    /// @return sharesRepaid The assets of shares repaid.
     function repay(
         MarketParams memory marketParams,
-        uint256 amount,
+        uint256 assets,
         uint256 shares,
         address onBehalf,
         bytes memory data
-    ) external;
+    ) external returns (uint256 assetsRepaid, uint256 sharesRepaid);
 
-    /// @notice Supplies the given `amount` of collateral to the given `marketParams` on behalf of `onBehalf`,
-    ///         optionally calling back the caller's `onBlueSupplyCollateral` function with the given `data`.
+    /// @notice Supplies the given `assets` of collateral to the given `market` on behalf of `onBehalf`,
+    ///         optionally calling back the caller's `onMorphoSupplyCollateral` function with the given `data`.
     /// @dev Interests are not accrued since it's not required and it saves gas.
-    /// @param marketParams The marketParams to supply collateral to.
-    /// @param amount The amount of collateral to supply.
+    /// @dev Supplying a large amount can overflow and revert without any error message.
+    /// @param marketParams The market to supply collateral to.
+    /// @param assets The assets of collateral to supply.
     /// @param onBehalf The address that will receive the collateral.
-    /// @param data Arbitrary data to pass to the `onBlueSupplyCollateral` callback. Pass empty data if not needed.
-    function supplyCollateral(MarketParams memory marketParams, uint256 amount, address onBehalf, bytes memory data)
+    /// @param data Arbitrary data to pass to the `onMorphoSupplyCollateral` callback. Pass empty data if not needed.
+    function supplyCollateral(MarketParams memory marketParams, uint256 assets, address onBehalf, bytes memory data)
         external;
 
-    /// @notice Withdraws the given `amount` of collateral from the given `marketParams` on behalf of `onBehalf`.
+    /// @notice Withdraws the given `assets` of collateral from the given `market` on behalf of `onBehalf`.
     /// @dev `msg.sender` must be authorized to manage `onBehalf`'s positions.
-    /// @param marketParams The marketParams to withdraw collateral from.
-    /// @param amount The amount of collateral to withdraw.
+    /// @dev Withdrawing an amount corresponding to more collateral than supplied will underflow and revert without any error message.
+    /// @param marketParams The market to withdraw collateral from.
+    /// @param assets The assets of collateral to withdraw.
     /// @param onBehalf The address of the owner of the collateral.
     /// @param receiver The address that will receive the withdrawn collateral.
-    function withdrawCollateral(MarketParams memory marketParams, uint256 amount, address onBehalf, address receiver)
+    function withdrawCollateral(MarketParams memory marketParams, uint256 assets, address onBehalf, address receiver)
         external;
 
-    /// @notice Liquidates the given `seized` amount to the given `marketParams` of the given `borrower`'s position,
-    ///         optionally calling back the caller's `onBlueLiquidate` function with the given `data`.
-    /// @param marketParams The marketParams of the position.
+    /// @notice Liquidates the given `seized` assets to the given `market` of the given `borrower`'s position,
+    ///         optionally calling back the caller's `onMorphoLiquidate` function with the given `data`.
+    /// @dev Seizing more than the collateral balance will revert without any error message.
+    /// @dev Repaying more than the borrow balance will overflow and revert without any error message.
+    /// @param marketParams The market of the position.
     /// @param borrower The owner of the position.
-    /// @param seized The amount of collateral to seize.
-    /// @param data Arbitrary data to pass to the `onBlueLiquidate` callback. Pass empty data if not needed
+    /// @param seized The assets of collateral to seize.
+    /// @param data Arbitrary data to pass to the `onMorphoLiquidate` callback. Pass empty data if not needed
     function liquidate(MarketParams memory marketParams, address borrower, uint256 seized, bytes memory data)
         external;
 
@@ -223,6 +239,9 @@ interface IBlue is IFlashLender {
         uint256 deadline,
         Signature calldata signature
     ) external;
+
+    /// @notice Accrues interests for `market`.
+    function accrueInterests(MarketParams memory market) external;
 
     /// @notice Returns the data stored on the different `slots`.
     function extsload(bytes32[] memory slots) external view returns (bytes32[] memory res);

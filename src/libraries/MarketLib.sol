@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import {MarketParams, Id, IBlue} from "../interfaces/IBlue.sol";
+import {MarketParams, Id} from "../interfaces/IMorpho.sol";
 import {SafeCastLib} from "solmate/utils/SafeCastLib.sol";
 
 struct Market {
