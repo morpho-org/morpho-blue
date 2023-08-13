@@ -10,6 +10,7 @@ import { FlashBorrowerMock } from "types/src/mocks/FlashBorrowerMock";
 
 const closePositions = false;
 const initBalance = constants.MaxUint256.div(2);
+const oraclePriceScale = BigNumber.from("1000000000000000000000000000000000000");
 
 let seed = 42;
 const random = () => {
@@ -66,7 +67,7 @@ describe("Morpho", () => {
 
     oracle = await OracleMockFactory.deploy();
 
-    await oracle.setPrice(BigNumber.WAD);
+    await oracle.setPrice(oraclePriceScale);
 
     const MorphoFactory = await hre.ethers.getContractFactory("Morpho", admin);
 
@@ -173,7 +174,7 @@ describe("Morpho", () => {
       await morpho.connect(borrower).supplyCollateral(market, assets, borrower.address, "0x");
       await morpho.connect(borrower).borrow(market, borrowedAmount, 0, borrower.address, user.address);
 
-      await oracle.setPrice(BigNumber.WAD.div(100));
+      await oracle.setPrice(oraclePriceScale.div(100));
 
       const seized = closePositions ? assets : assets.div(2);
 
@@ -185,7 +186,7 @@ describe("Morpho", () => {
         expect(remainingCollateral.isZero(), "did not take the whole collateral when closing the position").to.be.true;
       else expect(!remainingCollateral.isZero(), "unexpectedly closed the position").to.be.true;
 
-      await oracle.setPrice(BigNumber.WAD);
+      await oracle.setPrice(oraclePriceScale);
     }
   });
 

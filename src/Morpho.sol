@@ -17,6 +17,8 @@ import {FixedPointMathLib, WAD} from "./libraries/FixedPointMathLib.sol";
 
 /// @dev The maximum fee a market can have (25%).
 uint256 constant MAX_FEE = 0.25e18;
+/// @dev Oracle price scale.
+uint256 constant ORACLE_PRICE_SCALE = 1e36;
 /// @dev Liquidation cursor.
 uint256 constant LIQUIDATION_CURSOR = 0.3e18;
 /// @dev Max liquidation incentive factor.
@@ -329,7 +331,8 @@ contract Morpho is IMorpho {
 
         require(!_isHealthy(market, id, borrower, collateralPrice), ErrorsLib.HEALTHY_POSITION);
 
-        uint256 repaid = seized.wMulUp(collateralPrice).wDivUp(liquidationIncentiveFactor(market.lltv));
+        uint256 repaid =
+            seized.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(liquidationIncentiveFactor(market.lltv));
         uint256 repaidShares = repaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
 
         borrowShares[id][borrower] -= repaidShares;
@@ -467,7 +470,7 @@ contract Morpho is IMorpho {
         returns (bool)
     {
         uint256 borrowed = borrowShares[id][user].toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
-        uint256 maxBorrow = collateral[id][user].wMulDown(collateralPrice).wMulDown(market.lltv);
+        uint256 maxBorrow = collateral[id][user].mulDivDown(collateralPrice, ORACLE_PRICE_SCALE).wMulDown(market.lltv);
 
         return maxBorrow >= borrowed;
     }
