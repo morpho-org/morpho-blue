@@ -1,8 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.21;
 
-import "./interfaces/IMorpho.sol";
-import "./interfaces/IMorphoCallbacks.sol";
+import {Id, IMorpho, Market, Authorization, Signature} from "./interfaces/IMorpho.sol";
+import {IFlashLender} from "./interfaces/IFlashLender.sol";
+import {
+    IMorphoLiquidateCallback,
+    IMorphoRepayCallback,
+    IMorphoSupplyCallback,
+    IMorphoSupplyCollateralCallback,
+    IMorphoFlashLoanCallback
+} from "./interfaces/IMorphoCallbacks.sol";
 import {IIrm} from "./interfaces/IIrm.sol";
 import {IERC20} from "./interfaces/IERC20.sol";
 import {IOracle} from "./interfaces/IOracle.sol";
