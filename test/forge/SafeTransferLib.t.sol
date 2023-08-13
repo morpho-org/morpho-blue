@@ -48,59 +48,55 @@ contract ERC20Fake2 {
     }
 }
 
-contract Pool {
+contract SafeTransferLibTest is Test {
     using SafeTransferLib for *;
 
-    function safeTransfer(address token, address to, uint256 amount) public {
-        IERC20(token).safeTransfer(to, amount);
-    }
-
-    function safeTransferFrom(address token, address from, address to, uint256 amount) public {
-        IERC20(token).safeTransferFrom(from, to, amount);
-    }
-}
-
-contract SafeTransferLibTest is Test {
     ERC20Fake1 public token1;
     ERC20Fake2 public token2;
-    Pool public pool;
 
     function setUp() public {
         token1 = new ERC20Fake1();
         token2 = new ERC20Fake2();
-        pool = new Pool();
     }
 
     function testSafeTransferShouldRevertOnTokenWithEmptyCode(address noCode) public {
         vm.assume(noCode.code.length == 0);
 
         vm.expectRevert(bytes(ErrorsLib.TRANSFER_FAILED));
-        pool.safeTransfer(noCode, address(0), 0);
+        this.safeTransfer(noCode, address(0), 0);
     }
 
     function testSafeTransfer(address to, uint256 amount) public {
-        token1.setBalance(address(pool), amount);
+        token1.setBalance(address(this), amount);
 
-        pool.safeTransfer(address(token1), to, amount);
+        this.safeTransfer(address(token1), to, amount);
     }
 
     function testSafeTransferFrom(address from, address to, uint256 amount) public {
         token1.setBalance(from, amount);
 
-        pool.safeTransferFrom(address(token1), from, to, amount);
+        this.safeTransferFrom(address(token1), from, to, amount);
     }
 
     function testSafeTransferWithBoolFalse(address to, uint256 amount) public {
-        token2.setBalance(address(pool), amount);
+        token2.setBalance(address(this), amount);
 
         vm.expectRevert(bytes(ErrorsLib.TRANSFER_FAILED));
-        pool.safeTransfer(address(token2), to, amount);
+        this.safeTransfer(address(token2), to, amount);
     }
 
     function testSafeTransferFromWithBoolFalse(address from, address to, uint256 amount) public {
         token2.setBalance(from, amount);
 
         vm.expectRevert(bytes(ErrorsLib.TRANSFER_FROM_FAILED));
-        pool.safeTransferFrom(address(token2), from, to, amount);
+        this.safeTransferFrom(address(token2), from, to, amount);
+    }
+
+    function safeTransfer(address token, address to, uint256 amount) external {
+        IERC20(token).safeTransfer(to, amount);
+    }
+
+    function safeTransferFrom(address token, address from, address to, uint256 amount) external {
+        IERC20(token).safeTransferFrom(from, to, amount);
     }
 }
