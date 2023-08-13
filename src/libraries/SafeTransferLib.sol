@@ -14,7 +14,7 @@ library SafeTransferLib {
     function safeTransfer(IERC20 token, address to, uint256 value) internal {
         (bool success, bytes memory returndata) = address(token).call(abi.encodeCall(token.transfer, (to, value)));
         require(
-            success && (returndata.length == 0 || abi.decode(returndata, (bool)) && address(token).code.length > 0),
+            success && address(token).code.length > 0 && (returndata.length == 0 || abi.decode(returndata, (bool))),
             ErrorsLib.TRANSFER_FAILED
         );
     }
@@ -23,7 +23,7 @@ library SafeTransferLib {
         (bool success, bytes memory returndata) =
             address(token).call(abi.encodeCall(token.transferFrom, (from, to, value)));
         require(
-            success && (returndata.length == 0 || abi.decode(returndata, (bool)) && address(token).code.length > 0),
+            success && address(token).code.length > 0 && (returndata.length == 0 || abi.decode(returndata, (bool))),
             ErrorsLib.TRANSFER_FROM_FAILED
         );
     }
