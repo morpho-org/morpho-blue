@@ -381,29 +381,24 @@ contract Morpho is IMorpho {
     }
 
     /// @inheritdoc IMorpho
+    /// @dev Warning: reverts if the signature has already been submitted.
     /// @dev The signature is malleable, but it has no impact on the security here.
-    function setAuthorizationWithSig(
-        address authorizer,
-        address authorized,
-        bool newIsAuthorized,
-        uint256 deadline,
-        Signature calldata signature
-    ) external {
-        require(block.timestamp < deadline, ErrorsLib.SIGNATURE_EXPIRED);
+    function setAuthorizationWithSig(Authorization memory authorization, Signature calldata signature) external {
+        require(block.timestamp < authorization.deadline, ErrorsLib.SIGNATURE_EXPIRED);
 
-        uint256 usedNonce = nonce[authorizer]++;
-        bytes32 hashStruct =
-            keccak256(abi.encode(AUTHORIZATION_TYPEHASH, authorizer, authorized, newIsAuthorized, usedNonce, deadline));
+        bytes32 hashStruct = keccak256(abi.encode(AUTHORIZATION_TYPEHASH, authorization));
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, hashStruct));
         address signatory = ecrecover(digest, signature.v, signature.r, signature.s);
 
-        require(signatory != address(0) && authorizer == signatory, ErrorsLib.INVALID_SIGNATURE);
+        require(signatory != address(0) && authorization.authorizer == signatory, ErrorsLib.INVALID_SIGNATURE);
 
-        emit EventsLib.IncrementNonce(msg.sender, authorizer, usedNonce);
+        emit EventsLib.IncrementNonce(msg.sender, authorization.authorizer, nonce[authorization.authorizer]++);
 
-        isAuthorized[authorizer][authorized] = newIsAuthorized;
+        isAuthorized[authorization.authorizer][authorization.authorized] = authorization.isAuthorized;
 
-        emit EventsLib.SetAuthorization(msg.sender, authorizer, authorized, newIsAuthorized);
+        emit EventsLib.SetAuthorization(
+            msg.sender, authorization.authorizer, authorization.authorized, authorization.isAuthorized
+        );
     }
 
     function _isSenderAuthorized(address user) internal view returns (bool) {

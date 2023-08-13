@@ -19,6 +19,20 @@ struct Market {
     uint256 lltv;
 }
 
+/// @notice Authorization struct.
+/// @param authorizer Authorizer address.
+/// @param authorized Authorized address.
+/// @param isAuthorized The authorization status to set.
+/// @param nonce Signature nonce.
+/// @param deadline Signature deadline.
+struct Authorization {
+    address authorizer;
+    address authorized;
+    bool isAuthorized;
+    uint256 nonce;
+    uint256 deadline;
+}
+
 /// @notice Contains the `v`, `r` and `s` parameters of an ECDSA signature.
 struct Signature {
     uint8 v;
@@ -206,19 +220,10 @@ interface IMorpho is IFlashLender {
     /// @param newIsAuthorized The new authorization status.
     function setAuthorization(address authorized, bool newIsAuthorized) external;
 
-    /// @notice Sets the authorization for `authorized` to manage `authorizer`'s positions.
-    /// @param authorizer The authorizer address.
-    /// @param authorized The authorized address.
-    /// @param newIsAuthorized The new authorization status.
-    /// @param deadline The deadline after which the signature is invalid.
-    /// @dev The signature is malleable, but it has no impact on the security here.
-    function setAuthorizationWithSig(
-        address authorizer,
-        address authorized,
-        bool newIsAuthorized,
-        uint256 deadline,
-        Signature calldata signature
-    ) external;
+    /// @notice Sets the authorization for `authorization.authorized` to manage `authorization.authorizer`'s positions.
+    /// @param authorization The `Authorization` struct.
+    /// @param signature The signature.
+    function setAuthorizationWithSig(Authorization calldata authorization, Signature calldata signature) external;
 
     /// @notice Accrues interests for `market`.
     function accrueInterests(Market memory market) external;
