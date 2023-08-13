@@ -6,6 +6,6 @@ pragma solidity >=0.5.0;
 /// @custom:contact security@morpho.xyz
 /// @notice Interface that oracles used by Morpho must implement.
 interface IOracle {
-    /// @notice Returns the price of the collateral asset quoted in the borrowable asset, scaled by 1e36.
+    /// @notice Returns the price of the collateral asset quoted in the borrowable asset, scaled by 1e18.
     function price() external view returns (uint256);
 }
