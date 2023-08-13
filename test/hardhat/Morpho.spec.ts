@@ -3,6 +3,7 @@ import { mine } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { BigNumber, constants, utils } from "ethers";
+import { parseUnits } from "ethers/lib/utils";
 import hre from "hardhat";
 import { Morpho, OracleMock, ERC20Mock, IrmMock } from "types";
 import { MarketStruct } from "types/src/Morpho";
@@ -10,7 +11,7 @@ import { FlashBorrowerMock } from "types/src/mocks/FlashBorrowerMock";
 
 const closePositions = false;
 const initBalance = constants.MaxUint256.div(2);
-const oraclePriceScale = BigNumber.from("1000000000000000000000000000000000000");
+const oraclePriceScale = parseUnits("1", 36);
 
 let seed = 42;
 const random = () => {
