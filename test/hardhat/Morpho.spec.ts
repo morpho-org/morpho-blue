@@ -3,6 +3,7 @@ import { mine } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { BigNumber, constants, utils } from "ethers";
+import { parseUnits } from "ethers/lib/utils";
 import hre from "hardhat";
 import { Morpho, OracleMock, ERC20Mock, IrmMock } from "types";
 import { MarketStruct } from "types/src/Morpho";
@@ -10,6 +11,7 @@ import { FlashBorrowerMock } from "types/src/mocks/FlashBorrowerMock";
 
 const closePositions = false;
 const initBalance = constants.MaxUint256.div(2);
+const oraclePriceScale = parseUnits("1", 36);
 
 let seed = 42;
 const random = () => {
@@ -66,7 +68,7 @@ describe("Morpho", () => {
 
     oracle = await OracleMockFactory.deploy();
 
-    await oracle.setPrice(BigNumber.WAD);
+    await oracle.setPrice(oraclePriceScale);
 
     const MorphoFactory = await hre.ethers.getContractFactory("Morpho", admin);
 
@@ -173,7 +175,7 @@ describe("Morpho", () => {
       await morpho.connect(borrower).supplyCollateral(market, assets, borrower.address, "0x");
       await morpho.connect(borrower).borrow(market, borrowedAmount, 0, borrower.address, user.address);
 
-      await oracle.setPrice(BigNumber.WAD.div(100));
+      await oracle.setPrice(oraclePriceScale.div(100));
 
       const seized = closePositions ? assets : assets.div(2);
 
@@ -185,7 +187,7 @@ describe("Morpho", () => {
         expect(remainingCollateral.isZero(), "did not take the whole collateral when closing the position").to.be.true;
       else expect(!remainingCollateral.isZero(), "unexpectedly closed the position").to.be.true;
 
-      await oracle.setPrice(BigNumber.WAD);
+      await oracle.setPrice(oraclePriceScale);
     }
   });
 

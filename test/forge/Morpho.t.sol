@@ -63,7 +63,7 @@ contract MorphoTest is
         morpho.createMarket(market);
         vm.stopPrank();
 
-        oracle.setPrice(WAD);
+        oracle.setPrice(ORACLE_PRICE_SCALE);
 
         borrowableToken.approve(address(morpho), type(uint256).max);
         collateralToken.approve(address(morpho), type(uint256).max);
@@ -83,9 +83,9 @@ contract MorphoTest is
     /// @dev Calculates the net worth of the given user quoted in borrowable asset.
     // TODO: To move to a test utils file later.
     function netWorth(address user) internal view returns (uint256) {
-        (uint256 collateralPrice, uint256 priceScale) = IOracle(market.oracle).price();
+        uint256 collateralPrice = IOracle(market.oracle).price();
 
-        uint256 collateralAssetValue = collateralToken.balanceOf(user).mulDivDown(collateralPrice, priceScale);
+        uint256 collateralAssetValue = collateralToken.balanceOf(user).mulDivDown(collateralPrice, ORACLE_PRICE_SCALE);
         uint256 borrowableAssetValue = borrowableToken.balanceOf(user);
 
         return collateralAssetValue + borrowableAssetValue;
@@ -603,7 +603,7 @@ contract MorphoTest is
         vm.prank(BORROWER);
         morpho.supplyCollateral(market, assetsCollateral, BORROWER, hex"");
 
-        uint256 maxBorrow = assetsCollateral.wMulDown(collateralPrice).wMulDown(LLTV);
+        uint256 maxBorrow = assetsCollateral.mulDivDown(collateralPrice, ORACLE_PRICE_SCALE).wMulDown(LLTV);
 
         vm.prank(BORROWER);
         if (maxBorrow < assetsBorrowed) vm.expectRevert(bytes(ErrorsLib.INSUFFICIENT_COLLATERAL));
@@ -611,7 +611,7 @@ contract MorphoTest is
     }
 
     function testLiquidate(uint256 assetsLent) public {
-        oracle.setPrice(1e18);
+        oracle.setPrice(ORACLE_PRICE_SCALE);
         assetsLent = bound(assetsLent, 1000, 2 ** 64);
 
         uint256 assetsCollateral = assetsLent;
@@ -635,7 +635,7 @@ contract MorphoTest is
         vm.stopPrank();
 
         // Price change
-        oracle.setPrice(0.5e18);
+        oracle.setPrice(ORACLE_PRICE_SCALE / 2);
 
         uint256 liquidatorNetWorthBefore = netWorth(LIQUIDATOR);
 
@@ -644,18 +644,19 @@ contract MorphoTest is
         morpho.liquidate(market, BORROWER, toSeize, hex"");
 
         uint256 liquidatorNetWorthAfter = netWorth(LIQUIDATOR);
-        (uint256 collateralPrice, uint256 priceScale) = IOracle(market.oracle).price();
+        uint256 collateralPrice = IOracle(market.oracle).price();
 
-        uint256 expectedRepaid = toSeize.mulDivUp(collateralPrice, priceScale).wDivUp(liquidationIncentiveFactor);
+        uint256 expectedRepaid =
+            toSeize.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(liquidationIncentiveFactor);
         uint256 expectedNetWorthAfter =
-            liquidatorNetWorthBefore + toSeize.mulDivDown(collateralPrice, priceScale) - expectedRepaid;
+            liquidatorNetWorthBefore + toSeize.mulDivDown(collateralPrice, ORACLE_PRICE_SCALE) - expectedRepaid;
         assertEq(liquidatorNetWorthAfter, expectedNetWorthAfter, "LIQUIDATOR net worth");
         assertApproxEqAbs(borrowBalance(BORROWER), assetsBorrowed - expectedRepaid, 100, "BORROWER balance");
         assertEq(morpho.collateral(id, BORROWER), assetsCollateral - toSeize, "BORROWER collateral");
     }
 
     function testRealizeBadDebt(uint256 assetsLent) public {
-        oracle.setPrice(1e18);
+        oracle.setPrice(ORACLE_PRICE_SCALE);
         assetsLent = bound(assetsLent, 1000, 2 ** 64);
 
         uint256 assetsCollateral = assetsLent;
@@ -679,7 +680,7 @@ contract MorphoTest is
         vm.stopPrank();
 
         // Price change
-        oracle.setPrice(0.01e18);
+        oracle.setPrice(ORACLE_PRICE_SCALE / 100);
 
         uint256 liquidatorNetWorthBefore = netWorth(LIQUIDATOR);
 
@@ -688,11 +689,12 @@ contract MorphoTest is
         morpho.liquidate(market, BORROWER, toSeize, hex"");
 
         uint256 liquidatorNetWorthAfter = netWorth(LIQUIDATOR);
-        (uint256 collateralPrice, uint256 priceScale) = IOracle(market.oracle).price();
+        uint256 collateralPrice = IOracle(market.oracle).price();
 
-        uint256 expectedRepaid = toSeize.mulDivUp(collateralPrice, priceScale).wDivUp(liquidationIncentiveFactor);
+        uint256 expectedRepaid =
+            toSeize.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(liquidationIncentiveFactor);
         uint256 expectedNetWorthAfter =
-            liquidatorNetWorthBefore + toSeize.mulDivDown(collateralPrice, priceScale) - expectedRepaid;
+            liquidatorNetWorthBefore + toSeize.mulDivDown(collateralPrice, ORACLE_PRICE_SCALE) - expectedRepaid;
         assertEq(liquidatorNetWorthAfter, expectedNetWorthAfter, "LIQUIDATOR net worth");
         assertEq(borrowBalance(BORROWER), 0, "BORROWER balance");
         assertEq(morpho.collateral(id, BORROWER), 0, "BORROWER collateral");
@@ -966,7 +968,7 @@ contract MorphoTest is
         morpho.supplyCollateral(market, collateralAmount, address(this), hex"");
         morpho.borrow(market, assets.wMulDown(LLTV), 0, address(this), address(this));
 
-        oracle.setPrice(0.5e18);
+        oracle.setPrice(ORACLE_PRICE_SCALE / 2);
 
         borrowableToken.setBalance(address(this), assets);
         borrowableToken.approve(address(morpho), 0);
@@ -979,7 +981,7 @@ contract MorphoTest is
 
     function testFlashActions(uint256 assets) public {
         assets = bound(assets, 10, 2 ** 64);
-        oracle.setPrice(1e18);
+        oracle.setPrice(ORACLE_PRICE_SCALE);
         uint256 toBorrow = assets.wMulDown(LLTV);
 
         borrowableToken.setBalance(address(this), 2 * toBorrow);

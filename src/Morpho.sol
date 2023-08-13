@@ -24,6 +24,8 @@ import {FixedPointMathLib, WAD} from "./libraries/FixedPointMathLib.sol";
 
 /// @dev The maximum fee a market can have (25%).
 uint256 constant MAX_FEE = 0.25e18;
+/// @dev Oracle price scale.
+uint256 constant ORACLE_PRICE_SCALE = 1e36;
 /// @dev Liquidation cursor.
 uint256 constant LIQUIDATION_CURSOR = 0.3e18;
 /// @dev Max liquidation incentive factor.
@@ -332,11 +334,12 @@ contract Morpho is IMorpho {
 
         _accrueInterests(market, id);
 
-        (uint256 collateralPrice, uint256 priceScale) = IOracle(market.oracle).price();
+        uint256 collateralPrice = IOracle(market.oracle).price();
 
-        require(!_isHealthy(market, id, borrower, collateralPrice, priceScale), ErrorsLib.HEALTHY_POSITION);
+        require(!_isHealthy(market, id, borrower, collateralPrice), ErrorsLib.HEALTHY_POSITION);
 
-        uint256 repaid = seized.mulDivUp(collateralPrice, priceScale).wDivUp(liquidationIncentiveFactor(market.lltv));
+        uint256 repaid =
+            seized.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(liquidationIncentiveFactor(market.lltv));
         uint256 repaidShares = repaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
 
         borrowShares[id][borrower] -= repaidShares;
@@ -457,19 +460,19 @@ contract Morpho is IMorpho {
     function _isHealthy(Market memory market, Id id, address user) internal view returns (bool) {
         if (borrowShares[id][user] == 0) return true;
 
-        (uint256 collateralPrice, uint256 priceScale) = IOracle(market.oracle).price();
+        uint256 collateralPrice = IOracle(market.oracle).price();
 
-        return _isHealthy(market, id, user, collateralPrice, priceScale);
+        return _isHealthy(market, id, user, collateralPrice);
     }
 
     /// @notice Returns whether the position of `user` in the given `market` with the given `collateralPrice` and `priceScale` is healthy.
-    function _isHealthy(Market memory market, Id id, address user, uint256 collateralPrice, uint256 priceScale)
+    function _isHealthy(Market memory market, Id id, address user, uint256 collateralPrice)
         internal
         view
         returns (bool)
     {
         uint256 borrowed = borrowShares[id][user].toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
-        uint256 maxBorrow = collateral[id][user].mulDivDown(collateralPrice, priceScale).wMulDown(market.lltv);
+        uint256 maxBorrow = collateral[id][user].mulDivDown(collateralPrice, ORACLE_PRICE_SCALE).wMulDown(market.lltv);
 
         return maxBorrow >= borrowed;
     }
