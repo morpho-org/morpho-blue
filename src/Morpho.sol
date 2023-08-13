@@ -1,8 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.21;
 
-import "./interfaces/IMorpho.sol";
-import "./interfaces/IMorphoCallbacks.sol";
+import {Id, IMorpho, Market, Authorization, Signature} from "./interfaces/IMorpho.sol";
+import {IFlashLender} from "./interfaces/IFlashLender.sol";
+import {
+    IMorphoLiquidateCallback,
+    IMorphoRepayCallback,
+    IMorphoSupplyCallback,
+    IMorphoSupplyCollateralCallback,
+    IMorphoFlashLoanCallback
+} from "./interfaces/IMorphoCallbacks.sol";
 import {IIrm} from "./interfaces/IIrm.sol";
 import {IERC20} from "./interfaces/IERC20.sol";
 import {IOracle} from "./interfaces/IOracle.sol";
@@ -17,8 +24,12 @@ import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
 
 /// @dev The maximum fee a market can have (25%).
 uint256 constant MAX_FEE = 0.25e18;
-/// @dev The alpha parameter used to compute the incentive during a liquidation.
-uint256 constant ALPHA = 0.5e18;
+/// @dev Oracle price scale.
+uint256 constant ORACLE_PRICE_SCALE = 1e36;
+/// @dev Liquidation cursor.
+uint256 constant LIQUIDATION_CURSOR = 0.3e18;
+/// @dev Max liquidation incentive factor.
+uint256 constant MAX_LIQUIDATION_INCENTIVE_FACTOR = 1.15e18;
 
 /// @dev The EIP-712 typeHash for EIP712Domain.
 bytes32 constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
@@ -323,13 +334,12 @@ contract Morpho is IMorpho {
 
         _accrueInterests(market, id);
 
-        (uint256 collateralPrice, uint256 priceScale) = IOracle(market.oracle).price();
+        uint256 collateralPrice = IOracle(market.oracle).price();
 
-        require(!_isHealthy(market, id, borrower, collateralPrice, priceScale), ErrorsLib.HEALTHY_POSITION);
+        require(!_isHealthy(market, id, borrower, collateralPrice), ErrorsLib.HEALTHY_POSITION);
 
-        // The liquidation incentive is 1 + ALPHA * (1 / LLTV - 1).
-        uint256 incentive = WAD + ALPHA.wMulDown(WAD.wDivDown(market.lltv) - WAD);
-        uint256 repaid = seized.mulDivUp(collateralPrice, priceScale).wDivUp(incentive);
+        uint256 repaid =
+            seized.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(liquidationIncentiveFactor(market.lltv));
         uint256 repaidShares = repaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
 
         borrowShares[id][borrower] -= repaidShares;
@@ -381,29 +391,24 @@ contract Morpho is IMorpho {
     }
 
     /// @inheritdoc IMorpho
+    /// @dev Warning: reverts if the signature has already been submitted.
     /// @dev The signature is malleable, but it has no impact on the security here.
-    function setAuthorizationWithSig(
-        address authorizer,
-        address authorized,
-        bool newIsAuthorized,
-        uint256 deadline,
-        Signature calldata signature
-    ) external {
-        require(block.timestamp < deadline, ErrorsLib.SIGNATURE_EXPIRED);
+    function setAuthorizationWithSig(Authorization memory authorization, Signature calldata signature) external {
+        require(block.timestamp < authorization.deadline, ErrorsLib.SIGNATURE_EXPIRED);
 
-        uint256 usedNonce = nonce[authorizer]++;
-        bytes32 hashStruct =
-            keccak256(abi.encode(AUTHORIZATION_TYPEHASH, authorizer, authorized, newIsAuthorized, usedNonce, deadline));
+        bytes32 hashStruct = keccak256(abi.encode(AUTHORIZATION_TYPEHASH, authorization));
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, hashStruct));
         address signatory = ecrecover(digest, signature.v, signature.r, signature.s);
 
-        require(signatory != address(0) && authorizer == signatory, ErrorsLib.INVALID_SIGNATURE);
+        require(signatory != address(0) && authorization.authorizer == signatory, ErrorsLib.INVALID_SIGNATURE);
 
-        emit EventsLib.IncrementNonce(msg.sender, authorizer, usedNonce);
+        emit EventsLib.IncrementNonce(msg.sender, authorization.authorizer, nonce[authorization.authorizer]++);
 
-        isAuthorized[authorizer][authorized] = newIsAuthorized;
+        isAuthorized[authorization.authorizer][authorization.authorized] = authorization.isAuthorized;
 
-        emit EventsLib.SetAuthorization(msg.sender, authorizer, authorized, newIsAuthorized);
+        emit EventsLib.SetAuthorization(
+            msg.sender, authorization.authorizer, authorization.authorized, authorization.isAuthorized
+        );
     }
 
     function _isSenderAuthorized(address user) internal view returns (bool) {
@@ -411,6 +416,14 @@ contract Morpho is IMorpho {
     }
 
     /* INTEREST MANAGEMENT */
+
+    /// @inheritdoc IMorpho
+    function accrueInterests(Market memory market) external {
+        Id id = market.id();
+        require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
+
+        _accrueInterests(market, id);
+    }
 
     /// @dev Accrues interests for `market`.
     function _accrueInterests(Market memory market, Id id) internal {
@@ -447,19 +460,19 @@ contract Morpho is IMorpho {
     function _isHealthy(Market memory market, Id id, address user) internal view returns (bool) {
         if (borrowShares[id][user] == 0) return true;
 
-        (uint256 collateralPrice, uint256 priceScale) = IOracle(market.oracle).price();
+        uint256 collateralPrice = IOracle(market.oracle).price();
 
-        return _isHealthy(market, id, user, collateralPrice, priceScale);
+        return _isHealthy(market, id, user, collateralPrice);
     }
 
     /// @notice Returns whether the position of `user` in the given `market` with the given `collateralPrice` and `priceScale` is healthy.
-    function _isHealthy(Market memory market, Id id, address user, uint256 collateralPrice, uint256 priceScale)
+    function _isHealthy(Market memory market, Id id, address user, uint256 collateralPrice)
         internal
         view
         returns (bool)
     {
         uint256 borrowed = borrowShares[id][user].toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
-        uint256 maxBorrow = collateral[id][user].mulDivDown(collateralPrice, priceScale).wMulDown(market.lltv);
+        uint256 maxBorrow = collateral[id][user].mulDivDown(collateralPrice, ORACLE_PRICE_SCALE).wMulDown(market.lltv);
 
         return maxBorrow >= borrowed;
     }
@@ -480,5 +493,13 @@ contract Morpho is IMorpho {
                 mstore(add(res, mul(i, 32)), sload(slot))
             }
         }
+    }
+
+    /* LIQUIDATION INCENTIVE FACTOR */
+
+    /// @dev The liquidation incentive factor is min(maxIncentiveFactor, 1/(1 - cursor(1 - lltv))).
+    function liquidationIncentiveFactor(uint256 lltv) private pure returns (uint256) {
+        return
+            UtilsLib.min(MAX_LIQUIDATION_INCENTIVE_FACTOR, WAD.wDivDown(WAD - LIQUIDATION_CURSOR.wMulDown(WAD - lltv)));
     }
 }

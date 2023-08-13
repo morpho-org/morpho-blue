@@ -6,13 +6,9 @@ import {IOracle} from "../interfaces/IOracle.sol";
 import {MathLib, WAD} from "../libraries/MathLib.sol";
 
 contract OracleMock is IOracle {
-    uint256 internal _price;
-
-    function price() external view returns (uint256, uint256) {
-        return (_price, WAD);
-    }
+    uint256 public price;
 
     function setPrice(uint256 newPrice) external {
-        _price = newPrice;
+        price = newPrice;
     }
 }

@@ -3,14 +3,16 @@ import { mine } from "@nomicfoundation/hardhat-network-helpers";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { BigNumber, constants, utils } from "ethers";
-import hre, { ethers } from "hardhat";
+import { parseUnits } from "ethers/lib/utils";
+import hre from "hardhat";
 import { Morpho, OracleMock, ERC20Mock, IrmMock } from "types";
 import { MarketStruct } from "types/src/Morpho";
 import { FlashBorrowerMock } from "types/src/mocks/FlashBorrowerMock";
 
 const closePositions = false;
 // Without the division it overflows.
-const initBalance = constants.MaxUint256.div(ethers.utils.parseEther("10000000000000000"));
+const initBalance = constants.MaxUint256.div(parseUnits("10000000000000000"));
+const oraclePriceScale = parseUnits("1", 36);
 
 let seed = 42;
 const random = () => {
@@ -67,7 +69,7 @@ describe("Morpho", () => {
 
     oracle = await OracleMockFactory.deploy();
 
-    await oracle.setPrice(BigNumber.WAD);
+    await oracle.setPrice(oraclePriceScale);
 
     const MorphoFactory = await hre.ethers.getContractFactory("Morpho", admin);
 
@@ -174,9 +176,9 @@ describe("Morpho", () => {
       await morpho.connect(borrower).supplyCollateral(market, assets, borrower.address, "0x");
       await morpho.connect(borrower).borrow(market, borrowedAmount, 0, borrower.address, user.address);
 
-      await oracle.setPrice(BigNumber.WAD.div(10));
+      await oracle.setPrice(oraclePriceScale.div(100));
 
-      const seized = closePositions ? constants.MaxUint256 : assets.div(2);
+      const seized = closePositions ? assets : assets.div(2);
 
       await morpho.connect(liquidator).liquidate(market, borrower.address, seized, "0x");
 
@@ -186,7 +188,7 @@ describe("Morpho", () => {
         expect(remainingCollateral.isZero(), "did not take the whole collateral when closing the position").to.be.true;
       else expect(!remainingCollateral.isZero(), "unexpectedly closed the position").to.be.true;
 
-      await oracle.setPrice(BigNumber.WAD);
+      await oracle.setPrice(oraclePriceScale);
     }
   });
 
