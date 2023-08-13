@@ -19,7 +19,7 @@ import {FixedPointMathLib, WAD} from "./libraries/FixedPointMathLib.sol";
 uint256 constant MAX_FEE = 0.25e18;
 /// @dev Liquidation cursor.
 uint256 constant LIQUIDATION_CURSOR = 0.3e18;
-/// @dev Max liquidation incentive factor (1 + maxLiquidationIncentive).
+/// @dev Max liquidation incentive factor.
 uint256 constant MAX_LIQUIDATION_INCENTIVE_FACTOR = 1.15e18;
 
 /// @dev The EIP-712 typeHash for EIP712Domain.
