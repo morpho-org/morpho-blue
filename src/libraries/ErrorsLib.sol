@@ -53,4 +53,10 @@ library ErrorsLib {
 
     /// @notice Thrown when the authorization signature is expired.
     string internal constant SIGNATURE_EXPIRED = "signature expired";
+
+    /// @notice Thrown when a token transfer has failed.
+    string internal constant TRANSFER_FAILED = "transfer failed";
+
+    /// @notice Thrown when a token transferFrom has failed.
+    string internal constant TRANSFER_FROM_FAILED = "transferFrom failed";
 }

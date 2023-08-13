@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
+import {ErrorsLib} from "../libraries/ErrorsLib.sol";
+
 import {IERC20} from "../interfaces/IERC20.sol";
 
 /// @title SafeTransferLib
@@ -12,7 +14,7 @@ library SafeTransferLib {
         (bool success, bytes memory returndata) = address(token).call(abi.encodeCall(token.transfer, (to, value)));
         require(
             success && (returndata.length == 0 || abi.decode(returndata, (bool)) && address(token).code.length > 0),
-            "TRANSFER_FAILED"
+            ErrorsLib.TRANSFER_FAILED
         );
     }
 
@@ -21,7 +23,7 @@ library SafeTransferLib {
             address(token).call(abi.encodeCall(token.transferFrom, (from, to, value)));
         require(
             success && (returndata.length == 0 || abi.decode(returndata, (bool)) && address(token).code.length > 0),
-            "TRANSFER_FROM_FAILED"
+            ErrorsLib.TRANSFER_FROM_FAILED
         );
     }
 }

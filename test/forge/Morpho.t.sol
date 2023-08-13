@@ -943,7 +943,7 @@ contract MorphoTest is
 
         borrowableToken.approve(address(morpho), 0);
 
-        vm.expectRevert("TRANSFER_FROM_FAILED");
+        vm.expectRevert(bytes(ErrorsLib.TRANSFER_FROM_FAILED));
         morpho.repay(market, assets, 0, address(this), hex"");
         morpho.repay(market, assets, 0, address(this), abi.encode(this.testRepayCallback.selector, hex""));
     }
@@ -963,7 +963,7 @@ contract MorphoTest is
 
         borrowableToken.setBalance(address(this), assets);
         borrowableToken.approve(address(morpho), 0);
-        vm.expectRevert("TRANSFER_FROM_FAILED");
+        vm.expectRevert(bytes(ErrorsLib.TRANSFER_FROM_FAILED));
         morpho.liquidate(market, address(this), collateralAmount, hex"");
         morpho.liquidate(
             market, address(this), collateralAmount, abi.encode(this.testLiquidateCallback.selector, hex"")
