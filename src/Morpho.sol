@@ -43,10 +43,10 @@ bytes32 constant AUTHORIZATION_TYPEHASH =
 /// @custom:contact security@morpho.xyz
 /// @notice The Morpho contract.
 contract Morpho is IMorpho {
+    using MathLib for uint256;
     using MarketLib for Market;
     using SharesMathLib for uint256;
     using SafeTransferLib for IERC20;
-    using MathLib for uint256;
 
     /* IMMUTABLES */
 

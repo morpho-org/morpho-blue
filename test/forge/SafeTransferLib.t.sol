@@ -7,7 +7,7 @@ import "src/libraries/ErrorsLib.sol";
 import {IERC20, SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
 
 /// @dev Token not returning any boolean on transfer and transferFrom.
-contract ERC20Fake1 {
+contract ERC20WithoutBoolean {
     mapping(address => uint256) public balanceOf;
 
     function transfer(address to, uint256 amount) public {
@@ -27,7 +27,7 @@ contract ERC20Fake1 {
 }
 
 /// @dev Token returning false on transfer and transferFrom.
-contract ERC20Fake2 {
+contract ERC20WithBooleanAlwaysFalse {
     mapping(address => uint256) public balanceOf;
 
     function transfer(address to, uint256 amount) public returns (bool failure) {
@@ -51,12 +51,12 @@ contract ERC20Fake2 {
 contract SafeTransferLibTest is Test {
     using SafeTransferLib for *;
 
-    ERC20Fake1 public token1;
-    ERC20Fake2 public token2;
+    ERC20WithoutBoolean public tokenWithoutBoolean;
+    ERC20WithBooleanAlwaysFalse public tokenWithBooleanAlwaysFalse;
 
     function setUp() public {
-        token1 = new ERC20Fake1();
-        token2 = new ERC20Fake2();
+        tokenWithoutBoolean = new ERC20WithoutBoolean();
+        tokenWithBooleanAlwaysFalse = new ERC20WithBooleanAlwaysFalse();
     }
 
     function testSafeTransferShouldRevertOnTokenWithEmptyCode(address noCode) public {
@@ -67,29 +67,29 @@ contract SafeTransferLibTest is Test {
     }
 
     function testSafeTransfer(address to, uint256 amount) public {
-        token1.setBalance(address(this), amount);
+        tokenWithoutBoolean.setBalance(address(this), amount);
 
-        this.safeTransfer(address(token1), to, amount);
+        this.safeTransfer(address(tokenWithoutBoolean), to, amount);
     }
 
     function testSafeTransferFrom(address from, address to, uint256 amount) public {
-        token1.setBalance(from, amount);
+        tokenWithoutBoolean.setBalance(from, amount);
 
-        this.safeTransferFrom(address(token1), from, to, amount);
+        this.safeTransferFrom(address(tokenWithoutBoolean), from, to, amount);
     }
 
     function testSafeTransferWithBoolFalse(address to, uint256 amount) public {
-        token2.setBalance(address(this), amount);
+        tokenWithBooleanAlwaysFalse.setBalance(address(this), amount);
 
         vm.expectRevert(bytes(ErrorsLib.TRANSFER_FAILED));
-        this.safeTransfer(address(token2), to, amount);
+        this.safeTransfer(address(tokenWithBooleanAlwaysFalse), to, amount);
     }
 
     function testSafeTransferFromWithBoolFalse(address from, address to, uint256 amount) public {
-        token2.setBalance(from, amount);
+        tokenWithBooleanAlwaysFalse.setBalance(from, amount);
 
         vm.expectRevert(bytes(ErrorsLib.TRANSFER_FROM_FAILED));
-        this.safeTransferFrom(address(token2), from, to, amount);
+        this.safeTransferFrom(address(tokenWithBooleanAlwaysFalse), from, to, amount);
     }
 
     function safeTransfer(address token, address to, uint256 amount) external {
