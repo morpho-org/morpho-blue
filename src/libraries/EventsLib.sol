@@ -9,7 +9,7 @@ library EventsLib {
     event SetOwner(address indexed newOwner);
 
     /// @notice Emitted when setting a new fee.
-    /// @param id The marketParams id.
+    /// @param id The market id.
     /// @param fee The new fee.
     event SetFee(Id indexed id, uint256 fee);
 
@@ -26,12 +26,12 @@ library EventsLib {
     event EnableLltv(uint256 lltv);
 
     /// @notice Emitted when creating a market.
-    /// @param id The marketParams id.
-    /// @param marketParams The market that was created.
+    /// @param id The market id.
+    /// @param marketParams The market parameters that define the market that was created.
     event CreateMarket(Id indexed id, MarketParams marketParams);
 
     /// @notice Emitted on supply of assets.
-    /// @param id The marketParams id.
+    /// @param id The market id.
     /// @param caller The caller.
     /// @param onBehalf The address that will receive the position.
     /// @param assets The amount of assets supplied.
@@ -39,7 +39,7 @@ library EventsLib {
     event Supply(Id indexed id, address indexed caller, address indexed onBehalf, uint256 assets, uint256 shares);
 
     /// @notice Emitted on withdrawal of assets.
-    /// @param id The marketParams id.
+    /// @param id The market id.
     /// @param caller The caller.
     /// @param onBehalf The address from which the assets are withdrawn.
     /// @param receiver The address that will receive the withdrawn assets.
@@ -55,7 +55,7 @@ library EventsLib {
     );
 
     /// @notice Emitted on borrow of assets.
-    /// @param id The marketParams id.
+    /// @param id The market id.
     /// @param caller The caller.
     /// @param onBehalf The address from which the assets are borrowed.
     /// @param receiver The address that will receive the borrowed assets.
@@ -71,7 +71,7 @@ library EventsLib {
     );
 
     /// @notice Emitted on repayment of assets.
-    /// @param id The marketParams id.
+    /// @param id The market id.
     /// @param caller The caller.
     /// @param onBehalf The address for which the assets are repaid.
     /// @param assets The amount of assets repaid.
@@ -79,14 +79,14 @@ library EventsLib {
     event Repay(Id indexed id, address indexed caller, address indexed onBehalf, uint256 assets, uint256 shares);
 
     /// @notice Emitted on supply of collateral.
-    /// @param id The marketParams id.
+    /// @param id The market id.
     /// @param caller The caller.
     /// @param onBehalf The address that will receive the position.
     /// @param assets The amount of collateral supplied.
     event SupplyCollateral(Id indexed id, address indexed caller, address indexed onBehalf, uint256 assets);
 
     /// @notice Emitted on withdrawal of collateral.
-    /// @param id The marketParams id.
+    /// @param id The market id.
     /// @param caller The caller.
     /// @param onBehalf The address from which the collateral is withdrawn.
     /// @param receiver The address that will receive the withdrawn collateral.
@@ -96,7 +96,7 @@ library EventsLib {
     );
 
     /// @notice Emitted on liquidation of a position.
-    /// @param id The marketParams id.
+    /// @param id The market id.
     /// @param caller The caller.
     /// @param borrower The borrower of the position.
     /// @param repaid The amount of assets repaid.
@@ -135,7 +135,7 @@ library EventsLib {
     event IncrementNonce(address indexed caller, address indexed authorizer, uint256 usedNonce);
 
     /// @notice Emitted when accruing interests.
-    /// @param id The marketParams id.
+    /// @param id The market id.
     /// @param prevBorrowRate The previous borrow rate.
     /// @param accruedInterests The amount of interests accrued.
     /// @param feeShares The amount of shares minted as fee.

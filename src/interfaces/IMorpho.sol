@@ -93,14 +93,14 @@ interface IMorpho is IFlashLender {
     /// @notice Enables `lltv` as possible LLTV for market creation.
     function enableLltv(uint256 lltv) external;
 
-    /// @notice Sets the `newFee` for `marketParams`.
+    /// @notice Sets the `newFee` for the market defined by `marketParams`.
     /// @dev It is the `owner`'s responsibility to ensure `feeRecipient` is set before setting a non-zero fee.
     function setFee(MarketParams memory marketParams, uint256 newFee) external;
 
     /// @notice Sets `recipient` as recipient of the fee.
     function setFeeRecipient(address recipient) external;
 
-    /// @notice Creates `marketParams`.
+    /// @notice Creates a market defined by `marketParams`.
     function createMarket(MarketParams memory marketParams) external;
 
     /// @notice Supplies the given `assets` or `shares` to the given `market` on behalf of `onBehalf`,
@@ -111,7 +111,7 @@ interface IMorpho is IFlashLender {
     ///      but the possibility to mint a specific assets of shares is given
     ///      for full compatibility and precision.
     /// @dev Supplying a large amount can overflow and revert without any error message.
-    /// @param marketParams The market to supply assets to.
+    /// @param marketParams The marketParams defining the market to supply assets to.
     /// @param assets The assets of assets to supply.
     /// @param shares The assets of shares to mint.
     /// @param onBehalf The address that will receive the position.
@@ -126,12 +126,12 @@ interface IMorpho is IFlashLender {
         bytes memory data
     ) external returns (uint256 assetsSupplied, uint256 sharesSupplied);
 
-    /// @notice Withdraws the given `assets` or `shares` from the given `market` on behalf of `onBehalf`.
+    /// @notice Withdraws the given `assets` or `shares` from the market defined by `marketParams` on behalf of `onBehalf`.
     /// @dev Either `assets` or `shares` should be zero.
     ///      To withdraw the whole position, pass the `shares`'s balance of `onBehalf`.
     /// @dev `msg.sender` must be authorized to manage `onBehalf`'s positions.
     /// @dev Withdrawing an amount corresponding to more shares than supplied will underflow and revert without any error message.
-    /// @param marketParams The market to withdraw assets from.
+    /// @param marketParams The market parameters defining the market to withdraw assets from.
     /// @param assets The assets of assets to withdraw.
     /// @param shares The assets of shares to burn.
     /// @param onBehalf The address of the owner of the withdrawn assets.
@@ -146,7 +146,7 @@ interface IMorpho is IFlashLender {
         address receiver
     ) external returns (uint256 assetsWithdrawn, uint256 sharesWithdrawn);
 
-    /// @notice Borrows the given `assets` or `shares` from the given `market` on behalf of `onBehalf`.
+    /// @notice Borrows the given `assets` or `shares` from the market defined by `marketParams` on behalf of `onBehalf`.
     /// @dev Either `assets` or `shares` should be zero.
     ///      Most usecases should rely on `assets` as an input so the caller
     ///      is guaranteed to borrow `assets` of tokens,
@@ -154,7 +154,7 @@ interface IMorpho is IFlashLender {
     ///      for full compatibility and precision.
     /// @dev `msg.sender` must be authorized to manage `onBehalf`'s positions.
     /// @dev Borrowing a large amount can underflow and revert without any error message.
-    /// @param marketParams The market to borrow assets from.
+    /// @param marketParams The market parameters defining the market to borrow assets from.
     /// @param assets The assets of assets to borrow.
     /// @param shares The assets of shares to mint.
     /// @param onBehalf The address of the owner of the debt.
@@ -169,12 +169,12 @@ interface IMorpho is IFlashLender {
         address receiver
     ) external returns (uint256 assetsBorrowed, uint256 sharesBorrowed);
 
-    /// @notice Repays the given `assets` or `shares` to the given `market` on behalf of `onBehalf`,
+    /// @notice Repays the given `assets` or `shares` to the market defined by `marketParams` on behalf of `onBehalf`,
     ///         optionally calling back the caller's `onMorphoReplay` function with the given `data`.
     /// @dev Either `assets` or `shares` should be zero.
     ///      To repay the whole debt, pass the `shares`'s balance of `onBehalf`.
     /// @dev Repaying an amount corresponding to more shares than borrowed will underflow and revert without any error message.
-    /// @param marketParams The market to repay assets to.
+    /// @param marketParams The market parameters defining the market to repay assets to.
     /// @param assets The assets of assets to repay.
     /// @param shares The assets of shares to burn.
     /// @param onBehalf The address of the owner of the debt.
@@ -189,32 +189,32 @@ interface IMorpho is IFlashLender {
         bytes memory data
     ) external returns (uint256 assetsRepaid, uint256 sharesRepaid);
 
-    /// @notice Supplies the given `assets` of collateral to the given `market` on behalf of `onBehalf`,
+    /// @notice Supplies the given `assets` of collateral to the market defined by `marketParams` on behalf of `onBehalf`,
     ///         optionally calling back the caller's `onMorphoSupplyCollateral` function with the given `data`.
     /// @dev Interests are not accrued since it's not required and it saves gas.
     /// @dev Supplying a large amount can overflow and revert without any error message.
-    /// @param marketParams The market to supply collateral to.
+    /// @param marketParams The market parameters defining the market to supply collateral to.
     /// @param assets The assets of collateral to supply.
     /// @param onBehalf The address that will receive the collateral.
     /// @param data Arbitrary data to pass to the `onMorphoSupplyCollateral` callback. Pass empty data if not needed.
     function supplyCollateral(MarketParams memory marketParams, uint256 assets, address onBehalf, bytes memory data)
         external;
 
-    /// @notice Withdraws the given `assets` of collateral from the given `market` on behalf of `onBehalf`.
+    /// @notice Withdraws the given `assets` of collateral from the market defined by `marketParams` on behalf of `onBehalf`.
     /// @dev `msg.sender` must be authorized to manage `onBehalf`'s positions.
     /// @dev Withdrawing an amount corresponding to more collateral than supplied will underflow and revert without any error message.
-    /// @param marketParams The market to withdraw collateral from.
+    /// @param marketParams The market parameters defining the market to withdraw collateral from.
     /// @param assets The assets of collateral to withdraw.
     /// @param onBehalf The address of the owner of the collateral.
     /// @param receiver The address that will receive the withdrawn collateral.
     function withdrawCollateral(MarketParams memory marketParams, uint256 assets, address onBehalf, address receiver)
         external;
 
-    /// @notice Liquidates the given `seized` assets to the given `market` of the given `borrower`'s position,
+    /// @notice Liquidates the given `seized` assets to the market defined by `marketParams` of the given `borrower`'s position,
     ///         optionally calling back the caller's `onMorphoLiquidate` function with the given `data`.
     /// @dev Seizing more than the collateral balance will revert without any error message.
     /// @dev Repaying more than the borrow balance will overflow and revert without any error message.
-    /// @param marketParams The market of the position.
+    /// @param marketParams The market parameters defining the market of the position.
     /// @param borrower The owner of the position.
     /// @param seized The assets of collateral to seize.
     /// @param data Arbitrary data to pass to the `onMorphoLiquidate` callback. Pass empty data if not needed
@@ -240,7 +240,7 @@ interface IMorpho is IFlashLender {
         Signature calldata signature
     ) external;
 
-    /// @notice Accrues interests for `market`.
+    /// @notice Accrues interests for the market defined by `marketParams`.
     function accrueInterests(MarketParams memory market) external;
 
     /// @notice Returns the data stored on the different `slots`.

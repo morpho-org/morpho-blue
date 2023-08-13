@@ -8,6 +8,6 @@ import {MarketParams} from "./IMorpho.sol";
 /// @custom:contact security@morpho.xyz
 /// @notice Interface that IRMs used by Morpho must implement.
 interface IIrm {
-    /// @notice Returns the borrow rate of a `marketParams`.
+    /// @notice Returns the borrow rate of a the market defined by `marketParams`.
     function borrowRate(MarketParams memory marketParams) external returns (uint256);
 }
