@@ -8,14 +8,6 @@ import {IERC20} from "../interfaces/IERC20.sol";
 /// @custom:contact security@morpho.xyz
 /// @notice Library to manage tokens not fully ERC20 compliant.
 library SafeTransferLib {
-    function safeApprove(IERC20 token, address spender, uint256 value) internal {
-        (bool success, bytes memory returndata) = address(token).call(abi.encodeCall(token.approve, (spender, value)));
-        require(
-            success && (returndata.length == 0 || abi.decode(returndata, (bool)) && address(token).code.length > 0),
-            "APPROVE_FAILED"
-        );
-    }
-
     function safeTransfer(IERC20 token, address to, uint256 value) internal {
         (bool success, bytes memory returndata) = address(token).call(abi.encodeCall(token.transfer, (to, value)));
         require(
