@@ -137,7 +137,7 @@ contract Morpho is IMorpho {
         require(newFee <= MAX_FEE, ErrorsLib.MAX_FEE_EXCEEDED);
 
         // Accrue interests using the previous fee set before changing it.
-        accrueInterests(market);
+        _accrueInterests(market, id);
 
         fee[id] = newFee;
 
@@ -178,7 +178,7 @@ contract Morpho is IMorpho {
         require(UtilsLib.exactlyOneZero(assets, shares), ErrorsLib.INCONSISTENT_INPUT);
         require(onBehalf != address(0), ErrorsLib.ZERO_ADDRESS);
 
-        accrueInterests(market);
+        _accrueInterests(market, id);
 
         if (assets > 0) shares = assets.toSharesDown(totalSupply[id], totalSupplyShares[id]);
         else assets = shares.toAssetsUp(totalSupply[id], totalSupplyShares[id]);
@@ -208,7 +208,7 @@ contract Morpho is IMorpho {
         require(receiver != address(0), ErrorsLib.ZERO_ADDRESS);
         require(_isSenderAuthorized(onBehalf), ErrorsLib.UNAUTHORIZED);
 
-        accrueInterests(market);
+        _accrueInterests(market, id);
 
         if (assets > 0) shares = assets.toSharesUp(totalSupply[id], totalSupplyShares[id]);
         else assets = shares.toAssetsDown(totalSupply[id], totalSupplyShares[id]);
@@ -240,7 +240,7 @@ contract Morpho is IMorpho {
         require(receiver != address(0), ErrorsLib.ZERO_ADDRESS);
         require(_isSenderAuthorized(onBehalf), ErrorsLib.UNAUTHORIZED);
 
-        accrueInterests(market);
+        _accrueInterests(market, id);
 
         if (assets > 0) shares = assets.toSharesUp(totalBorrow[id], totalBorrowShares[id]);
         else assets = shares.toAssetsDown(totalBorrow[id], totalBorrowShares[id]);
@@ -269,7 +269,7 @@ contract Morpho is IMorpho {
         require(UtilsLib.exactlyOneZero(assets, shares), ErrorsLib.INCONSISTENT_INPUT);
         require(onBehalf != address(0), ErrorsLib.ZERO_ADDRESS);
 
-        accrueInterests(market);
+        _accrueInterests(market, id);
 
         if (assets > 0) shares = assets.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
         else assets = shares.toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
@@ -316,7 +316,7 @@ contract Morpho is IMorpho {
         require(receiver != address(0), ErrorsLib.ZERO_ADDRESS);
         require(_isSenderAuthorized(onBehalf), ErrorsLib.UNAUTHORIZED);
 
-        accrueInterests(market);
+        _accrueInterests(market, id);
 
         collateral[id][onBehalf] -= assets;
 
@@ -338,7 +338,7 @@ contract Morpho is IMorpho {
         // Market created check is done in accrueInterest.
         require(seized != 0, ErrorsLib.ZERO_ASSETS);
 
-        accrueInterests(market);
+        _accrueInterests(market, id);
 
         uint256 collateralPrice = IOracle(market.oracle).price();
 
@@ -425,8 +425,12 @@ contract Morpho is IMorpho {
     /* INTEREST MANAGEMENT */
 
     /// @inheritdoc IMorpho
-    function accrueInterests(Market memory market) public {
+    function accrueInterests(Market memory market) external {
         Id id = market.id();
+        _accrueInterests(market, id);
+    }
+
+    function _accrueInterests(Market memory market, Id id) private {
         require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
         uint256 elapsed = block.timestamp - lastUpdate[id];
 
