@@ -8,6 +8,7 @@ methods {
 
     function lastUpdate(MorphoHarness.Id) external returns uint256 envfree;
     function isLltvEnabled(uint256) external returns bool envfree;
+    function isIrmEnabled(address) external returns bool envfree;
 
     function _.borrowRate(MorphoHarness.Market) external => DISPATCHER(true);
 
@@ -73,13 +74,8 @@ rule supplyRevertZero(MorphoHarness.Market market) {
     assert lastReverted;
 }
 
-rule onlyEnabledLLTV(MorphoHarness.Market market, MorphoHarness.Id id) {
-    env e; method f; calldataarg args;
+invariant invOnlyEnabledLltv(MorphoHarness.Market market)
+    lastUpdate(toId(market)) != 0 => isLltvEnabled(market.lltv);
 
-    require id == toId(market);
-    require lastUpdate(id) != 0 => isLltvEnabled(market.lltv);
-
-    f(e, args);
-
-    assert lastUpdate(id) != 0 => isLltvEnabled(market.lltv);
-}
+invariant invOnlyEnabledIrm(MorphoHarness.Market market)
+    lastUpdate(toId(market)) != 0 => isIrmEnabled(market.irm);
