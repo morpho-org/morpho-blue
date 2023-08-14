@@ -641,7 +641,7 @@ contract MorphoTest is
 
         // Liquidate
         vm.prank(LIQUIDATOR);
-        morpho.liquidate(market, BORROWER, toSeize, hex"");
+        (uint256 assetsRepaid,) = morpho.liquidate(market, BORROWER, toSeize, hex"");
 
         uint256 liquidatorNetWorthAfter = netWorth(LIQUIDATOR);
         uint256 collateralPrice = IOracle(market.oracle).price();
@@ -650,6 +650,7 @@ contract MorphoTest is
             toSeize.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(liquidationIncentiveFactor);
         uint256 expectedNetWorthAfter =
             liquidatorNetWorthBefore + toSeize.mulDivDown(collateralPrice, ORACLE_PRICE_SCALE) - expectedRepaid;
+        assertEq(assetsRepaid, expectedRepaid, "wrong return repaid value");
         assertEq(liquidatorNetWorthAfter, expectedNetWorthAfter, "LIQUIDATOR net worth");
         assertApproxEqAbs(borrowBalance(BORROWER), assetsBorrowed - expectedRepaid, 100, "BORROWER balance");
         assertEq(morpho.collateral(id, BORROWER), assetsCollateral - toSeize, "BORROWER collateral");
@@ -686,7 +687,7 @@ contract MorphoTest is
 
         // Liquidate
         vm.prank(LIQUIDATOR);
-        morpho.liquidate(market, BORROWER, toSeize, hex"");
+        (uint256 assetsRepaid,) = morpho.liquidate(market, BORROWER, toSeize, hex"");
 
         uint256 liquidatorNetWorthAfter = netWorth(LIQUIDATOR);
         uint256 collateralPrice = IOracle(market.oracle).price();
@@ -695,6 +696,7 @@ contract MorphoTest is
             toSeize.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(liquidationIncentiveFactor);
         uint256 expectedNetWorthAfter =
             liquidatorNetWorthBefore + toSeize.mulDivDown(collateralPrice, ORACLE_PRICE_SCALE) - expectedRepaid;
+        assertEq(assetsRepaid, expectedRepaid, "wrong return repaid value");
         assertEq(liquidatorNetWorthAfter, expectedNetWorthAfter, "LIQUIDATOR net worth");
         assertEq(borrowBalance(BORROWER), 0, "BORROWER balance");
         assertEq(morpho.collateral(id, BORROWER), 0, "BORROWER collateral");
@@ -887,6 +889,38 @@ contract MorphoTest is
         (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
 
         vm.expectRevert(bytes(ErrorsLib.INVALID_SIGNATURE));
+        morpho.setAuthorizationWithSig(authorization, sig);
+    }
+
+    function testAuthorizationWithSigWrongNonce(Authorization memory authorization, uint256 privateKey) public {
+        vm.assume(authorization.deadline > block.timestamp);
+        vm.assume(authorization.nonce != 0);
+
+        // Private key must be less than the secp256k1 curve order.
+        privateKey = bound(privateKey, 1, type(uint32).max);
+        authorization.authorizer = vm.addr(privateKey);
+
+        Signature memory sig;
+        bytes32 digest = SigUtils.getTypedDataHash(morpho.DOMAIN_SEPARATOR(), authorization);
+        (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
+
+        vm.expectRevert(bytes(ErrorsLib.INVALID_NONCE));
+        morpho.setAuthorizationWithSig(authorization, sig);
+    }
+
+    function testAuthorizationWithSigDeadline(Authorization memory authorization, uint256 privateKey) public {
+        vm.assume(authorization.deadline <= block.timestamp);
+
+        // Private key must be less than the secp256k1 curve order.
+        privateKey = bound(privateKey, 1, type(uint32).max);
+        authorization.nonce = 0;
+        authorization.authorizer = vm.addr(privateKey);
+
+        Signature memory sig;
+        bytes32 digest = SigUtils.getTypedDataHash(morpho.DOMAIN_SEPARATOR(), authorization);
+        (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
+
+        vm.expectRevert(bytes(ErrorsLib.SIGNATURE_EXPIRED));
         morpho.setAuthorizationWithSig(authorization, sig);
     }
 
