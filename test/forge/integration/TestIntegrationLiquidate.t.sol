@@ -89,10 +89,12 @@ contract IntegrationLiquidateTest is BaseTest {
 
         vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.Liquidate(id, LIQUIDATOR, BORROWER, expectedRepaid, expectedRepaidShares, amountSeized, 0);
-        morpho.liquidate(market, BORROWER, amountSeized, hex"");
+        (uint256 returnRepaid, uint256 returnRepaidShares) = morpho.liquidate(market, BORROWER, amountSeized, hex"");
 
         uint256 expectedBorrowShares = amountBorrowed.toSharesUp(0,0) - expectedRepaidShares;
 
+        assertEq(returnRepaid, expectedRepaid, "returned asset amount");
+        assertEq(returnRepaidShares, expectedRepaidShares, "returned shares amount");
         assertEq(morpho.borrowShares(id, BORROWER), expectedBorrowShares, "borrow shares");
         assertEq(morpho.totalBorrow(id), amountBorrowed - expectedRepaid, "total borrow");
         assertEq(morpho.totalBorrowShares(id), expectedBorrowShares, "total borrow shares");
@@ -178,8 +180,10 @@ contract IntegrationLiquidateTest is BaseTest {
             amountCollateral,
             params.expectedBadDebt * SharesMathLib.VIRTUAL_SHARES
         );
-        morpho.liquidate(market, BORROWER, amountCollateral, hex"");
+        (uint256 returnRepaid, uint256 returnRepaidShares) = morpho.liquidate(market, BORROWER, amountCollateral, hex"");
 
+        assertEq(returnRepaid, params.expectedRepaid, "returned asset amount");
+        assertEq(returnRepaidShares, params.expectedRepaidShares, "returned shares amount");
         assertEq(morpho.collateral(id, BORROWER), 0, "collateral");
         assertEq(borrowableToken.balanceOf(BORROWER), amountBorrowed, "borrower balance");
         assertEq(borrowableToken.balanceOf(LIQUIDATOR), amountBorrowed - params.expectedRepaid, "liquidator balance");
