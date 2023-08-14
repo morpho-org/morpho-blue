@@ -17,7 +17,7 @@ struct Market {
 struct UserBalances {
     uint128 borrowShares; // User' borrow balances.
     uint128 collateral; // User' collateral balance.
-    uint128 supplyShares; // User' supply balances.
+    uint256 supplyShares; // User' supply balances.
 }
 
 /// @title MarketLib
