@@ -20,8 +20,6 @@ methods {
 
     function mathLibMulDivUp(uint256, uint256, uint256) external returns uint256 envfree;
     function mathLibMulDivDown(uint256, uint256, uint256) external returns uint256 envfree;
-    function _.safeTransfer(address, uint256) internal => DISPATCHER(true);
-    function _.safeTransferFrom(address, address, uint256) internal => DISPATCHER(true);
 }
 
 ghost mapping(MorphoHarness.Id => mathint) sumSupplyShares
