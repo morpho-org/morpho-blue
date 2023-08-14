@@ -1,4 +1,7 @@
 [profile.default]
 via-ir = true
 
+[rpc_endpoints]
+optimism-goerli = "${OPTIMISM_GOERLI_RPC_URL}"
+
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
