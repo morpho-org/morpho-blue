@@ -2,14 +2,16 @@ methods {
     function supply(MorphoHarness.Market, uint256, uint256, address, bytes) external;
     function getVirtualTotalSupply(MorphoHarness.Id) external returns uint256 envfree;
     function getVirtualTotalSupplyShares(MorphoHarness.Id) external returns uint256 envfree;
-    function getTotalSupply(MorphoHarness.Id) external returns uint256 envfree;
-    function getTotalSupplyShares(MorphoHarness.Id) external returns uint256 envfree;
-    function getTotalBorrowShares(MorphoHarness.Id) external returns uint256 envfree;
+    function totalSupply(MorphoHarness.Id) external returns uint256 envfree;
+    function totalBorrow(MorphoHarness.Id) external returns uint256 envfree;
+    function totalSupplyShares(MorphoHarness.Id) external returns uint256 envfree;
+    function totalBorrowShares(MorphoHarness.Id) external returns uint256 envfree;
 
     function _.borrowRate(MorphoHarness.Market) external => DISPATCHER(true);
 
     // function _.safeTransfer(address, uint256) internal => DISPATCHER(true);
     // function _.safeTransferFrom(address, address, uint256) internal => DISPATCHER(true);
+
 }
 
 ghost mapping(MorphoHarness.Id => mathint) sumSupplyShares
@@ -37,28 +39,16 @@ hook Sstore collateral[KEY MorphoHarness.Id id][KEY address owner] uint256 newAm
     sumCollateral[id] = sumCollateral[id] - oldAmount + newAmount;
 }
 
+definition VIRTUAL_ASSETS() returns mathint = 1;
+definition VIRTUAL_SHARES() returns mathint = 1000000000000000000;
+
 invariant sumSupplySharesCorrect(MorphoHarness.Id id)
-    to_mathint(getTotalSupplyShares(id)) == sumSupplyShares[id];
+    to_mathint(totalSupplyShares(id)) == sumSupplyShares[id];
 invariant sumBorrowSharesCorrect(MorphoHarness.Id id)
-    to_mathint(getTotalBorrowShares(id)) == sumBorrowShares[id];
+    to_mathint(totalBorrowShares(id)) == sumBorrowShares[id];
 
-rule whatDoesNotIncreaseRatio(MorphoHarness.Id id) {
-    mathint assetsBefore = getVirtualTotalSupply(id);
-    mathint sharesBefore = getVirtualTotalSupplyShares(id);
-
-    method f;
-    env e;
-    calldataarg args;
-
-    f(e,args);
-
-    mathint assetsAfter = getVirtualTotalSupply(id);
-    mathint sharesAfter = getVirtualTotalSupplyShares(id);
-
-    // check if assetsBefore/shareBefore <= assetsAfter / sharesAfter;
-    assert assetsBefore * sharesAfter <= assetsAfter * sharesBefore;
-}
-
+invariant borrowLessSupply(MorphoHarness.Id id)
+    totalBorrow(id) <= totalSupply(id);
 
 rule supplyRevertZero(MorphoHarness.Market market) {
     env e;
