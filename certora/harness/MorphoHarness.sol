@@ -5,6 +5,8 @@ import "../../src/libraries/SharesMathLib.sol";
 import "../../src/libraries/MarketLib.sol";
 
 contract MorphoHarness is Morpho {
+    using MarketLib for Market;
+
     constructor(address newOwner) Morpho(newOwner) {}
 
     function getVirtualTotalSupply(Id id) external view returns (uint256) {
@@ -15,19 +17,7 @@ contract MorphoHarness is Morpho {
         return totalSupplyShares[id] + SharesMathLib.VIRTUAL_SHARES;
     }
 
-    function getTotalSupply(Id id) external view returns (uint256) {
-        return totalSupply[id];
-    }
-
-    function getTotalSupplyShares(Id id) external view returns (uint256) {
-        return totalSupplyShares[id];
-    }
-
-    function getTotalBorrowShares(Id id) external view returns (uint256) {
-        return totalBorrowShares[id];
-    }
-
-    function toId(Market memory market) external pure returns (Id) {
-        return MarketLib.id(market);
+    function getMarketId(Market memory market) external pure returns (Id) {
+        return market.id();
     }
 }
