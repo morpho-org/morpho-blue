@@ -6,9 +6,9 @@ pragma solidity >=0.5.0;
 interface IMorphoLiquidateCallback {
     /// @notice Callback called when a liquidation occurs.
     /// @dev The callback is called only if data is not empty.
-    /// @param amount The amount of repaid tokens.
+    /// @param assets The assets of repaid assets.
     /// @param data Arbitrary data passed to the `liquidate` function.
-    function onMorphoLiquidate(uint256 amount, bytes calldata data) external;
+    function onMorphoLiquidate(uint256 assets, bytes calldata data) external;
 }
 
 /// @title IMorphoRepayCallback
@@ -16,9 +16,9 @@ interface IMorphoLiquidateCallback {
 interface IMorphoRepayCallback {
     /// @notice Callback called when a repayment occurs.
     /// @dev The callback is called only if data is not empty.
-    /// @param amount The amount of repaid tokens.
+    /// @param assets The assets of repaid assets.
     /// @param data Arbitrary data passed to the `repay` function.
-    function onMorphoRepay(uint256 amount, bytes calldata data) external;
+    function onMorphoRepay(uint256 assets, bytes calldata data) external;
 }
 
 /// @title IMorphoSupplyCallback
@@ -26,9 +26,9 @@ interface IMorphoRepayCallback {
 interface IMorphoSupplyCallback {
     /// @notice Callback called when a supply occurs.
     /// @dev The callback is called only if data is not empty.
-    /// @param amount The amount of supplied tokens.
+    /// @param assets The assets of supplied assets.
     /// @param data Arbitrary data passed to the `supply` function.
-    function onMorphoSupply(uint256 amount, bytes calldata data) external;
+    function onMorphoSupply(uint256 assets, bytes calldata data) external;
 }
 
 /// @title IMorphoSupplyCollateralCallback
@@ -36,9 +36,9 @@ interface IMorphoSupplyCallback {
 interface IMorphoSupplyCollateralCallback {
     /// @notice Callback called when a supply occurs.
     /// @dev The callback is called only if data is not empty.
-    /// @param amount The amount of supplied tokens.
+    /// @param assets The assets of supplied assets.
     /// @param data Arbitrary data passed to the `supplyCollateral` function.
-    function onMorphoSupplyCollateral(uint256 amount, bytes calldata data) external;
+    function onMorphoSupplyCollateral(uint256 assets, bytes calldata data) external;
 }
 
 /// @title IMorphoWithdrawCallback
@@ -46,7 +46,7 @@ interface IMorphoSupplyCollateralCallback {
 interface IMorphoFlashLoanCallback {
     /// @notice Callback called when a flash loan occurs.
     /// @dev The callback is called only if data is not empty.
-    /// @param amount The amount that was flash loaned.
+    /// @param assets The amount of assets that was flash loaned.
     /// @param data Arbitrary data passed to the `flashLoan` function.
-    function onMorphoFlashLoan(uint256 amount, bytes calldata data) external;
+    function onMorphoFlashLoan(uint256 assets, bytes calldata data) external;
 }

@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import "../BaseTest.sol";
 
 contract IntegrationRepayTest is BaseTest {
-    using FixedPointMathLib for uint256;
+    using MathLib for uint256;
 
     function testRepayMarketNotCreated(Market memory marketFuzz) public {
         vm.assume(neq(marketFuzz, market));
@@ -32,7 +32,7 @@ contract IntegrationRepayTest is BaseTest {
         morpho.repay(market, isAmount ? input : 0, isAmount ? 0 : input, address(0), hex"");
     }
 
-    function testRepayAmount(
+    function testRepayAssets(
         uint256 amountSupplied,
         uint256 amountCollateral,
         uint256 amountBorrowed,

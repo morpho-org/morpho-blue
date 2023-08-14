@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import "../BaseTest.sol";
 
 contract IntegrationSupplyTest is BaseTest {
-    using FixedPointMathLib for uint256;
+    using MathLib for uint256;
 
     function testSupplyMarketNotCreated(Market memory marketFuzz, address supplier, uint256 amount) public {
         vm.assume(neq(marketFuzz, market) && supplier != address(0));
@@ -39,8 +39,11 @@ contract IntegrationSupplyTest is BaseTest {
         morpho.supply(market, amount, shares, address(0), hex"");
     }
 
-    function testSupplyAmount(address supplier, address onBehalf, uint256 amount) public {
-        vm.assume(supplier != address(morpho) && onBehalf != address(morpho) && onBehalf != address(0));
+    function testSupplyAssets(address supplier, address onBehalf, uint256 amount) public {
+        vm.assume(
+            supplier != address(morpho) && supplier != address(0) && onBehalf != address(morpho)
+                && onBehalf != address(0)
+        );
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
         borrowableAsset.setBalance(supplier, amount);
@@ -63,7 +66,10 @@ contract IntegrationSupplyTest is BaseTest {
     }
 
     function testSupplyShares(address supplier, address onBehalf, uint256 shares) public {
-        vm.assume(supplier != address(morpho) && onBehalf != address(morpho) && onBehalf != address(0));
+        vm.assume(
+            supplier != address(morpho) && supplier != address(0) && onBehalf != address(morpho)
+                && onBehalf != address(0)
+        );
         shares = bound(shares, 1, MAX_TEST_SHARES);
 
         uint256 expectedSuppliedAmount = shares.mulDivUp(1, SharesMathLib.VIRTUAL_SHARES);

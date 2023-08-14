@@ -4,13 +4,14 @@ pragma solidity ^0.8.0;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
+import {SigUtils} from "test/forge/helpers/SigUtils.sol";
 import "src/Morpho.sol";
 import {ERC20Mock as ERC20} from "src/mocks/ERC20Mock.sol";
 import {OracleMock as Oracle} from "src/mocks/OracleMock.sol";
 import {IrmMock as Irm} from "src/mocks/IrmMock.sol";
 
 contract BaseTest is Test {
-    using FixedPointMathLib for uint256;
+    using MathLib for uint256;
     using MarketLib for Market;
 
     uint256 internal constant HIGH_COLLATERAL_AMOUNT = 1e25;
@@ -45,10 +46,10 @@ contract BaseTest is Test {
         vm.label(address(morpho), "Morpho");
 
         // List a market.
-        borrowableAsset = new ERC20("borrowable", "B", 18);
+        borrowableAsset = new ERC20("borrowable", "B");
         vm.label(address(borrowableAsset), "Borrowable asset");
 
-        collateralAsset = new ERC20("collateral", "C", 18);
+        collateralAsset = new ERC20("collateral", "C");
         vm.label(address(collateralAsset), "Collateral asset");
 
         oracle = new Oracle();
@@ -110,7 +111,7 @@ contract BaseTest is Test {
         priceCollateral = bound(priceCollateral, MIN_COLLATERAL_PRICE, MAX_COLLATERAL_PRICE);
         amountBorrowed = bound(amountBorrowed, MIN_TEST_AMOUNT, MAX_TEST_AMOUNT);
 
-        uint256 minCollateral = amountBorrowed.wDivUp(market.lltv).wDivUp(priceCollateral);
+        uint256 minCollateral = amountBorrowed.wDivUp(market.lltv).mulDivUp(ORACLE_PRICE_SCALE, priceCollateral);
 
         amountCollateral = bound(amountCollateral, minCollateral, max(minCollateral, MAX_TEST_AMOUNT));
 
@@ -125,7 +126,7 @@ contract BaseTest is Test {
         priceCollateral = bound(priceCollateral, MIN_COLLATERAL_PRICE, MAX_COLLATERAL_PRICE);
         amountBorrowed = bound(amountBorrowed, MIN_TEST_AMOUNT, MAX_TEST_AMOUNT);
 
-        uint256 maxCollateral = amountBorrowed.wDivDown(market.lltv).wDivDown(priceCollateral);
+        uint256 maxCollateral = amountBorrowed.wDivDown(market.lltv).mulDivUp(ORACLE_PRICE_SCALE, priceCollateral);
         vm.assume(maxCollateral != 0);
 
         amountCollateral = bound(amountBorrowed, 1, maxCollateral);
@@ -142,7 +143,8 @@ contract BaseTest is Test {
     }
 
     function _liquidationIncentive(uint256 lltv) internal pure returns (uint256) {
-        return WAD + ALPHA.wMulDown(WAD.wDivDown(lltv) - WAD);
+        return
+            UtilsLib.min(MAX_LIQUIDATION_INCENTIVE_FACTOR, WAD.wDivDown(WAD - LIQUIDATION_CURSOR.wMulDown(WAD - lltv)));
     }
 
     function neq(Market memory a, Market memory b) internal pure returns (bool) {

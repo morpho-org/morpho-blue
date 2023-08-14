@@ -16,7 +16,7 @@ contract IntegrationSupplyCollateralTest is BaseTest {
         vm.assume(supplier != address(0));
 
         vm.prank(supplier);
-        vm.expectRevert(bytes(ErrorsLib.ZERO_AMOUNT));
+        vm.expectRevert(bytes(ErrorsLib.ZERO_ASSETS));
         morpho.supplyCollateral(market, 0, supplier, hex"");
     }
 
@@ -29,7 +29,10 @@ contract IntegrationSupplyCollateralTest is BaseTest {
     }
 
     function testSupplyCollateral(address supplier, address onBehalf, uint256 amount) public {
-        vm.assume(supplier != address(morpho) && onBehalf != address(morpho) && onBehalf != address(0));
+        vm.assume(
+            supplier != address(morpho) && supplier != address(0) && onBehalf != address(morpho)
+                && onBehalf != address(0)
+        );
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
         collateralAsset.setBalance(supplier, amount);

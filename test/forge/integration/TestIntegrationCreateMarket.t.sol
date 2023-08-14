@@ -5,7 +5,7 @@ import "../BaseTest.sol";
 
 contract IntegrationCreateMarketTest is BaseTest {
     using MarketLib for Market;
-    using FixedPointMathLib for uint256;
+    using MathLib for uint256;
 
     function testCreateMarketWithNotEnabledIrmAndNotEnabledLltv(Market memory marketFuzz) public {
         vm.assume(marketFuzz.irm != address(irm) && marketFuzz.lltv != LLTV);

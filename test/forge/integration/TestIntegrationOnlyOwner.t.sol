@@ -5,7 +5,7 @@ import "../BaseTest.sol";
 
 contract IntegrationOnlyOwnerTest is BaseTest {
     using MarketLib for Market;
-    using FixedPointMathLib for uint256;
+    using MathLib for uint256;
 
     function testSetOwnerWhenNotOwner(address addressFuzz) public {
         vm.assume(addressFuzz != OWNER);
