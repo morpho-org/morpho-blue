@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import "test/forge/BaseTest.sol";
 
 contract InvariantBaseTest is BaseTest {
-    using FixedPointMathLib for uint256;
+    using MathLib for uint256;
     using SharesMathLib for uint256;
 
     bytes4[] internal selectors;
@@ -167,11 +167,11 @@ contract InvariantBaseTest is BaseTest {
     }
 
     function isHealthy(Market memory market, Id id, address user) public view returns (bool) {
-        (uint256 collateralPrice,) = IOracle(market.oracle).price();
+        uint256 collateralPrice = IOracle(market.oracle).price();
 
         uint256 borrowed =
             morpho.borrowShares(id, user).toAssetsUp(morpho.totalBorrow(id), morpho.totalBorrowShares(id));
-        uint256 maxBorrow = morpho.collateral(id, user).wMulDown(collateralPrice).wMulDown(market.lltv);
+        uint256 maxBorrow = morpho.collateral(id, user).mulDivDown(collateralPrice, ORACLE_PRICE_SCALE).wMulDown(market.lltv);
 
         return maxBorrow >= borrowed;
     }
@@ -181,5 +181,10 @@ contract InvariantBaseTest is BaseTest {
         collateralAsset.setBalance(address(this), 1);
         morpho.supplyCollateral(market, 1, address(this), hex"");
         morpho.withdrawCollateral(market, 1, address(this), address(this));
+    }
+
+    function _liquidationIncentiveFactor(uint256 lltv) internal pure returns (uint256) {
+        return
+            UtilsLib.min(MAX_LIQUIDATION_INCENTIVE_FACTOR, WAD.wDivDown(WAD - LIQUIDATION_CURSOR.wMulDown(WAD - lltv)));
     }
 }

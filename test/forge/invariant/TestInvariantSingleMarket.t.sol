@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import "test/forge/InvariantBase.sol";
 
 contract SingleMarketInvariantTest is InvariantBaseTest {
-    using FixedPointMathLib for uint256;
+    using MathLib for uint256;
     using SharesMathLib for uint256;
 
     function setUp() public virtual override {

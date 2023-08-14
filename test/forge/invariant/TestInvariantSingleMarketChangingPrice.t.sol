@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import "test/forge/InvariantBase.sol";
 
 contract SinglePositionConstantPriceInvariantTest is InvariantBaseTest {
-    using FixedPointMathLib for uint256;
+    using MathLib for uint256;
     using SharesMathLib for uint256;
 
     address user;
@@ -43,7 +43,7 @@ contract SinglePositionConstantPriceInvariantTest is InvariantBaseTest {
     function changePrice(uint256 variation, bool add) public {
         // price variation bounded between 2% and 20%
         variation = bound(variation, 2e16, 2e17);
-        (uint256 currentPrice,) = IOracle(market.oracle).price();
+        uint256 currentPrice = IOracle(market.oracle).price();
         uint256 priceVariation = currentPrice.wMulDown(variation);
         if (add) {
             oracle.setPrice(currentPrice + priceVariation);
@@ -110,7 +110,7 @@ contract SinglePositionConstantPriceInvariantTest is InvariantBaseTest {
         }
 
         _accrueInterest(market);
-        (uint256 collateralPrice,) = IOracle(market.oracle).price();
+        uint256 collateralPrice = IOracle(market.oracle).price();
 
         uint256 totalBorrowPower = morpho.collateral(id, msg.sender).wMulDown(collateralPrice).wMulDown(market.lltv);
         uint256 alreadyBorrowed =
@@ -135,7 +135,7 @@ contract SinglePositionConstantPriceInvariantTest is InvariantBaseTest {
         address onBehalf = _randomSenderToBorrowOnBehalf(targetSenders(), seed, msg.sender);
         if (onBehalf == address(0)) return;
 
-        (uint256 collateralPrice,) = IOracle(market.oracle).price();
+        uint256 collateralPrice = IOracle(market.oracle).price();
 
         uint256 totalBorrowPower = morpho.collateral(id, onBehalf).wMulDown(collateralPrice).wMulDown(market.lltv);
         uint256 alreadyBorrowed =
@@ -195,7 +195,7 @@ contract SinglePositionConstantPriceInvariantTest is InvariantBaseTest {
 
         _accrueInterest(market);
 
-        (uint256 collateralPrice,) = IOracle(market.oracle).price();
+        uint256 collateralPrice = IOracle(market.oracle).price();
 
         uint256 borrowPower = morpho.collateral(id, msg.sender).wMulDown(collateralPrice).wMulDown(market.lltv);
         uint256 borrowed =
@@ -215,7 +215,7 @@ contract SinglePositionConstantPriceInvariantTest is InvariantBaseTest {
         address onBehalf = _randomSenderToWithdrawCollateralOnBehalf(targetSenders(), seed, msg.sender);
         if (onBehalf == address(0)) return;
 
-        (uint256 collateralPrice,) = IOracle(market.oracle).price();
+        uint256 collateralPrice = IOracle(market.oracle).price();
 
         uint256 borrowPower = morpho.collateral(id, onBehalf).wMulDown(collateralPrice).wMulDown(market.lltv);
         uint256 borrowed =
@@ -235,9 +235,9 @@ contract SinglePositionConstantPriceInvariantTest is InvariantBaseTest {
         user = _randomSenderToLiquidate(targetSenders(), seed);
         if (user == address(0)) return;
 
-        (uint256 collateralPrice,) = IOracle(market.oracle).price();
+        uint256 collateralPrice = IOracle(market.oracle).price();
 
-        uint256 incentive = WAD + ALPHA.wMulDown(WAD.wDivDown(market.lltv) - WAD);
+        uint256 incentive = _liquidationIncentiveFactor(market.lltv);
         uint256 repaid = seized.wMulDown(collateralPrice).wDivDown(incentive);
         uint256 repaidShares = repaid.toSharesDown(morpho.totalBorrow(id), morpho.totalBorrowShares(id));
 
