@@ -57,6 +57,22 @@ contract IntegrationAuthorization is BaseTest {
         morpho.setAuthorizationWithSig(authorization, sig);
     }
 
+    function testAuthorizationWithSigWrongNonce(Authorization memory authorization, uint256 privateKey) public {
+        vm.assume(authorization.deadline > block.timestamp);
+        vm.assume(authorization.nonce != 0);
+
+        // Private key must be less than the secp256k1 curve order.
+        privateKey = bound(privateKey, 1, type(uint32).max);
+        authorization.authorizer = vm.addr(privateKey);
+
+        Signature memory sig;
+        bytes32 digest = SigUtils.getTypedDataHash(morpho.DOMAIN_SEPARATOR(), authorization);
+        (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
+
+        vm.expectRevert(bytes(ErrorsLib.INVALID_NONCE));
+        morpho.setAuthorizationWithSig(authorization, sig);
+    }
+
     function testAuthorizationWithSig(Authorization memory authorization, uint256 privateKey) public {
         vm.assume(authorization.deadline > block.timestamp);
 
@@ -74,68 +90,4 @@ contract IntegrationAuthorization is BaseTest {
         assertEq(morpho.isAuthorized(authorization.authorizer, authorization.authorized), authorization.isAuthorized);
         assertEq(morpho.nonce(authorization.authorizer), 1);
     }
-
-    // function testSetAuthorizationWithSignatureInvalidNonce(
-    //     uint32 deadline,
-    //     address authorized,
-    //     uint256 privateKey,
-    //     bool isAuthorized,
-    //     uint256 nonce
-    // ) public {
-    //     deadline = uint32(bound(deadline, block.timestamp + 1, type(uint32).max));
-    //     privateKey = bound(privateKey, 1, SECP256K1_ORDER - 1);
-    //     address authorizer = vm.addr(privateKey);
-    //     vm.assume(nonce != morpho.nonce(authorizer));
-
-    //     SigUtils.Authorization memory authorization = SigUtils.Authorization({
-    //         authorizer: authorizer,
-    //         authorized: authorized,
-    //         isAuthorized: isAuthorized,
-    //         nonce: nonce,
-    //         deadline: deadline
-    //     });
-
-    //     bytes32 digest = SigUtils.getTypedDataHash(morpho.DOMAIN_SEPARATOR(), authorization);
-
-    //     Signature memory sig;
-    //     (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
-
-    //     vm.expectRevert(bytes(ErrorsLib.INVALID_SIGNATURE));
-    //     morpho.setAuthorizationWithSig(
-    //         authorization.authorizer, authorization.authorized, authorization.isAuthorized, authorization.deadline, sig
-    //     );
-    // }
-
-    // function testSetAuthorizationWithSignatureReplay(
-    //     uint32 deadline,
-    //     address authorized,
-    //     uint256 privateKey,
-    //     bool isAuthorized
-    // ) public {
-    //     deadline = uint32(bound(deadline, block.timestamp + 1, type(uint32).max));
-    //     privateKey = bound(privateKey, 1, SECP256K1_ORDER - 1);
-    //     address authorizer = vm.addr(privateKey);
-
-    //     SigUtils.Authorization memory authorization = SigUtils.Authorization({
-    //         authorizer: authorizer,
-    //         authorized: authorized,
-    //         isAuthorized: isAuthorized,
-    //         nonce: morpho.nonce(authorizer),
-    //         deadline: deadline
-    //     });
-
-    //     bytes32 digest = SigUtils.getTypedDataHash(morpho.DOMAIN_SEPARATOR(), authorization);
-
-    //     Signature memory sig;
-    //     (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
-
-    //     morpho.setAuthorizationWithSig(
-    //         authorization.authorizer, authorization.authorized, authorization.isAuthorized, authorization.deadline, sig
-    //     );
-
-    //     vm.expectRevert(bytes(ErrorsLib.INVALID_SIGNATURE));
-    //     morpho.setAuthorizationWithSig(
-    //         authorization.authorizer, authorization.authorized, authorization.isAuthorized, authorization.deadline, sig
-    //     );
-    // }
 }
