@@ -31,10 +31,7 @@ contract IntegrationAccrueInterestsTest is BaseTest {
         uint256 totalSupplyBeforeAccrued = morpho.totalSupply(id);
         uint256 totalSupplySharesBeforeAccrued = morpho.totalSupplyShares(id);
 
-        // Supply then withdraw collateral to trigger accrueInterests function.
-        collateralAsset.setBalance(address(this), 1);
-        morpho.supplyCollateral(market, 1, address(this), hex"");
-        morpho.withdrawCollateral(market, 1, address(this), address(this));
+        morpho.accrueInterests(market);
 
         assertEq(morpho.totalBorrow(id), totalBorrowBeforeAccrued, "total borrow");
         assertEq(morpho.totalSupply(id), totalSupplyBeforeAccrued, "total supply");
@@ -61,10 +58,7 @@ contract IntegrationAccrueInterestsTest is BaseTest {
         uint256 totalSupplyBeforeAccrued = morpho.totalSupply(id);
         uint256 totalSupplySharesBeforeAccrued = morpho.totalSupplyShares(id);
 
-        // Supply then withdraw collateral to trigger `_accrueInterests` function.
-        collateralAsset.setBalance(address(this), 1);
-        morpho.supplyCollateral(market, 1, address(this), hex"");
-        morpho.withdrawCollateral(market, 1, address(this), address(this));
+        morpho.accrueInterests(market);
 
         assertEq(morpho.totalBorrow(id), totalBorrowBeforeAccrued, "total borrow");
         assertEq(morpho.totalSupply(id), totalSupplyBeforeAccrued, "total supply");
@@ -107,14 +101,9 @@ contract IntegrationAccrueInterestsTest is BaseTest {
         uint256 totalSupplySharesBeforeAccrued = morpho.totalSupplyShares(id);
         uint256 expectedAccruedInterests = totalBorrowBeforeAccrued.wMulDown(borrowRate.wTaylorCompounded(timeElapsed));
 
-        // Supply then withdraw collateral to trigger `_accrueInterests` function.
-        collateralAsset.setBalance(address(this), 1);
-
-        morpho.supplyCollateral(market, 1, address(this), hex"");
-
         vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.AccrueInterests(id, borrowRate, expectedAccruedInterests, 0);
-        morpho.withdrawCollateral(market, 1, address(this), address(this));
+        morpho.accrueInterests(market);
 
         assertEq(morpho.totalBorrow(id), totalBorrowBeforeAccrued + expectedAccruedInterests, "total borrow");
         assertEq(morpho.totalSupply(id), totalSupplyBeforeAccrued + expectedAccruedInterests, "total supply");
@@ -181,13 +170,9 @@ contract IntegrationAccrueInterestsTest is BaseTest {
             params.totalSupplyBeforeAccrued + params.expectedAccruedInterests - params.feeAmount
         );
 
-        // Supply then withdraw collateral to trigger `_accrueInterests` function.
-        collateralAsset.setBalance(address(this), 1);
-        morpho.supplyCollateral(market, 1, address(this), hex"");
-
         vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.AccrueInterests(id, params.borrowRate, params.expectedAccruedInterests, params.feeShares);
-        morpho.withdrawCollateral(market, 1, address(this), address(this));
+        morpho.accrueInterests(market);
 
         assertEq(
             morpho.totalBorrow(id), params.totalBorrowBeforeAccrued + params.expectedAccruedInterests, "total borrow"
