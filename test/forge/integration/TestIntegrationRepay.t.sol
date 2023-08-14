@@ -5,6 +5,7 @@ import "../BaseTest.sol";
 
 contract IntegrationRepayTest is BaseTest {
     using MathLib for uint256;
+    using SharesMathLib for uint256;
 
     function testRepayMarketNotCreated(Market memory marketFuzz) public {
         vm.assume(neq(marketFuzz, market));
@@ -55,35 +56,37 @@ contract IntegrationRepayTest is BaseTest {
         oracle.setPrice(priceCollateral);
 
         amountRepaid = bound(amountRepaid, 1, amountBorrowed);
+        uint256 expectedBorrowShares = amountBorrowed.toSharesUp(0, 0);
+        uint256 expectedRepaidShares = amountRepaid.toSharesDown(amountBorrowed, expectedBorrowShares);
 
-        collateralAsset.setBalance(onBehalf, amountCollateral);
-        borrowableAsset.setBalance(repayer, amountRepaid);
+        collateralToken.setBalance(onBehalf, amountCollateral);
+        borrowableToken.setBalance(repayer, amountRepaid);
 
         vm.startPrank(onBehalf);
-        collateralAsset.approve(address(morpho), amountCollateral);
+        collateralToken.approve(address(morpho), amountCollateral);
         morpho.supplyCollateral(market, amountCollateral, onBehalf, hex"");
         morpho.borrow(market, amountBorrowed, 0, onBehalf, receiver);
         vm.stopPrank();
 
         vm.startPrank(repayer);
-        borrowableAsset.approve(address(morpho), amountRepaid);
+        borrowableToken.approve(address(morpho), amountRepaid);
 
         vm.expectEmit(true, true, true, true, address(morpho));
-        emit EventsLib.Repay(id, repayer, onBehalf, amountRepaid, amountRepaid * SharesMathLib.VIRTUAL_SHARES);
+        emit EventsLib.Repay(id, repayer, onBehalf, amountRepaid, expectedRepaidShares);
         (uint256 returnAssets, uint256 returnShares) = morpho.repay(market, amountRepaid, 0, onBehalf, hex"");
 
         vm.stopPrank();
 
-        uint256 expectedBorrowShares = (amountBorrowed - amountRepaid) * SharesMathLib.VIRTUAL_SHARES;
+        expectedBorrowShares -= expectedRepaidShares;
 
         assertEq(returnAssets, amountRepaid, "returned asset amount");
-        assertEq(returnShares, amountRepaid * SharesMathLib.VIRTUAL_SHARES, "returned shares amount");
+        assertEq(returnShares, expectedRepaidShares, "returned shares amount");
         assertEq(morpho.borrowShares(id, onBehalf), expectedBorrowShares, "borrow shares");
         assertEq(morpho.totalBorrow(id), amountBorrowed - amountRepaid, "total borrow");
         assertEq(morpho.totalBorrowShares(id), expectedBorrowShares, "total borrow shares");
-        assertEq(borrowableAsset.balanceOf(receiver), amountBorrowed, "receiver balance");
+        assertEq(borrowableToken.balanceOf(receiver), amountBorrowed, "receiver balance");
         assertEq(
-            borrowableAsset.balanceOf(address(morpho)), amountSupplied - amountBorrowed + amountRepaid, "morpho balance"
+            borrowableToken.balanceOf(address(morpho)), amountSupplied - amountBorrowed + amountRepaid, "morpho balance"
         );
     }
 
@@ -109,24 +112,21 @@ contract IntegrationRepayTest is BaseTest {
 
         oracle.setPrice(priceCollateral);
 
-        uint256 expectedBorrowShares = amountBorrowed * SharesMathLib.VIRTUAL_SHARES;
-        vm.assume(expectedBorrowShares != 0);
-
+        uint256 expectedBorrowShares = amountBorrowed.toSharesUp(0, 0);
         sharesRepaid = bound(sharesRepaid, 1, expectedBorrowShares);
-        uint256 expectedAmountRepaid =
-            sharesRepaid.mulDivUp(amountBorrowed + 1, expectedBorrowShares + SharesMathLib.VIRTUAL_SHARES);
+        uint256 expectedAmountRepaid = sharesRepaid.toAssetsUp(amountBorrowed, expectedBorrowShares);
 
-        collateralAsset.setBalance(onBehalf, amountCollateral);
-        borrowableAsset.setBalance(repayer, expectedAmountRepaid);
+        collateralToken.setBalance(onBehalf, amountCollateral);
+        borrowableToken.setBalance(repayer, expectedAmountRepaid);
 
         vm.startPrank(onBehalf);
-        collateralAsset.approve(address(morpho), amountCollateral);
+        collateralToken.approve(address(morpho), amountCollateral);
         morpho.supplyCollateral(market, amountCollateral, onBehalf, hex"");
         morpho.borrow(market, amountBorrowed, 0, onBehalf, receiver);
         vm.stopPrank();
 
         vm.startPrank(repayer);
-        borrowableAsset.approve(address(morpho), expectedAmountRepaid);
+        borrowableToken.approve(address(morpho), expectedAmountRepaid);
 
         vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.Repay(id, repayer, onBehalf, expectedAmountRepaid, sharesRepaid);
@@ -141,9 +141,9 @@ contract IntegrationRepayTest is BaseTest {
         assertEq(morpho.borrowShares(id, onBehalf), expectedBorrowShares, "borrow shares");
         assertEq(morpho.totalBorrow(id), amountBorrowed - expectedAmountRepaid, "total borrow");
         assertEq(morpho.totalBorrowShares(id), expectedBorrowShares, "total borrow shares");
-        assertEq(borrowableAsset.balanceOf(receiver), amountBorrowed, "receiver balance");
+        assertEq(borrowableToken.balanceOf(receiver), amountBorrowed, "receiver balance");
         assertEq(
-            borrowableAsset.balanceOf(address(morpho)),
+            borrowableToken.balanceOf(address(morpho)),
             amountSupplied - amountBorrowed + expectedAmountRepaid,
             "morpho balance"
         );

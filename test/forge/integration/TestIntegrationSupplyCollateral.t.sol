@@ -35,10 +35,10 @@ contract IntegrationSupplyCollateralTest is BaseTest {
         );
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
-        collateralAsset.setBalance(supplier, amount);
+        collateralToken.setBalance(supplier, amount);
 
         vm.startPrank(supplier);
-        collateralAsset.approve(address(morpho), amount);
+        collateralToken.approve(address(morpho), amount);
 
         vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.SupplyCollateral(id, supplier, onBehalf, amount);
@@ -46,7 +46,7 @@ contract IntegrationSupplyCollateralTest is BaseTest {
         vm.stopPrank();
 
         assertEq(morpho.collateral(id, onBehalf), amount, "collateral");
-        assertEq(collateralAsset.balanceOf(supplier), 0, "supplier balance");
-        assertEq(collateralAsset.balanceOf(address(morpho)), amount, "morpho balance");
+        assertEq(collateralToken.balanceOf(supplier), 0, "supplier balance");
+        assertEq(collateralToken.balanceOf(address(morpho)), amount, "morpho balance");
     }
 }

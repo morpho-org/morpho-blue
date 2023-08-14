@@ -5,6 +5,7 @@ import "../BaseTest.sol";
 
 contract IntegrationSupplyTest is BaseTest {
     using MathLib for uint256;
+    using SharesMathLib for uint256;
 
     function testSupplyMarketNotCreated(Market memory marketFuzz, address supplier, uint256 amount) public {
         vm.assume(neq(marketFuzz, market) && supplier != address(0));
@@ -46,12 +47,12 @@ contract IntegrationSupplyTest is BaseTest {
         );
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
-        borrowableAsset.setBalance(supplier, amount);
+        borrowableToken.setBalance(supplier, amount);
 
-        uint256 expectedSupplyShares = amount * SharesMathLib.VIRTUAL_SHARES;
-
+        uint256 expectedSupplyShares = amount.toSharesDown(0, 0);
+        
         vm.startPrank(supplier);
-        borrowableAsset.approve(address(morpho), amount);
+        borrowableToken.approve(address(morpho), amount);
 
         vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.Supply(id, supplier, onBehalf, amount, expectedSupplyShares);
@@ -63,8 +64,8 @@ contract IntegrationSupplyTest is BaseTest {
         assertEq(morpho.supplyShares(id, onBehalf), expectedSupplyShares, "supply shares");
         assertEq(morpho.totalSupply(id), amount, "total supply");
         assertEq(morpho.totalSupplyShares(id), expectedSupplyShares, "total supply shares");
-        assertEq(borrowableAsset.balanceOf(supplier), 0, "supplier balance");
-        assertEq(borrowableAsset.balanceOf(address(morpho)), amount, "morpho balance");
+        assertEq(borrowableToken.balanceOf(supplier), 0, "supplier balance");
+        assertEq(borrowableToken.balanceOf(address(morpho)), amount, "morpho balance");
     }
 
     function testSupplyShares(address supplier, address onBehalf, uint256 shares) public {
@@ -74,12 +75,12 @@ contract IntegrationSupplyTest is BaseTest {
         );
         shares = bound(shares, 1, MAX_TEST_SHARES);
 
-        uint256 expectedSuppliedAmount = shares.mulDivUp(1, SharesMathLib.VIRTUAL_SHARES);
+        uint256 expectedSuppliedAmount = shares.toAssetsUp(0, 0);
 
-        borrowableAsset.setBalance(supplier, expectedSuppliedAmount);
+        borrowableToken.setBalance(supplier, expectedSuppliedAmount);
 
         vm.startPrank(supplier);
-        borrowableAsset.approve(address(morpho), expectedSuppliedAmount);
+        borrowableToken.approve(address(morpho), expectedSuppliedAmount);
 
         vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.Supply(id, supplier, onBehalf, expectedSuppliedAmount, shares);
@@ -91,7 +92,7 @@ contract IntegrationSupplyTest is BaseTest {
         assertEq(morpho.supplyShares(id, onBehalf), shares, "supply shares");
         assertEq(morpho.totalSupply(id), expectedSuppliedAmount, "total supply");
         assertEq(morpho.totalSupplyShares(id), shares, "total supply shares");
-        assertEq(borrowableAsset.balanceOf(supplier), 0, "supplier balance");
-        assertEq(borrowableAsset.balanceOf(address(morpho)), expectedSuppliedAmount, "morpho balance");
+        assertEq(borrowableToken.balanceOf(supplier), 0, "supplier balance");
+        assertEq(borrowableToken.balanceOf(address(morpho)), expectedSuppliedAmount, "morpho balance");
     }
 }
