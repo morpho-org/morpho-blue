@@ -237,7 +237,7 @@
     ├── it should emit FlashLoan(msg.sender, token, assets)
     └── it should transfer assets of token from the sender to Morpho
 .
-└── function setAuthorizationWithSig(Authorization memory authorization, Signature calldata signature) external
+└── setAuthorizationWithSig(Authorization memory authorization, Signature calldata signature) external
     ├── when block.timestamp >= authorization.deadline
     │   └── revert with SIGNATURE_EXPIRED
     └── when block.timestamp < deadline
@@ -256,7 +256,7 @@
     ├── should set isApproved[msg.sender][authorized] to newIsAuthorized
     └── it should emit SetAuthorization(msg.sender, msg.sender, authorized, newIsAuthorized)
 .
-└── function accrueInterests(Market memory market) external
+└── accrueInterests(Market memory market) external
     ├── when market is not created
     │   └── revert with MARKET_NOT_CREATED
     └── when market is created
