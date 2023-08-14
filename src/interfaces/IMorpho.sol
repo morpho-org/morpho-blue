@@ -19,6 +19,15 @@ struct Market {
     uint256 lltv;
 }
 
+struct MarketState {
+    uint128 totalSupply;
+    uint128 totalBorrow;
+    uint128 totalSupplyShares;
+    uint128 totalBorrowShares;
+    uint128 lastUpdate;
+    uint128 fee;
+}
+
 /// @notice Authorization struct.
 /// @param authorizer Authorizer address.
 /// @param authorized Authorized address.
@@ -66,23 +75,7 @@ interface IMorpho is IFlashLender {
 
     /// @notice The total supply of the market `id`.
     /// @dev Does not contain the accrued interest since the last interaction.
-    function totalSupply(Id id) external view returns (uint256);
-
-    /// @notice The total supply shares of the market `id`.
-    function totalSupplyShares(Id id) external view returns (uint256);
-
-    /// @notice The total borrow of the market `id`.
-    /// @dev Does not contain the accrued interest since the last interaction.
-    function totalBorrow(Id id) external view returns (uint256);
-
-    /// @notice The total borrow shares of the market `id`.
-    function totalBorrowShares(Id id) external view returns (uint256);
-
-    /// @notice The last update timestamp of the market `id` (also used to check if a market has been created).
-    function lastUpdate(Id id) external view returns (uint256);
-
-    /// @notice The fee of the market `id`.
-    function fee(Id id) external view returns (uint256);
+    function m(Id id) external view returns (MarketState memory);
 
     /// @notice Whether the `irm` is enabled.
     function isIrmEnabled(address irm) external view returns (bool);

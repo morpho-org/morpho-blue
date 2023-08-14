@@ -71,7 +71,7 @@
                 ├── when assets is not zero
                 │   └── it should set shares to assets.toSharesUp(totalSupply[market.id], totalSupplyShares[market.id])
                 ├── when assets is zero
-                │   └── it should set assets to shares.toAssetsDown(totalSupply[id], totalSupplyShares[id])
+                │   └── it should set assets to shares.toAssetsDown(total[id].supply, total[id].supplyShares)
                 ├── it should add shares to supplyShares[market.id][onBehalf] 
                 ├── it should add shares to totalSupplyShares[market.id]
                 ├── it should add assets to totalSupply[market.id]
@@ -97,7 +97,7 @@
                     ├── when assets is not zero
                     │   └── it should set shares to assets.toSharesUp(totalSupply[market.id], totalSupplyShares[market.id])
                     ├── when assets is zero
-                    │   └── it should set assets to shares.toAssetsDown(totalSupply[id], totalSupplyShares[id])
+                    │   └── it should set assets to shares.toAssetsDown(total[id].supply, total[id].supplyShares)
                     ├── it should remove shares from supplyShares[market.id][onBehalf] 
                     ├── it should remove shares from totalSupplyShares[market.id]
                     ├── it should remove assets from totalSupply[market.id]
@@ -123,7 +123,7 @@
                     ├── when assets is not zero
                     │   └── it should set shares to assets.toSharesUp(totalSupply[market.id], totalSupplyShares[market.id])
                     ├── when assets is zero
-                    │   └── it should set assets to shares.toAssetsDown(totalSupply[id], totalSupplyShares[id])
+                    │   └── it should set assets to shares.toAssetsDown(total[id].supply, total[id].supplyShares)
                     ├── it should add shares to borrowShares[market.id][onBehalf] 
                     ├── it should add shares to totalBorrowShares[market.id]
                     ├── it should add assets to totalBorrow[market.id]
@@ -149,7 +149,7 @@
                 ├── when assets is not zero
                 │   └── it should set shares to assets.toSharesUp(totalSupply[market.id], totalSupplyShares[market.id])
                 ├── when assets is zero
-                │   └── it should set assets to shares.toAssetsDown(totalSupply[id], totalSupplyShares[id])
+                │   └── it should set assets to shares.toAssetsDown(total[id].supply, total[id].supplyShares)
                 ├── it should remove shares from borrowShares[market.id][onBehalf]
                 ├── it should remove shares from totalBorrowShares[market.id]
                 ├── it should remove assets from totalBorrow[market.id]
@@ -255,6 +255,6 @@
             ├── it should add accruedInterests to totalSupply
             └── when fee[id] != 0
             │   ├── it should add accruedInterests.mulWadDown(fee[id]) to feeAmount
-            │   ├── it should add feeAmount.mulDivDown(totalSupplyShares[id], totalSupply[id] - feeAmount) to supplyShares[id][feeRecipient]
-            │   └── it should add feeAmount.mulDivDown(totalSupplyShares[id], totalSupply[id] - feeAmount) to totalSupplyShares[id]
+            │   ├── it should add feeAmount.mulDivDown(total[id].supplyShares, total[id].supply - feeAmount) to supplyShares[id][feeRecipient]
+            │   └── it should add feeAmount.mulDivDown(total[id].supplyShares, total[id].supply - feeAmount) to total[id].supplyShares
             └── it should emit AccrueInterests(id, borrowRate, accruedInterests, feeShares)

@@ -20,4 +20,9 @@ library UtilsLib {
             z := xor(x, mul(xor(x, y), lt(y, x)))
         }
     }
+
+    function toUint128(uint256 x) internal pure returns (uint128) {
+        require(x < 2 ** 128);
+        return uint128(x);
+    }
 }
