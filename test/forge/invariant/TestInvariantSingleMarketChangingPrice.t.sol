@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "test/forge/InvariantBase.sol";
 
-contract SinglePositionConstantPriceInvariantTest is InvariantBaseTest {
+contract SingleMarketChangingPriceInvariantTest is InvariantBaseTest {
     using MathLib for uint256;
     using SharesMathLib for uint256;
 
@@ -112,7 +112,8 @@ contract SinglePositionConstantPriceInvariantTest is InvariantBaseTest {
         _accrueInterest(market);
         uint256 collateralPrice = IOracle(market.oracle).price();
 
-        uint256 totalBorrowPower = morpho.collateral(id, msg.sender).wMulDown(collateralPrice).wMulDown(market.lltv);
+        uint256 totalBorrowPower =
+            morpho.collateral(id, msg.sender).mulDivDown(collateralPrice, ORACLE_PRICE_SCALE).wMulDown(market.lltv);
         uint256 alreadyBorrowed =
             morpho.borrowShares(id, msg.sender).toAssetsUp(morpho.totalBorrow(id), morpho.totalBorrowShares(id));
         uint256 currentBorrowPower = totalBorrowPower - alreadyBorrowed;
@@ -137,7 +138,8 @@ contract SinglePositionConstantPriceInvariantTest is InvariantBaseTest {
 
         uint256 collateralPrice = IOracle(market.oracle).price();
 
-        uint256 totalBorrowPower = morpho.collateral(id, onBehalf).wMulDown(collateralPrice).wMulDown(market.lltv);
+        uint256 totalBorrowPower =
+            morpho.collateral(id, onBehalf).mulDivDown(collateralPrice, ORACLE_PRICE_SCALE).wMulDown(market.lltv);
         uint256 alreadyBorrowed =
             morpho.borrowShares(id, onBehalf).toAssetsUp(morpho.totalBorrow(id), morpho.totalBorrowShares(id));
         uint256 currentBorrowPower = totalBorrowPower - alreadyBorrowed;
@@ -197,10 +199,12 @@ contract SinglePositionConstantPriceInvariantTest is InvariantBaseTest {
 
         uint256 collateralPrice = IOracle(market.oracle).price();
 
-        uint256 borrowPower = morpho.collateral(id, msg.sender).wMulDown(collateralPrice).wMulDown(market.lltv);
+        uint256 borrowPower =
+            morpho.collateral(id, msg.sender).mulDivDown(collateralPrice, ORACLE_PRICE_SCALE).wMulDown(market.lltv);
         uint256 borrowed =
             morpho.borrowShares(id, msg.sender).toAssetsUp(morpho.totalBorrow(id), morpho.totalBorrowShares(id));
-        uint256 withdrawableCollateral = (borrowPower - borrowed).wDivDown(collateralPrice).wDivDown(market.lltv);
+        uint256 withdrawableCollateral =
+            (borrowPower - borrowed).mulDivDown(ORACLE_PRICE_SCALE, collateralPrice).wDivDown(market.lltv);
 
         if (withdrawableCollateral == 0) return;
         amount = bound(amount, 1, withdrawableCollateral);
@@ -217,10 +221,12 @@ contract SinglePositionConstantPriceInvariantTest is InvariantBaseTest {
 
         uint256 collateralPrice = IOracle(market.oracle).price();
 
-        uint256 borrowPower = morpho.collateral(id, onBehalf).wMulDown(collateralPrice).wMulDown(market.lltv);
+        uint256 borrowPower =
+            morpho.collateral(id, onBehalf).mulDivDown(collateralPrice, ORACLE_PRICE_SCALE).wMulDown(market.lltv);
         uint256 borrowed =
             morpho.borrowShares(id, onBehalf).toAssetsUp(morpho.totalBorrow(id), morpho.totalBorrowShares(id));
-        uint256 withdrawableCollateral = (borrowPower - borrowed).wDivDown(collateralPrice).wDivDown(market.lltv);
+        uint256 withdrawableCollateral =
+            (borrowPower - borrowed).mulDivDown(ORACLE_PRICE_SCALE, collateralPrice).wDivDown(market.lltv);
 
         if (withdrawableCollateral == 0) return;
         amount = bound(amount, 1, withdrawableCollateral);
@@ -237,8 +243,8 @@ contract SinglePositionConstantPriceInvariantTest is InvariantBaseTest {
 
         uint256 collateralPrice = IOracle(market.oracle).price();
 
-        uint256 incentive = _liquidationIncentiveFactor(market.lltv);
-        uint256 repaid = seized.wMulDown(collateralPrice).wDivDown(incentive);
+        uint256 repaid =
+            seized.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(_liquidationIncentiveFactor(market.lltv));
         uint256 repaidShares = repaid.toSharesDown(morpho.totalBorrow(id), morpho.totalBorrowShares(id));
 
         if (repaidShares > morpho.borrowShares(id, user)) {

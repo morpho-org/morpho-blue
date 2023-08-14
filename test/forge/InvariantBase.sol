@@ -171,7 +171,8 @@ contract InvariantBaseTest is BaseTest {
 
         uint256 borrowed =
             morpho.borrowShares(id, user).toAssetsUp(morpho.totalBorrow(id), morpho.totalBorrowShares(id));
-        uint256 maxBorrow = morpho.collateral(id, user).mulDivDown(collateralPrice, ORACLE_PRICE_SCALE).wMulDown(market.lltv);
+        uint256 maxBorrow =
+            morpho.collateral(id, user).mulDivDown(collateralPrice, ORACLE_PRICE_SCALE).wMulDown(market.lltv);
 
         return maxBorrow >= borrowed;
     }

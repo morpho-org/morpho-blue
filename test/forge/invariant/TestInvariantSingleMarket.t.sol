@@ -15,6 +15,9 @@ contract SingleMarketInvariantTest is InvariantBaseTest {
         _approveSendersTransfers(targetSenders());
         _supplyHighAmountOfCollateralForAllSenders(targetSenders(), market);
 
+        // High price because of the 1e36 price scale
+        oracle.setPrice(1e40);
+
         _weightSelector(this.supplyOnMorpho.selector, 20);
         _weightSelector(this.borrowOnMorpho.selector, 20);
         _weightSelector(this.repayOnMorpho.selector, 20);

@@ -22,6 +22,8 @@ contract SinglePositionInvariantTest is InvariantBaseTest {
         morpho.supplyCollateral(market, 1e30, user, hex"");
         vm.stopPrank();
 
+        oracle.setPrice(1e40);
+
         _weightSelector(this.supplyOnMorpho.selector, 20);
         _weightSelector(this.borrowOnMorpho.selector, 20);
         _weightSelector(this.repayOnMorpho.selector, 20);
