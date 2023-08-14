@@ -45,7 +45,7 @@ contract SingleMarketInvariantTest is InvariantBaseTest {
     function supplyOnMorpho(uint256 amount) public {
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
-        borrowableAsset.setBalance(msg.sender, amount);
+        borrowableToken.setBalance(msg.sender, amount);
         vm.prank(msg.sender);
         morpho.supply(market, amount, 0, msg.sender, hex"");
     }
@@ -85,7 +85,7 @@ contract SingleMarketInvariantTest is InvariantBaseTest {
             morpho.borrowShares(id, msg.sender).toAssetsDown(morpho.totalBorrow(id), morpho.totalBorrowShares(id))
         );
 
-        borrowableAsset.setBalance(msg.sender, amount);
+        borrowableToken.setBalance(msg.sender, amount);
         vm.prank(msg.sender);
         morpho.repay(market, amount, 0, msg.sender, hex"");
     }
@@ -93,7 +93,7 @@ contract SingleMarketInvariantTest is InvariantBaseTest {
     function supplyCollateralOnMorpho(uint256 amount) public {
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
-        collateralAsset.setBalance(msg.sender, amount);
+        collateralToken.setBalance(msg.sender, amount);
         vm.prank(msg.sender);
         morpho.supplyCollateral(market, amount, msg.sender, hex"");
     }
@@ -126,7 +126,7 @@ contract SingleMarketInvariantTest is InvariantBaseTest {
     }
 
     function invariantMorphoBalance() public {
-        assertEq(morpho.totalSupply(id) - morpho.totalBorrow(id), borrowableAsset.balanceOf(address(morpho)));
+        assertEq(morpho.totalSupply(id) - morpho.totalBorrow(id), borrowableToken.balanceOf(address(morpho)));
     }
 
     function invariantSupplySharesRatio() public {

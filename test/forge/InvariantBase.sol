@@ -37,15 +37,15 @@ contract InvariantBaseTest is BaseTest {
     function _approveSendersTransfers(address[] memory senders) internal {
         for (uint256 i; i < senders.length; ++i) {
             vm.startPrank(senders[i]);
-            borrowableAsset.approve(address(morpho), type(uint256).max);
-            collateralAsset.approve(address(morpho), type(uint256).max);
+            borrowableToken.approve(address(morpho), type(uint256).max);
+            collateralToken.approve(address(morpho), type(uint256).max);
             vm.stopPrank();
         }
     }
 
     function _supplyHighAmountOfCollateralForAllSenders(address[] memory senders, Market memory market) internal {
         for (uint256 i; i < senders.length; ++i) {
-            collateralAsset.setBalance(senders[i], 1e30);
+            collateralToken.setBalance(senders[i], 1e30);
             vm.prank(senders[i]);
             morpho.supplyCollateral(market, 1e30, senders[i], hex"");
         }

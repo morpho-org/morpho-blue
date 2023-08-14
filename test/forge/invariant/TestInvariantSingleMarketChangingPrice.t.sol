@@ -61,7 +61,7 @@ contract SingleMarketChangingPriceInvariantTest is InvariantBaseTest {
 
     function supplyOnMorpho(uint256 amount) public {
         amount = bound(amount, 1, 2 ** 64);
-        borrowableAsset.setBalance(msg.sender, amount);
+        borrowableToken.setBalance(msg.sender, amount);
 
         vm.prank(msg.sender);
         morpho.supply(market, amount, 0, msg.sender, hex"");
@@ -162,7 +162,7 @@ contract SingleMarketChangingPriceInvariantTest is InvariantBaseTest {
         uint256 repaidAmount = shares.toAssetsUp(morpho.totalBorrow(id), morpho.totalBorrowShares(id));
         if (repaidAmount == 0) return;
 
-        borrowableAsset.setBalance(msg.sender, repaidAmount);
+        borrowableToken.setBalance(msg.sender, repaidAmount);
 
         vm.prank(msg.sender);
         morpho.repay(market, 0, shares, msg.sender, hex"");
@@ -179,14 +179,14 @@ contract SingleMarketChangingPriceInvariantTest is InvariantBaseTest {
         uint256 repaidAmount = shares.toAssetsUp(morpho.totalBorrow(id), morpho.totalBorrowShares(id));
         if (repaidAmount == 0) return;
 
-        borrowableAsset.setBalance(msg.sender, repaidAmount);
+        borrowableToken.setBalance(msg.sender, repaidAmount);
         vm.prank(msg.sender);
         morpho.repay(market, 0, shares, onBehalf, hex"");
     }
 
     function supplyCollateralOnMorpho(uint256 amount) public {
         amount = bound(amount, 1, 2 ** 64);
-        collateralAsset.setBalance(msg.sender, amount);
+        collateralToken.setBalance(msg.sender, amount);
 
         vm.prank(msg.sender);
         morpho.supplyCollateral(market, amount, msg.sender, hex"");
@@ -250,7 +250,7 @@ contract SingleMarketChangingPriceInvariantTest is InvariantBaseTest {
         if (repaidShares > morpho.borrowShares(id, user)) {
             seized = seized / 2;
         }
-        borrowableAsset.setBalance(msg.sender, repaid);
+        borrowableToken.setBalance(msg.sender, repaid);
 
         vm.prank(msg.sender);
         morpho.liquidate(market, user, seized, hex"");
@@ -277,6 +277,6 @@ contract SingleMarketChangingPriceInvariantTest is InvariantBaseTest {
     }
 
     function invariantMorphoBalance() public {
-        assertEq(morpho.totalSupply(id) - morpho.totalBorrow(id), borrowableAsset.balanceOf(address(morpho)));
+        assertEq(morpho.totalSupply(id) - morpho.totalBorrow(id), borrowableToken.balanceOf(address(morpho)));
     }
 }

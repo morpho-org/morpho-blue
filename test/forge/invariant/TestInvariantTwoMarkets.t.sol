@@ -18,7 +18,7 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
         irm2 = new Irm(morpho);
         vm.label(address(irm2), "IRM2");
 
-        market2 = Market(address(borrowableAsset), address(collateralAsset), address(oracle), address(irm2), LLTV + 1);
+        market2 = Market(address(borrowableToken), address(collateralToken), address(oracle), address(irm2), LLTV + 1);
         id2 = market2.id();
 
         vm.startPrank(OWNER);
@@ -65,7 +65,7 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
 
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
-        borrowableAsset.setBalance(msg.sender, amount);
+        borrowableToken.setBalance(msg.sender, amount);
         vm.prank(msg.sender);
         morpho.supply(chosenMarket, amount, 0, msg.sender, hex"");
     }
@@ -137,7 +137,7 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
             )
         );
 
-        borrowableAsset.setBalance(msg.sender, amount);
+        borrowableToken.setBalance(msg.sender, amount);
         vm.prank(msg.sender);
         morpho.repay(chosenMarket, amount, 0, msg.sender, hex"");
     }
@@ -154,7 +154,7 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
         }
 
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
-        collateralAsset.setBalance(msg.sender, amount);
+        collateralToken.setBalance(msg.sender, amount);
 
         vm.prank(msg.sender);
         morpho.supplyCollateral(chosenMarket, amount, msg.sender, hex"");
@@ -180,6 +180,6 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
     function invariantMorphoBalance() public {
         uint256 marketAvailableAmount = morpho.totalSupply(id) - morpho.totalBorrow(id);
         uint256 market2AvailableAmount = morpho.totalSupply(id2) - morpho.totalBorrow(id2);
-        assertEq(marketAvailableAmount + market2AvailableAmount, borrowableAsset.balanceOf(address(morpho)));
+        assertEq(marketAvailableAmount + market2AvailableAmount, borrowableToken.balanceOf(address(morpho)));
     }
 }
