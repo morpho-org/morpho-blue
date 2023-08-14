@@ -55,9 +55,11 @@ contract IntegrationSupplyTest is BaseTest {
 
         vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.Supply(id, supplier, onBehalf, amount, expectedSupplyShares);
-        morpho.supply(market, amount, 0, onBehalf, hex"");
+        (uint256 returnAssets, uint256 returnShares) = morpho.supply(market, amount, 0, onBehalf, hex"");
         vm.stopPrank();
 
+        assertEq(returnAssets, amount, "returned asset amount");
+        assertEq(returnShares, expectedSupplyShares, "returned shares amount");
         assertEq(morpho.supplyShares(id, onBehalf), expectedSupplyShares, "supply shares");
         assertEq(morpho.totalSupply(id), amount, "total supply");
         assertEq(morpho.totalSupplyShares(id), expectedSupplyShares, "total supply shares");
@@ -81,9 +83,11 @@ contract IntegrationSupplyTest is BaseTest {
 
         vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.Supply(id, supplier, onBehalf, expectedSuppliedAmount, shares);
-        morpho.supply(market, 0, shares, onBehalf, hex"");
+        (uint256 returnAssets, uint256 returnShares) = morpho.supply(market, 0, shares, onBehalf, hex"");
         vm.stopPrank();
 
+        assertEq(returnAssets, expectedSuppliedAmount, "returned asset amount");
+        assertEq(returnShares, shares, "returned shares amount");
         assertEq(morpho.supplyShares(id, onBehalf), shares, "supply shares");
         assertEq(morpho.totalSupply(id), expectedSuppliedAmount, "total supply");
         assertEq(morpho.totalSupplyShares(id), shares, "total supply shares");

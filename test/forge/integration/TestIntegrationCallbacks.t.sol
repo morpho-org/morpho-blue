@@ -104,10 +104,14 @@ contract IntegrationCallbacksTest is
 
         uint256 collateralPrice = IOracle(market.oracle).price();
         borrowableAsset.setBalance(address(this), amount);
-        collateralAsset.setBalance(address(this), amount.wDivUp(market.lltv).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice));
+        collateralAsset.setBalance(
+            address(this), amount.wDivUp(market.lltv).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice)
+        );
 
         morpho.supply(market, amount, 0, address(this), hex"");
-        morpho.supplyCollateral(market, amount.wDivUp(market.lltv).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice), address(this), hex"");
+        morpho.supplyCollateral(
+            market, amount.wDivUp(market.lltv).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice), address(this), hex""
+        );
         morpho.borrow(market, amount, 0, address(this), address(this));
 
         borrowableAsset.approve(address(morpho), 0);
