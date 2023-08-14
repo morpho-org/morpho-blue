@@ -1,4 +1,6 @@
-#!/bin/sh
+#!/bin/bash
+
+set -euxo pipefail
 
 certoraRun \
     certora/harness/MorphoHarness.sol \
@@ -7,5 +9,4 @@ certoraRun \
     --loop_iter 3 \
     --optimistic_loop \
     --msg "Morpho Blue" \
-    --send_only \
     "$@"
