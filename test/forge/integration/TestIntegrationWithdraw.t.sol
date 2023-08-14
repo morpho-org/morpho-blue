@@ -121,8 +121,7 @@ contract IntegrationWithdrawTest is BaseTest {
         uint256 expectedWithdrawnShares = amountWithdrawn.toSharesUp(amountSupplied, expectedSupplyShares);
 
         vm.expectEmit(true, true, true, true, address(morpho));
-        emit EventsLib.Withdraw(
-            id, address(this), address(this), receiver, amountWithdrawn, expectedWithdrawnShares);
+        emit EventsLib.Withdraw(id, address(this), address(this), receiver, amountWithdrawn, expectedWithdrawnShares);
         (uint256 returnAssets, uint256 returnShares) =
             morpho.withdraw(market, amountWithdrawn, 0, address(this), receiver);
 

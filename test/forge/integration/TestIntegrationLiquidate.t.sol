@@ -91,7 +91,7 @@ contract IntegrationLiquidateTest is BaseTest {
         emit EventsLib.Liquidate(id, LIQUIDATOR, BORROWER, expectedRepaid, expectedRepaidShares, amountSeized, 0);
         (uint256 returnRepaid, uint256 returnRepaidShares) = morpho.liquidate(market, BORROWER, amountSeized, hex"");
 
-        uint256 expectedBorrowShares = amountBorrowed.toSharesUp(0,0) - expectedRepaidShares;
+        uint256 expectedBorrowShares = amountBorrowed.toSharesUp(0, 0) - expectedRepaidShares;
 
         assertEq(returnRepaid, expectedRepaid, "returned asset amount");
         assertEq(returnRepaidShares, expectedRepaidShares, "returned shares amount");

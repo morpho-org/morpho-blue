@@ -50,7 +50,7 @@ contract IntegrationSupplyTest is BaseTest {
         borrowableToken.setBalance(supplier, amount);
 
         uint256 expectedSupplyShares = amount.toSharesDown(0, 0);
-        
+
         vm.startPrank(supplier);
         borrowableToken.approve(address(morpho), amount);
 
