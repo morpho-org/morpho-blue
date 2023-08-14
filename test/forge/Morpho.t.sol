@@ -229,7 +229,7 @@ contract MorphoTest is
 
     function testSetFeeShouldRevertIfMarketNotCreated(Market memory marketFuzz, uint256 fee) public {
         vm.assume(neq(marketFuzz, market));
-        fee = bound(fee, 0, WAD);
+        fee = bound(fee, 0, MAX_FEE);
 
         vm.prank(OWNER);
         vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
@@ -238,7 +238,7 @@ contract MorphoTest is
 
     function testSetFeeShouldRevertIfNotOwner(uint256 fee, address caller) public {
         vm.assume(caller != OWNER);
-        fee = bound(fee, 0, WAD);
+        fee = bound(fee, 0, MAX_FEE);
 
         vm.expectRevert(bytes(ErrorsLib.NOT_OWNER));
         morpho.setFee(market, fee);

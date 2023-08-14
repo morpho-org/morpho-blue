@@ -133,11 +133,11 @@ contract Morpho is IMorpho {
     /// @inheritdoc IMorpho
     function setFee(Market memory market, uint256 newFee) external onlyOwner {
         Id id = market.id();
-        require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
+        // Market created check is done in accrueInterest.
         require(newFee <= MAX_FEE, ErrorsLib.MAX_FEE_EXCEEDED);
 
         // Accrue interests using the previous fee set before changing it.
-        _accrueInterests(market, id);
+        accrueInterests(market);
 
         fee[id] = newFee;
 
@@ -174,11 +174,11 @@ contract Morpho is IMorpho {
         returns (uint256, uint256)
     {
         Id id = market.id();
-        require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
+        // Market created check is done in accrueInterest.
         require(UtilsLib.exactlyOneZero(assets, shares), ErrorsLib.INCONSISTENT_INPUT);
         require(onBehalf != address(0), ErrorsLib.ZERO_ADDRESS);
 
-        _accrueInterests(market, id);
+        accrueInterests(market);
 
         if (assets > 0) shares = assets.toSharesDown(totalSupply[id], totalSupplyShares[id]);
         else assets = shares.toAssetsUp(totalSupply[id], totalSupplyShares[id]);
@@ -202,13 +202,13 @@ contract Morpho is IMorpho {
         returns (uint256, uint256)
     {
         Id id = market.id();
-        require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
+        // Market created check is done in accrueInterest.
         require(UtilsLib.exactlyOneZero(assets, shares), ErrorsLib.INCONSISTENT_INPUT);
         // No need to verify that onBehalf != address(0) thanks to the authorization check.
         require(receiver != address(0), ErrorsLib.ZERO_ADDRESS);
         require(_isSenderAuthorized(onBehalf), ErrorsLib.UNAUTHORIZED);
 
-        _accrueInterests(market, id);
+        accrueInterests(market);
 
         if (assets > 0) shares = assets.toSharesUp(totalSupply[id], totalSupplyShares[id]);
         else assets = shares.toAssetsDown(totalSupply[id], totalSupplyShares[id]);
@@ -234,13 +234,13 @@ contract Morpho is IMorpho {
         returns (uint256, uint256)
     {
         Id id = market.id();
-        require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
+        // Market created check is done in accrueInterest.
         require(UtilsLib.exactlyOneZero(assets, shares), ErrorsLib.INCONSISTENT_INPUT);
         // No need to verify that onBehalf != address(0) thanks to the authorization check.
         require(receiver != address(0), ErrorsLib.ZERO_ADDRESS);
         require(_isSenderAuthorized(onBehalf), ErrorsLib.UNAUTHORIZED);
 
-        _accrueInterests(market, id);
+        accrueInterests(market);
 
         if (assets > 0) shares = assets.toSharesUp(totalBorrow[id], totalBorrowShares[id]);
         else assets = shares.toAssetsDown(totalBorrow[id], totalBorrowShares[id]);
@@ -265,11 +265,11 @@ contract Morpho is IMorpho {
         returns (uint256, uint256)
     {
         Id id = market.id();
-        require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
+        // Market created check is done in accrueInterest.
         require(UtilsLib.exactlyOneZero(assets, shares), ErrorsLib.INCONSISTENT_INPUT);
         require(onBehalf != address(0), ErrorsLib.ZERO_ADDRESS);
 
-        _accrueInterests(market, id);
+        accrueInterests(market);
 
         if (assets > 0) shares = assets.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
         else assets = shares.toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
@@ -310,13 +310,13 @@ contract Morpho is IMorpho {
     /// @inheritdoc IMorpho
     function withdrawCollateral(Market memory market, uint256 assets, address onBehalf, address receiver) external {
         Id id = market.id();
-        require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
+        // Market created check is done in accrueInterest.
         require(assets != 0, ErrorsLib.ZERO_ASSETS);
         // No need to verify that onBehalf != address(0) thanks to the authorization check.
         require(receiver != address(0), ErrorsLib.ZERO_ADDRESS);
         require(_isSenderAuthorized(onBehalf), ErrorsLib.UNAUTHORIZED);
 
-        _accrueInterests(market, id);
+        accrueInterests(market);
 
         collateral[id][onBehalf] -= assets;
 
@@ -335,10 +335,10 @@ contract Morpho is IMorpho {
         returns (uint256 assetsRepaid, uint256 sharesRepaid)
     {
         Id id = market.id();
-        require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
+        // Market created check is done in accrueInterest.
         require(seized != 0, ErrorsLib.ZERO_ASSETS);
 
-        _accrueInterests(market, id);
+        accrueInterests(market);
 
         uint256 collateralPrice = IOracle(market.oracle).price();
 
@@ -425,15 +425,9 @@ contract Morpho is IMorpho {
     /* INTEREST MANAGEMENT */
 
     /// @inheritdoc IMorpho
-    function accrueInterests(Market memory market) external {
+    function accrueInterests(Market memory market) public {
         Id id = market.id();
         require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
-
-        _accrueInterests(market, id);
-    }
-
-    /// @dev Accrues interests for `market`.
-    function _accrueInterests(Market memory market, Id id) internal {
         uint256 elapsed = block.timestamp - lastUpdate[id];
 
         if (elapsed == 0) return;
