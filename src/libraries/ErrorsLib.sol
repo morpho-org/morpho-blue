@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
+/// @title ErrorsLib
+/// @author Morpho Labs
+/// @custom:contact security@morpho.xyz
+/// @notice Library exposing error messages.
 library ErrorsLib {
     /// @notice Thrown when the caller is not the owner.
     string internal constant NOT_OWNER = "not owner";
@@ -23,11 +27,11 @@ library ErrorsLib {
     /// @notice Thrown when the market is not created.
     string internal constant MARKET_NOT_CREATED = "market not created";
 
-    /// @notice Thrown when not exactly one of the amount inputs is zero.
+    /// @notice Thrown when not exactly one of the input amount is zero.
     string constant INCONSISTENT_INPUT = "inconsistent input";
 
-    /// @notice Thrown when a zero amount is passed as input.
-    string internal constant ZERO_AMOUNT = "zero amount";
+    /// @notice Thrown when zero assets is passed as input.
+    string internal constant ZERO_ASSETS = "zero assets";
 
     /// @notice Thrown when a zero address is passed as input.
     string internal constant ZERO_ADDRESS = "zero address";
@@ -49,4 +53,10 @@ library ErrorsLib {
 
     /// @notice Thrown when the authorization signature is expired.
     string internal constant SIGNATURE_EXPIRED = "signature expired";
+
+    /// @notice Thrown when a token transfer has failed.
+    string internal constant TRANSFER_FAILED = "transfer failed";
+
+    /// @notice Thrown when a token transferFrom has failed.
+    string internal constant TRANSFER_FROM_FAILED = "transferFrom failed";
 }

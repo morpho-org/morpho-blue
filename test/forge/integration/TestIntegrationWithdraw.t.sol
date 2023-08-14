@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import "../BaseTest.sol";
 
 contract IntegrationWithdrawTest is BaseTest {
-    using FixedPointMathLib for uint256;
+    using MathLib for uint256;
 
     function testWithdrawMarketNotCreated(Market memory marketFuzz) public {
         vm.assume(neq(marketFuzz, market));
@@ -77,7 +77,9 @@ contract IntegrationWithdrawTest is BaseTest {
         morpho.supply(market, amountSupplied, 0, supplier, hex"");
         vm.stopPrank();
 
-        uint256 amountCollateral = amountBorrowed.wDivUp(LLTV);
+        uint256 collateralPrice = IOracle(market.oracle).price();
+        uint256 amountCollateral = amountBorrowed.wDivUp(LLTV).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice);
+
         collateralAsset.setBalance(borrowerFuzz, amountCollateral);
 
         vm.startPrank(borrowerFuzz);
@@ -91,7 +93,7 @@ contract IntegrationWithdrawTest is BaseTest {
         morpho.withdraw(market, amountSupplied, 0, supplier, receiver);
     }
 
-    function testWithdrawAmount(
+    function testWithdrawAssets(
         uint256 amountSupplied,
         uint256 amountBorrowed,
         uint256 amountWithdrawn,
@@ -102,12 +104,15 @@ contract IntegrationWithdrawTest is BaseTest {
         amountBorrowed = bound(amountBorrowed, 1, amountSupplied - 1);
         amountWithdrawn = bound(amountWithdrawn, 1, amountSupplied - amountBorrowed);
 
+        uint256 collateralPrice = IOracle(market.oracle).price();
+        uint256 amountCollateral = amountBorrowed.wDivUp(LLTV).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice);
+
         borrowableAsset.setBalance(address(this), amountSupplied);
-        collateralAsset.setBalance(BORROWER, amountBorrowed.wDivUp(LLTV));
+        collateralAsset.setBalance(BORROWER, amountCollateral);
         morpho.supply(market, amountSupplied, 0, address(this), hex"");
 
         vm.startPrank(BORROWER);
-        morpho.supplyCollateral(market, amountBorrowed.wDivUp(LLTV), BORROWER, hex"");
+        morpho.supplyCollateral(market, amountCollateral, BORROWER, hex"");
         morpho.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
         vm.stopPrank();
 
@@ -140,6 +145,9 @@ contract IntegrationWithdrawTest is BaseTest {
         amountSupplied = bound(amountSupplied, 2, MAX_TEST_AMOUNT);
         amountBorrowed = bound(amountBorrowed, 1, amountSupplied - 1);
 
+        uint256 collateralPrice = IOracle(market.oracle).price();
+        uint256 amountCollateral = amountBorrowed.wDivUp(LLTV).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice);
+
         uint256 expectedSupplyShares = amountSupplied * SharesMathLib.VIRTUAL_SHARES;
         uint256 availableLiquidity = amountSupplied - amountBorrowed;
         uint256 withdrawableShares = availableLiquidity.mulDivDown(
@@ -153,11 +161,11 @@ contract IntegrationWithdrawTest is BaseTest {
         );
 
         borrowableAsset.setBalance(address(this), amountSupplied);
-        collateralAsset.setBalance(BORROWER, amountBorrowed.wDivUp(LLTV));
+        collateralAsset.setBalance(BORROWER, amountCollateral);
         morpho.supply(market, amountSupplied, 0, address(this), hex"");
 
         vm.startPrank(BORROWER);
-        morpho.supplyCollateral(market, amountBorrowed.wDivUp(LLTV), BORROWER, hex"");
+        morpho.supplyCollateral(market, amountCollateral, BORROWER, hex"");
         morpho.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
         vm.stopPrank();
 
@@ -178,7 +186,7 @@ contract IntegrationWithdrawTest is BaseTest {
         );
     }
 
-    function testWithdrawAmountOnBehalf(
+    function testWithdrawAssetsOnBehalf(
         uint256 amountSupplied,
         uint256 amountBorrowed,
         uint256 amountWithdrawn,
@@ -192,12 +200,15 @@ contract IntegrationWithdrawTest is BaseTest {
         amountBorrowed = bound(amountBorrowed, 1, amountSupplied - 1);
         amountWithdrawn = bound(amountWithdrawn, 1, amountSupplied - amountBorrowed);
 
+        uint256 collateralPrice = IOracle(market.oracle).price();
+        uint256 amountCollateral = amountBorrowed.wDivUp(LLTV).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice);
+
         borrowableAsset.setBalance(onBehalf, amountSupplied);
-        collateralAsset.setBalance(onBehalf, amountBorrowed.wDivUp(LLTV));
+        collateralAsset.setBalance(onBehalf, amountCollateral);
 
         vm.startPrank(onBehalf);
-        collateralAsset.approve(address(morpho), amountBorrowed.wDivUp(LLTV));
-        morpho.supplyCollateral(market, amountBorrowed.wDivUp(LLTV), onBehalf, hex"");
+        collateralAsset.approve(address(morpho), amountCollateral);
+        morpho.supplyCollateral(market, amountCollateral, onBehalf, hex"");
         borrowableAsset.approve(address(morpho), amountSupplied);
         morpho.supply(market, amountSupplied, 0, onBehalf, hex"");
         morpho.borrow(market, amountBorrowed, 0, onBehalf, onBehalf);
@@ -227,7 +238,7 @@ contract IntegrationWithdrawTest is BaseTest {
         );
     }
 
-    function testWithdrawShares(
+    function testWithdrawSharesOnBehalf(
         uint256 amountSupplied,
         uint256 amountBorrowed,
         uint256 sharesWithdrawn,
@@ -239,6 +250,9 @@ contract IntegrationWithdrawTest is BaseTest {
 
         amountSupplied = bound(amountSupplied, 2, MAX_TEST_AMOUNT);
         amountBorrowed = bound(amountBorrowed, 1, amountSupplied - 1);
+
+        uint256 collateralPrice = IOracle(market.oracle).price();
+        uint256 amountCollateral = amountBorrowed.wDivUp(LLTV).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice);
 
         uint256 expectedSupplyShares = amountSupplied * SharesMathLib.VIRTUAL_SHARES;
         uint256 availableLiquidity = amountSupplied - amountBorrowed;
@@ -253,11 +267,11 @@ contract IntegrationWithdrawTest is BaseTest {
         );
 
         borrowableAsset.setBalance(onBehalf, amountSupplied);
-        collateralAsset.setBalance(onBehalf, amountBorrowed.wDivUp(LLTV));
+        collateralAsset.setBalance(onBehalf, amountCollateral);
 
         vm.startPrank(onBehalf);
-        collateralAsset.approve(address(morpho), amountBorrowed.wDivUp(LLTV));
-        morpho.supplyCollateral(market, amountBorrowed.wDivUp(LLTV), onBehalf, hex"");
+        collateralAsset.approve(address(morpho), amountCollateral);
+        morpho.supplyCollateral(market, amountCollateral, onBehalf, hex"");
         borrowableAsset.approve(address(morpho), amountSupplied);
         morpho.supply(market, amountSupplied, 0, onBehalf, hex"");
         morpho.borrow(market, amountBorrowed, 0, onBehalf, onBehalf);

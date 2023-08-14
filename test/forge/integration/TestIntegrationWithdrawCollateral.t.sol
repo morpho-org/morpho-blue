@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import "../BaseTest.sol";
 
 contract IntegrationWithdrawCollateralTest is BaseTest {
-    using FixedPointMathLib for uint256;
+    using MathLib for uint256;
 
     function testWithdrawCollateralMarketNotCreated(Market memory marketFuzz, address supplier, address receiver)
         public
@@ -26,7 +26,7 @@ contract IntegrationWithdrawCollateralTest is BaseTest {
         collateralAsset.approve(address(morpho), amount);
         morpho.supplyCollateral(market, amount, supplier, hex"");
 
-        vm.expectRevert(bytes(ErrorsLib.ZERO_AMOUNT));
+        vm.expectRevert(bytes(ErrorsLib.ZERO_ASSETS));
         morpho.withdrawCollateral(market, 0, supplier, receiver);
         vm.stopPrank();
     }

@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import "../BaseTest.sol";
 
 contract IntegrationBorrowTest is BaseTest {
-    using FixedPointMathLib for uint256;
+    using MathLib for uint256;
 
     function testBorrowMarketNotCreated(
         Market memory marketFuzz,
@@ -110,7 +110,7 @@ contract IntegrationBorrowTest is BaseTest {
         vm.stopPrank();
     }
 
-    function testBorrowAmount(
+    function testBorrowAssets(
         uint256 amountCollateral,
         uint256 amountSupplied,
         uint256 amountBorrowed,
@@ -161,7 +161,7 @@ contract IntegrationBorrowTest is BaseTest {
 
         uint256 expectedBorrowedValue =
             sharesBorrowed.mulDivUp(expectedAmountBorrowed + 1, sharesBorrowed + SharesMathLib.VIRTUAL_SHARES);
-        uint256 minCollateral = expectedBorrowedValue.wDivUp(market.lltv).wDivUp(priceCollateral);
+        uint256 minCollateral = expectedBorrowedValue.wDivUp(market.lltv).mulDivUp(ORACLE_PRICE_SCALE, priceCollateral);
         amountCollateral = bound(amountCollateral, minCollateral, max(minCollateral, MAX_TEST_AMOUNT));
 
         amountSupplied = bound(amountSupplied, expectedAmountBorrowed, MAX_TEST_AMOUNT);
@@ -186,7 +186,7 @@ contract IntegrationBorrowTest is BaseTest {
         assertEq(borrowableAsset.balanceOf(address(morpho)), amountSupplied - expectedAmountBorrowed, "morpho balance");
     }
 
-    function testBorrowAmountOnBehalf(
+    function testBorrowAssetsOnBehalf(
         uint256 amountCollateral,
         uint256 amountSupplied,
         uint256 amountBorrowed,
@@ -244,7 +244,7 @@ contract IntegrationBorrowTest is BaseTest {
 
         uint256 expectedBorrowedValue =
             sharesBorrowed.mulDivUp(expectedAmountBorrowed + 1, sharesBorrowed + SharesMathLib.VIRTUAL_SHARES);
-        uint256 minCollateral = expectedBorrowedValue.wDivUp(market.lltv).wDivUp(priceCollateral);
+        uint256 minCollateral = expectedBorrowedValue.wDivUp(market.lltv).mulDivUp(ORACLE_PRICE_SCALE, priceCollateral);
         amountCollateral = bound(amountCollateral, minCollateral, max(minCollateral, MAX_TEST_AMOUNT));
 
         amountSupplied = bound(amountSupplied, expectedAmountBorrowed, MAX_TEST_AMOUNT);
