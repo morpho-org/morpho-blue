@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
+/// @title ErrorsLib
+/// @author Morpho Labs
+/// @custom:contact security@morpho.xyz
+/// @notice Library exposing error messages.
 library ErrorsLib {
     /// @notice Thrown when the caller is not the owner.
     string internal constant NOT_OWNER = "not owner";
@@ -49,4 +53,10 @@ library ErrorsLib {
 
     /// @notice Thrown when the authorization signature is expired.
     string internal constant SIGNATURE_EXPIRED = "signature expired";
+
+    /// @notice Thrown when a token transfer has failed.
+    string internal constant TRANSFER_FAILED = "transfer failed";
+
+    /// @notice Thrown when a token transferFrom has failed.
+    string internal constant TRANSFER_FROM_FAILED = "transferFrom failed";
 }
