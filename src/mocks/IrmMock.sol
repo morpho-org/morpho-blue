@@ -25,4 +25,8 @@ contract IrmMock is IIrm {
         // This is a very simple model (to refine later) where x% utilization corresponds to x% APR.
         return utilization / 365 days;
     }
+
+    function updateIRM(Market memory market) external {
+        // solhint-disable-next-line no-empty-blocks
+    }
 }

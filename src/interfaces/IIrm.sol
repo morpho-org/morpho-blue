@@ -9,5 +9,8 @@ import {Market} from "./IMorpho.sol";
 /// @notice Interface that IRMs used by Morpho must implement.
 interface IIrm {
     /// @notice Returns the borrow rate of a `market`.
-    function borrowRate(Market memory market) external returns (uint256);
+    function borrowRate(Market memory market) external view returns (uint256);
+
+    /// @notice Blue calls back through this function to allow the IRM to update its own state.
+    function updateIRM(Market memory market) external;
 }
