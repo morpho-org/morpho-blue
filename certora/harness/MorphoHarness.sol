@@ -3,12 +3,9 @@ pragma solidity 0.8.19;
 import "../../src/Morpho.sol";
 import "../../src/libraries/SharesMathLib.sol";
 
-
 contract MorphoHarness is Morpho {
-    constructor(address newOwner) Morpho(newOwner) { 
+    constructor(address newOwner) Morpho(newOwner) {}
 
-    }
-    
     function getVirtualTotalSupply(Id id) external view returns (uint256) {
         return totalSupply[id] + SharesMathLib.VIRTUAL_ASSETS;
     }
