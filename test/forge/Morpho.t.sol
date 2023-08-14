@@ -819,6 +819,31 @@ contract MorphoTest is
         morpho.withdrawCollateral(market, assets, address(this), address(this));
     }
 
+    function testAccrueInterestsLowShares() public {
+        uint256 shares = 1e18;
+        uint256 assets = 1;
+
+        vm.prank(OWNER);
+        morpho.setFee(market, MAX_FEE);
+
+        // Have a low total supply shares.
+        borrowableToken.setBalance(address(this), assets);
+        morpho.supply(market, assets, 0, address(this), hex"");
+        morpho.withdraw(market, 0, shares - 1, address(this), address(this));
+
+        // Borrow to have non zero interests.
+        uint256 collateralAmount = assets.wDivUp(LLTV);
+        collateralToken.setBalance(address(this), collateralAmount);
+        morpho.supplyCollateral(market, collateralAmount, BORROWER, hex"");
+        vm.prank(BORROWER);
+        morpho.borrow(market, assets, 0, BORROWER, BORROWER);
+
+        vm.warp(2 * 365 days);
+        morpho.accrueInterests(market);
+
+        assertGt(morpho.supplyShares(id, morpho.feeRecipient()), 0, "recipient shares");
+    }
+
     function testSetAuthorization(address authorized, bool isAuthorized) public {
         morpho.setAuthorization(authorized, isAuthorized);
         assertEq(morpho.isAuthorized(address(this), authorized), isAuthorized);
