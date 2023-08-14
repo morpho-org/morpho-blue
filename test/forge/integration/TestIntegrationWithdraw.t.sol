@@ -124,7 +124,7 @@ contract IntegrationWithdrawTest is BaseTest {
             morpho.withdraw(market, amountWithdrawn, 0, address(this), receiver);
 
         uint256 expectedSupplyShares = (amountSupplied - amountWithdrawn) * SharesMathLib.VIRTUAL_SHARES;
-        
+
         assertEq(returnAssets, amountWithdrawn, "returned asset amount");
         assertEq(returnShares, amountWithdrawn * SharesMathLib.VIRTUAL_SHARES, "returned shares amount");
         assertEq(morpho.supplyShares(id, address(this)), expectedSupplyShares, "supply shares");
