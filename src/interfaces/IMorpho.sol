@@ -212,8 +212,12 @@ interface IMorpho is IFlashLender {
     /// @param market The market of the position.
     /// @param borrower The owner of the position.
     /// @param seized The assets of collateral to seize.
-    /// @param data Arbitrary data to pass to the `onMorphoLiquidate` callback. Pass empty data if not needed
-    function liquidate(Market memory market, address borrower, uint256 seized, bytes memory data) external;
+    /// @param data Arbitrary data to pass to the `onMorphoLiquidate` callback. Pass empty data if not needed.
+    /// @return assetsRepaid The assets of assets repaid.
+    /// @return sharesRepaid The assets of shares repaid.
+    function liquidate(Market memory market, address borrower, uint256 seized, bytes memory data)
+        external
+        returns (uint256 assetsRepaid, uint256 sharesRepaid);
 
     /// @notice Sets the authorization for `authorized` to manage `msg.sender`'s positions.
     /// @param authorized The authorized address.
