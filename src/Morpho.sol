@@ -85,6 +85,8 @@ contract Morpho is IMorpho {
     mapping(address => mapping(address => bool)) public isAuthorized;
     /// @inheritdoc IMorpho
     mapping(address => uint256) public nonce;
+    /// @inheritdoc IMorpho
+    mapping(Id => Market) public idToMarket;
 
     /* CONSTRUCTOR */
 
@@ -159,6 +161,7 @@ contract Morpho is IMorpho {
         require(lastUpdate[id] == 0, ErrorsLib.MARKET_CREATED);
 
         lastUpdate[id] = block.timestamp;
+        idToMarket[id] = market;
 
         emit EventsLib.CreateMarket(id, market);
     }
@@ -327,7 +330,10 @@ contract Morpho is IMorpho {
     /* LIQUIDATION */
 
     /// @inheritdoc IMorpho
-    function liquidate(Market memory market, address borrower, uint256 seized, bytes calldata data) external {
+    function liquidate(Market memory market, address borrower, uint256 seized, bytes calldata data)
+        external
+        returns (uint256 assetsRepaid, uint256 sharesRepaid)
+    {
         Id id = market.id();
         require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
         require(seized != 0, ErrorsLib.ZERO_ASSETS);
@@ -338,13 +344,13 @@ contract Morpho is IMorpho {
 
         require(!_isHealthy(market, id, borrower, collateralPrice), ErrorsLib.HEALTHY_POSITION);
 
-        uint256 repaid =
+        assetsRepaid =
             seized.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(liquidationIncentiveFactor(market.lltv));
-        uint256 repaidShares = repaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
+        sharesRepaid = assetsRepaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
 
-        borrowShares[id][borrower] -= repaidShares;
-        totalBorrowShares[id] -= repaidShares;
-        totalBorrow[id] -= repaid;
+        borrowShares[id][borrower] -= sharesRepaid;
+        totalBorrowShares[id] -= sharesRepaid;
+        totalBorrow[id] -= assetsRepaid;
 
         collateral[id][borrower] -= seized;
 
@@ -361,11 +367,11 @@ contract Morpho is IMorpho {
 
         IERC20(market.collateralToken).safeTransfer(msg.sender, seized);
 
-        emit EventsLib.Liquidate(id, msg.sender, borrower, repaid, repaidShares, seized, badDebtShares);
+        emit EventsLib.Liquidate(id, msg.sender, borrower, assetsRepaid, sharesRepaid, seized, badDebtShares);
 
-        if (data.length > 0) IMorphoLiquidateCallback(msg.sender).onMorphoLiquidate(repaid, data);
+        if (data.length > 0) IMorphoLiquidateCallback(msg.sender).onMorphoLiquidate(assetsRepaid, data);
 
-        IERC20(market.borrowableToken).safeTransferFrom(msg.sender, address(this), repaid);
+        IERC20(market.borrowableToken).safeTransferFrom(msg.sender, address(this), assetsRepaid);
     }
 
     /* FLASH LOANS */

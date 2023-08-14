@@ -5,6 +5,7 @@ import "../BaseTest.sol";
 
 contract IntegrationWithdrawTest is BaseTest {
     using MathLib for uint256;
+    using SharesMathLib for uint256;
 
     function testWithdrawMarketNotCreated(Market memory marketFuzz) public {
         vm.assume(neq(marketFuzz, market));
@@ -16,18 +17,18 @@ contract IntegrationWithdrawTest is BaseTest {
     function testWithdrawZeroAmount(uint256 amount) public {
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
-        borrowableAsset.setBalance(address(this), amount);
+        borrowableToken.setBalance(address(this), amount);
         morpho.supply(market, amount, 0, address(this), hex"");
 
         vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
         morpho.withdraw(market, 0, 0, address(this), address(this));
     }
 
-    function testWithdrawInconsistantInput(uint256 amount, uint256 shares) public {
+    function testWithdrawInconsistentInput(uint256 amount, uint256 shares) public {
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
         shares = bound(shares, 1, MAX_TEST_SHARES);
 
-        borrowableAsset.setBalance(address(this), amount);
+        borrowableToken.setBalance(address(this), amount);
         morpho.supply(market, amount, 0, address(this), hex"");
 
         vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
@@ -37,7 +38,7 @@ contract IntegrationWithdrawTest is BaseTest {
     function testWithdrawToZeroAddress(uint256 amount) public {
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
-        borrowableAsset.setBalance(address(this), amount);
+        borrowableToken.setBalance(address(this), amount);
         morpho.supply(market, amount, 0, address(this), hex"");
 
         vm.expectRevert(bytes(ErrorsLib.ZERO_ADDRESS));
@@ -48,7 +49,7 @@ contract IntegrationWithdrawTest is BaseTest {
         vm.assume(attacker != address(this));
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
-        borrowableAsset.setBalance(address(this), amount);
+        borrowableToken.setBalance(address(this), amount);
         morpho.supply(market, amount, 0, address(this), hex"");
 
         vm.prank(attacker);
@@ -70,20 +71,20 @@ contract IntegrationWithdrawTest is BaseTest {
         amountBorrowed = bound(amountBorrowed, MIN_TEST_AMOUNT, MAX_TEST_AMOUNT);
         amountSupplied = bound(amountSupplied, amountBorrowed + 1, MAX_TEST_AMOUNT + 1);
 
-        borrowableAsset.setBalance(supplier, amountSupplied);
+        borrowableToken.setBalance(supplier, amountSupplied);
 
         vm.startPrank(supplier);
-        borrowableAsset.approve(address(morpho), amountSupplied);
+        borrowableToken.approve(address(morpho), amountSupplied);
         morpho.supply(market, amountSupplied, 0, supplier, hex"");
         vm.stopPrank();
 
         uint256 collateralPrice = IOracle(market.oracle).price();
         uint256 amountCollateral = amountBorrowed.wDivUp(LLTV).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice);
 
-        collateralAsset.setBalance(borrowerFuzz, amountCollateral);
+        collateralToken.setBalance(borrowerFuzz, amountCollateral);
 
         vm.startPrank(borrowerFuzz);
-        collateralAsset.approve(address(morpho), amountCollateral);
+        collateralToken.approve(address(morpho), amountCollateral);
         morpho.supplyCollateral(market, amountCollateral, borrowerFuzz, hex"");
         morpho.borrow(market, amountBorrowed, 0, borrowerFuzz, receiver);
         vm.stopPrank();
@@ -107,8 +108,8 @@ contract IntegrationWithdrawTest is BaseTest {
         uint256 collateralPrice = IOracle(market.oracle).price();
         uint256 amountCollateral = amountBorrowed.wDivUp(LLTV).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice);
 
-        borrowableAsset.setBalance(address(this), amountSupplied);
-        collateralAsset.setBalance(BORROWER, amountCollateral);
+        borrowableToken.setBalance(address(this), amountSupplied);
+        collateralToken.setBalance(BORROWER, amountCollateral);
         morpho.supply(market, amountSupplied, 0, address(this), hex"");
 
         vm.startPrank(BORROWER);
@@ -116,24 +117,26 @@ contract IntegrationWithdrawTest is BaseTest {
         morpho.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
         vm.stopPrank();
 
+        uint256 expectedSupplyShares = amountSupplied.toSharesDown(0, 0);
+        uint256 expectedWithdrawnShares = amountWithdrawn.toSharesUp(amountSupplied, expectedSupplyShares);
+
         vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.Withdraw(
-            id, address(this), address(this), receiver, amountWithdrawn, amountWithdrawn * SharesMathLib.VIRTUAL_SHARES
-        );
+            id, address(this), address(this), receiver, amountWithdrawn, expectedWithdrawnShares);
         (uint256 returnAssets, uint256 returnShares) =
             morpho.withdraw(market, amountWithdrawn, 0, address(this), receiver);
 
-        uint256 expectedSupplyShares = (amountSupplied - amountWithdrawn) * SharesMathLib.VIRTUAL_SHARES;
+        expectedSupplyShares -= expectedWithdrawnShares;
 
         assertEq(returnAssets, amountWithdrawn, "returned asset amount");
-        assertEq(returnShares, amountWithdrawn * SharesMathLib.VIRTUAL_SHARES, "returned shares amount");
+        assertEq(returnShares, expectedWithdrawnShares, "returned shares amount");
         assertEq(morpho.supplyShares(id, address(this)), expectedSupplyShares, "supply shares");
         assertEq(morpho.totalSupplyShares(id), expectedSupplyShares, "total supply shares");
         assertEq(morpho.totalSupply(id), amountSupplied - amountWithdrawn, "total supply");
-        assertEq(borrowableAsset.balanceOf(receiver), amountWithdrawn, "receiver balance");
-        assertEq(borrowableAsset.balanceOf(BORROWER), amountBorrowed, "borrower balance");
+        assertEq(borrowableToken.balanceOf(receiver), amountWithdrawn, "receiver balance");
+        assertEq(borrowableToken.balanceOf(BORROWER), amountBorrowed, "borrower balance");
         assertEq(
-            borrowableAsset.balanceOf(address(morpho)),
+            borrowableToken.balanceOf(address(morpho)),
             amountSupplied - amountBorrowed - amountWithdrawn,
             "morpho balance"
         );
@@ -152,20 +155,16 @@ contract IntegrationWithdrawTest is BaseTest {
         uint256 collateralPrice = IOracle(market.oracle).price();
         uint256 amountCollateral = amountBorrowed.wDivUp(LLTV).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice);
 
-        uint256 expectedSupplyShares = amountSupplied * SharesMathLib.VIRTUAL_SHARES;
+        uint256 expectedSupplyShares = amountSupplied.toSharesDown(0, 0);
         uint256 availableLiquidity = amountSupplied - amountBorrowed;
-        uint256 withdrawableShares = availableLiquidity.mulDivDown(
-            expectedSupplyShares + SharesMathLib.VIRTUAL_SHARES, amountSupplied + SharesMathLib.VIRTUAL_ASSETS
-        );
-
+        uint256 withdrawableShares = availableLiquidity.toSharesDown(amountSupplied, expectedSupplyShares);
         vm.assume(withdrawableShares != 0);
-        sharesWithdrawn = bound(sharesWithdrawn, 1, withdrawableShares);
-        uint256 expectedAmountWithdrawn = sharesWithdrawn.mulDivDown(
-            amountSupplied + SharesMathLib.VIRTUAL_ASSETS, expectedSupplyShares + SharesMathLib.VIRTUAL_SHARES
-        );
 
-        borrowableAsset.setBalance(address(this), amountSupplied);
-        collateralAsset.setBalance(BORROWER, amountCollateral);
+        sharesWithdrawn = bound(sharesWithdrawn, 1, withdrawableShares);
+        uint256 expectedAmountWithdrawn = sharesWithdrawn.toAssetsDown(amountSupplied, expectedSupplyShares);
+
+        borrowableToken.setBalance(address(this), amountSupplied);
+        collateralToken.setBalance(BORROWER, amountCollateral);
         morpho.supply(market, amountSupplied, 0, address(this), hex"");
 
         vm.startPrank(BORROWER);
@@ -185,9 +184,9 @@ contract IntegrationWithdrawTest is BaseTest {
         assertEq(morpho.supplyShares(id, address(this)), expectedSupplyShares, "supply shares");
         assertEq(morpho.totalSupply(id), amountSupplied - expectedAmountWithdrawn, "total supply");
         assertEq(morpho.totalSupplyShares(id), expectedSupplyShares, "total supply shares");
-        assertEq(borrowableAsset.balanceOf(receiver), expectedAmountWithdrawn, "receiver balance");
+        assertEq(borrowableToken.balanceOf(receiver), expectedAmountWithdrawn, "receiver balance");
         assertEq(
-            borrowableAsset.balanceOf(address(morpho)),
+            borrowableToken.balanceOf(address(morpho)),
             amountSupplied - amountBorrowed - expectedAmountWithdrawn,
             "morpho balance"
         );
@@ -210,38 +209,39 @@ contract IntegrationWithdrawTest is BaseTest {
         uint256 collateralPrice = IOracle(market.oracle).price();
         uint256 amountCollateral = amountBorrowed.wDivUp(LLTV).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice);
 
-        borrowableAsset.setBalance(onBehalf, amountSupplied);
-        collateralAsset.setBalance(onBehalf, amountCollateral);
+        borrowableToken.setBalance(onBehalf, amountSupplied);
+        collateralToken.setBalance(onBehalf, amountCollateral);
 
         vm.startPrank(onBehalf);
-        collateralAsset.approve(address(morpho), amountCollateral);
+        collateralToken.approve(address(morpho), amountCollateral);
         morpho.supplyCollateral(market, amountCollateral, onBehalf, hex"");
-        borrowableAsset.approve(address(morpho), amountSupplied);
+        borrowableToken.approve(address(morpho), amountSupplied);
         morpho.supply(market, amountSupplied, 0, onBehalf, hex"");
         morpho.borrow(market, amountBorrowed, 0, onBehalf, onBehalf);
         morpho.setAuthorization(BORROWER, true);
         vm.stopPrank();
 
-        uint256 receiverBalanceBefore = borrowableAsset.balanceOf(receiver);
+        uint256 expectedSupplyShares = amountSupplied.toSharesDown(0, 0);
+        uint256 expectedWithdrawnShares = amountWithdrawn.toSharesUp(amountSupplied, expectedSupplyShares);
+
+        uint256 receiverBalanceBefore = borrowableToken.balanceOf(receiver);
 
         vm.startPrank(BORROWER);
 
         vm.expectEmit(true, true, true, true, address(morpho));
-        emit EventsLib.Withdraw(
-            id, BORROWER, onBehalf, receiver, amountWithdrawn, amountWithdrawn * SharesMathLib.VIRTUAL_SHARES
-        );
+        emit EventsLib.Withdraw(id, BORROWER, onBehalf, receiver, amountWithdrawn, expectedWithdrawnShares);
         (uint256 returnAssets, uint256 returnShares) = morpho.withdraw(market, amountWithdrawn, 0, onBehalf, receiver);
 
-        uint256 expectedSupplyShares = (amountSupplied - amountWithdrawn) * SharesMathLib.VIRTUAL_SHARES;
+        expectedSupplyShares -= expectedWithdrawnShares;
 
         assertEq(returnAssets, amountWithdrawn, "returned asset amount");
-        assertEq(returnShares, amountWithdrawn * SharesMathLib.VIRTUAL_SHARES, "returned shares amount");
+        assertEq(returnShares, expectedWithdrawnShares, "returned shares amount");
         assertEq(morpho.supplyShares(id, onBehalf), expectedSupplyShares, "supply shares");
         assertEq(morpho.totalSupply(id), amountSupplied - amountWithdrawn, "total supply");
         assertEq(morpho.totalSupplyShares(id), expectedSupplyShares, "total supply shares");
-        assertEq(borrowableAsset.balanceOf(receiver) - receiverBalanceBefore, amountWithdrawn, "receiver balance");
+        assertEq(borrowableToken.balanceOf(receiver) - receiverBalanceBefore, amountWithdrawn, "receiver balance");
         assertEq(
-            borrowableAsset.balanceOf(address(morpho)),
+            borrowableToken.balanceOf(address(morpho)),
             amountSupplied - amountBorrowed - amountWithdrawn,
             "morpho balance"
         );
@@ -263,31 +263,27 @@ contract IntegrationWithdrawTest is BaseTest {
         uint256 collateralPrice = IOracle(market.oracle).price();
         uint256 amountCollateral = amountBorrowed.wDivUp(LLTV).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice);
 
-        uint256 expectedSupplyShares = amountSupplied * SharesMathLib.VIRTUAL_SHARES;
+        uint256 expectedSupplyShares = amountSupplied.toSharesDown(0, 0);
         uint256 availableLiquidity = amountSupplied - amountBorrowed;
-        uint256 withdrawableShares = availableLiquidity.mulDivDown(
-            expectedSupplyShares + SharesMathLib.VIRTUAL_SHARES, amountSupplied + SharesMathLib.VIRTUAL_ASSETS
-        );
-
+        uint256 withdrawableShares = availableLiquidity.toSharesDown(amountSupplied, expectedSupplyShares);
         vm.assume(withdrawableShares != 0);
-        sharesWithdrawn = bound(sharesWithdrawn, 1, withdrawableShares);
-        uint256 expectedAmountWithdrawn = sharesWithdrawn.mulDivDown(
-            amountSupplied + SharesMathLib.VIRTUAL_ASSETS, expectedSupplyShares + SharesMathLib.VIRTUAL_SHARES
-        );
 
-        borrowableAsset.setBalance(onBehalf, amountSupplied);
-        collateralAsset.setBalance(onBehalf, amountCollateral);
+        sharesWithdrawn = bound(sharesWithdrawn, 1, withdrawableShares);
+        uint256 expectedAmountWithdrawn = sharesWithdrawn.toAssetsDown(amountSupplied, expectedSupplyShares);
+
+        borrowableToken.setBalance(onBehalf, amountSupplied);
+        collateralToken.setBalance(onBehalf, amountCollateral);
 
         vm.startPrank(onBehalf);
-        collateralAsset.approve(address(morpho), amountCollateral);
+        collateralToken.approve(address(morpho), amountCollateral);
         morpho.supplyCollateral(market, amountCollateral, onBehalf, hex"");
-        borrowableAsset.approve(address(morpho), amountSupplied);
+        borrowableToken.approve(address(morpho), amountSupplied);
         morpho.supply(market, amountSupplied, 0, onBehalf, hex"");
         morpho.borrow(market, amountBorrowed, 0, onBehalf, onBehalf);
         morpho.setAuthorization(BORROWER, true);
         vm.stopPrank();
 
-        uint256 receiverBalanceBefore = borrowableAsset.balanceOf(receiver);
+        uint256 receiverBalanceBefore = borrowableToken.balanceOf(receiver);
 
         vm.startPrank(BORROWER);
 
@@ -303,10 +299,10 @@ contract IntegrationWithdrawTest is BaseTest {
         assertEq(morpho.totalSupply(id), amountSupplied - expectedAmountWithdrawn, "total supply");
         assertEq(morpho.totalSupplyShares(id), expectedSupplyShares, "total supply shares");
         assertEq(
-            borrowableAsset.balanceOf(receiver) - receiverBalanceBefore, expectedAmountWithdrawn, "receiver balance"
+            borrowableToken.balanceOf(receiver) - receiverBalanceBefore, expectedAmountWithdrawn, "receiver balance"
         );
         assertEq(
-            borrowableAsset.balanceOf(address(morpho)),
+            borrowableToken.balanceOf(address(morpho)),
             amountSupplied - amountBorrowed - expectedAmountWithdrawn,
             "morpho balance"
         );

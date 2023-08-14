@@ -29,8 +29,8 @@ contract BaseTest is Test {
     uint256 internal constant LLTV = 0.8 ether;
 
     Morpho internal morpho;
-    ERC20 internal borrowableAsset;
-    ERC20 internal collateralAsset;
+    ERC20 internal borrowableToken;
+    ERC20 internal collateralToken;
     Oracle internal oracle;
     Irm internal irm;
     Market internal market;
@@ -46,11 +46,11 @@ contract BaseTest is Test {
         vm.label(address(morpho), "Morpho");
 
         // List a market.
-        borrowableAsset = new ERC20("borrowable", "B");
-        vm.label(address(borrowableAsset), "Borrowable asset");
+        borrowableToken = new ERC20("borrowable", "B");
+        vm.label(address(borrowableToken), "Borrowable asset");
 
-        collateralAsset = new ERC20("collateral", "C");
-        vm.label(address(collateralAsset), "Collateral asset");
+        collateralToken = new ERC20("collateral", "C");
+        vm.label(address(collateralToken), "Collateral asset");
 
         oracle = new Oracle();
         vm.label(address(oracle), "Oracle");
@@ -60,7 +60,7 @@ contract BaseTest is Test {
         irm = new Irm(morpho);
         vm.label(address(irm), "IRM");
 
-        market = Market(address(borrowableAsset), address(collateralAsset), address(oracle), address(irm), LLTV);
+        market = Market(address(borrowableToken), address(collateralToken), address(oracle), address(irm), LLTV);
         id = market.id();
 
         vm.startPrank(OWNER);
@@ -71,15 +71,15 @@ contract BaseTest is Test {
 
         oracle.setPrice(1e25);
 
-        borrowableAsset.approve(address(morpho), type(uint256).max);
-        collateralAsset.approve(address(morpho), type(uint256).max);
+        borrowableToken.approve(address(morpho), type(uint256).max);
+        collateralToken.approve(address(morpho), type(uint256).max);
         vm.startPrank(BORROWER);
-        borrowableAsset.approve(address(morpho), type(uint256).max);
-        collateralAsset.approve(address(morpho), type(uint256).max);
+        borrowableToken.approve(address(morpho), type(uint256).max);
+        collateralToken.approve(address(morpho), type(uint256).max);
         vm.stopPrank();
         vm.startPrank(LIQUIDATOR);
-        borrowableAsset.approve(address(morpho), type(uint256).max);
-        collateralAsset.approve(address(morpho), type(uint256).max);
+        borrowableToken.approve(address(morpho), type(uint256).max);
+        collateralToken.approve(address(morpho), type(uint256).max);
         vm.stopPrank();
 
         vm.roll(block.number + 1);
@@ -91,14 +91,14 @@ contract BaseTest is Test {
     }
 
     function _provideLiquidity(uint256 amount) internal {
-        borrowableAsset.setBalance(address(this), amount);
+        borrowableToken.setBalance(address(this), amount);
         morpho.supply(market, amount, 0, address(this), hex"");
     }
 
     function _provideCollateralForBorrower(address borrower) internal {
-        collateralAsset.setBalance(borrower, HIGH_COLLATERAL_AMOUNT);
+        collateralToken.setBalance(borrower, HIGH_COLLATERAL_AMOUNT);
         vm.startPrank(borrower);
-        collateralAsset.approve(address(morpho), type(uint256).max);
+        collateralToken.approve(address(morpho), type(uint256).max);
         morpho.supplyCollateral(market, HIGH_COLLATERAL_AMOUNT, borrower, hex"");
         vm.stopPrank();
     }

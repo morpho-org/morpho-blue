@@ -5,6 +5,7 @@ import "../BaseTest.sol";
 
 contract IntegrationBorrowTest is BaseTest {
     using MathLib for uint256;
+    using SharesMathLib for uint256;
 
     function testBorrowMarketNotCreated(
         Market memory marketFuzz,
@@ -52,10 +53,10 @@ contract IntegrationBorrowTest is BaseTest {
 
         _provideLiquidity(amount);
 
-        collateralAsset.setBalance(supplier, amount);
+        collateralToken.setBalance(supplier, amount);
 
         vm.startPrank(supplier);
-        collateralAsset.approve(address(morpho), amount);
+        collateralToken.approve(address(morpho), amount);
         morpho.supplyCollateral(market, amount, supplier, hex"");
         vm.stopPrank();
 
@@ -78,7 +79,7 @@ contract IntegrationBorrowTest is BaseTest {
 
         oracle.setPrice(priceCollateral);
 
-        collateralAsset.setBalance(BORROWER, amountCollateral);
+        collateralToken.setBalance(BORROWER, amountCollateral);
 
         vm.startPrank(BORROWER);
         morpho.supplyCollateral(market, amountCollateral, BORROWER, hex"");
@@ -101,7 +102,7 @@ contract IntegrationBorrowTest is BaseTest {
 
         oracle.setPrice(priceCollateral);
 
-        collateralAsset.setBalance(BORROWER, amountCollateral);
+        collateralToken.setBalance(BORROWER, amountCollateral);
 
         vm.startPrank(BORROWER);
         morpho.supplyCollateral(market, amountCollateral, BORROWER, hex"");
@@ -127,12 +128,12 @@ contract IntegrationBorrowTest is BaseTest {
 
         oracle.setPrice(priceCollateral);
 
-        collateralAsset.setBalance(BORROWER, amountCollateral);
+        collateralToken.setBalance(BORROWER, amountCollateral);
 
         vm.startPrank(BORROWER);
         morpho.supplyCollateral(market, amountCollateral, BORROWER, hex"");
 
-        uint256 expectedBorrowShares = amountBorrowed * SharesMathLib.VIRTUAL_SHARES;
+        uint256 expectedBorrowShares = amountBorrowed.toSharesUp(0, 0);
 
         vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.Borrow(id, BORROWER, BORROWER, receiver, amountBorrowed, expectedBorrowShares);
@@ -144,8 +145,8 @@ contract IntegrationBorrowTest is BaseTest {
         assertEq(morpho.totalBorrow(id), amountBorrowed, "total borrow");
         assertEq(morpho.borrowShares(id, BORROWER), expectedBorrowShares, "borrow shares");
         assertEq(morpho.borrowShares(id, BORROWER), expectedBorrowShares, "total borrow shares");
-        assertEq(borrowableAsset.balanceOf(receiver), amountBorrowed, "borrower balance");
-        assertEq(borrowableAsset.balanceOf(address(morpho)), amountSupplied - amountBorrowed, "morpho balance");
+        assertEq(borrowableToken.balanceOf(receiver), amountBorrowed, "borrower balance");
+        assertEq(borrowableToken.balanceOf(address(morpho)), amountSupplied - amountBorrowed, "morpho balance");
     }
 
     function testBorrowShares(
@@ -159,10 +160,9 @@ contract IntegrationBorrowTest is BaseTest {
 
         priceCollateral = bound(priceCollateral, MIN_COLLATERAL_PRICE, MAX_COLLATERAL_PRICE);
         sharesBorrowed = bound(sharesBorrowed, MIN_TEST_SHARES, MAX_TEST_SHARES);
-        uint256 expectedAmountBorrowed = sharesBorrowed.mulDivDown(1, SharesMathLib.VIRTUAL_SHARES);
+        uint256 expectedAmountBorrowed = sharesBorrowed.toAssetsDown(0, 0);
 
-        uint256 expectedBorrowedValue =
-            sharesBorrowed.mulDivUp(expectedAmountBorrowed + 1, sharesBorrowed + SharesMathLib.VIRTUAL_SHARES);
+        uint256 expectedBorrowedValue = sharesBorrowed.toAssetsUp(expectedAmountBorrowed, sharesBorrowed);
         uint256 minCollateral = expectedBorrowedValue.wDivUp(market.lltv).mulDivUp(ORACLE_PRICE_SCALE, priceCollateral);
         amountCollateral = bound(amountCollateral, minCollateral, max(minCollateral, MAX_TEST_AMOUNT));
 
@@ -171,7 +171,7 @@ contract IntegrationBorrowTest is BaseTest {
 
         oracle.setPrice(priceCollateral);
 
-        collateralAsset.setBalance(BORROWER, amountCollateral);
+        collateralToken.setBalance(BORROWER, amountCollateral);
 
         vm.startPrank(BORROWER);
         morpho.supplyCollateral(market, amountCollateral, BORROWER, hex"");
@@ -186,8 +186,8 @@ contract IntegrationBorrowTest is BaseTest {
         assertEq(morpho.totalBorrow(id), expectedAmountBorrowed, "total borrow");
         assertEq(morpho.borrowShares(id, BORROWER), sharesBorrowed, "borrow shares");
         assertEq(morpho.borrowShares(id, BORROWER), sharesBorrowed, "total borrow shares");
-        assertEq(borrowableAsset.balanceOf(receiver), expectedAmountBorrowed, "borrower balance");
-        assertEq(borrowableAsset.balanceOf(address(morpho)), amountSupplied - expectedAmountBorrowed, "morpho balance");
+        assertEq(borrowableToken.balanceOf(receiver), expectedAmountBorrowed, "borrower balance");
+        assertEq(borrowableToken.balanceOf(address(morpho)), amountSupplied - expectedAmountBorrowed, "morpho balance");
     }
 
     function testBorrowAssetsOnBehalf(
@@ -209,15 +209,15 @@ contract IntegrationBorrowTest is BaseTest {
 
         oracle.setPrice(priceCollateral);
 
-        collateralAsset.setBalance(onBehalf, amountCollateral);
+        collateralToken.setBalance(onBehalf, amountCollateral);
 
         vm.startPrank(onBehalf);
-        collateralAsset.approve(address(morpho), amountCollateral);
+        collateralToken.approve(address(morpho), amountCollateral);
         morpho.supplyCollateral(market, amountCollateral, onBehalf, hex"");
         morpho.setAuthorization(BORROWER, true);
         vm.stopPrank();
 
-        uint256 expectedBorrowShares = amountBorrowed * SharesMathLib.VIRTUAL_SHARES;
+        uint256 expectedBorrowShares = amountBorrowed.toSharesUp(0, 0);
 
         vm.prank(BORROWER);
         vm.expectEmit(true, true, true, true, address(morpho));
@@ -229,8 +229,8 @@ contract IntegrationBorrowTest is BaseTest {
         assertEq(morpho.borrowShares(id, onBehalf), expectedBorrowShares, "borrow shares");
         assertEq(morpho.totalBorrow(id), amountBorrowed, "total borrow");
         assertEq(morpho.totalBorrowShares(id), expectedBorrowShares, "total borrow shares");
-        assertEq(borrowableAsset.balanceOf(receiver), amountBorrowed, "borrower balance");
-        assertEq(borrowableAsset.balanceOf(address(morpho)), amountSupplied - amountBorrowed, "morpho balance");
+        assertEq(borrowableToken.balanceOf(receiver), amountBorrowed, "borrower balance");
+        assertEq(borrowableToken.balanceOf(address(morpho)), amountSupplied - amountBorrowed, "morpho balance");
     }
 
     function testBorrowSharesOnBehalf(
@@ -246,10 +246,9 @@ contract IntegrationBorrowTest is BaseTest {
 
         priceCollateral = bound(priceCollateral, MIN_COLLATERAL_PRICE, MAX_COLLATERAL_PRICE);
         sharesBorrowed = bound(sharesBorrowed, MIN_TEST_SHARES, MAX_TEST_SHARES);
-        uint256 expectedAmountBorrowed = sharesBorrowed.mulDivDown(1, SharesMathLib.VIRTUAL_SHARES);
+        uint256 expectedAmountBorrowed = sharesBorrowed.toAssetsDown(0, 0);
 
-        uint256 expectedBorrowedValue =
-            sharesBorrowed.mulDivUp(expectedAmountBorrowed + 1, sharesBorrowed + SharesMathLib.VIRTUAL_SHARES);
+        uint256 expectedBorrowedValue = sharesBorrowed.toAssetsUp(expectedAmountBorrowed, sharesBorrowed);
         uint256 minCollateral = expectedBorrowedValue.wDivUp(market.lltv).mulDivUp(ORACLE_PRICE_SCALE, priceCollateral);
         amountCollateral = bound(amountCollateral, minCollateral, max(minCollateral, MAX_TEST_AMOUNT));
 
@@ -258,10 +257,10 @@ contract IntegrationBorrowTest is BaseTest {
 
         oracle.setPrice(priceCollateral);
 
-        collateralAsset.setBalance(onBehalf, amountCollateral);
+        collateralToken.setBalance(onBehalf, amountCollateral);
 
         vm.startPrank(onBehalf);
-        collateralAsset.approve(address(morpho), amountCollateral);
+        collateralToken.approve(address(morpho), amountCollateral);
         morpho.supplyCollateral(market, amountCollateral, onBehalf, hex"");
         morpho.setAuthorization(BORROWER, true);
         vm.stopPrank();
@@ -276,7 +275,7 @@ contract IntegrationBorrowTest is BaseTest {
         assertEq(morpho.borrowShares(id, onBehalf), sharesBorrowed, "borrow shares");
         assertEq(morpho.totalBorrow(id), expectedAmountBorrowed, "total borrow");
         assertEq(morpho.totalBorrowShares(id), sharesBorrowed, "total borrow shares");
-        assertEq(borrowableAsset.balanceOf(receiver), expectedAmountBorrowed, "borrower balance");
-        assertEq(borrowableAsset.balanceOf(address(morpho)), amountSupplied - expectedAmountBorrowed, "morpho balance");
+        assertEq(borrowableToken.balanceOf(receiver), expectedAmountBorrowed, "borrower balance");
+        assertEq(borrowableToken.balanceOf(address(morpho)), amountSupplied - expectedAmountBorrowed, "morpho balance");
     }
 }

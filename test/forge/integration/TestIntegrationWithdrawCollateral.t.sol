@@ -20,10 +20,10 @@ contract IntegrationWithdrawCollateralTest is BaseTest {
         vm.assume(supplier != address(0));
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
-        collateralAsset.setBalance(supplier, amount);
+        collateralToken.setBalance(supplier, amount);
 
         vm.startPrank(supplier);
-        collateralAsset.approve(address(morpho), amount);
+        collateralToken.approve(address(morpho), amount);
         morpho.supplyCollateral(market, amount, supplier, hex"");
 
         vm.expectRevert(bytes(ErrorsLib.ZERO_ASSETS));
@@ -35,10 +35,10 @@ contract IntegrationWithdrawCollateralTest is BaseTest {
         vm.assume(supplier != address(0));
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
-        collateralAsset.setBalance(supplier, amount);
+        collateralToken.setBalance(supplier, amount);
 
         vm.startPrank(supplier);
-        collateralAsset.approve(address(morpho), type(uint256).max);
+        collateralToken.approve(address(morpho), type(uint256).max);
         morpho.supplyCollateral(market, amount, supplier, hex"");
 
         vm.expectRevert(bytes(ErrorsLib.ZERO_ADDRESS));
@@ -52,10 +52,10 @@ contract IntegrationWithdrawCollateralTest is BaseTest {
         vm.assume(supplier != attacker && supplier != address(0) && receiver != address(0));
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
-        collateralAsset.setBalance(supplier, amount);
+        collateralToken.setBalance(supplier, amount);
 
         vm.startPrank(supplier);
-        collateralAsset.approve(address(morpho), amount);
+        collateralToken.approve(address(morpho), amount);
         morpho.supplyCollateral(market, amount, supplier, hex"");
         vm.stopPrank();
 
@@ -78,7 +78,7 @@ contract IntegrationWithdrawCollateralTest is BaseTest {
 
         oracle.setPrice(priceCollateral);
 
-        collateralAsset.setBalance(BORROWER, amountCollateral);
+        collateralToken.setBalance(BORROWER, amountCollateral);
 
         vm.startPrank(BORROWER);
         morpho.supplyCollateral(market, amountCollateral, BORROWER, hex"");
@@ -108,7 +108,7 @@ contract IntegrationWithdrawCollateralTest is BaseTest {
 
         oracle.setPrice(priceCollateral);
 
-        collateralAsset.setBalance(BORROWER, amountCollateral + amountCollateralExcess);
+        collateralToken.setBalance(BORROWER, amountCollateral + amountCollateralExcess);
 
         vm.startPrank(BORROWER);
 
@@ -122,8 +122,8 @@ contract IntegrationWithdrawCollateralTest is BaseTest {
         vm.stopPrank();
 
         assertEq(morpho.collateral(id, BORROWER), amountCollateral, "collateral balance");
-        assertEq(collateralAsset.balanceOf(receiver), amountCollateralExcess, "lender balance");
-        assertEq(collateralAsset.balanceOf(address(morpho)), amountCollateral, "morpho balance");
+        assertEq(collateralToken.balanceOf(receiver), amountCollateralExcess, "lender balance");
+        assertEq(collateralToken.balanceOf(address(morpho)), amountCollateral, "morpho balance");
     }
 
     function testWithdrawCollateralOnBehalf(
@@ -148,11 +148,11 @@ contract IntegrationWithdrawCollateralTest is BaseTest {
 
         amountCollateralExcess = bound(amountCollateralExcess, 1, MAX_TEST_AMOUNT);
 
-        collateralAsset.setBalance(onBehalf, amountCollateral + amountCollateralExcess);
+        collateralToken.setBalance(onBehalf, amountCollateral + amountCollateralExcess);
 
         vm.startPrank(onBehalf);
 
-        collateralAsset.approve(address(morpho), amountCollateral + amountCollateralExcess);
+        collateralToken.approve(address(morpho), amountCollateral + amountCollateralExcess);
         morpho.supplyCollateral(market, amountCollateral + amountCollateralExcess, onBehalf, hex"");
         morpho.setAuthorization(BORROWER, true);
         morpho.borrow(market, amountBorrowed, 0, onBehalf, onBehalf);
@@ -165,7 +165,7 @@ contract IntegrationWithdrawCollateralTest is BaseTest {
         morpho.withdrawCollateral(market, amountCollateralExcess, onBehalf, receiver);
 
         assertEq(morpho.collateral(id, onBehalf), amountCollateral, "collateral balance");
-        assertEq(collateralAsset.balanceOf(receiver), amountCollateralExcess, "lender balance");
-        assertEq(collateralAsset.balanceOf(address(morpho)), amountCollateral, "morpho balance");
+        assertEq(collateralToken.balanceOf(receiver), amountCollateralExcess, "lender balance");
+        assertEq(collateralToken.balanceOf(address(morpho)), amountCollateral, "morpho balance");
     }
 }
