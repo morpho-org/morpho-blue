@@ -97,7 +97,7 @@ contract MorphoTest is
 
         uint256 totalShares = morpho.totalSupplyShares(id);
         uint256 totalSupply = morpho.totalSupply(id);
-        return supplyShares.wDivDown(totalShares).wMulDown(totalSupply);
+        return supplyShares.toAssetsDown(totalSupply, totalShares);
     }
 
     function borrowBalance(address user) internal view returns (uint256) {
@@ -106,7 +106,7 @@ contract MorphoTest is
 
         uint256 totalShares = morpho.totalBorrowShares(id);
         uint256 totalBorrow = morpho.totalBorrow(id);
-        return borrowerShares.wDivUp(totalShares).wMulUp(totalBorrow);
+        return borrowerShares.toAssetsUp(totalBorrow, totalShares);
     }
 
     // Invariants
@@ -282,7 +282,6 @@ contract MorphoTest is
         morpho.borrow(market, assetsBorrowed, 0, BORROWER, BORROWER);
 
         uint256 totalSupplyBefore = morpho.totalSupply(id);
-        uint256 totalSupplySharesBefore = morpho.totalSupplyShares(id);
 
         // Trigger an accrue.
         vm.warp(block.timestamp + timeElapsed);
@@ -296,9 +295,8 @@ contract MorphoTest is
 
         uint256 accrued = totalSupplyAfter - totalSupplyBefore;
         uint256 expectedFee = accrued.wMulDown(fee);
-        uint256 expectedFeeShares = expectedFee.mulDivDown(totalSupplySharesBefore, totalSupplyAfter - expectedFee);
 
-        assertEq(morpho.supplyShares(id, recipient), expectedFeeShares);
+        assertApproxEqAbs(supplyBalance(recipient), expectedFee, 10);
     }
 
     function testCreateMarketWithNotEnabledLltv(Market memory marketFuzz) public {
