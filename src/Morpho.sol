@@ -85,6 +85,8 @@ contract Morpho is IMorpho {
     mapping(address => mapping(address => bool)) public isAuthorized;
     /// @inheritdoc IMorpho
     mapping(address => uint256) public nonce;
+    /// @inheritdoc IMorpho
+    mapping(Id => Market) public idToMarket;
 
     /* CONSTRUCTOR */
 
@@ -159,6 +161,7 @@ contract Morpho is IMorpho {
         require(lastUpdate[id] == 0, ErrorsLib.MARKET_CREATED);
 
         lastUpdate[id] = block.timestamp;
+        idToMarket[id] = market;
 
         emit EventsLib.CreateMarket(id, market);
     }
