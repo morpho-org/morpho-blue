@@ -8,7 +8,15 @@ methods {
     function totalBorrowShares(MorphoHarness.Id) external returns uint256 envfree;
     function fee(MorphoHarness.Id) external returns uint256 envfree;
 
+    function lastUpdate(MorphoHarness.Id) external returns uint256 envfree;
+    function isLltvEnabled(uint256) external returns bool envfree;
+    function isIrmEnabled(address) external returns bool envfree;
+
     function _.borrowRate(MorphoHarness.Market) external => HAVOC_ECF;
+
+    function getMarketId(MorphoHarness.Market) external returns MorphoHarness.Id envfree;
+    // function _.safeTransfer(address, uint256) internal => DISPATCHER(true);
+    // function _.safeTransferFrom(address, address, uint256) internal => DISPATCHER(true);
 
     function mathLibMulDivUp(uint256, uint256, uint256) external returns uint256 envfree;
     function mathLibMulDivDown(uint256, uint256, uint256) external returns uint256 envfree;
@@ -64,6 +72,12 @@ rule supplyRevertZero(MorphoHarness.Market market) {
 
     assert lastReverted;
 }
+
+invariant invOnlyEnabledLltv(MorphoHarness.Market market)
+    lastUpdate(getMarketId(market)) != 0 => isLltvEnabled(market.lltv);
+
+invariant invOnlyEnabledIrm(MorphoHarness.Market market)
+    lastUpdate(getMarketId(market)) != 0 => isIrmEnabled(market.irm);
 
 /* Check the summaries required by BlueRatioMath.spec */
 rule checkSummaryToAssetsUp(uint256 x, uint256 y, uint256 d) {
