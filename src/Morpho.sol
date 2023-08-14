@@ -395,6 +395,7 @@ contract Morpho is IMorpho {
     /// @dev The signature is malleable, but it has no impact on the security here.
     function setAuthorizationWithSig(Authorization memory authorization, Signature calldata signature) external {
         require(block.timestamp < authorization.deadline, ErrorsLib.SIGNATURE_EXPIRED);
+        require(authorization.nonce == nonce[authorization.authorizer]++, ErrorsLib.INVALID_NONCE);
 
         bytes32 hashStruct = keccak256(abi.encode(AUTHORIZATION_TYPEHASH, authorization));
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, hashStruct));
@@ -402,7 +403,7 @@ contract Morpho is IMorpho {
 
         require(signatory != address(0) && authorization.authorizer == signatory, ErrorsLib.INVALID_SIGNATURE);
 
-        emit EventsLib.IncrementNonce(msg.sender, authorization.authorizer, nonce[authorization.authorizer]++);
+        emit EventsLib.IncrementNonce(msg.sender, authorization.authorizer, authorization.nonce);
 
         isAuthorized[authorization.authorizer][authorization.authorized] = authorization.isAuthorized;
 

@@ -120,9 +120,13 @@ contract IntegrationWithdrawTest is BaseTest {
         emit EventsLib.Withdraw(
             id, address(this), address(this), receiver, amountWithdrawn, amountWithdrawn * SharesMathLib.VIRTUAL_SHARES
         );
-        morpho.withdraw(market, amountWithdrawn, 0, address(this), receiver);
+        (uint256 returnAssets, uint256 returnShares) =
+            morpho.withdraw(market, amountWithdrawn, 0, address(this), receiver);
 
         uint256 expectedSupplyShares = (amountSupplied - amountWithdrawn) * SharesMathLib.VIRTUAL_SHARES;
+        
+        assertEq(returnAssets, amountWithdrawn, "returned asset amount");
+        assertEq(returnShares, amountWithdrawn * SharesMathLib.VIRTUAL_SHARES, "returned shares amount");
         assertEq(morpho.supplyShares(id, address(this)), expectedSupplyShares, "supply shares");
         assertEq(morpho.totalSupplyShares(id), expectedSupplyShares, "total supply shares");
         assertEq(morpho.totalSupply(id), amountSupplied - amountWithdrawn, "total supply");
@@ -171,10 +175,13 @@ contract IntegrationWithdrawTest is BaseTest {
 
         vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.Withdraw(id, address(this), address(this), receiver, expectedAmountWithdrawn, sharesWithdrawn);
-        morpho.withdraw(market, 0, sharesWithdrawn, address(this), receiver);
+        (uint256 returnAssets, uint256 returnShares) =
+            morpho.withdraw(market, 0, sharesWithdrawn, address(this), receiver);
 
         expectedSupplyShares -= sharesWithdrawn;
 
+        assertEq(returnAssets, expectedAmountWithdrawn, "returned asset amount");
+        assertEq(returnShares, sharesWithdrawn, "returned shares amount");
         assertEq(morpho.supplyShares(id, address(this)), expectedSupplyShares, "supply shares");
         assertEq(morpho.totalSupply(id), amountSupplied - expectedAmountWithdrawn, "total supply");
         assertEq(morpho.totalSupplyShares(id), expectedSupplyShares, "total supply shares");
@@ -223,10 +230,12 @@ contract IntegrationWithdrawTest is BaseTest {
         emit EventsLib.Withdraw(
             id, BORROWER, onBehalf, receiver, amountWithdrawn, amountWithdrawn * SharesMathLib.VIRTUAL_SHARES
         );
-        morpho.withdraw(market, amountWithdrawn, 0, onBehalf, receiver);
+        (uint256 returnAssets, uint256 returnShares) = morpho.withdraw(market, amountWithdrawn, 0, onBehalf, receiver);
 
         uint256 expectedSupplyShares = (amountSupplied - amountWithdrawn) * SharesMathLib.VIRTUAL_SHARES;
 
+        assertEq(returnAssets, amountWithdrawn, "returned asset amount");
+        assertEq(returnShares, amountWithdrawn * SharesMathLib.VIRTUAL_SHARES, "returned shares amount");
         assertEq(morpho.supplyShares(id, onBehalf), expectedSupplyShares, "supply shares");
         assertEq(morpho.totalSupply(id), amountSupplied - amountWithdrawn, "total supply");
         assertEq(morpho.totalSupplyShares(id), expectedSupplyShares, "total supply shares");
@@ -284,10 +293,12 @@ contract IntegrationWithdrawTest is BaseTest {
 
         vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.Withdraw(id, BORROWER, onBehalf, receiver, expectedAmountWithdrawn, sharesWithdrawn);
-        morpho.withdraw(market, 0, sharesWithdrawn, onBehalf, receiver);
+        (uint256 returnAssets, uint256 returnShares) = morpho.withdraw(market, 0, sharesWithdrawn, onBehalf, receiver);
 
         expectedSupplyShares -= sharesWithdrawn;
 
+        assertEq(returnAssets, expectedAmountWithdrawn, "returned asset amount");
+        assertEq(returnShares, sharesWithdrawn, "returned shares amount");
         assertEq(morpho.supplyShares(id, onBehalf), expectedSupplyShares, "supply shares");
         assertEq(morpho.totalSupply(id), amountSupplied - expectedAmountWithdrawn, "total supply");
         assertEq(morpho.totalSupplyShares(id), expectedSupplyShares, "total supply shares");

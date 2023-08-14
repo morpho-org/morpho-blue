@@ -136,9 +136,11 @@ contract IntegrationBorrowTest is BaseTest {
 
         vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.Borrow(id, BORROWER, BORROWER, receiver, amountBorrowed, expectedBorrowShares);
-        morpho.borrow(market, amountBorrowed, 0, BORROWER, receiver);
+        (uint256 returnAssets, uint256 returnShares) = morpho.borrow(market, amountBorrowed, 0, BORROWER, receiver);
         vm.stopPrank();
 
+        assertEq(returnAssets, amountBorrowed, "returned asset amount");
+        assertEq(returnShares, expectedBorrowShares, "returned shares amount");
         assertEq(morpho.totalBorrow(id), amountBorrowed, "total borrow");
         assertEq(morpho.borrowShares(id, BORROWER), expectedBorrowShares, "borrow shares");
         assertEq(morpho.borrowShares(id, BORROWER), expectedBorrowShares, "total borrow shares");
@@ -176,9 +178,11 @@ contract IntegrationBorrowTest is BaseTest {
 
         vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.Borrow(id, BORROWER, BORROWER, receiver, expectedAmountBorrowed, sharesBorrowed);
-        morpho.borrow(market, 0, sharesBorrowed, BORROWER, receiver);
+        (uint256 returnAssets, uint256 returnShares) = morpho.borrow(market, 0, sharesBorrowed, BORROWER, receiver);
         vm.stopPrank();
 
+        assertEq(returnAssets, expectedAmountBorrowed, "returned asset amount");
+        assertEq(returnShares, sharesBorrowed, "returned shares amount");
         assertEq(morpho.totalBorrow(id), expectedAmountBorrowed, "total borrow");
         assertEq(morpho.borrowShares(id, BORROWER), sharesBorrowed, "borrow shares");
         assertEq(morpho.borrowShares(id, BORROWER), sharesBorrowed, "total borrow shares");
@@ -218,8 +222,10 @@ contract IntegrationBorrowTest is BaseTest {
         vm.prank(BORROWER);
         vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.Borrow(id, BORROWER, onBehalf, receiver, amountBorrowed, expectedBorrowShares);
-        morpho.borrow(market, amountBorrowed, 0, onBehalf, receiver);
+        (uint256 returnAssets, uint256 returnShares) = morpho.borrow(market, amountBorrowed, 0, onBehalf, receiver);
 
+        assertEq(returnAssets, amountBorrowed, "returned asset amount");
+        assertEq(returnShares, expectedBorrowShares, "returned shares amount");
         assertEq(morpho.borrowShares(id, onBehalf), expectedBorrowShares, "borrow shares");
         assertEq(morpho.totalBorrow(id), amountBorrowed, "total borrow");
         assertEq(morpho.totalBorrowShares(id), expectedBorrowShares, "total borrow shares");
@@ -263,8 +269,10 @@ contract IntegrationBorrowTest is BaseTest {
         vm.prank(BORROWER);
         vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.Borrow(id, BORROWER, onBehalf, receiver, expectedAmountBorrowed, sharesBorrowed);
-        morpho.borrow(market, 0, sharesBorrowed, onBehalf, receiver);
+        (uint256 returnAssets, uint256 returnShares) = morpho.borrow(market, 0, sharesBorrowed, onBehalf, receiver);
 
+        assertEq(returnAssets, expectedAmountBorrowed, "returned asset amount");
+        assertEq(returnShares, sharesBorrowed, "returned shares amount");
         assertEq(morpho.borrowShares(id, onBehalf), sharesBorrowed, "borrow shares");
         assertEq(morpho.totalBorrow(id), expectedAmountBorrowed, "total borrow");
         assertEq(morpho.totalBorrowShares(id), sharesBorrowed, "total borrow shares");

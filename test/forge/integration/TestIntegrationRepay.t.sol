@@ -70,12 +70,14 @@ contract IntegrationRepayTest is BaseTest {
 
         vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.Repay(id, repayer, onBehalf, amountRepaid, amountRepaid * SharesMathLib.VIRTUAL_SHARES);
-        morpho.repay(market, amountRepaid, 0, onBehalf, hex"");
+        (uint256 returnAssets, uint256 returnShares) = morpho.repay(market, amountRepaid, 0, onBehalf, hex"");
 
         vm.stopPrank();
 
         uint256 expectedBorrowShares = (amountBorrowed - amountRepaid) * SharesMathLib.VIRTUAL_SHARES;
 
+        assertEq(returnAssets, amountRepaid, "returned asset amount");
+        assertEq(returnShares, amountRepaid * SharesMathLib.VIRTUAL_SHARES, "returned shares amount");
         assertEq(morpho.borrowShares(id, onBehalf), expectedBorrowShares, "borrow shares");
         assertEq(morpho.totalBorrow(id), amountBorrowed - amountRepaid, "total borrow");
         assertEq(morpho.totalBorrowShares(id), expectedBorrowShares, "total borrow shares");
@@ -128,12 +130,14 @@ contract IntegrationRepayTest is BaseTest {
 
         vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.Repay(id, repayer, onBehalf, expectedAmountRepaid, sharesRepaid);
-        morpho.repay(market, 0, sharesRepaid, onBehalf, hex"");
+        (uint256 returnAssets, uint256 returnShares) = morpho.repay(market, 0, sharesRepaid, onBehalf, hex"");
 
         vm.stopPrank();
 
         expectedBorrowShares -= sharesRepaid;
 
+        assertEq(returnAssets, expectedAmountRepaid, "returned asset amount");
+        assertEq(returnShares, sharesRepaid, "returned shares amount");
         assertEq(morpho.borrowShares(id, onBehalf), expectedBorrowShares, "borrow shares");
         assertEq(morpho.totalBorrow(id), amountBorrowed - expectedAmountRepaid, "total borrow");
         assertEq(morpho.totalBorrowShares(id), expectedBorrowShares, "total borrow shares");

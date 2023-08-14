@@ -237,10 +237,13 @@
         ├── when the signature is invalid or not signed by the authorizer
         │   └── revert with INVALID_SIGNATURE
         └── when the signature is valid and signed by the authorizer
-            ├── it should increment the authorizer's nonce
-            ├── it should emit IncrementNonce(msg.sender, authorizer, usedNonce)
-            ├── it should set isAuthorized[authorizer][authorized] to newIsAuthorized
-            └── it should emit SetAuthorization(msg.sender, authorizer, authorized, newIsAuthorized)
+            ├── when authorization.nonce != nonce[authorization.authorizer]++
+            │   └── revert with INVALID_NONCE
+            └── when authorization.nonce == nonce[authorization.authorizer]++
+                ├── it should increment the authorizer's nonce
+                ├── it should emit IncrementNonce(msg.sender, authorizer, usedNonce)
+                ├── it should set isAuthorized[authorizer][authorized] to newIsAuthorized
+                └── it should emit SetAuthorization(msg.sender, authorizer, authorized, newIsAuthorized)
 .
 └── setAuthorization(address authorized, bool newIsAuthorized) external
     ├── should set isApproved[msg.sender][authorized] to newIsAuthorized
