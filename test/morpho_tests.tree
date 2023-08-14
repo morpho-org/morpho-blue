@@ -274,3 +274,11 @@
             │   ├── it should add feeAmount.mulDivDown(totalSupplyShares[id], totalSupply[id] - feeAmount) to supplyShares[id][feeRecipient]
             │   └── it should add feeAmount.mulDivDown(totalSupplyShares[id], totalSupply[id] - feeAmount) to totalSupplyShares[id]
             └── it should emit AccrueInterests(id, borrowRate, accruedInterests, feeShares)
+.
+└── _isHealthy(Market memory market, Id id, address user, uint256 collateralPrice) internal
+    ├── it should compute borrowed = borrowShares[id][user].toAssetsUp(totalBorrow[id], totalBorrowShares[id])
+    ├── it should compute maxBorrow = collateral[id][user].mulDivDown(collateralPrice, ORACLE_PRICE_SCALE).wMulDown(market.lltv)
+    └── it should return maxBorrow >= borrowed
+.
+└── liquidationIncentiveFactor(uint256 lltv) internal
+    └── it should return min(MAX_LIQUIDATION_INCENTIVE_FACTOR, WAD.wDivDown(WAD - LIQUIDATION_CURSOR.wMulDown(WAD - lltv)))
