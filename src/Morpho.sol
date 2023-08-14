@@ -414,7 +414,7 @@ contract Morpho {
             if (m[id].fee != 0) {
                 uint256 feeAmount = accruedInterests.wMulDown(m[id].fee);
                 // The fee amount is subtracted from the total supply in this calculation to compensate for the fact that total supply is already updated.
-                feeShares = feeAmount.mulDivDown(m[id].totalSupplyShares, m[id].totalSupply - feeAmount);
+                feeShares = feeAmount.toSharesDown(m[id].totalSupply - feeAmount, m[id].totalSupplyShares);
                 supplyShares[id][feeRecipient] += feeShares;
                 // Ok unsafe cast.
                 m[id].totalSupplyShares += uint128(feeShares);
