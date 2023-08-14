@@ -49,4 +49,7 @@ library ErrorsLib {
 
     /// @notice Thrown when the authorization signature is expired.
     string internal constant SIGNATURE_EXPIRED = "signature expired";
+
+    /// @notice Thrown when the nonce is invalid.
+    string internal constant INVALID_NONCE = "invalid nonce";
 }
