@@ -260,7 +260,7 @@
     ├── when market is not created
     │   └── revert with MARKET_NOT_CREATED
     └── when market is created
-        └── it hsould accrue the interests
+        └── it should accrue the interests
 .
 └── _accrueInterests(Market memory market, Id id) internal
     └── when interests not already accrued in the block
