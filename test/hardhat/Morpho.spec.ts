@@ -10,7 +10,8 @@ import { MarketStruct } from "types/src/Morpho";
 import { FlashBorrowerMock } from "types/src/mocks/FlashBorrowerMock";
 
 const closePositions = false;
-const initBalance = constants.MaxUint256.div(2);
+// Without the division it overflows.
+const initBalance = constants.MaxUint256.div(parseUnits("10000000000000000"));
 const oraclePriceScale = parseUnits("1", 36);
 
 let seed = 42;
@@ -61,8 +62,8 @@ describe("Morpho", () => {
 
     const ERC20MockFactory = await hre.ethers.getContractFactory("ERC20Mock", admin);
 
-    borrowable = await ERC20MockFactory.deploy("DAI", "DAI", 18);
-    collateral = await ERC20MockFactory.deploy("Wrapped BTC", "WBTC", 18);
+    borrowable = await ERC20MockFactory.deploy("DAI", "DAI");
+    collateral = await ERC20MockFactory.deploy("Wrapped BTC", "WBTC");
 
     const OracleMockFactory = await hre.ethers.getContractFactory("OracleMock", admin);
 

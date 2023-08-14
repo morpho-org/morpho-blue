@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import {IOracle} from "../interfaces/IOracle.sol";
 
-import {FixedPointMathLib, WAD} from "../libraries/FixedPointMathLib.sol";
+import {MathLib, WAD} from "../libraries/MathLib.sol";
 
 contract OracleMock is IOracle {
     uint256 public price;

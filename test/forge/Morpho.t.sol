@@ -25,10 +25,10 @@ contract MorphoTest is
     IMorphoRepayCallback,
     IMorphoLiquidateCallback
 {
+    using MathLib for uint256;
     using MarketLib for Market;
     using SharesMathLib for uint256;
     using stdStorage for StdStorage;
-    using FixedPointMathLib for uint256;
 
     address private constant BORROWER = address(0x1234);
     address private constant LIQUIDATOR = address(0x5678);
@@ -48,8 +48,8 @@ contract MorphoTest is
         morpho = new Morpho(OWNER);
 
         // List a market.
-        borrowableToken = new ERC20("borrowable", "B", 18);
-        collateralToken = new ERC20("collateral", "C", 18);
+        borrowableToken = new ERC20("borrowable", "B");
+        collateralToken = new ERC20("collateral", "C");
         oracle = new Oracle();
 
         irm = new Irm(morpho);
@@ -984,7 +984,7 @@ contract MorphoTest is
 
         borrowableToken.approve(address(morpho), 0);
 
-        vm.expectRevert("TRANSFER_FROM_FAILED");
+        vm.expectRevert(bytes(ErrorsLib.TRANSFER_FROM_FAILED));
         morpho.repay(market, assets, 0, address(this), hex"");
         morpho.repay(market, assets, 0, address(this), abi.encode(this.testRepayCallback.selector, hex""));
     }
@@ -1004,7 +1004,7 @@ contract MorphoTest is
 
         borrowableToken.setBalance(address(this), assets);
         borrowableToken.approve(address(morpho), 0);
-        vm.expectRevert("TRANSFER_FROM_FAILED");
+        vm.expectRevert(bytes(ErrorsLib.TRANSFER_FROM_FAILED));
         morpho.liquidate(market, address(this), collateralAmount, hex"");
         morpho.liquidate(
             market, address(this), collateralAmount, abi.encode(this.testLiquidateCallback.selector, hex"")
