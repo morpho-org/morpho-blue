@@ -431,8 +431,9 @@ contract Morpho is IMorpho {
     }
 
     function _accrueInterests(Market memory market, Id id) private {
-        require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
-        uint256 elapsed = block.timestamp - lastUpdate[id];
+        uint256 marketLastUpdate = lastUpdate[id];
+        require(marketLastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
+        uint256 elapsed = block.timestamp - marketLastUpdate;
 
         if (elapsed == 0) return;
 
