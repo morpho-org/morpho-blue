@@ -646,7 +646,7 @@ contract MorphoTest is
 
         // Liquidate
         vm.prank(LIQUIDATOR);
-        morpho.liquidate(market, BORROWER, toSeize, hex"");
+        (uint256 assetsRepaid,) = morpho.liquidate(market, BORROWER, toSeize, hex"");
 
         uint256 liquidatorNetWorthAfter = netWorth(LIQUIDATOR);
         uint256 collateralPrice = IOracle(market.oracle).price();
@@ -655,6 +655,7 @@ contract MorphoTest is
             toSeize.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(liquidationIncentiveFactor);
         uint256 expectedNetWorthAfter =
             liquidatorNetWorthBefore + toSeize.mulDivDown(collateralPrice, ORACLE_PRICE_SCALE) - expectedRepaid;
+        assertEq(assetsRepaid, expectedRepaid, "wrong return repaid value");
         assertEq(liquidatorNetWorthAfter, expectedNetWorthAfter, "LIQUIDATOR net worth");
         assertApproxEqAbs(borrowBalance(BORROWER), assetsBorrowed - expectedRepaid, 100, "BORROWER balance");
         assertEq(morpho.collateral(id, BORROWER), assetsCollateral - toSeize, "BORROWER collateral");
@@ -691,7 +692,7 @@ contract MorphoTest is
 
         // Liquidate
         vm.prank(LIQUIDATOR);
-        morpho.liquidate(market, BORROWER, toSeize, hex"");
+        (uint256 assetsRepaid,) = morpho.liquidate(market, BORROWER, toSeize, hex"");
 
         uint256 liquidatorNetWorthAfter = netWorth(LIQUIDATOR);
         uint256 collateralPrice = IOracle(market.oracle).price();
@@ -700,6 +701,7 @@ contract MorphoTest is
             toSeize.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(liquidationIncentiveFactor);
         uint256 expectedNetWorthAfter =
             liquidatorNetWorthBefore + toSeize.mulDivDown(collateralPrice, ORACLE_PRICE_SCALE) - expectedRepaid;
+        assertEq(assetsRepaid, expectedRepaid, "wrong return repaid value");
         assertEq(liquidatorNetWorthAfter, expectedNetWorthAfter, "LIQUIDATOR net worth");
         assertEq(borrowBalance(BORROWER), 0, "BORROWER balance");
         assertEq(morpho.collateral(id, BORROWER), 0, "BORROWER collateral");
