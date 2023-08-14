@@ -75,7 +75,7 @@ interface IMorpho is IFlashLender {
 
     /// @notice The total supply of the market `id`.
     /// @dev Does not contain the accrued interest since the last interaction.
-    function m(Id id) external view returns (MarketState memory);
+    function marketState(Id id) external view returns (MarketState memory);
 
     /// @notice Whether the `irm` is enabled.
     function isIrmEnabled(address irm) external view returns (bool);
