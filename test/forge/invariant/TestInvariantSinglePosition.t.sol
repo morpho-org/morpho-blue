@@ -22,6 +22,7 @@ contract SinglePositionInvariantTest is InvariantBaseTest {
         morpho.supplyCollateral(market, 1e30, user, hex"");
         vm.stopPrank();
 
+        // High price because of the 1e36 price scale
         oracle.setPrice(1e40);
 
         _weightSelector(this.supplyOnMorpho.selector, 20);
@@ -47,7 +48,7 @@ contract SinglePositionInvariantTest is InvariantBaseTest {
         if (morpho.supplyShares(id, msg.sender) == 0) return;
         if (availableLiquidity == 0) return;
 
-        _accrueInterest(market);
+        morpho.accrueInterests(market);
         uint256 supplierBalance =
             morpho.supplyShares(id, msg.sender).toAssetsDown(morpho.totalSupply(id), morpho.totalSupplyShares(id));
         amount = bound(amount, 1, min(supplierBalance, availableLiquidity));
@@ -60,7 +61,7 @@ contract SinglePositionInvariantTest is InvariantBaseTest {
         uint256 availableLiquidity = morpho.totalSupply(id) - morpho.totalBorrow(id);
         if (availableLiquidity == 0) return;
 
-        _accrueInterest(market);
+        morpho.accrueInterests(market);
         amount = bound(amount, 1, availableLiquidity);
 
         vm.prank(msg.sender);
@@ -70,7 +71,7 @@ contract SinglePositionInvariantTest is InvariantBaseTest {
     function repayOnMorpho(uint256 amount) public {
         if (morpho.borrowShares(id, msg.sender) == 0) return;
 
-        _accrueInterest(market);
+        morpho.accrueInterests(market);
         amount = bound(
             amount,
             1,

@@ -177,13 +177,6 @@ contract InvariantBaseTest is BaseTest {
         return maxBorrow >= borrowed;
     }
 
-    function _accrueInterest(Market memory market) internal {
-        //supply collateral accrue interests.
-        collateralAsset.setBalance(address(this), 1);
-        morpho.supplyCollateral(market, 1, address(this), hex"");
-        morpho.withdrawCollateral(market, 1, address(this), address(this));
-    }
-
     function _liquidationIncentiveFactor(uint256 lltv) internal pure returns (uint256) {
         return
             UtilsLib.min(MAX_LIQUIDATION_INCENTIVE_FACTOR, WAD.wDivDown(WAD - LIQUIDATION_CURSOR.wMulDown(WAD - lltv)));

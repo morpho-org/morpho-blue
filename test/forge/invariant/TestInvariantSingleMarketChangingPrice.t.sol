@@ -72,7 +72,7 @@ contract SingleMarketChangingPriceInvariantTest is InvariantBaseTest {
         if (morpho.supplyShares(id, msg.sender) == 0) return;
         if (availableLiquidity == 0) return;
 
-        _accrueInterest(market);
+        morpho.accrueInterests(market);
         uint256 supplierBalance =
             morpho.supplyShares(id, msg.sender).toAssetsDown(morpho.totalSupply(id), morpho.totalSupplyShares(id));
         if (supplierBalance.wMulDown(95e16) == 0) return;
@@ -84,7 +84,7 @@ contract SingleMarketChangingPriceInvariantTest is InvariantBaseTest {
     }
 
     function withdrawOnMorphoOnBehalf(uint256 amount, address seed) public {
-        _accrueInterest(market);
+        morpho.accrueInterests(market);
 
         uint256 availableLiquidity = morpho.totalSupply(id) - morpho.totalBorrow(id);
         if (availableLiquidity == 0) return;
@@ -109,7 +109,7 @@ contract SingleMarketChangingPriceInvariantTest is InvariantBaseTest {
             return;
         }
 
-        _accrueInterest(market);
+        morpho.accrueInterests(market);
         uint256 collateralPrice = IOracle(market.oracle).price();
 
         uint256 totalBorrowPower =
@@ -128,7 +128,7 @@ contract SingleMarketChangingPriceInvariantTest is InvariantBaseTest {
     }
 
     function borrowOnMorphoOnBehalf(uint256 amount, address seed) public {
-        _accrueInterest(market);
+        morpho.accrueInterests(market);
 
         uint256 availableLiquidity = morpho.totalSupply(id) - morpho.totalBorrow(id);
         if (availableLiquidity == 0) return;
@@ -157,7 +157,7 @@ contract SingleMarketChangingPriceInvariantTest is InvariantBaseTest {
         uint256 borrowShares = morpho.borrowShares(id, msg.sender);
         if (borrowShares == 0) return;
 
-        _accrueInterest(market);
+        morpho.accrueInterests(market);
         shares = bound(shares, 1, borrowShares);
         uint256 repaidAmount = shares.toAssetsUp(morpho.totalBorrow(id), morpho.totalBorrowShares(id));
         if (repaidAmount == 0) return;
@@ -169,7 +169,7 @@ contract SingleMarketChangingPriceInvariantTest is InvariantBaseTest {
     }
 
     function repayOnMorphoOnBehalf(uint256 shares, address seed) public {
-        _accrueInterest(market);
+        morpho.accrueInterests(market);
 
         address onBehalf = _randomSenderToRepayOnBehalf(targetSenders(), seed);
         if (onBehalf == address(0)) return;
@@ -195,7 +195,7 @@ contract SingleMarketChangingPriceInvariantTest is InvariantBaseTest {
     function withdrawCollateralOnMorpho(uint256 amount) public {
         if (morpho.collateral(id, msg.sender) == 0 || !isHealthy(market, id, msg.sender)) return;
 
-        _accrueInterest(market);
+        morpho.accrueInterests(market);
 
         uint256 collateralPrice = IOracle(market.oracle).price();
 
@@ -214,7 +214,7 @@ contract SingleMarketChangingPriceInvariantTest is InvariantBaseTest {
     }
 
     function withdrawCollateralOnMorphoOnBehalf(uint256 amount, address seed) public {
-        _accrueInterest(market);
+        morpho.accrueInterests(market);
 
         address onBehalf = _randomSenderToWithdrawCollateralOnBehalf(targetSenders(), seed, msg.sender);
         if (onBehalf == address(0)) return;
@@ -236,7 +236,7 @@ contract SingleMarketChangingPriceInvariantTest is InvariantBaseTest {
     }
 
     function liquidateOnMorpho(uint256 seized, address seed) public {
-        _accrueInterest(market);
+        morpho.accrueInterests(market);
 
         user = _randomSenderToLiquidate(targetSenders(), seed);
         if (user == address(0)) return;

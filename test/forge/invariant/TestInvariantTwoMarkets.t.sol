@@ -12,11 +12,6 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
     Market public market2;
     Id public id2;
 
-    // enum EnumMarket{
-    //     market,
-    //     market2
-    // }
-
     function setUp() public virtual override {
         super.setUp();
 
@@ -90,7 +85,7 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
         if (morpho.supplyShares(chosenId, msg.sender) == 0) return;
         if (availableLiquidity == 0) return;
 
-        _accrueInterest(chosenMarket);
+        morpho.accrueInterests(market);
         uint256 supplierBalance = morpho.supplyShares(chosenId, msg.sender).toAssetsDown(
             morpho.totalSupply(chosenId), morpho.totalSupplyShares(chosenId)
         );
@@ -114,7 +109,7 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
         uint256 availableLiquidity = morpho.totalSupply(chosenId) - morpho.totalBorrow(chosenId);
         if (availableLiquidity == 0) return;
 
-        _accrueInterest(chosenMarket);
+        morpho.accrueInterests(market);
         amount = bound(amount, 1, availableLiquidity);
 
         vm.prank(msg.sender);
@@ -133,7 +128,7 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
         }
         if (morpho.borrowShares(chosenId, msg.sender) == 0) return;
 
-        _accrueInterest(chosenMarket);
+        morpho.accrueInterests(market);
         amount = bound(
             amount,
             1,

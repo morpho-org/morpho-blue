@@ -55,7 +55,7 @@ contract SingleMarketInvariantTest is InvariantBaseTest {
         if (morpho.supplyShares(id, msg.sender) == 0) return;
         if (availableLiquidity == 0) return;
 
-        _accrueInterest(market);
+        morpho.accrueInterests(market);
         uint256 supplierBalance =
             morpho.supplyShares(id, msg.sender).toAssetsDown(morpho.totalSupply(id), morpho.totalSupplyShares(id));
         amount = bound(amount, 1, min(supplierBalance, availableLiquidity));
@@ -68,7 +68,7 @@ contract SingleMarketInvariantTest is InvariantBaseTest {
         uint256 availableLiquidity = morpho.totalSupply(id) - morpho.totalBorrow(id);
         if (availableLiquidity == 0) return;
 
-        _accrueInterest(market);
+        morpho.accrueInterests(market);
         amount = bound(amount, 1, availableLiquidity);
 
         vm.prank(msg.sender);
@@ -78,7 +78,7 @@ contract SingleMarketInvariantTest is InvariantBaseTest {
     function repayOnMorpho(uint256 amount) public {
         if (morpho.borrowShares(id, msg.sender) == 0) return;
 
-        _accrueInterest(market);
+        morpho.accrueInterests(market);
         amount = bound(
             amount,
             1,
