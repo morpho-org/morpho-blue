@@ -2,6 +2,7 @@ pragma solidity 0.8.19;
 
 import "../../src/Morpho.sol";
 import "../../src/libraries/SharesMathLib.sol";
+import "../../src/libraries/MarketLib.sol";
 
 contract MorphoHarness is Morpho {
     constructor(address newOwner) Morpho(newOwner) {}
@@ -24,5 +25,9 @@ contract MorphoHarness is Morpho {
 
     function getTotalBorrowShares(Id id) external view returns (uint256) {
         return totalBorrowShares[id];
+    }
+
+    function toId(Market memory market) external pure returns (Id) {
+        return MarketLib.id(market);
     }
 }

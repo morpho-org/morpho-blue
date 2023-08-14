@@ -6,8 +6,12 @@ methods {
     function getTotalSupplyShares(MorphoHarness.Id) external returns uint256 envfree;
     function getTotalBorrowShares(MorphoHarness.Id) external returns uint256 envfree;
 
+    function lastUpdate(MorphoHarness.Id) external returns uint256 envfree;
+    function isLltvEnabled(uint256) external returns bool envfree;
+
     function _.borrowRate(MorphoHarness.Market) external => DISPATCHER(true);
 
+    function toId(MorphoHarness.Market) external returns MorphoHarness.Id envfree;
     // function _.safeTransfer(address, uint256) internal => DISPATCHER(true);
     // function _.safeTransferFrom(address, address, uint256) internal => DISPATCHER(true);
 }
@@ -67,4 +71,15 @@ rule supplyRevertZero(MorphoHarness.Market market) {
     supply@withrevert(e, market, 0, 0, e.msg.sender, b);
 
     assert lastReverted;
+}
+
+rule onlyEnabledLLTV(MorphoHarness.Market market, MorphoHarness.Id id) {
+    env e; method f; calldataarg args;
+
+    require id == toId(market);
+    require lastUpdate(id) != 0 => isLltvEnabled(market.lltv);
+
+    f(e, args);
+
+    assert lastUpdate(id) != 0 => isLltvEnabled(market.lltv);
 }
