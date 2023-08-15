@@ -8,7 +8,7 @@ contract IntegrationSupplyTest is BaseTest {
     using SharesMathLib for uint256;
 
     function testSupplyMarketNotCreated(Market memory marketFuzz, uint256 amount) public {
-        vm.assume(neq(marketFuzz, market) && SUPPLIER != address(0));
+        vm.assume(neq(marketFuzz, market));
 
         vm.prank(SUPPLIER);
         vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));

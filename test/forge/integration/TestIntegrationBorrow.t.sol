@@ -10,23 +10,22 @@ contract IntegrationBorrowTest is BaseTest {
     function testBorrowMarketNotCreated(
         Market memory marketFuzz,
         address borrowerFuzz,
-        address RECEIVER,
         uint256 amount
     ) public {
-        vm.assume(neq(marketFuzz, market) && RECEIVER != address(0));
+        vm.assume(neq(marketFuzz, market));
 
         vm.prank(borrowerFuzz);
         vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
         morpho.borrow(marketFuzz, amount, 0, borrowerFuzz, RECEIVER);
     }
 
-    function testBorrowZeroAmount(address borrowerFuzz, address RECEIVER) public {
+    function testBorrowZeroAmount(address borrowerFuzz) public {
         vm.prank(borrowerFuzz);
         vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
         morpho.borrow(market, 0, 0, borrowerFuzz, RECEIVER);
     }
 
-    function testBorrowInconsistentInput(address borrowerFuzz, uint256 amount, uint256 shares, address RECEIVER)
+    function testBorrowInconsistentInput(address borrowerFuzz, uint256 amount, uint256 shares)
         public
     {
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
@@ -47,8 +46,8 @@ contract IntegrationBorrowTest is BaseTest {
         morpho.borrow(market, amount, 0, borrowerFuzz, address(0));
     }
 
-    function testBorrowUnauthorized(address supplier, address attacker, address RECEIVER, uint256 amount) public {
-        vm.assume(supplier != attacker && supplier != address(0) && RECEIVER != address(0));
+    function testBorrowUnauthorized(address supplier, address attacker, uint256 amount) public {
+        vm.assume(supplier != attacker && supplier != address(0));
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
         _supply(amount);
