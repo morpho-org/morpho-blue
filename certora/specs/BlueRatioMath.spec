@@ -16,7 +16,7 @@ definition MAX_FEE() returns mathint = 10^18 * 25/100;
 
 invariant feeInRange(MorphoHarness.Id id)
     to_mathint(fee(id)) <= MAX_FEE();
- 
+
 /* This is a simple overapproximative summary, stating that it rounds in the right direction.
  * The summary is checked by the specification in BlueRatioMathSummary.spec.
  */
@@ -35,7 +35,7 @@ function summaryMulDivDown(uint256 x, uint256 y, uint256 d) returns uint256 {
     return result;
 }
 
-rule onlyLiquidateCanDecreasesRatio(method f) 
+rule onlyLiquidateCanDecreasesRatio(method f)
 filtered {
     f -> f.selector != sig:liquidate(MorphoHarness.Market, address, uint256, bytes).selector
 }
