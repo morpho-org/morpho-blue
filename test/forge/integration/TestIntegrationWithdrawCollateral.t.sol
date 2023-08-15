@@ -6,9 +6,7 @@ import "../BaseTest.sol";
 contract IntegrationWithdrawCollateralTest is BaseTest {
     using MathLib for uint256;
 
-    function testWithdrawCollateralMarketNotCreated(Market memory marketFuzz, address RECEIVER)
-        public
-    {
+    function testWithdrawCollateralMarketNotCreated(Market memory marketFuzz, address RECEIVER) public {
         vm.assume(neq(marketFuzz, market) && RECEIVER != address(0));
 
         vm.prank(SUPPLIER);
@@ -44,9 +42,7 @@ contract IntegrationWithdrawCollateralTest is BaseTest {
         vm.stopPrank();
     }
 
-    function testWithdrawCollateralUnauthorized(address attacker, uint256 amount)
-        public
-    {
+    function testWithdrawCollateralUnauthorized(address attacker, uint256 amount) public {
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
         collateralToken.setBalance(SUPPLIER, amount);

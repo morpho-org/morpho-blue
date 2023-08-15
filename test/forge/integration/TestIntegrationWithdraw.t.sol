@@ -57,11 +57,7 @@ contract IntegrationWithdrawTest is BaseTest {
         morpho.withdraw(market, amount, 0, address(this), address(this));
     }
 
-    function testWithdrawInsufficientLiquidity(
-        uint256 amountSupplied,
-        uint256 amountBorrowed
-    ) public {
-
+    function testWithdrawInsufficientLiquidity(uint256 amountSupplied, uint256 amountBorrowed) public {
         amountBorrowed = bound(amountBorrowed, MIN_TEST_AMOUNT, MAX_TEST_AMOUNT);
         amountSupplied = bound(amountSupplied, amountBorrowed + 1, MAX_TEST_AMOUNT + 1);
 
@@ -85,11 +81,7 @@ contract IntegrationWithdrawTest is BaseTest {
         morpho.withdraw(market, amountSupplied, 0, SUPPLIER, RECEIVER);
     }
 
-    function testWithdrawAssets(
-        uint256 amountSupplied,
-        uint256 amountBorrowed,
-        uint256 amountWithdrawn
-    ) public {
+    function testWithdrawAssets(uint256 amountSupplied, uint256 amountBorrowed, uint256 amountWithdrawn) public {
         amountSupplied = bound(amountSupplied, 2, MAX_TEST_AMOUNT);
         amountBorrowed = bound(amountBorrowed, 1, amountSupplied - 1);
         amountWithdrawn = bound(amountWithdrawn, 1, amountSupplied - amountBorrowed);
@@ -130,11 +122,7 @@ contract IntegrationWithdrawTest is BaseTest {
         );
     }
 
-    function testWithdrawShares(
-        uint256 amountSupplied,
-        uint256 amountBorrowed,
-        uint256 sharesWithdrawn
-    ) public {
+    function testWithdrawShares(uint256 amountSupplied, uint256 amountBorrowed, uint256 sharesWithdrawn) public {
         amountSupplied = bound(amountSupplied, 2, MAX_TEST_AMOUNT);
         amountBorrowed = bound(amountBorrowed, 1, amountSupplied - 1);
 
@@ -178,11 +166,9 @@ contract IntegrationWithdrawTest is BaseTest {
         );
     }
 
-    function testWithdrawAssetsOnBehalf(
-        uint256 amountSupplied,
-        uint256 amountBorrowed,
-        uint256 amountWithdrawn
-    ) public {
+    function testWithdrawAssetsOnBehalf(uint256 amountSupplied, uint256 amountBorrowed, uint256 amountWithdrawn)
+        public
+    {
         amountSupplied = bound(amountSupplied, 2, MAX_TEST_AMOUNT);
         amountBorrowed = bound(amountBorrowed, 1, amountSupplied - 1);
         amountWithdrawn = bound(amountWithdrawn, 1, amountSupplied - amountBorrowed);
@@ -225,11 +211,9 @@ contract IntegrationWithdrawTest is BaseTest {
         );
     }
 
-    function testWithdrawSharesOnBehalf(
-        uint256 amountSupplied,
-        uint256 amountBorrowed,
-        uint256 sharesWithdrawn
-    ) public {
+    function testWithdrawSharesOnBehalf(uint256 amountSupplied, uint256 amountBorrowed, uint256 sharesWithdrawn)
+        public
+    {
         amountSupplied = bound(amountSupplied, 2, MAX_TEST_AMOUNT);
         amountBorrowed = bound(amountBorrowed, 1, amountSupplied - 1);
 
