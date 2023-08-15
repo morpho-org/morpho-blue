@@ -4,7 +4,7 @@ methods {
 }
 
 /* Check the summaries required by BlueRatioMath.spec */
-rule checkSummaryToAssetsUp(uint256 x, uint256 y, uint256 d) {
+rule checkSummaryMulDivUp(uint256 x, uint256 y, uint256 d) {
     uint256 result = mathLibMulDivUp(x, y, d);
     assert result * d >= x * y;
 }
