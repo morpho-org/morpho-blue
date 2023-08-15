@@ -434,31 +434,83 @@ contract Morpho is IMorpho {
 
     /// @dev Accrues interests for `market`.
     function _accrueInterests(Market memory market, Id id) internal {
-        uint256 elapsed = block.timestamp - lastUpdate[id];
+        console.log("before borrow rate");
+        uint256 borrowRate = IIrm(market.irm).borrowRate(market);
+        console.log("after borrow rate");
+        (uint256 accruedInterests, uint256 feeShares) = _accruedInterests(id, borrowRate);
 
-        if (elapsed == 0) return;
+        if (accruedInterests != 0) {
+            totalBorrow[id] += accruedInterests;
+            totalSupply[id] += accruedInterests;
+        }
+
+        if (feeShares != 0) {
+            supplyShares[id][feeRecipient] += feeShares;
+            totalSupplyShares[id] += feeShares;
+        }
+
+        emit EventsLib.AccrueInterests(id, borrowRate, accruedInterests, feeShares);
+
+        lastUpdate[id] = block.timestamp;
+    }
+
+    function _accrued(Market memory market, Id id)
+        internal
+        view
+        returns (uint256 totSupply, uint256 totBorrow, uint256 totSupplyShares)
+    {
+        uint256 borrowRate = IIrm(market.irm).borrowRateView(market);
+        (uint256 accruedInterests, uint256 feeShares) = _accruedInterests(id, borrowRate);
+
+        return
+            (totalSupply[id] + accruedInterests, totalBorrow[id] + accruedInterests, totalSupplyShares[id] + feeShares);
+    }
+
+    function _accruedInterests(Id id, uint256 borrowRate)
+        internal
+        view
+        returns (uint256 accruedInterests, uint256 feeShares)
+    {
+        uint256 elapsed = block.timestamp - lastUpdate[id];
+        if (elapsed == 0) return (0, 0);
 
         uint256 marketTotalBorrow = totalBorrow[id];
 
         if (marketTotalBorrow != 0) {
-            uint256 borrowRate = IIrm(market.irm).borrowRate(market);
-            uint256 accruedInterests = marketTotalBorrow.wMulDown(borrowRate.wTaylorCompounded(elapsed));
-            totalBorrow[id] = marketTotalBorrow + accruedInterests;
-            totalSupply[id] += accruedInterests;
+            accruedInterests = marketTotalBorrow.wMulDown(borrowRate.wTaylorCompounded(elapsed));
 
-            uint256 feeShares;
             if (fee[id] != 0) {
                 uint256 feeAmount = accruedInterests.wMulDown(fee[id]);
                 // The fee amount is subtracted from the total supply in this calculation to compensate for the fact that total supply is already updated.
                 feeShares = feeAmount.toSharesDown(totalSupply[id] - feeAmount, totalSupplyShares[id]);
-                supplyShares[id][feeRecipient] += feeShares;
-                totalSupplyShares[id] += feeShares;
             }
-
-            emit EventsLib.AccrueInterests(id, borrowRate, accruedInterests, feeShares);
         }
+    }
 
-        lastUpdate[id] = block.timestamp;
+    function getTotalSupply(Id id) external view returns (uint256 totSupply) {
+        (totSupply,,) = _accrued(idToMarket[id], id);
+    }
+
+    function getTotalBorrow(Id id) external view returns (uint256 totBorrow) {
+        (, totBorrow,) = _accrued(idToMarket[id], id);
+    }
+
+    function getTotalSupplyShares(Id id) external view returns (uint256 totSupplyShares) {
+        (,, totSupplyShares) = _accrued(idToMarket[id], id);
+    }
+
+    function getTotalBorrowShares(Id id) external view returns (uint256) {
+        return totalBorrowShares[id];
+    }
+
+    function supplyBalance(Id id, address user) external view returns (uint256) {
+        (uint256 totSupply,, uint256 totSupplyShares) = _accrued(idToMarket[id], id);
+        return supplyShares[id][user].toAssetsDown(totSupply, totSupplyShares);
+    }
+
+    function borrowBalance(Id id, address user) external view returns (uint256) {
+        (, uint256 totBorrow,) = _accrued(idToMarket[id], id);
+        return borrowShares[id][user].toAssetsUp(totBorrow, totalBorrowShares[id]);
     }
 
     /* HEALTH CHECK */
