@@ -43,7 +43,7 @@ contract MorphoTest is
     Market private market;
     Id private id;
 
-    function setUp() public {
+    constructor() {
         // Create Morpho.
         morpho = new Morpho(OWNER);
 
