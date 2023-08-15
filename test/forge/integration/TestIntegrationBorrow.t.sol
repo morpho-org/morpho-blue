@@ -7,11 +7,7 @@ contract IntegrationBorrowTest is BaseTest {
     using MathLib for uint256;
     using SharesMathLib for uint256;
 
-    function testBorrowMarketNotCreated(
-        Market memory marketFuzz,
-        address borrowerFuzz,
-        uint256 amount
-    ) public {
+    function testBorrowMarketNotCreated(Market memory marketFuzz, address borrowerFuzz, uint256 amount) public {
         vm.assume(neq(marketFuzz, market));
 
         vm.prank(borrowerFuzz);
@@ -25,9 +21,7 @@ contract IntegrationBorrowTest is BaseTest {
         morpho.borrow(market, 0, 0, borrowerFuzz, RECEIVER);
     }
 
-    function testBorrowInconsistentInput(address borrowerFuzz, uint256 amount, uint256 shares)
-        public
-    {
+    function testBorrowInconsistentInput(address borrowerFuzz, uint256 amount, uint256 shares) public {
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
         shares = bound(shares, 1, MAX_TEST_SHARES);
 
