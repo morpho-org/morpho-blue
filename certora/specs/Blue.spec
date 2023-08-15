@@ -47,8 +47,15 @@ ghost mapping(address => mathint) expectedAmount
     init_state axiom (forall address token. expectedAmount[token] == 0);
 }
 
-ghost idToBorrowable(MorphoHarness.Id) returns address;
-ghost idToCollateral(MorphoHarness.Id) returns address;
+ghost mapping(MorphoHarness.Id => address) idToBorrowable;
+ghost mapping(MorphoHarness.Id => address) idToCollateral;
+
+hook Sstore idToMarket[KEY MorphoHarness.Id id].borrowableToken address token STORAGE {
+    idToBorrowable[id] = token;
+}
+hook Sstore idToMarket[KEY MorphoHarness.Id id].collateralToken address token STORAGE {
+    idToCollateral[id] = token;
+}
 
 hook Sstore supplyShares[KEY MorphoHarness.Id id][KEY address owner] uint256 newShares (uint256 oldShares) STORAGE {
     sumSupplyShares[id] = sumSupplyShares[id] - oldShares + newShares;
@@ -60,15 +67,15 @@ hook Sstore borrowShares[KEY MorphoHarness.Id id][KEY address owner] uint256 new
 
 hook Sstore collateral[KEY MorphoHarness.Id id][KEY address owner] uint256 newAmount (uint256 oldAmount) STORAGE {
     sumCollateral[id] = sumCollateral[id] - oldAmount + newAmount;
-    expectedAmount[idToCollateral(id)] = expectedAmount[idToCollateral(id)] - oldAmount + newAmount;
+    expectedAmount[idToCollateral[id]] = expectedAmount[idToCollateral[id]] - oldAmount + newAmount;
 }
 
 hook Sstore totalSupply[KEY MorphoHarness.Id id] uint256 newAmount (uint256 oldAmount) STORAGE {
-    expectedAmount[idToBorrowable(id)] = expectedAmount[idToBorrowable(id)] - oldAmount + newAmount;
+    expectedAmount[idToBorrowable[id]] = expectedAmount[idToBorrowable[id]] - oldAmount + newAmount;
 }
 
 hook Sstore totalBorrow[KEY MorphoHarness.Id id] uint256 newAmount (uint256 oldAmount) STORAGE {
-    expectedAmount[idToBorrowable(id)] = expectedAmount[idToBorrowable(id)] + oldAmount - newAmount;
+    expectedAmount[idToBorrowable[id]] = expectedAmount[idToBorrowable[id]] + oldAmount - newAmount;
 }
 
 function summarySafeTransferFrom(address token, address from, address to, uint256 amount) {
@@ -80,13 +87,12 @@ function summarySafeTransferFrom(address token, address from, address to, uint25
     }
 }
 
-definition goodMarket(MorphoHarness.Market market, MorphoHarness.Id id) returns bool =
-    (idToBorrowable(id) == market.borrowableToken &&
-     idToCollateral(id) == market.collateralToken);
-
 definition VIRTUAL_ASSETS() returns mathint = 1;
 definition VIRTUAL_SHARES() returns mathint = 1000000000000000000;
 definition MAX_FEE() returns mathint = 250000000000000000;
+definition isInitialized(MorphoHarness.Id id) returns bool =
+    (lastUpdate(id) != 0);
+
 
 invariant feeInRange(MorphoHarness.Id id)
     to_mathint(fee(id)) <= MAX_FEE();
@@ -99,36 +105,41 @@ invariant sumBorrowSharesCorrect(MorphoHarness.Id id)
 invariant borrowLessSupply(MorphoHarness.Id id)
     totalBorrow(id) <= totalSupply(id);
 
+invariant marketInvariant(MorphoHarness.Market market)
+    isInitialized(getMarketId(market)) =>
+    idToBorrowable[getMarketId(market)] == market.borrowableToken
+    && idToCollateral[getMarketId(market)] == market.collateralToken;
+
 invariant isLiquid(address token)
     expectedAmount[token] <= myBalances[token]
 {
-    preserved supply(MorphoHarness.Market market, uint256 _a, uint256 _s, address _o, bytes _d) with (env _e) {
-        require goodMarket(market, getMarketId(market));
-        require _e.msg.sender != currentContract;
+    preserved supply(MorphoHarness.Market market, uint256 _a, uint256 _s, address _o, bytes _d) with (env e) {
+        requireInvariant marketInvariant(market);
+        require e.msg.sender != currentContract;
     }
-    preserved withdraw(MorphoHarness.Market market, uint256 _a, uint256 _s, address _o, address _r) with (env _e) {
-        require goodMarket(market, getMarketId(market));
-        require _e.msg.sender != currentContract;
+    preserved withdraw(MorphoHarness.Market market, uint256 _a, uint256 _s, address _o, address _r) with (env e) {
+        requireInvariant marketInvariant(market);
+        require e.msg.sender != currentContract;
     }
-    preserved borrow(MorphoHarness.Market market, uint256 _a, uint256 _s, address _o, address _r) with (env _e) {
-        require goodMarket(market, getMarketId(market));
-        require _e.msg.sender != currentContract;
+    preserved borrow(MorphoHarness.Market market, uint256 _a, uint256 _s, address _o, address _r) with (env e) {
+        requireInvariant marketInvariant(market);
+        require e.msg.sender != currentContract;
     }
-    preserved repay(MorphoHarness.Market market, uint256 _a, uint256 _s, address _o, bytes _d) with (env _e) {
-        require goodMarket(market, getMarketId(market));
-        require _e.msg.sender != currentContract;
+    preserved repay(MorphoHarness.Market market, uint256 _a, uint256 _s, address _o, bytes _d) with (env e) {
+        requireInvariant marketInvariant(market);
+        require e.msg.sender != currentContract;
     }
-    preserved supplyCollateral(MorphoHarness.Market market, uint256 _a, address _o, bytes _d) with (env _e) {
-        require goodMarket(market, getMarketId(market));
-        require _e.msg.sender != currentContract;
+    preserved supplyCollateral(MorphoHarness.Market market, uint256 _a, address _o, bytes _d) with (env e) {
+        requireInvariant marketInvariant(market);
+        require e.msg.sender != currentContract;
     }
-    preserved withdrawCollateral(MorphoHarness.Market market, uint256 _a, address _o, address _r) with (env _e) {
-        require goodMarket(market, getMarketId(market));
-        require _e.msg.sender != currentContract;
+    preserved withdrawCollateral(MorphoHarness.Market market, uint256 _a, address _o, address _r) with (env e) {
+        requireInvariant marketInvariant(market);
+        require e.msg.sender != currentContract;
     }
-    preserved liquidate(MorphoHarness.Market market, address _b, uint256 _s, bytes _d) with (env _e) {
-        require goodMarket(market, getMarketId(market));
-        require _e.msg.sender != currentContract;
+    preserved liquidate(MorphoHarness.Market market, address _b, uint256 _s, bytes _d) with (env e) {
+        requireInvariant marketInvariant(market);
+        require e.msg.sender != currentContract;
     }
 }
 //invariant liquidOnCollateralToken(MorphoHarness.Market market)
@@ -144,10 +155,10 @@ rule supplyRevertZero(MorphoHarness.Market market) {
 }
 
 invariant invOnlyEnabledLltv(MorphoHarness.Market market)
-    lastUpdate(getMarketId(market)) != 0 => isLltvEnabled(market.lltv);
+    isInitialized(getMarketId(market)) => isLltvEnabled(market.lltv);
 
 invariant invOnlyEnabledIrm(MorphoHarness.Market market)
-    lastUpdate(getMarketId(market)) != 0 => isIrmEnabled(market.irm);
+    isInitialized(getMarketId(market)) => isIrmEnabled(market.irm);
 
 /* Check the summaries required by BlueRatioMath.spec */
 rule checkSummaryToAssetsUp(uint256 x, uint256 y, uint256 d) {
@@ -158,4 +169,17 @@ rule checkSummaryToAssetsUp(uint256 x, uint256 y, uint256 d) {
 rule checkSummaryToAssetsDown(uint256 x, uint256 y, uint256 d) {
     uint256 result = mathLibMulDivDown(x, y, d);
     assert result * d <= x * y;
+}
+
+rule marketIdUnique() {
+    MorphoHarness.Market market1;
+    MorphoHarness.Market market2;
+
+    require getMarketId(market1) == getMarketId(market2);
+
+    assert market1.borrowableToken == market2.borrowableToken;
+    assert market1.collateralToken == market2.collateralToken;
+    assert market1.oracle == market2.oracle;
+    assert market1.irm == market2.irm;
+    assert market1.lltv == market2.lltv;
 }
