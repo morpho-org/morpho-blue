@@ -35,17 +35,20 @@ library MorphoLib {
         uint256 fee = uint256(values[3]);
         uint256 lastUpdate = uint256(values[4]);
 
-        if (totBorrow != 0) {
-            uint256 borrowRate = IIrm(market.irm).borrowRate(market);
-            uint256 interests = totBorrow.wMulDown(borrowRate * (block.timestamp - lastUpdate));
+        uint256 elapsed = block.timestamp - lastUpdate;
 
+        if (elapsed == 0) return (totSupply, totBorrow, totSupplyShares);
+
+        if (totBorrow != 0) {
+            uint256 borrowRate = IIrm(market.irm).borrowRateView(market);
+            uint256 interests = totBorrow.wMulDown(borrowRate.wTaylorCompounded(elapsed));
             totBorrow += interests;
             totSupply += interests;
 
             if (fee != 0) {
                 uint256 feeAmount = interests.wMulDown(fee);
                 // The fee amount is subtracted from the total supply in this calculation to compensate for the fact that total supply is already updated.
-                uint256 feeShares = feeAmount.mulDivDown(totSupplyShares, totSupply - feeAmount);
+                uint256 feeShares = feeAmount.toSharesDown(totSupply - feeAmount, totSupplyShares);
 
                 totSupplyShares += feeShares;
             }
