@@ -118,14 +118,15 @@ contract Morpho is IMorpho {
     /// @inheritdoc IMorpho
     function setFee(Market memory market, uint256 newFee) external onlyOwner {
         Id id = market.id();
-        require(_mktState[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
+        MktStateInternal storage mktStatePtr = _mktState[id];
+        require(mktStatePtr.lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
         require(newFee <= MAX_FEE, ErrorsLib.MAX_FEE_EXCEEDED);
 
         // Accrue interests using the previous fee set before changing it.
         _accrueInterests(market, id);
 
         // Ok unsafe cast.
-        _mktState[id].fee = uint128(newFee);
+        mktStatePtr.fee = uint128(newFee);
 
         emit EventsLib.SetFee(id, newFee);
     }
@@ -142,12 +143,13 @@ contract Morpho is IMorpho {
     /// @inheritdoc IMorpho
     function createMarket(Market memory market) external {
         Id id = market.id();
+        MktStateInternal storage mktStatePtr = _mktState[id];
         require(isIrmEnabled[market.irm], ErrorsLib.IRM_NOT_ENABLED);
         require(isLltvEnabled[market.lltv], ErrorsLib.LLTV_NOT_ENABLED);
-        require(_mktState[id].lastUpdate == 0, ErrorsLib.MARKET_CREATED);
+        require(mktStatePtr.lastUpdate == 0, ErrorsLib.MARKET_CREATED);
 
         // Ok unsafe cast.
-        _mktState[id].lastUpdate = uint128(block.timestamp);
+        mktStatePtr.lastUpdate = uint128(block.timestamp);
         idToMarket[id] = market;
 
         emit EventsLib.CreateMarket(id, market);
