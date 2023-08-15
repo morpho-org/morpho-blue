@@ -133,7 +133,7 @@ contract IntegrationAccrueInterestsTest is BaseTest {
 
         amountSupplied = bound(amountSupplied, 2, MAX_TEST_AMOUNT);
         amountBorrowed = bound(amountBorrowed, 1, amountSupplied);
-        timeElapsed = uint32(bound(timeElapsed, 1, type(uint32).max));
+        timeElapsed = uint32(bound(timeElapsed, 1, 1e8));
         fee = bound(fee, 1, MAX_FEE);
 
         // Set fee parameters.

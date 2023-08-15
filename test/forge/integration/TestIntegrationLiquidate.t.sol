@@ -32,7 +32,7 @@ contract IntegrationLiquidateTest is BaseTest {
             _boundHealthyPosition(amountCollateral, amountBorrowed, priceCollateral);
 
         amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
-        _provideLiquidity(amountSupplied);
+        _supply(amountSupplied);
 
         amountSeized = bound(amountSeized, 1, amountCollateral);
 
@@ -64,10 +64,10 @@ contract IntegrationLiquidateTest is BaseTest {
         vm.assume(amountCollateral > 1);
 
         amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
-        _provideLiquidity(amountSupplied);
+        _supply(amountSupplied);
 
         uint256 incentive = _liquidationIncentive(market.lltv);
-        uint256 maxSeized = amountBorrowed.wMulDown(incentive).wDivDown(priceCollateral);
+        uint256 maxSeized = amountBorrowed.wMulDown(incentive).mulDivDown(ORACLE_PRICE_SCALE, priceCollateral);
         amountSeized = bound(amountSeized, 1, min(maxSeized, amountCollateral - 1));
         uint256 expectedRepaid = amountSeized.mulDivUp(priceCollateral, ORACLE_PRICE_SCALE).wDivUp(incentive);
 
@@ -143,7 +143,7 @@ contract IntegrationLiquidateTest is BaseTest {
         amountBorrowed = bound(amountBorrowed, minBorrowed, max(minBorrowed, MAX_TEST_AMOUNT));
 
         amountSupplied = bound(amountSupplied, amountBorrowed, max(amountBorrowed, MAX_TEST_AMOUNT));
-        _provideLiquidity(amountSupplied);
+        _supply(amountSupplied);
 
         borrowableToken.setBalance(LIQUIDATOR, amountBorrowed);
         collateralToken.setBalance(BORROWER, amountCollateral);
