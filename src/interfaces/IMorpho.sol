@@ -19,6 +19,14 @@ struct Market {
     uint256 lltv;
 }
 
+/// @notice Contains the market state.
+/// @param totalSupply The total supply of the market.
+/// @param totalBorrow The total supply shares of the market.
+/// @param totalSupplyShares The total borrow of the market.
+/// @param totalBorrowShares The total borrow shares of the market.
+/// @param lastUpdate The last update timestamp of the market (also used to check if a market has been created).
+/// @param fee The fee of the market.
+/// @dev totalSupply and totalBorrow don't contain the accrued interest since the last interaction.
 struct MarketState {
     uint128 totalSupply;
     uint128 totalBorrow;
@@ -73,8 +81,7 @@ interface IMorpho is IFlashLender {
     /// @notice The `user`'s collateral balance on the market `id`.
     function collateral(Id id, address user) external view returns (uint256);
 
-    /// @notice The total supply of the market `id`.
-    /// @dev Does not contain the accrued interest since the last interaction.
+    /// @notice The state of the market `id`.
     function marketState(Id id) external view returns (MarketState memory);
 
     /// @notice Whether the `irm` is enabled.

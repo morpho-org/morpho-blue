@@ -51,6 +51,7 @@ contract Morpho is IMorpho {
 
     /* IMMUTABLES */
 
+    /// @inheritdoc IMorpho
     bytes32 public immutable DOMAIN_SEPARATOR;
 
     /* STORAGE */

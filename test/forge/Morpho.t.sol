@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
-// import "forge-std/console.sol";
+import "forge-std/console.sol";
 
 import {SigUtils} from "./helpers/SigUtils.sol";
 
@@ -331,7 +331,6 @@ contract MorphoTest is
         assertEq(borrowableToken.balanceOf(address(morpho)), assets, "morpho balance");
     }
 
-    // failing test
     function testBorrowAmount(uint256 assetsLent, uint256 assetsBorrowed) public {
         assetsLent = bound(assetsLent, 1, 2 ** 64);
         assetsBorrowed = bound(assetsBorrowed, 1, assetsLent);
