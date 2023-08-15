@@ -5,6 +5,7 @@ import "../BaseTest.sol";
 
 contract IntegrationAccrueInterestsTest is BaseTest {
     using MathLib for uint256;
+    using SharesMathLib for uint256;
 
     function testAccrueInterestsNoTimeElapsed(uint256 amountSupplied, uint256 amountBorrowed) public {
         amountSupplied = bound(amountSupplied, 2, MAX_TEST_AMOUNT);
@@ -165,9 +166,9 @@ contract IntegrationAccrueInterestsTest is BaseTest {
         params.expectedAccruedInterests =
             params.totalBorrowBeforeAccrued.wMulDown(params.borrowRate.wTaylorCompounded(timeElapsed));
         params.feeAmount = params.expectedAccruedInterests.wMulDown(fee);
-        params.feeShares = params.feeAmount.mulDivDown(
-            params.totalSupplySharesBeforeAccrued,
-            params.totalSupplyBeforeAccrued + params.expectedAccruedInterests - params.feeAmount
+        params.feeShares = params.feeAmount.toSharesDown(
+            params.totalSupplyBeforeAccrued + params.expectedAccruedInterests - params.feeAmount,
+            params.totalSupplySharesBeforeAccrued
         );
 
         vm.expectEmit(true, true, true, true, address(morpho));
