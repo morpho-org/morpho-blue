@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import {Id} from "./MarketLib.sol";
 
-library BlueStorageLib {
+library MorphoStorageLib {
     uint256 internal constant OWNER_SLOT = 0;
     uint256 internal constant FEE_RECIPIENT_SLOT = 1;
     uint256 internal constant SUPPLY_SHARES_SLOT = 2;

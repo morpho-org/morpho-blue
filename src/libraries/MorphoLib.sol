@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import {Id, Market, IBlue} from "../interfaces/IBlue.sol";
+import {Id, Market, IMorpho} from "../interfaces/IMorpho.sol";
 import {IIrm} from "../interfaces/IIrm.sol";
 
+import {MathLib} from "./MathLib.sol";
 import {MarketLib} from "./MarketLib.sol";
-import {BlueStorageLib} from "./BlueStorageLib.sol";
-import {FixedPointMathLib} from "./FixedPointMathLib.sol";
+import {MorphoStorageLib} from "./MorphoStorageLib.sol";
 
-library BlueLib {
+library MorphoLib {
+    using MathLib for uint256;
     using MarketLib for Market;
-    using FixedPointMathLib for uint256;
 
-    function accruedInterests(IBlue blue, Market memory market)
+    function accruedInterests(IMorpho blue, Market memory market)
         internal
         view
         returns (uint256 totalSupply, uint256 totalBorrow, uint256 totalSupplyShares)
@@ -20,11 +20,11 @@ library BlueLib {
         Id id = market.id();
 
         bytes32[] memory slots = new bytes32[](5);
-        slots[0] = BlueStorageLib.totalSupply(id);
-        slots[1] = BlueStorageLib.totalBorrow(id);
-        slots[2] = BlueStorageLib.totalSupplyShares(id);
-        slots[3] = BlueStorageLib.fee(id);
-        slots[4] = BlueStorageLib.lastUpdate(id);
+        slots[0] = MorphoStorageLib.totalSupply(id);
+        slots[1] = MorphoStorageLib.totalBorrow(id);
+        slots[2] = MorphoStorageLib.totalSupplyShares(id);
+        slots[3] = MorphoStorageLib.fee(id);
+        slots[4] = MorphoStorageLib.lastUpdate(id);
 
         bytes32[] memory values = blue.extsload(slots);
         totalSupply = uint256(values[0]);
