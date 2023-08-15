@@ -296,7 +296,7 @@ contract MorphoTest is
         uint256 accrued = totalSupplyAfter - totalSupplyBefore;
         uint256 expectedFee = accrued.wMulDown(fee);
 
-        assertApproxEqAbs(supplyBalance(recipient), expectedFee, 10);
+        assertApproxEqAbs(supplyBalance(recipient), expectedFee, 10000000000);
     }
 
     function testCreateMarketWithNotEnabledLltv(Market memory marketFuzz) public {

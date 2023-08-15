@@ -438,8 +438,8 @@ contract Morpho is IMorpho {
         (uint256 accruedInterests, uint256 feeShares) = _accruedInterests(id, borrowRate);
 
         if (accruedInterests != 0) {
-            totalBorrow[id] += accruedInterests;
             totalSupply[id] += accruedInterests;
+            totalBorrow[id] += accruedInterests;
         }
 
         if (feeShares != 0) {
@@ -470,6 +470,7 @@ contract Morpho is IMorpho {
         returns (uint256 accruedInterests, uint256 feeShares)
     {
         uint256 elapsed = block.timestamp - lastUpdate[id];
+
         if (elapsed == 0) return (0, 0);
 
         uint256 marketTotalBorrow = totalBorrow[id];
@@ -479,8 +480,9 @@ contract Morpho is IMorpho {
 
             if (fee[id] != 0) {
                 uint256 feeAmount = accruedInterests.wMulDown(fee[id]);
-                // The fee amount is subtracted from the total supply in this calculation to compensate for the fact that total supply is already updated.
-                feeShares = feeAmount.toSharesDown(totalSupply[id] - feeAmount, totalSupplyShares[id]);
+                // The fee shares must be computed taking into account the accrued interestes without the fee amount.
+                feeShares =
+                    feeAmount.toSharesDown(totalSupply[id] + accruedInterests - feeAmount, totalSupplyShares[id]);
             }
         }
     }
@@ -503,12 +505,13 @@ contract Morpho is IMorpho {
 
     function supplyBalance(Id id, address user) external view returns (uint256) {
         (uint256 totSupply,, uint256 totSupplyShares) = _accrued(idToMarket[id], id);
-        return supplyShares[id][user].toAssetsDown(totSupply, totSupplyShares);
+        return totSupplyShares == 0 ? 0 : supplyShares[id][user].toAssetsDown(totSupply, totSupplyShares);
     }
 
     function borrowBalance(Id id, address user) external view returns (uint256) {
         (, uint256 totBorrow,) = _accrued(idToMarket[id], id);
-        return borrowShares[id][user].toAssetsUp(totBorrow, totalBorrowShares[id]);
+        uint256 totBorrowShares = totalBorrowShares[id];
+        return totBorrowShares == 0 ? 0 : borrowShares[id][user].toAssetsUp(totBorrow, totBorrowShares);
     }
 
     /* HEALTH CHECK */
