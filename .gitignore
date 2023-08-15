@@ -18,6 +18,7 @@ docs/
 
 # Certora
 .certora**
+emv-*-certora*
 
 # Hardhat
 /types
