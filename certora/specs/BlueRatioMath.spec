@@ -1,7 +1,10 @@
 methods {
     function totalSupply(MorphoHarness.Id) external returns uint256 envfree;
     function totalSupplyShares(MorphoHarness.Id) external returns uint256 envfree;
+    function totalBorrow(MorphoHarness.Id) external returns uint256 envfree;
+    function totalBorrowShares(MorphoHarness.Id) external returns uint256 envfree;
     function fee(MorphoHarness.Id) external returns uint256 envfree;
+    function lastUpdate(MorphoHarness.Id) external returns uint256 envfree;
 
     function MathLib.mulDivDown(uint256 a, uint256 b, uint256 c) internal returns uint256 => summaryMulDivDown(a,b,c);
     function MathLib.mulDivUp(uint256 a, uint256 b, uint256 c) internal returns uint256 => summaryMulDivUp(a,b,c);
@@ -35,9 +38,9 @@ function summaryMulDivDown(uint256 x, uint256 y, uint256 d) returns uint256 {
     return result;
 }
 
-rule onlyLiquidateCanDecreasesRatio(method f)
+rule onlyLiquidateCanDecreaseRatio(method f)
 filtered {
-    f -> f.selector != sig:liquidate(MorphoHarness.Market, address, uint256, bytes).selector
+    f -> !f.isView && f.selector != sig:liquidate(MorphoHarness.Market, address, uint256, bytes).selector
 }
 {
     MorphoHarness.Id id;
@@ -55,4 +58,27 @@ filtered {
 
     // check if ratio increases: assetsBefore/sharesBefore <= assetsAfter / sharesAfter;
     assert assetsBefore * sharesAfter <= assetsAfter * sharesBefore;
+}
+
+rule onlyAccrueInterestsCanIncreaseBorrowRatio(method f)
+filtered {
+    f -> !f.isView
+}
+{
+    MorphoHarness.Id id;
+    requireInvariant feeInRange(id);
+
+    mathint assetsBefore = totalBorrow(id) + VIRTUAL_ASSETS();
+    mathint sharesBefore = totalBorrowShares(id) + VIRTUAL_SHARES();
+
+    env e;
+    calldataarg args;
+    require lastUpdate(id) == e.block.timestamp;
+    f(e,args);
+
+    mathint assetsAfter = totalBorrow(id) + VIRTUAL_ASSETS();
+    mathint sharesAfter = totalBorrowShares(id) + VIRTUAL_SHARES();
+
+    // check if ratio increases: assetsBefore/sharesBefore <= assetsAfter / sharesAfter;
+    assert assetsBefore * sharesAfter >= assetsAfter * sharesBefore;
 }
