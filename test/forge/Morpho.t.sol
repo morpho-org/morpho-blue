@@ -7,13 +7,6 @@ import "forge-std/Test.sol";
 import {SigUtils} from "./helpers/SigUtils.sol";
 
 import "src/Morpho.sol";
-import {SharesMathLib} from "src/libraries/SharesMathLib.sol";
-import {
-    IMorphoLiquidateCallback,
-    IMorphoRepayCallback,
-    IMorphoSupplyCallback,
-    IMorphoSupplyCollateralCallback
-} from "src/interfaces/IMorphoCallbacks.sol";
 import {ERC20Mock as ERC20} from "src/mocks/ERC20Mock.sol";
 import {OracleMock as Oracle} from "src/mocks/OracleMock.sol";
 import {IrmMock as Irm} from "src/mocks/IrmMock.sol";
