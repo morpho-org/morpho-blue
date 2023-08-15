@@ -932,7 +932,7 @@ contract MorphoTest is
     }
 
     function testAuthorizationWithSigDeadline(Authorization memory authorization, uint256 privateKey) public {
-        vm.assume(authorization.deadline <= block.timestamp);
+        authorization.deadline = bound(authorization.deadline, 0, block.timestamp);
 
         // Private key must be less than the secp256k1 curve order.
         privateKey = bound(privateKey, 1, type(uint32).max);
