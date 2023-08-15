@@ -19,9 +19,6 @@ methods {
 
     function getMarketId(MorphoHarness.Market) external returns MorphoHarness.Id envfree;
 
-    function mathLibMulDivUp(uint256, uint256, uint256) external returns uint256 envfree;
-    function mathLibMulDivDown(uint256, uint256, uint256) external returns uint256 envfree;
-
     // Temporary workaround a bug that requires to have address instead of an interface in the signature
     function SafeTransferLib.tmpSafeTransfer(address token, address to, uint256 value) internal => summarySafeTransferFrom(token, currentContract, to, value);
     function SafeTransferLib.tmpSafeTransferFrom(address token, address from, address to, uint256 value) internal => summarySafeTransferFrom(token, from, to, value);
