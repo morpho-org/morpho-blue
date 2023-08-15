@@ -12,7 +12,7 @@ library MorphoLib {
     using MathLib for uint256;
     using MarketLib for Market;
 
-    function accruedInterests(IMorpho blue, Market memory market)
+    function accruedInterests(IMorpho morpho, Market memory market)
         internal
         view
         returns (uint256 totalSupply, uint256 totalBorrow, uint256 totalSupplyShares)
@@ -26,7 +26,7 @@ library MorphoLib {
         slots[3] = MorphoStorageLib.fee(id);
         slots[4] = MorphoStorageLib.lastUpdate(id);
 
-        bytes32[] memory values = blue.extsload(slots);
+        bytes32[] memory values = morpho.extsload(slots);
         totalSupply = uint256(values[0]);
         totalBorrow = uint256(values[1]);
         totalSupplyShares = uint256(values[2]);
