@@ -6,17 +6,13 @@ methods {
     function MathLib.mulDivDown(uint256 a, uint256 b, uint256 c) internal returns uint256 => summaryMulDivDown(a,b,c);
     function MathLib.mulDivUp(uint256 a, uint256 b, uint256 c) internal returns uint256 => summaryMulDivUp(a,b,c);
     function MathLib.wTaylorCompounded(uint256, uint256) internal returns uint256 => NONDET;
-    //function MathLib.wMulDown(uint256, uint256) internal returns uint256 => NONDET;
-
-    //function SharesMathLib.toAssetsUp(uint256 shares, uint256 totalAssets, uint256 totalShares) internal returns uint256 => summaryToAssetsUp(shares, totalAssets, totalShares);
-    //function SharesMathLib.toAssetsDown(uint256 shares, uint256 totalAssets, uint256 totalShares) internal returns uint256 => summaryToAssetsDown(shares, totalAssets, totalShares);
 
     function _.borrowRate(MorphoHarness.Market) external => HAVOC_ECF;
 }
 
 definition VIRTUAL_ASSETS() returns mathint = 1;
-definition VIRTUAL_SHARES() returns mathint = 1000000000000000000;
-definition MAX_FEE() returns mathint = 250000000000000000;
+definition VIRTUAL_SHARES() returns mathint = 10^18;
+definition MAX_FEE() returns mathint = 10^18 * 25/100;
 
 invariant feeInRange(MorphoHarness.Id id)
     to_mathint(fee(id)) <= MAX_FEE();

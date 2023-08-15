@@ -22,6 +22,7 @@ methods {
     function mathLibMulDivUp(uint256, uint256, uint256) external returns uint256 envfree;
     function mathLibMulDivDown(uint256, uint256, uint256) external returns uint256 envfree;
 
+    // Temporary workaround a bug that requires to have address instead of an interface in the signature
     function SafeTransferLib.tmpSafeTransfer(address token, address to, uint256 value) internal => summarySafeTransferFrom(token, currentContract, to, value);
     function SafeTransferLib.tmpSafeTransferFrom(address token, address from, address to, uint256 value) internal => summarySafeTransferFrom(token, from, to, value);
 }
@@ -88,8 +89,8 @@ function summarySafeTransferFrom(address token, address from, address to, uint25
 }
 
 definition VIRTUAL_ASSETS() returns mathint = 1;
-definition VIRTUAL_SHARES() returns mathint = 1000000000000000000;
-definition MAX_FEE() returns mathint = 250000000000000000;
+definition VIRTUAL_SHARES() returns mathint = 10^18;
+definition MAX_FEE() returns mathint = 10^18 * 25/100;
 definition isInitialized(MorphoHarness.Id id) returns bool =
     (lastUpdate(id) != 0);
 
@@ -142,8 +143,6 @@ invariant isLiquid(address token)
         require e.msg.sender != currentContract;
     }
 }
-//invariant liquidOnCollateralToken(MorphoHarness.Market market)
-//    myBalances[market.collateralToken] <= collateral(getMarketId(market));
 
 rule supplyRevertZero(MorphoHarness.Market market) {
     env e;
@@ -159,17 +158,6 @@ invariant invOnlyEnabledLltv(MorphoHarness.Market market)
 
 invariant invOnlyEnabledIrm(MorphoHarness.Market market)
     isInitialized(getMarketId(market)) => isIrmEnabled(market.irm);
-
-/* Check the summaries required by BlueRatioMath.spec */
-rule checkSummaryToAssetsUp(uint256 x, uint256 y, uint256 d) {
-    uint256 result = mathLibMulDivUp(x, y, d);
-    assert result * d >= x * y;
-}
-
-rule checkSummaryToAssetsDown(uint256 x, uint256 y, uint256 d) {
-    uint256 result = mathLibMulDivDown(x, y, d);
-    assert result * d <= x * y;
-}
 
 rule marketIdUnique() {
     MorphoHarness.Market market1;
