@@ -6,11 +6,13 @@ import {IIrm} from "../interfaces/IIrm.sol";
 
 import {MathLib} from "./MathLib.sol";
 import {MarketLib} from "./MarketLib.sol";
+import {SharesMathLib} from "./SharesMathLib.sol";
 import {MorphoStorageLib} from "./MorphoStorageLib.sol";
 
 library MorphoLib {
     using MathLib for uint256;
     using MarketLib for Market;
+    using SharesMathLib for uint256;
 
     function accruedInterests(IMorpho morpho, Market memory market)
         internal
@@ -33,17 +35,20 @@ library MorphoLib {
         uint256 fee = uint256(values[3]);
         uint256 lastUpdate = uint256(values[4]);
 
-        if (totalBorrow != 0) {
-            uint256 borrowRate = IIrm(market.irm).borrowRate(market);
-            uint256 interests = totalBorrow.wMulDown(borrowRate * (block.timestamp - lastUpdate));
+        uint256 elapsed = block.timestamp - lastUpdate;
 
+        if (elapsed == 0) return (totalSupply, totalBorrow, totalSupplyShares);
+
+        if (totalBorrow != 0) {
+            uint256 borrowRate = IIrm(market.irm).borrowRateView(market);
+            uint256 interests = totalBorrow.wMulDown(borrowRate.wTaylorCompounded(elapsed));
             totalBorrow += interests;
             totalSupply += interests;
 
             if (fee != 0) {
                 uint256 feeAmount = interests.wMulDown(fee);
                 // The fee amount is subtracted from the total supply in this calculation to compensate for the fact that total supply is already updated.
-                uint256 feeShares = feeAmount.mulDivDown(totalSupplyShares, totalSupply - feeAmount);
+                uint256 feeShares = feeAmount.toSharesDown(totalSupply - feeAmount, totalSupplyShares);
 
                 totalSupplyShares += feeShares;
             }
