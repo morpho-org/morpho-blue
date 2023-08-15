@@ -60,7 +60,7 @@ contract Morpho {
     mapping(Id => mapping(address => uint256)) public supplyShares;
     mapping(Id => mapping(address => uint256)) public borrowShares;
     mapping(Id => mapping(address => uint256)) public collateral;
-    mapping(Id => MarketState) public m;
+    mapping(Id => MarketState) public marketState;
     mapping(address => bool) public isIrmEnabled;
     mapping(uint256 => bool) public isLltvEnabled;
     mapping(address => mapping(address => bool)) public isAuthorized;
@@ -108,14 +108,14 @@ contract Morpho {
 
     function setFee(Market memory market, uint256 newFee) external onlyOwner {
         Id id = market.id();
-        require(m[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
+        require(marketState[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
         require(newFee <= MAX_FEE, ErrorsLib.MAX_FEE_EXCEEDED);
 
         // Accrue interests using the previous fee set before changing it.
         _accrueInterests(market, id);
 
         // Ok unsafe cast.
-        m[id].fee = uint128(newFee);
+        marketState[id].fee = uint128(newFee);
 
         emit EventsLib.SetFee(id, newFee);
     }
@@ -132,10 +132,10 @@ contract Morpho {
         Id id = market.id();
         require(isIrmEnabled[market.irm], ErrorsLib.IRM_NOT_ENABLED);
         require(isLltvEnabled[market.lltv], ErrorsLib.LLTV_NOT_ENABLED);
-        require(m[id].lastUpdate == 0, ErrorsLib.MARKET_CREATED);
+        require(marketState[id].lastUpdate == 0, ErrorsLib.MARKET_CREATED);
 
         // Ok unsafe cast.
-        m[id].lastUpdate = uint128(block.timestamp);
+        marketState[id].lastUpdate = uint128(block.timestamp);
         idToMarket[id] = market;
 
         emit EventsLib.CreateMarket(id, market);
@@ -148,18 +148,18 @@ contract Morpho {
         returns (uint256, uint256)
     {
         Id id = market.id();
-        require(m[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
+        require(marketState[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
         require(UtilsLib.exactlyOneZero(assets, shares), ErrorsLib.INCONSISTENT_INPUT);
         require(onBehalf != address(0), ErrorsLib.ZERO_ADDRESS);
 
         _accrueInterests(market, id);
 
-        if (assets > 0) shares = assets.toSharesDown(m[id].totalSupply, m[id].totalSupplyShares);
-        else assets = shares.toAssetsUp(m[id].totalSupply, m[id].totalSupplyShares);
+        if (assets > 0) shares = assets.toSharesDown(marketState[id].totalSupply, marketState[id].totalSupplyShares);
+        else assets = shares.toAssetsUp(marketState[id].totalSupply, marketState[id].totalSupplyShares);
 
         supplyShares[id][onBehalf] += shares;
-        m[id].totalSupplyShares += shares.toUint128();
-        m[id].totalSupply += assets.toUint128();
+        marketState[id].totalSupplyShares += shares.toUint128();
+        marketState[id].totalSupply += assets.toUint128();
 
         emit EventsLib.Supply(id, msg.sender, onBehalf, assets, shares);
 
@@ -175,7 +175,7 @@ contract Morpho {
         returns (uint256, uint256)
     {
         Id id = market.id();
-        require(m[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
+        require(marketState[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
         require(UtilsLib.exactlyOneZero(assets, shares), ErrorsLib.INCONSISTENT_INPUT);
         // No need to verify that onBehalf != address(0) thanks to the authorization check.
         require(receiver != address(0), ErrorsLib.ZERO_ADDRESS);
@@ -183,16 +183,16 @@ contract Morpho {
 
         _accrueInterests(market, id);
 
-        if (assets > 0) shares = assets.toSharesUp(m[id].totalSupply, m[id].totalSupplyShares);
-        else assets = shares.toAssetsDown(m[id].totalSupply, m[id].totalSupplyShares);
+        if (assets > 0) shares = assets.toSharesUp(marketState[id].totalSupply, marketState[id].totalSupplyShares);
+        else assets = shares.toAssetsDown(marketState[id].totalSupply, marketState[id].totalSupplyShares);
 
         supplyShares[id][onBehalf] -= shares;
-        m[id].totalSupplyShares -= shares.toUint128();
-        m[id].totalSupply -= assets.toUint128();
+        marketState[id].totalSupplyShares -= shares.toUint128();
+        marketState[id].totalSupply -= assets.toUint128();
 
         emit EventsLib.Withdraw(id, msg.sender, onBehalf, receiver, assets, shares);
 
-        require(m[id].totalBorrow <= m[id].totalSupply, ErrorsLib.INSUFFICIENT_LIQUIDITY);
+        require(marketState[id].totalBorrow <= marketState[id].totalSupply, ErrorsLib.INSUFFICIENT_LIQUIDITY);
 
         IERC20(market.borrowableToken).safeTransfer(receiver, assets);
 
@@ -206,7 +206,7 @@ contract Morpho {
         returns (uint256, uint256)
     {
         Id id = market.id();
-        require(m[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
+        require(marketState[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
         require(UtilsLib.exactlyOneZero(assets, shares), ErrorsLib.INCONSISTENT_INPUT);
         // No need to verify that onBehalf != address(0) thanks to the authorization check.
         require(receiver != address(0), ErrorsLib.ZERO_ADDRESS);
@@ -214,17 +214,17 @@ contract Morpho {
 
         _accrueInterests(market, id);
 
-        if (assets > 0) shares = assets.toSharesUp(m[id].totalBorrow, m[id].totalBorrowShares);
-        else assets = shares.toAssetsDown(m[id].totalBorrow, m[id].totalBorrowShares);
+        if (assets > 0) shares = assets.toSharesUp(marketState[id].totalBorrow, marketState[id].totalBorrowShares);
+        else assets = shares.toAssetsDown(marketState[id].totalBorrow, marketState[id].totalBorrowShares);
 
         borrowShares[id][onBehalf] += shares;
-        m[id].totalBorrowShares += shares.toUint128();
-        m[id].totalBorrow += assets.toUint128();
+        marketState[id].totalBorrowShares += shares.toUint128();
+        marketState[id].totalBorrow += assets.toUint128();
 
         emit EventsLib.Borrow(id, msg.sender, onBehalf, receiver, assets, shares);
 
         require(_isHealthy(market, id, onBehalf), ErrorsLib.INSUFFICIENT_COLLATERAL);
-        require(m[id].totalBorrow <= m[id].totalSupply, ErrorsLib.INSUFFICIENT_LIQUIDITY);
+        require(marketState[id].totalBorrow <= marketState[id].totalSupply, ErrorsLib.INSUFFICIENT_LIQUIDITY);
 
         IERC20(market.borrowableToken).safeTransfer(receiver, assets);
 
@@ -236,18 +236,18 @@ contract Morpho {
         returns (uint256, uint256)
     {
         Id id = market.id();
-        require(m[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
+        require(marketState[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
         require(UtilsLib.exactlyOneZero(assets, shares), ErrorsLib.INCONSISTENT_INPUT);
         require(onBehalf != address(0), ErrorsLib.ZERO_ADDRESS);
 
         _accrueInterests(market, id);
 
-        if (assets > 0) shares = assets.toSharesDown(m[id].totalBorrow, m[id].totalBorrowShares);
-        else assets = shares.toAssetsUp(m[id].totalBorrow, m[id].totalBorrowShares);
+        if (assets > 0) shares = assets.toSharesDown(marketState[id].totalBorrow, marketState[id].totalBorrowShares);
+        else assets = shares.toAssetsUp(marketState[id].totalBorrow, marketState[id].totalBorrowShares);
 
         borrowShares[id][onBehalf] -= shares;
-        m[id].totalBorrowShares -= shares.toUint128();
-        m[id].totalBorrow -= assets.toUint128();
+        marketState[id].totalBorrowShares -= shares.toUint128();
+        marketState[id].totalBorrow -= assets.toUint128();
 
         emit EventsLib.Repay(id, msg.sender, onBehalf, assets, shares);
 
@@ -262,7 +262,7 @@ contract Morpho {
 
     function supplyCollateral(Market memory market, uint256 assets, address onBehalf, bytes calldata data) external {
         Id id = market.id();
-        require(m[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
+        require(marketState[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
         require(assets != 0, ErrorsLib.ZERO_ASSETS);
         require(onBehalf != address(0), ErrorsLib.ZERO_ADDRESS);
 
@@ -279,7 +279,7 @@ contract Morpho {
 
     function withdrawCollateral(Market memory market, uint256 assets, address onBehalf, address receiver) external {
         Id id = market.id();
-        require(m[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
+        require(marketState[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
         require(assets != 0, ErrorsLib.ZERO_ASSETS);
         // No need to verify that onBehalf != address(0) thanks to the authorization check.
         require(receiver != address(0), ErrorsLib.ZERO_ADDRESS);
@@ -303,7 +303,7 @@ contract Morpho {
         returns (uint256 assetsRepaid, uint256 sharesRepaid)
     {
         Id id = market.id();
-        require(m[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
+        require(marketState[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
         require(seized != 0, ErrorsLib.ZERO_ASSETS);
 
         _accrueInterests(market, id);
@@ -314,11 +314,11 @@ contract Morpho {
 
         assetsRepaid =
             seized.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(liquidationIncentiveFactor(market.lltv));
-        sharesRepaid = assetsRepaid.toSharesDown(m[id].totalBorrow, m[id].totalBorrowShares);
+        sharesRepaid = assetsRepaid.toSharesDown(marketState[id].totalBorrow, marketState[id].totalBorrowShares);
 
         borrowShares[id][borrower] -= sharesRepaid;
-        m[id].totalBorrowShares -= sharesRepaid.toUint128();
-        m[id].totalBorrow -= assetsRepaid.toUint128();
+        marketState[id].totalBorrowShares -= sharesRepaid.toUint128();
+        marketState[id].totalBorrow -= assetsRepaid.toUint128();
 
         collateral[id][borrower] -= seized;
 
@@ -326,10 +326,10 @@ contract Morpho {
         uint256 badDebtShares;
         if (collateral[id][borrower] == 0) {
             badDebtShares = borrowShares[id][borrower];
-            uint256 badDebt = badDebtShares.toAssetsUp(m[id].totalBorrow, m[id].totalBorrowShares);
-            m[id].totalSupply -= badDebt.toUint128();
-            m[id].totalBorrow -= badDebt.toUint128();
-            m[id].totalBorrowShares -= badDebtShares.toUint128();
+            uint256 badDebt = badDebtShares.toAssetsUp(marketState[id].totalBorrow, marketState[id].totalBorrowShares);
+            marketState[id].totalSupply -= badDebt.toUint128();
+            marketState[id].totalBorrow -= badDebt.toUint128();
+            marketState[id].totalBorrowShares -= badDebtShares.toUint128();
             borrowShares[id][borrower] = 0;
         }
 
@@ -391,40 +391,41 @@ contract Morpho {
 
     function accrueInterests(Market memory market) external {
         Id id = market.id();
-        require(m[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
+        require(marketState[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
 
         _accrueInterests(market, id);
     }
 
     /// @dev Accrues interests for `market`.
     function _accrueInterests(Market memory market, Id id) internal {
-        uint256 elapsed = block.timestamp - m[id].lastUpdate;
+        uint256 elapsed = block.timestamp - marketState[id].lastUpdate;
 
         if (elapsed == 0) return;
 
-        uint256 marketTotalBorrow = m[id].totalBorrow;
+        uint256 marketTotalBorrow = marketState[id].totalBorrow;
 
         if (marketTotalBorrow != 0) {
             uint256 borrowRate = IIrm(market.irm).borrowRate(market);
             uint256 accruedInterests = marketTotalBorrow.wMulDown(borrowRate.wTaylorCompounded(elapsed));
-            m[id].totalBorrow += accruedInterests.toUint128();
-            m[id].totalSupply += accruedInterests.toUint128();
+            marketState[id].totalBorrow += accruedInterests.toUint128();
+            marketState[id].totalSupply += accruedInterests.toUint128();
 
             uint256 feeShares;
-            if (m[id].fee != 0) {
-                uint256 feeAmount = accruedInterests.wMulDown(m[id].fee);
+            if (marketState[id].fee != 0) {
+                uint256 feeAmount = accruedInterests.wMulDown(marketState[id].fee);
                 // The fee amount is subtracted from the total supply in this calculation to compensate for the fact that total supply is already updated.
-                feeShares = feeAmount.toSharesDown(m[id].totalSupply - feeAmount, m[id].totalSupplyShares);
+                feeShares =
+                    feeAmount.toSharesDown(marketState[id].totalSupply - feeAmount, marketState[id].totalSupplyShares);
                 supplyShares[id][feeRecipient] += feeShares;
                 // Ok unsafe cast.
-                m[id].totalSupplyShares += uint128(feeShares);
+                marketState[id].totalSupplyShares += uint128(feeShares);
             }
 
             emit EventsLib.AccrueInterests(id, borrowRate, accruedInterests, feeShares);
         }
 
         // Ok unsafe cast.
-        m[id].lastUpdate = uint128(block.timestamp);
+        marketState[id].lastUpdate = uint128(block.timestamp);
     }
 
     /* HEALTH CHECK */
@@ -444,7 +445,8 @@ contract Morpho {
         view
         returns (bool)
     {
-        uint256 borrowed = borrowShares[id][user].toAssetsUp(m[id].totalBorrow, m[id].totalBorrowShares);
+        uint256 borrowed =
+            borrowShares[id][user].toAssetsUp(marketState[id].totalBorrow, marketState[id].totalBorrowShares);
         uint256 maxBorrow = collateral[id][user].mulDivDown(collateralPrice, ORACLE_PRICE_SCALE).wMulDown(market.lltv);
 
         return maxBorrow >= borrowed;

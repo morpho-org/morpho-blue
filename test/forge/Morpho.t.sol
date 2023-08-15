@@ -96,8 +96,8 @@ contract MorphoTest is
         uint256 supplyShares = morpho.supplyShares(id, user);
         if (supplyShares == 0) return 0;
 
-        uint256 totalShares = morpho.m(id).totalSupplyShares;
-        uint256 totalSupply = morpho.m(id).totalSupply;
+        uint256 totalShares = morpho.marketState(id).totalSupplyShares;
+        uint256 totalSupply = morpho.marketState(id).totalSupply;
         return supplyShares.toAssetsDown(totalSupply, totalShares);
     }
 
@@ -105,15 +105,15 @@ contract MorphoTest is
         uint256 borrowerShares = morpho.borrowShares(id, user);
         if (borrowerShares == 0) return 0;
 
-        uint256 totalShares = morpho.m(id).totalBorrowShares;
-        uint256 totalBorrow = morpho.m(id).totalBorrow;
+        uint256 totalShares = morpho.marketState(id).totalBorrowShares;
+        uint256 totalBorrow = morpho.marketState(id).totalBorrow;
         return borrowerShares.toAssetsUp(totalBorrow, totalShares);
     }
 
     // Invariants
 
     function invariantLiquidity() public {
-        assertLe(morpho.m(id).totalBorrow, morpho.m(id).totalSupply, "liquidity");
+        assertLe(morpho.marketState(id).totalBorrow, morpho.marketState(id).totalSupply, "liquidity");
     }
 
     function invariantLltvEnabled() public {
@@ -125,7 +125,7 @@ contract MorphoTest is
     }
 
     function invariantMarketCreated() public {
-        assertGt(morpho.m(id).lastUpdate, 0);
+        assertGt(morpho.marketState(id).lastUpdate, 0);
     }
 
     // Tests
@@ -217,7 +217,7 @@ contract MorphoTest is
         vm.prank(OWNER);
         morpho.setFee(market, fee);
 
-        assertEq(morpho.m(id).fee, fee);
+        assertEq(morpho.marketState(id).fee, fee);
     }
 
     function testSetFeeShouldRevertIfTooHigh(uint256 fee) public {
@@ -282,7 +282,7 @@ contract MorphoTest is
         vm.prank(BORROWER);
         morpho.borrow(market, assetsBorrowed, 0, BORROWER, BORROWER);
 
-        uint256 totalSupplyBefore = morpho.m(id).totalSupply;
+        uint256 totalSupplyBefore = morpho.marketState(id).totalSupply;
 
         // Trigger an accrue.
         vm.warp(block.timestamp + timeElapsed);
@@ -291,7 +291,7 @@ contract MorphoTest is
         morpho.supplyCollateral(market, 1, address(this), hex"");
         morpho.withdrawCollateral(market, 1, address(this), address(this));
 
-        uint256 totalSupplyAfter = morpho.m(id).totalSupply;
+        uint256 totalSupplyAfter = morpho.marketState(id).totalSupply;
         vm.assume(totalSupplyAfter > totalSupplyBefore);
 
         uint256 accrued = totalSupplyAfter - totalSupplyBefore;
@@ -313,7 +313,8 @@ contract MorphoTest is
         vm.assume(onBehalf != address(0));
         vm.assume(onBehalf != address(morpho));
         assets = bound(assets, 1, 2 ** 64);
-        uint256 shares = assets.toSharesDown(morpho.m(id).totalSupply, morpho.m(id).totalSupplyShares);
+        uint256 shares =
+            assets.toSharesDown(morpho.marketState(id).totalSupply, morpho.marketState(id).totalSupplyShares);
 
         borrowableToken.setBalance(address(this), assets);
         morpho.supply(market, assets, 0, onBehalf, hex"");
@@ -327,7 +328,7 @@ contract MorphoTest is
         vm.assume(onBehalf != address(0));
         vm.assume(onBehalf != address(morpho));
         shares = bound(shares, 1, 2 ** 64);
-        uint256 assets = shares.toAssetsUp(morpho.m(id).totalSupply, morpho.m(id).totalSupplyShares);
+        uint256 assets = shares.toAssetsUp(morpho.marketState(id).totalSupply, morpho.marketState(id).totalSupplyShares);
 
         borrowableToken.setBalance(address(this), assets);
         morpho.supply(market, 0, shares, onBehalf, hex"");
@@ -341,13 +342,14 @@ contract MorphoTest is
     function testBorrowAmount(uint256 assetsLent, uint256 assetsBorrowed) public {
         assetsLent = bound(assetsLent, 1, 2 ** 64);
         assetsBorrowed = bound(assetsBorrowed, 1, assetsLent);
-        uint256 shares = assetsBorrowed.toSharesUp(morpho.m(id).totalBorrow, morpho.m(id).totalBorrowShares);
+        uint256 shares =
+            assetsBorrowed.toSharesUp(morpho.marketState(id).totalBorrow, morpho.marketState(id).totalBorrowShares);
 
         borrowableToken.setBalance(address(this), assetsLent);
         morpho.supply(market, assetsLent, 0, address(this), hex"");
 
         uint256 collateralAmount =
-            shares.toAssetsUp(morpho.m(id).totalBorrow, morpho.m(id).totalBorrowShares).wDivUp(LLTV);
+            shares.toAssetsUp(morpho.marketState(id).totalBorrow, morpho.marketState(id).totalBorrowShares).wDivUp(LLTV);
         collateralToken.setBalance(address(this), collateralAmount);
         morpho.supplyCollateral(market, collateralAmount, BORROWER, hex"");
 
@@ -361,13 +363,14 @@ contract MorphoTest is
 
     function testBorrowShares(uint256 shares) public {
         shares = bound(shares, 1, 2 ** 64);
-        uint256 assets = shares.toAssetsDown(morpho.m(id).totalBorrow, morpho.m(id).totalBorrowShares);
+        uint256 assets =
+            shares.toAssetsDown(morpho.marketState(id).totalBorrow, morpho.marketState(id).totalBorrowShares);
 
         borrowableToken.setBalance(address(this), assets);
         if (assets > 0) morpho.supply(market, assets, 0, address(this), hex"");
 
         uint256 collateralAmount =
-            shares.toAssetsUp(morpho.m(id).totalBorrow, morpho.m(id).totalBorrowShares).wDivUp(LLTV);
+            shares.toAssetsUp(morpho.marketState(id).totalBorrow, morpho.marketState(id).totalBorrowShares).wDivUp(LLTV);
         collateralToken.setBalance(address(this), collateralAmount);
         if (collateralAmount > 0) morpho.supplyCollateral(market, collateralAmount, BORROWER, hex"");
 
@@ -382,13 +385,14 @@ contract MorphoTest is
     function testBorrowInsufficientLiquidity(uint256 assetsLent, uint256 assetsBorrowed) public {
         assetsLent = bound(assetsLent, 1, 2 ** 64 - 1);
         assetsBorrowed = bound(assetsBorrowed, assetsLent + 1, 2 ** 64);
-        uint256 shares = assetsBorrowed.toSharesUp(morpho.m(id).totalBorrow, morpho.m(id).totalBorrowShares);
+        uint256 shares =
+            assetsBorrowed.toSharesUp(morpho.marketState(id).totalBorrow, morpho.marketState(id).totalBorrowShares);
 
         borrowableToken.setBalance(address(this), assetsLent);
         morpho.supply(market, assetsLent, 0, address(this), hex"");
 
         uint256 collateralAmount =
-            shares.toAssetsUp(morpho.m(id).totalBorrow, morpho.m(id).totalBorrowShares).wDivUp(LLTV);
+            shares.toAssetsUp(morpho.marketState(id).totalBorrow, morpho.marketState(id).totalBorrowShares).wDivUp(LLTV);
         collateralToken.setBalance(address(this), collateralAmount);
         morpho.supplyCollateral(market, collateralAmount, BORROWER, hex"");
 
@@ -405,9 +409,9 @@ contract MorphoTest is
 
         // Accrue interests.
         // stdstore.target(address(morpho)).sig("total(bytes32)").with_key(Id.unwrap(id)).depth(0).checked_write(
-        //     morpho.m(id).totalSupply * 4 / 3
+        //     morpho.marketState(id).totalSupply * 4 / 3
         // );
-        borrowableToken.setBalance(address(morpho), morpho.m(id).totalSupply);
+        borrowableToken.setBalance(address(morpho), morpho.marketState(id).totalSupply);
     }
 
     function testWithdrawShares(uint256 assetsLent, uint256 sharesWithdrawn, uint256 assetsBorrowed, address receiver)
@@ -420,7 +424,7 @@ contract MorphoTest is
         sharesWithdrawn = bound(sharesWithdrawn, 1, 2 ** 64);
 
         _testWithdrawCommon(assetsLent);
-        assetsBorrowed = bound(assetsBorrowed, 1, morpho.m(id).totalSupply);
+        assetsBorrowed = bound(assetsBorrowed, 1, morpho.marketState(id).totalSupply);
 
         uint256 collateralAmount = assetsBorrowed.wDivUp(LLTV);
         collateralToken.setBalance(address(this), collateralAmount);
@@ -428,9 +432,10 @@ contract MorphoTest is
 
         morpho.borrow(market, assetsBorrowed, 0, BORROWER, BORROWER);
 
-        uint256 totalSupplyBefore = morpho.m(id).totalSupply;
+        uint256 totalSupplyBefore = morpho.marketState(id).totalSupply;
         uint256 supplySharesBefore = morpho.supplyShares(id, address(this));
-        uint256 assetsWithdrawn = sharesWithdrawn.toAssetsDown(morpho.m(id).totalSupply, morpho.m(id).totalSupplyShares);
+        uint256 assetsWithdrawn =
+            sharesWithdrawn.toAssetsDown(morpho.marketState(id).totalSupply, morpho.marketState(id).totalSupplyShares);
 
         if (sharesWithdrawn > morpho.supplyShares(id, address(this))) {
             vm.expectRevert(stdError.arithmeticError);
@@ -456,12 +461,14 @@ contract MorphoTest is
     function testWithdrawAmount(uint256 assetsLent, uint256 exactAmountWithdrawn) public {
         _testWithdrawCommon(assetsLent);
 
-        uint256 totalSupplyBefore = morpho.m(id).totalSupply;
+        uint256 totalSupplyBefore = morpho.marketState(id).totalSupply;
         uint256 supplySharesBefore = morpho.supplyShares(id, address(this));
         exactAmountWithdrawn = bound(
             exactAmountWithdrawn,
             1,
-            supplySharesBefore.toAssetsDown(morpho.m(id).totalSupply, morpho.m(id).totalSupplyShares)
+            supplySharesBefore.toAssetsDown(
+                morpho.marketState(id).totalSupply, morpho.marketState(id).totalSupplyShares
+            )
         );
         morpho.withdraw(market, exactAmountWithdrawn, 0, address(this), address(this));
 
@@ -473,9 +480,9 @@ contract MorphoTest is
     function testWithdrawAll(uint256 assetsLent) public {
         _testWithdrawCommon(assetsLent);
 
-        uint256 totalSupplyBefore = morpho.m(id).totalSupply;
+        uint256 totalSupplyBefore = morpho.marketState(id).totalSupply;
         uint256 assetsWithdrawn = morpho.supplyShares(id, address(this)).toAssetsDown(
-            morpho.m(id).totalSupply, morpho.m(id).totalSupplyShares
+            morpho.marketState(id).totalSupply, morpho.marketState(id).totalSupplyShares
         );
         morpho.withdraw(market, 0, morpho.supplyShares(id, address(this)), address(this), address(this));
 
@@ -499,7 +506,7 @@ contract MorphoTest is
 
         // Accrue interests.
         // stdstore.target(address(morpho)).sig("total(bytes32)").with_key(Id.unwrap(id)).depth(1).checked_write(
-        //     morpho.m(id).totalBorrow * 4 / 3
+        //     morpho.marketState(id).totalBorrow * 4 / 3
         // );
     }
 
@@ -512,7 +519,8 @@ contract MorphoTest is
         uint256 borrowSharesBefore = morpho.borrowShares(id, onBehalf);
         sharesRepaid = bound(sharesRepaid, 1, borrowSharesBefore);
 
-        uint256 assetsRepaid = sharesRepaid.toAssetsUp(morpho.m(id).totalBorrow, morpho.m(id).totalBorrowShares);
+        uint256 assetsRepaid =
+            sharesRepaid.toAssetsUp(morpho.marketState(id).totalBorrow, morpho.marketState(id).totalBorrowShares);
         morpho.repay(market, 0, sharesRepaid, onBehalf, hex"");
 
         assertEq(morpho.borrowShares(id, onBehalf), borrowSharesBefore - sharesRepaid, "borrow share");
@@ -528,9 +536,12 @@ contract MorphoTest is
         exactAmountRepaid = bound(
             exactAmountRepaid,
             1,
-            borrowSharesBefore.toAssetsDown(morpho.m(id).totalBorrow, morpho.m(id).totalBorrowShares)
+            borrowSharesBefore.toAssetsDown(
+                morpho.marketState(id).totalBorrow, morpho.marketState(id).totalBorrowShares
+            )
         );
-        uint256 sharesRepaid = exactAmountRepaid.toSharesDown(morpho.m(id).totalBorrow, morpho.m(id).totalBorrowShares);
+        uint256 sharesRepaid =
+            exactAmountRepaid.toSharesDown(morpho.marketState(id).totalBorrow, morpho.marketState(id).totalBorrowShares);
         morpho.repay(market, exactAmountRepaid, 0, address(this), hex"");
 
         assertEq(morpho.borrowShares(id, address(this)), borrowSharesBefore - sharesRepaid, "borrow share");
@@ -541,8 +552,9 @@ contract MorphoTest is
     function testRepayAll(uint256 assetsBorrowed) public {
         _testRepayCommon(assetsBorrowed, address(this));
 
-        uint256 assetsRepaid =
-            morpho.borrowShares(id, address(this)).toAssetsUp(morpho.m(id).totalBorrow, morpho.m(id).totalBorrowShares);
+        uint256 assetsRepaid = morpho.borrowShares(id, address(this)).toAssetsUp(
+            morpho.marketState(id).totalBorrow, morpho.marketState(id).totalBorrowShares
+        );
         borrowableToken.setBalance(address(this), assetsRepaid);
         morpho.repay(market, 0, morpho.borrowShares(id, address(this)), address(this), hex"");
 
@@ -717,7 +729,7 @@ contract MorphoTest is
         uint256 expectedBadDebt = assetsBorrowed - expectedRepaid;
         assertGt(expectedBadDebt, 0, "bad debt");
         assertApproxEqAbs(supplyBalance(address(this)), assetsLent - expectedBadDebt, 10, "lender supply balance");
-        assertApproxEqAbs(morpho.m(id).totalBorrow, 0, 10, "total borrow");
+        assertApproxEqAbs(morpho.marketState(id).totalBorrow, 0, 10, "total borrow");
     }
 
     function testTwoUsersSupply(uint256 firstAmount, uint256 secondAmount) public {
