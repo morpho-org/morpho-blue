@@ -32,6 +32,7 @@ contract MorphoTest is
 
     address private constant BORROWER = address(0x1234);
     address private constant LIQUIDATOR = address(0x5678);
+    address private constant RECEIVER = address(0xabcd);
     uint256 private constant LLTV = 0.8 ether;
     address private constant OWNER = address(0xdead);
 
@@ -336,11 +337,10 @@ contract MorphoTest is
         assertEq(borrowableToken.balanceOf(address(morpho)), assets, "morpho balance");
     }
 
-    function testBorrowAmount(uint256 assetsLent, uint256 assetsBorrowed, address receiver) public {
-        vm.assume(receiver != address(0));
-        vm.assume(receiver != address(morpho));
+    // failing test
+    function testBorrowAmount(uint256 assetsLent, uint256 assetsBorrowed) public {
         assetsLent = bound(assetsLent, 1, 2 ** 64);
-        assetsBorrowed = bound(assetsBorrowed, 1, 2 ** 64);
+        assetsBorrowed = bound(assetsBorrowed, 1, assetsLent);
         uint256 shares = assetsBorrowed.toSharesUp(morpho.m(id).totalBorrow, morpho.m(id).totalBorrowShares);
 
         borrowableToken.setBalance(address(this), assetsLent);
@@ -351,18 +351,11 @@ contract MorphoTest is
         collateralToken.setBalance(address(this), collateralAmount);
         morpho.supplyCollateral(market, collateralAmount, BORROWER, hex"");
 
-        if (assetsBorrowed > assetsLent) {
-            vm.prank(BORROWER);
-            vm.expectRevert(bytes(ErrorsLib.INSUFFICIENT_LIQUIDITY));
-            morpho.borrow(market, assetsBorrowed, 0, BORROWER, receiver);
-            return;
-        }
-
         vm.prank(BORROWER);
-        morpho.borrow(market, assetsBorrowed, 0, BORROWER, receiver);
+        morpho.borrow(market, assetsBorrowed, 0, BORROWER, RECEIVER);
 
         assertEq(morpho.borrowShares(id, BORROWER), assetsBorrowed * SharesMathLib.VIRTUAL_SHARES, "borrow share");
-        assertEq(borrowableToken.balanceOf(receiver), assetsBorrowed, "receiver balance");
+        assertEq(borrowableToken.balanceOf(RECEIVER), assetsBorrowed, "receiver balance");
         assertEq(borrowableToken.balanceOf(address(morpho)), assetsLent - assetsBorrowed, "morpho balance");
     }
 
@@ -384,6 +377,24 @@ contract MorphoTest is
         assertEq(morpho.borrowShares(id, BORROWER), shares, "borrow share");
         assertEq(borrowableToken.balanceOf(BORROWER), assets, "receiver balance");
         assertEq(borrowableToken.balanceOf(address(morpho)), 0, "morpho balance");
+    }
+
+    function testBorrowInsufficientLiquidity(uint256 assetsLent, uint256 assetsBorrowed) public {
+        assetsLent = bound(assetsLent, 1, 2 ** 64 - 1);
+        assetsBorrowed = bound(assetsBorrowed, assetsLent + 1, 2 ** 64);
+        uint256 shares = assetsBorrowed.toSharesUp(morpho.m(id).totalBorrow, morpho.m(id).totalBorrowShares);
+
+        borrowableToken.setBalance(address(this), assetsLent);
+        morpho.supply(market, assetsLent, 0, address(this), hex"");
+
+        uint256 collateralAmount =
+            shares.toAssetsUp(morpho.m(id).totalBorrow, morpho.m(id).totalBorrowShares).wDivUp(LLTV);
+        collateralToken.setBalance(address(this), collateralAmount);
+        morpho.supplyCollateral(market, collateralAmount, BORROWER, hex"");
+
+        vm.prank(BORROWER);
+        vm.expectRevert(bytes(ErrorsLib.INSUFFICIENT_LIQUIDITY));
+        morpho.borrow(market, assetsBorrowed, 0, BORROWER, BORROWER);
     }
 
     function _testWithdrawCommon(uint256 assetsLent) public {

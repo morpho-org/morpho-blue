@@ -1,4 +1,4 @@
 [profile.default]
-via-ir = false
+via-ir = true
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
