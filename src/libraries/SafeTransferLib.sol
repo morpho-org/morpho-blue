@@ -12,7 +12,8 @@ import {IERC20} from "../interfaces/IERC20.sol";
 ///         not returning a boolean for `transfer` and `transferFrom` functions.
 library SafeTransferLib {
     function tmpSafeTransfer(address token, address to, uint256 value) internal {
-        (bool success, bytes memory returndata) = address(token).call(abi.encodeCall(IERC20(token).transfer, (to, value)));
+        (bool success, bytes memory returndata) =
+            address(token).call(abi.encodeCall(IERC20(token).transfer, (to, value)));
         require(
             success && address(token).code.length > 0 && (returndata.length == 0 || abi.decode(returndata, (bool))),
             ErrorsLib.TRANSFER_FAILED
