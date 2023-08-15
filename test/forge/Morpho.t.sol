@@ -97,7 +97,7 @@ contract MorphoTest is
 
         uint256 totalShares = morpho.totalSupplyShares(id);
         uint256 totalSupply = morpho.totalSupply(id);
-        return supplyShares.wDivDown(totalShares).wMulDown(totalSupply);
+        return supplyShares.toAssetsDown(totalSupply, totalShares);
     }
 
     function borrowBalance(address user) internal view returns (uint256) {
@@ -106,7 +106,7 @@ contract MorphoTest is
 
         uint256 totalShares = morpho.totalBorrowShares(id);
         uint256 totalBorrow = morpho.totalBorrow(id);
-        return borrowerShares.wDivUp(totalShares).wMulUp(totalBorrow);
+        return borrowerShares.toAssetsUp(totalBorrow, totalShares);
     }
 
     // Invariants
@@ -282,7 +282,6 @@ contract MorphoTest is
         morpho.borrow(market, assetsBorrowed, 0, BORROWER, BORROWER);
 
         uint256 totalSupplyBefore = morpho.totalSupply(id);
-        uint256 totalSupplySharesBefore = morpho.totalSupplyShares(id);
 
         // Trigger an accrue.
         vm.warp(block.timestamp + timeElapsed);
@@ -296,9 +295,8 @@ contract MorphoTest is
 
         uint256 accrued = totalSupplyAfter - totalSupplyBefore;
         uint256 expectedFee = accrued.wMulDown(fee);
-        uint256 expectedFeeShares = expectedFee.mulDivDown(totalSupplySharesBefore, totalSupplyAfter - expectedFee);
 
-        assertEq(morpho.supplyShares(id, recipient), expectedFeeShares);
+        assertApproxEqAbs(supplyBalance(recipient), expectedFee, 10);
     }
 
     function testCreateMarketWithNotEnabledLltv(Market memory marketFuzz) public {
@@ -641,7 +639,7 @@ contract MorphoTest is
 
         // Liquidate
         vm.prank(LIQUIDATOR);
-        morpho.liquidate(market, BORROWER, toSeize, hex"");
+        (uint256 assetsRepaid,) = morpho.liquidate(market, BORROWER, toSeize, hex"");
 
         uint256 liquidatorNetWorthAfter = netWorth(LIQUIDATOR);
         uint256 collateralPrice = IOracle(market.oracle).price();
@@ -650,6 +648,7 @@ contract MorphoTest is
             toSeize.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(liquidationIncentiveFactor);
         uint256 expectedNetWorthAfter =
             liquidatorNetWorthBefore + toSeize.mulDivDown(collateralPrice, ORACLE_PRICE_SCALE) - expectedRepaid;
+        assertEq(assetsRepaid, expectedRepaid, "wrong return repaid value");
         assertEq(liquidatorNetWorthAfter, expectedNetWorthAfter, "LIQUIDATOR net worth");
         assertApproxEqAbs(borrowBalance(BORROWER), assetsBorrowed - expectedRepaid, 100, "BORROWER balance");
         assertEq(morpho.collateral(id, BORROWER), assetsCollateral - toSeize, "BORROWER collateral");
@@ -686,7 +685,7 @@ contract MorphoTest is
 
         // Liquidate
         vm.prank(LIQUIDATOR);
-        morpho.liquidate(market, BORROWER, toSeize, hex"");
+        (uint256 assetsRepaid,) = morpho.liquidate(market, BORROWER, toSeize, hex"");
 
         uint256 liquidatorNetWorthAfter = netWorth(LIQUIDATOR);
         uint256 collateralPrice = IOracle(market.oracle).price();
@@ -695,6 +694,7 @@ contract MorphoTest is
             toSeize.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(liquidationIncentiveFactor);
         uint256 expectedNetWorthAfter =
             liquidatorNetWorthBefore + toSeize.mulDivDown(collateralPrice, ORACLE_PRICE_SCALE) - expectedRepaid;
+        assertEq(assetsRepaid, expectedRepaid, "wrong return repaid value");
         assertEq(liquidatorNetWorthAfter, expectedNetWorthAfter, "LIQUIDATOR net worth");
         assertEq(borrowBalance(BORROWER), 0, "BORROWER balance");
         assertEq(morpho.collateral(id, BORROWER), 0, "BORROWER collateral");
@@ -819,6 +819,31 @@ contract MorphoTest is
         morpho.withdrawCollateral(market, assets, address(this), address(this));
     }
 
+    function testAccrueInterestsLowShares() public {
+        uint256 shares = 1e18;
+        uint256 assets = 1;
+
+        vm.prank(OWNER);
+        morpho.setFee(market, MAX_FEE);
+
+        // Have a low total supply shares.
+        borrowableToken.setBalance(address(this), assets);
+        morpho.supply(market, assets, 0, address(this), hex"");
+        morpho.withdraw(market, 0, shares - 1, address(this), address(this));
+
+        // Borrow to have non zero interests.
+        uint256 collateralAmount = assets.wDivUp(LLTV);
+        collateralToken.setBalance(address(this), collateralAmount);
+        morpho.supplyCollateral(market, collateralAmount, BORROWER, hex"");
+        vm.prank(BORROWER);
+        morpho.borrow(market, assets, 0, BORROWER, BORROWER);
+
+        vm.warp(2 * 365 days);
+        morpho.accrueInterests(market);
+
+        assertGt(morpho.supplyShares(id, morpho.feeRecipient()), 0, "recipient shares");
+    }
+
     function testSetAuthorization(address authorized, bool isAuthorized) public {
         morpho.setAuthorization(authorized, isAuthorized);
         assertEq(morpho.isAuthorized(address(this), authorized), isAuthorized);
@@ -887,6 +912,38 @@ contract MorphoTest is
         (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
 
         vm.expectRevert(bytes(ErrorsLib.INVALID_SIGNATURE));
+        morpho.setAuthorizationWithSig(authorization, sig);
+    }
+
+    function testAuthorizationWithSigWrongNonce(Authorization memory authorization, uint256 privateKey) public {
+        vm.assume(authorization.deadline > block.timestamp);
+        vm.assume(authorization.nonce != 0);
+
+        // Private key must be less than the secp256k1 curve order.
+        privateKey = bound(privateKey, 1, type(uint32).max);
+        authorization.authorizer = vm.addr(privateKey);
+
+        Signature memory sig;
+        bytes32 digest = SigUtils.getTypedDataHash(morpho.DOMAIN_SEPARATOR(), authorization);
+        (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
+
+        vm.expectRevert(bytes(ErrorsLib.INVALID_NONCE));
+        morpho.setAuthorizationWithSig(authorization, sig);
+    }
+
+    function testAuthorizationWithSigDeadline(Authorization memory authorization, uint256 privateKey) public {
+        vm.assume(authorization.deadline <= block.timestamp);
+
+        // Private key must be less than the secp256k1 curve order.
+        privateKey = bound(privateKey, 1, type(uint32).max);
+        authorization.nonce = 0;
+        authorization.authorizer = vm.addr(privateKey);
+
+        Signature memory sig;
+        bytes32 digest = SigUtils.getTypedDataHash(morpho.DOMAIN_SEPARATOR(), authorization);
+        (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
+
+        vm.expectRevert(bytes(ErrorsLib.SIGNATURE_EXPIRED));
         morpho.setAuthorizationWithSig(authorization, sig);
     }
 
