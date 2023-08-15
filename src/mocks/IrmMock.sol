@@ -19,7 +19,7 @@ contract IrmMock is IIrm {
 
     function borrowRate(Market memory market) external view returns (uint256) {
         Id id = market.id();
-        uint256 utilization = uint256(MORPHO.marketState(id).totalBorrow).wDivDown(MORPHO.marketState(id).totalSupply);
+        uint256 utilization = uint256(MORPHO.mktState(id).totalBorrow).wDivDown(MORPHO.mktState(id).totalSupply);
 
         // Divide by the number of seconds in a year.
         // This is a very simple model (to refine later) where x% utilization corresponds to x% APR.

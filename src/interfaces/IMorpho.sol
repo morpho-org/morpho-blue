@@ -27,7 +27,7 @@ struct Market {
 /// @param lastUpdate The last update timestamp of the market (also used to check if a market has been created).
 /// @param fee The fee of the market.
 /// @dev totalSupply and totalBorrow don't contain the accrued interest since the last interaction.
-struct MarketState {
+struct MktState {
     uint128 totalSupply;
     uint128 totalBorrow;
     uint128 totalSupplyShares;
@@ -82,7 +82,7 @@ interface IMorpho is IFlashLender {
     function collateral(Id id, address user) external view returns (uint256);
 
     /// @notice The state of the market `id`.
-    function marketState(Id id) external view returns (MarketState memory);
+    function mktState(Id id) external view returns (MktState memory);
 
     /// @notice Whether the `irm` is enabled.
     function isIrmEnabled(address irm) external view returns (bool);
