@@ -434,9 +434,7 @@ contract Morpho is IMorpho {
 
     /// @dev Accrues interests for `market`.
     function _accrueInterests(Market memory market, Id id) internal {
-        console.log("before borrow rate");
         uint256 borrowRate = IIrm(market.irm).borrowRate(market);
-        console.log("after borrow rate");
         (uint256 accruedInterests, uint256 feeShares) = _accruedInterests(id, borrowRate);
 
         if (accruedInterests != 0) {
