@@ -9,7 +9,7 @@ rule checkSummaryMulDivUp(uint256 x, uint256 y, uint256 d) {
     assert result * d >= x * y;
 }
 
-rule checkSummaryToAssetsDown(uint256 x, uint256 y, uint256 d) {
+rule checkSummaryMulDivDown(uint256 x, uint256 y, uint256 d) {
     uint256 result = mathLibMulDivDown(x, y, d);
     assert result * d <= x * y;
 }
