@@ -19,6 +19,12 @@ struct Market {
     uint256 lltv;
 }
 
+struct UserState {
+    uint256 supplyShares;
+    uint128 borrowShares;
+    uint128 collateral;
+}
+
 /// @notice Contains the market state.
 /// @param totalSupply The total supply of the market.
 /// @param totalBorrow The total supply shares of the market.
@@ -27,6 +33,16 @@ struct Market {
 /// @param lastUpdate The last update timestamp of the market (also used to check if a market has been created).
 /// @param fee The fee of the market.
 /// @dev totalSupply and totalBorrow don't contain the accrued interest since the last interaction.
+struct MktStateInternal {
+    mapping(address => UserState) user;
+    uint128 totalSupply;
+    uint128 totalBorrow;
+    uint128 totalSupplyShares;
+    uint128 totalBorrowShares;
+    uint128 lastUpdate;
+    uint128 fee;
+}
+
 struct MktState {
     uint128 totalSupply;
     uint128 totalBorrow;

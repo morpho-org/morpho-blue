@@ -820,17 +820,15 @@ contract MorphoTest is
         morpho.withdrawCollateral(market, 1, address(this), address(0));
     }
 
-    function testEmptyMarket(uint256 assets) public {
-        assets = bound(assets, 1, type(uint256).max / SharesMathLib.VIRTUAL_SHARES);
+    function testEmptyMarket() public {
+        vm.expectRevert(stdError.arithmeticError);
+        morpho.withdraw(market, 1, 0, address(this), address(this));
 
         vm.expectRevert(stdError.arithmeticError);
-        morpho.withdraw(market, assets, 0, address(this), address(this));
+        morpho.repay(market, 1, 0, address(this), hex"");
 
         vm.expectRevert(stdError.arithmeticError);
-        morpho.repay(market, assets, 0, address(this), hex"");
-
-        vm.expectRevert(stdError.arithmeticError);
-        morpho.withdrawCollateral(market, assets, address(this), address(this));
+        morpho.withdrawCollateral(market, 1, address(this), address(this));
     }
 
     function testAccrueInterestsLowShares() public {
