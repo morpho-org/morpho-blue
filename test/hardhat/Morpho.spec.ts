@@ -180,7 +180,7 @@ describe("Morpho", () => {
 
       const seized = closePositions ? assets : assets.div(2);
 
-      await morpho.connect(liquidator).liquidate(market, borrower.address, seized, "0x");
+      await morpho.connect(liquidator).liquidate(market, borrower.address, seized, 0, "0x");
 
       const remainingCollateral = await morpho.collateral(id, borrower.address);
 
