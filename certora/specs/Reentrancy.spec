@@ -29,6 +29,7 @@ hook CALL(uint g, address addr, uint value, uint argsOffset, uint argsLength, ui
     if (callIsBorrowRate) {
         /* The calls to borrow rate are trusted and don't count */
         callIsBorrowRate = false;
+        hasCallAfterAccessingStorage = hasCallAfterAccessingStorage;
     } else {
         hasCallAfterAccessingStorage = hasAccessedStorage;
     }
