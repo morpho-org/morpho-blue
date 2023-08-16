@@ -136,8 +136,8 @@ contract Morpho is IMorpho {
         require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
         require(newFee <= MAX_FEE, ErrorsLib.MAX_FEE_EXCEEDED);
 
-        // Accrue interests using the previous fee set before changing it.
-        _accrueInterests(market, id);
+        // Accrue interest using the previous fee set before changing it.
+        _accrueInterest(market, id);
 
         fee[id] = newFee;
 
@@ -178,7 +178,7 @@ contract Morpho is IMorpho {
         require(UtilsLib.exactlyOneZero(assets, shares), ErrorsLib.INCONSISTENT_INPUT);
         require(onBehalf != address(0), ErrorsLib.ZERO_ADDRESS);
 
-        _accrueInterests(market, id);
+        _accrueInterest(market, id);
 
         if (assets > 0) shares = assets.toSharesDown(totalSupply[id], totalSupplyShares[id]);
         else assets = shares.toAssetsUp(totalSupply[id], totalSupplyShares[id]);
@@ -208,7 +208,7 @@ contract Morpho is IMorpho {
         require(receiver != address(0), ErrorsLib.ZERO_ADDRESS);
         require(_isSenderAuthorized(onBehalf), ErrorsLib.UNAUTHORIZED);
 
-        _accrueInterests(market, id);
+        _accrueInterest(market, id);
 
         if (assets > 0) shares = assets.toSharesUp(totalSupply[id], totalSupplyShares[id]);
         else assets = shares.toAssetsDown(totalSupply[id], totalSupplyShares[id]);
@@ -240,7 +240,7 @@ contract Morpho is IMorpho {
         require(receiver != address(0), ErrorsLib.ZERO_ADDRESS);
         require(_isSenderAuthorized(onBehalf), ErrorsLib.UNAUTHORIZED);
 
-        _accrueInterests(market, id);
+        _accrueInterest(market, id);
 
         if (assets > 0) shares = assets.toSharesUp(totalBorrow[id], totalBorrowShares[id]);
         else assets = shares.toAssetsDown(totalBorrow[id], totalBorrowShares[id]);
@@ -269,7 +269,7 @@ contract Morpho is IMorpho {
         require(UtilsLib.exactlyOneZero(assets, shares), ErrorsLib.INCONSISTENT_INPUT);
         require(onBehalf != address(0), ErrorsLib.ZERO_ADDRESS);
 
-        _accrueInterests(market, id);
+        _accrueInterest(market, id);
 
         if (assets > 0) shares = assets.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
         else assets = shares.toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
@@ -296,7 +296,7 @@ contract Morpho is IMorpho {
         require(assets != 0, ErrorsLib.ZERO_ASSETS);
         require(onBehalf != address(0), ErrorsLib.ZERO_ADDRESS);
 
-        // Don't accrue interests because it's not required and it saves gas.
+        // Don't accrue interest because it's not required and it saves gas.
 
         collateral[id][onBehalf] += assets;
 
@@ -316,7 +316,7 @@ contract Morpho is IMorpho {
         require(receiver != address(0), ErrorsLib.ZERO_ADDRESS);
         require(_isSenderAuthorized(onBehalf), ErrorsLib.UNAUTHORIZED);
 
-        _accrueInterests(market, id);
+        _accrueInterest(market, id);
 
         collateral[id][onBehalf] -= assets;
 
@@ -338,7 +338,7 @@ contract Morpho is IMorpho {
         require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
         require(seized != 0, ErrorsLib.ZERO_ASSETS);
 
-        _accrueInterests(market, id);
+        _accrueInterest(market, id);
 
         uint256 collateralPrice = IOracle(market.oracle).price();
 
@@ -425,15 +425,15 @@ contract Morpho is IMorpho {
     /* INTEREST MANAGEMENT */
 
     /// @inheritdoc IMorpho
-    function accrueInterests(Market memory market) external {
+    function accrueInterest(Market memory market) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
 
-        _accrueInterests(market, id);
+        _accrueInterest(market, id);
     }
 
-    /// @dev Accrues interests for `market`.
-    function _accrueInterests(Market memory market, Id id) internal {
+    /// @dev Accrues interest for `market`.
+    function _accrueInterest(Market memory market, Id id) internal {
         uint256 elapsed = block.timestamp - lastUpdate[id];
 
         if (elapsed == 0) return;
@@ -442,20 +442,20 @@ contract Morpho is IMorpho {
 
         if (marketTotalBorrow != 0) {
             uint256 borrowRate = IIrm(market.irm).borrowRate(market);
-            uint256 interests = marketTotalBorrow.wMulDown(borrowRate.wTaylorCompounded(elapsed));
-            totalBorrow[id] = marketTotalBorrow + interests;
-            totalSupply[id] += interests;
+            uint256 interest = marketTotalBorrow.wMulDown(borrowRate.wTaylorCompounded(elapsed));
+            totalBorrow[id] = marketTotalBorrow + interest;
+            totalSupply[id] += interest;
 
             uint256 feeShares;
             if (fee[id] != 0) {
-                uint256 feeAmount = interests.wMulDown(fee[id]);
+                uint256 feeAmount = interest.wMulDown(fee[id]);
                 // The fee amount is subtracted from the total supply in this calculation to compensate for the fact that total supply is already updated.
                 feeShares = feeAmount.toSharesDown(totalSupply[id] - feeAmount, totalSupplyShares[id]);
                 supplyShares[id][feeRecipient] += feeShares;
                 totalSupplyShares[id] += feeShares;
             }
 
-            emit EventsLib.AccrueInterests(id, borrowRate, interests, feeShares);
+            emit EventsLib.AccrueInterest(id, borrowRate, interest, feeShares);
         }
 
         lastUpdate[id] = block.timestamp;

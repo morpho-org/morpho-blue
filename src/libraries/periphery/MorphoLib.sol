@@ -12,9 +12,9 @@ import {MorphoStorageLib} from "./MorphoStorageLib.sol";
 /// @title MorphoLib
 /// @author Morpho Labs
 /// @custom:contact security@morpho.xyz
-/// @notice Helper library exposing getters with the expected value after interests accrual.
+/// @notice Helper library exposing getters with the expected value after interest accrual.
 /// @dev This library is not used in Morpho itself and is intended to be used by integrators.
-/// @dev The getter to retrieve the total borrow shares is not exposed because interests accrual does not apply to it.
+/// @dev The getter to retrieve the total borrow shares is not exposed because interest accrual does not apply to it.
 ///      The value can be queried directly on Morpho using `totalBorrowShares`.
 library MorphoLib {
     using MathLib for uint256;
@@ -48,12 +48,12 @@ library MorphoLib {
 
         if (toralBorrow != 0) {
             uint256 borrowRate = IIrm(market.irm).borrowRateView(market);
-            uint256 interests = toralBorrow.wMulDown(borrowRate.wTaylorCompounded(elapsed));
-            toralBorrow += interests;
-            totalSupply += interests;
+            uint256 interest = toralBorrow.wMulDown(borrowRate.wTaylorCompounded(elapsed));
+            toralBorrow += interest;
+            totalSupply += interest;
 
             if (fee != 0) {
-                uint256 feeAmount = interests.wMulDown(fee);
+                uint256 feeAmount = interest.wMulDown(fee);
                 // The fee amount is subtracted from the total supply in this calculation to compensate for the fact that total supply is already updated.
                 uint256 feeShares = feeAmount.toSharesDown(totalSupply - feeAmount, totalSupplyShares);
 
