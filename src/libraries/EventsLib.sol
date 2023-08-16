@@ -141,7 +141,7 @@ library EventsLib {
     /// @notice Emitted when accruing interests.
     /// @param id The market id.
     /// @param prevBorrowRate The previous borrow rate.
-    /// @param accruedInterests The amount of interests accrued.
+    /// @param interests The amount of interests accrued.
     /// @param feeShares The amount of shares minted as fee.
-    event AccrueInterests(Id indexed id, uint256 prevBorrowRate, uint256 accruedInterests, uint256 feeShares);
+    event AccrueInterests(Id indexed id, uint256 prevBorrowRate, uint256 interests, uint256 feeShares);
 }
