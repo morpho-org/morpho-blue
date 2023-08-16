@@ -71,7 +71,7 @@ library MorphoStorageLib {
         return keccak256(abi.encode(lltv, IS_LLTV_ENABLED_SLOT));
     }
 
-    function isApproved(address delegator, address manager) internal pure returns (bytes32) {
+    function isAuthorized(address delegator, address manager) internal pure returns (bytes32) {
         return keccak256(abi.encode(manager, keccak256(abi.encode(delegator, IS_AUTHORIZED_SLOT))));
     }
 }
