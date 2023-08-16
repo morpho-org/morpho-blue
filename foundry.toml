@@ -1,4 +1,5 @@
 [profile.default]
+evm_version = 'paris'
 via-ir = true
 
-# See more config options https://github.com/foundry-rs/foundry/tree/master/config
+# See more config options https://github.com/foundry-rs/foundry/tree/master/crates/config
