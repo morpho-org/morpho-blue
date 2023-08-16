@@ -3,6 +3,11 @@ pragma solidity ^0.8.0;
 
 import {Id} from "../MarketLib.sol";
 
+/// @title MorphoStorageLib
+/// @author Morpho Labs
+/// @custom:contact security@morpho.xyz
+/// @notice Helper library exposing getters to access Morpho storage variables' slot.
+/// @dev This library is not used in Morpho itself and is intended to be used by integrators.
 library MorphoStorageLib {
     uint256 internal constant OWNER_SLOT = 0;
     uint256 internal constant FEE_RECIPIENT_SLOT = 1;
