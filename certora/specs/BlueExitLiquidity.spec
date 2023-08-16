@@ -1,8 +1,4 @@
 methods {
-    function withdraw(MorphoHarness.Market, uint256, uint256, address, address) external returns (uint256, uint256);
-    function withdrawCollateral(MorphoHarness.Market, uint256, address, address) external returns (uint256, uint256);
-
-
     function supplyShares(MorphoHarness.Id, address) external returns uint256 envfree;
     function getVirtualTotalSupply(MorphoHarness.Id) external returns uint256 envfree;
     function getVirtualTotalSupplyShares(MorphoHarness.Id) external returns uint256 envfree;
