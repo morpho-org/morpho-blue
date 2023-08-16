@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import {Id, Market, IMorpho} from "../interfaces/IMorpho.sol";
-import {IIrm} from "../interfaces/IIrm.sol";
+import {Id, Market, IMorpho} from "../../interfaces/IMorpho.sol";
+import {IIrm} from "../../interfaces/IIrm.sol";
 
-import {MathLib} from "./MathLib.sol";
-import {MarketLib} from "./MarketLib.sol";
-import {SharesMathLib} from "./SharesMathLib.sol";
+import {MathLib} from "../MathLib.sol";
+import {MarketLib} from "../MarketLib.sol";
+import {SharesMathLib} from "../SharesMathLib.sol";
 import {MorphoStorageLib} from "./MorphoStorageLib.sol";
 
 library MorphoLib {

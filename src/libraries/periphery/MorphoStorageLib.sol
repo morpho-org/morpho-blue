@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import {Id} from "./MarketLib.sol";
+import {Id} from "../MarketLib.sol";
 
 library MorphoStorageLib {
     uint256 internal constant OWNER_SLOT = 0;
