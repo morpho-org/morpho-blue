@@ -2,7 +2,6 @@
 pragma solidity 0.8.21;
 
 import {Id, IMorpho, Market, Authorization, Signature} from "./interfaces/IMorpho.sol";
-import {IFlashLender} from "./interfaces/IFlashLender.sol";
 import {
     IMorphoLiquidateCallback,
     IMorphoRepayCallback,
@@ -158,7 +157,7 @@ contract Morpho is IMorpho {
         Id id = market.id();
         require(isIrmEnabled[market.irm], ErrorsLib.IRM_NOT_ENABLED);
         require(isLltvEnabled[market.lltv], ErrorsLib.LLTV_NOT_ENABLED);
-        require(lastUpdate[id] == 0, ErrorsLib.MARKET_CREATED);
+        require(lastUpdate[id] == 0, ErrorsLib.MARKET_ALREADY_CREATED);
 
         lastUpdate[id] = block.timestamp;
         idToMarket[id] = market;
@@ -376,7 +375,7 @@ contract Morpho is IMorpho {
 
     /* FLASH LOANS */
 
-    /// @inheritdoc IFlashLender
+    /// @inheritdoc IMorpho
     function flashLoan(address token, uint256 assets, bytes calldata data) external {
         IERC20(token).safeTransfer(msg.sender, assets);
 
