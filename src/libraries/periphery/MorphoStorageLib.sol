@@ -9,6 +9,8 @@ import {Id} from "../MarketLib.sol";
 /// @notice Helper library exposing getters to access Morpho storage variables' slot.
 /// @dev This library is not used in Morpho itself and is intended to be used by integrators.
 library MorphoStorageLib {
+    /* CONSTANTS */
+
     uint256 internal constant OWNER_SLOT = 0;
     uint256 internal constant FEE_RECIPIENT_SLOT = 1;
     uint256 internal constant SUPPLY_SHARES_SLOT = 2;
@@ -24,6 +26,8 @@ library MorphoStorageLib {
     uint256 internal constant IS_LLTV_ENABLED_SLOT = 12;
     uint256 internal constant IS_AUTHORIZED_SLOT = 13;
 
+    /* INTERNAL */
+
     function ownerSlot() internal pure returns (bytes32) {
         return bytes32(OWNER_SLOT);
     }
@@ -33,50 +37,68 @@ library MorphoStorageLib {
     }
 
     function supplySharesSlot(Id id, address user) internal pure returns (bytes32) {
-        return keccak256(abi.encode(user, keccak256(abi.encode(id, SUPPLY_SHARES_SLOT))));
+        return _getMappingSlot(user, uint256(_getMappingSlot(id, SUPPLY_SHARES_SLOT)));
     }
 
     function borrowSharesSlot(Id id, address user) internal pure returns (bytes32) {
-        return keccak256(abi.encode(user, keccak256(abi.encode(id, BORROW_SHARES_SLOT))));
+        return _getMappingSlot(user, uint256(_getMappingSlot(id, BORROW_SHARES_SLOT)));
     }
 
     function collateralSlot(Id id, address user) internal pure returns (bytes32) {
-        return keccak256(abi.encode(user, keccak256(abi.encode(id, COLLATERAL_SLOT))));
+        return _getMappingSlot(user, uint256(_getMappingSlot(id, COLLATERAL_SLOT)));
     }
 
     function totalSupplySlot(Id id) internal pure returns (bytes32) {
-        return keccak256(abi.encode(id, TOTAL_SUPPLY_SLOT));
+        return _getMappingSlot(id, TOTAL_SUPPLY_SLOT);
     }
 
     function totalSupplySharesSlot(Id id) internal pure returns (bytes32) {
-        return keccak256(abi.encode(id, TOTAL_SUPPLY_SHARES_SLOT));
+        return _getMappingSlot(id, TOTAL_SUPPLY_SHARES_SLOT);
     }
 
     function totalBorrowSlot(Id id) internal pure returns (bytes32) {
-        return keccak256(abi.encode(id, TOTAL_BORROW_SLOT));
+        return _getMappingSlot(id, TOTAL_BORROW_SLOT);
     }
 
     function totalBorrowSharesSlot(Id id) internal pure returns (bytes32) {
-        return keccak256(abi.encode(id, TOTAL_BORROW_SHARES_SLOT));
+        return _getMappingSlot(id, TOTAL_BORROW_SHARES_SLOT);
     }
 
     function lastUpdateSlot(Id id) internal pure returns (bytes32) {
-        return keccak256(abi.encode(id, LAST_UPDATE_SLOT));
+        return _getMappingSlot(id, LAST_UPDATE_SLOT);
     }
 
     function feeSlot(Id id) internal pure returns (bytes32) {
-        return keccak256(abi.encode(id, FEE_SLOT));
+        return _getMappingSlot(id, FEE_SLOT);
     }
 
     function isIrmEnabledSlot(address irm) internal pure returns (bytes32) {
-        return keccak256(abi.encode(irm, IS_IRM_ENABLED_SLOT));
+        return _getMappingSlot(irm, IS_IRM_ENABLED_SLOT);
     }
 
     function isLltvEnabledSlot(uint256 lltv) internal pure returns (bytes32) {
-        return keccak256(abi.encode(lltv, IS_LLTV_ENABLED_SLOT));
+        return _getMappingSlot(lltv, IS_LLTV_ENABLED_SLOT);
     }
 
-    function isAuthorizedSlot(address delegator, address manager) internal pure returns (bytes32) {
-        return keccak256(abi.encode(manager, keccak256(abi.encode(delegator, IS_AUTHORIZED_SLOT))));
+    function isAuthorizedSlot(address authorizer, address authorizee) internal pure returns (bytes32) {
+        return _getMappingSlot(authorizee, uint256(_getMappingSlot(authorizer, IS_AUTHORIZED_SLOT)));
+    }
+
+    /* PRIVATE */
+
+    function _getMappingSlot(bytes32 key, uint256 slot) private pure returns (bytes32) {
+        return keccak256(abi.encode(key, slot));
+    }
+
+    function _getMappingSlot(Id key, uint256 slot) private pure returns (bytes32) {
+        return keccak256(abi.encode(key, slot));
+    }
+
+    function _getMappingSlot(address key, uint256 slot) private pure returns (bytes32) {
+        return keccak256(abi.encode(key, slot));
+    }
+
+    function _getMappingSlot(uint256 key, uint256 slot) private pure returns (bytes32) {
+        return keccak256(abi.encode(key, slot));
     }
 }
