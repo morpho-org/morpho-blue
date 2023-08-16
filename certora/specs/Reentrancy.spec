@@ -49,13 +49,13 @@ rule reentrancySafe(method f, calldataarg data, env e) {
     assert !hasReentrancyUnsafeCall, "Method is not safe for reentrancy.";
 }
 
-/* Rules to check which methods have delegate or static calls
-rule hasDelegateCalls(method f, calldataarg data, env e) {
+rule noDelegateCalls(method f, calldataarg data, env e) {
     require !delegate_call;
     f(e,data);
-    satisfy delegate_call;
+    assert !delegate_call;
 }
 
+/* This rule can be used to check which methods have static calls
 rule hasStaticCalls(method f, calldataarg data, env e) {
     require !static_call;
     f(e,data);
