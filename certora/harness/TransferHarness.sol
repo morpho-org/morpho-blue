@@ -9,7 +9,7 @@ interface IERC20Extended is IERC20 {
     function totalSupply() external returns (uint256);
 }
 
-contract Transferer {
+contract TransferHarness {
     function doTransfer(address token, address from, address to, uint256 value) public {
         IERC20Extended(token).transferFrom(from, to, value);
     }
