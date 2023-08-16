@@ -17,7 +17,7 @@ library MorphoLib {
     function accruedInterests(IMorpho morpho, Market memory market)
         internal
         view
-        returns (uint256 supply, uint256 borrow, uint256 supplyShares)
+        returns (uint256 marketTotalSupply, uint256 marketToralBorrow, uint256 marketTotalSupplyShares)
     {
         Id id = market.id();
 
@@ -29,58 +29,70 @@ library MorphoLib {
         slots[4] = MorphoStorageLib.lastUpdate(id);
 
         bytes32[] memory values = morpho.extsload(slots);
-        supply = uint256(values[0]);
-        borrow = uint256(values[1]);
-        supplyShares = uint256(values[2]);
+        marketTotalSupply = uint256(values[0]);
+        marketToralBorrow = uint256(values[1]);
+        marketTotalSupplyShares = uint256(values[2]);
         uint256 fee = uint256(values[3]);
         uint256 lastUpdate = uint256(values[4]);
 
         uint256 elapsed = block.timestamp - lastUpdate;
 
-        if (elapsed == 0) return (supply, borrow, supplyShares);
+        if (elapsed == 0) return (marketTotalSupply, marketToralBorrow, marketTotalSupplyShares);
 
-        if (borrow != 0) {
+        if (marketToralBorrow != 0) {
             uint256 borrowRate = IIrm(market.irm).borrowRateView(market);
-            uint256 interests = borrow.wMulDown(borrowRate.wTaylorCompounded(elapsed));
-            borrow += interests;
-            supply += interests;
+            uint256 interests = marketToralBorrow.wMulDown(borrowRate.wTaylorCompounded(elapsed));
+            marketToralBorrow += interests;
+            marketTotalSupply += interests;
 
             if (fee != 0) {
                 uint256 feeAmount = interests.wMulDown(fee);
                 // The fee amount is subtracted from the total supply in this calculation to compensate for the fact that total supply is already updated.
-                uint256 feeShares = feeAmount.toSharesDown(supply - feeAmount, supplyShares);
+                uint256 feeShares = feeAmount.toSharesDown(marketTotalSupply - feeAmount, marketTotalSupplyShares);
 
-                supplyShares += feeShares;
+                marketTotalSupplyShares += feeShares;
             }
         }
     }
 
-    function totalSupply(IMorpho morpho, Market memory market) internal view returns (uint256 supply) {
-        (supply,,) = accruedInterests(morpho, market);
+    function expectedTotalSupply(IMorpho morpho, Market memory market) internal view returns (uint256 totalSupply) {
+        (totalSupply,,) = accruedInterests(morpho, market);
     }
 
-    function totalBorrow(IMorpho morpho, Market memory market) internal view returns (uint256 borrow) {
-        (, borrow,) = accruedInterests(morpho, market);
+    function expectedTotalBorrow(IMorpho morpho, Market memory market) internal view returns (uint256 totalBorrow) {
+        (, totalBorrow,) = accruedInterests(morpho, market);
     }
 
-    function totalSupplyShares(IMorpho morpho, Market memory market) internal view returns (uint256 supplyShares) {
-        (,, supplyShares) = accruedInterests(morpho, market);
+    function expectedTotalSupplyShares(IMorpho morpho, Market memory market)
+        internal
+        view
+        returns (uint256 totalSupplyShares)
+    {
+        (,, totalSupplyShares) = accruedInterests(morpho, market);
     }
 
-    function supplyBalance(IMorpho morpho, Market memory market, address user) internal view returns (uint256) {
+    function expectedSupplyBalance(IMorpho morpho, Market memory market, address user)
+        internal
+        view
+        returns (uint256)
+    {
         Id id = market.id();
-        uint256 shares = morpho.supplyShares(id, user);
-        (uint256 supply,, uint256 supplyShares) = accruedInterests(morpho, market);
+        uint256 userSupplyShares = morpho.supplyShares(id, user);
+        (uint256 marketTotalSupply,, uint256 marketTotalSupplyShares) = accruedInterests(morpho, market);
 
-        return shares.toAssetsDown(supply, supplyShares);
+        return userSupplyShares.toAssetsDown(marketTotalSupply, marketTotalSupplyShares);
     }
 
-    function borrowBalance(IMorpho morpho, Market memory market, address user) internal view returns (uint256) {
+    function expectedBorrowBalance(IMorpho morpho, Market memory market, address user)
+        internal
+        view
+        returns (uint256)
+    {
         Id id = market.id();
-        uint256 shares = morpho.borrowShares(id, user);
-        uint256 totBorrowShares = morpho.totalBorrowShares(id);
-        (, uint256 borrow,) = accruedInterests(morpho, market);
+        uint256 userBorrowShares = morpho.borrowShares(id, user);
+        uint256 marketTotalBorrowShares = morpho.totalBorrowShares(id);
+        (, uint256 marketTotalBorrow,) = accruedInterests(morpho, market);
 
-        return shares.toAssetsUp(borrow, totBorrowShares);
+        return userBorrowShares.toAssetsUp(marketTotalBorrow, marketTotalBorrowShares);
     }
 }
