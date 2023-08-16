@@ -6,7 +6,7 @@ pragma solidity >=0.5.0;
 interface IMorphoLiquidateCallback {
     /// @notice Callback called when a liquidation occurs.
     /// @dev The callback is called only if data is not empty.
-    /// @param assets The assets of repaid assets.
+    /// @param assets The amount of repaid assets.
     /// @param data Arbitrary data passed to the `liquidate` function.
     function onMorphoLiquidate(uint256 assets, bytes calldata data) external;
 }
@@ -16,7 +16,7 @@ interface IMorphoLiquidateCallback {
 interface IMorphoRepayCallback {
     /// @notice Callback called when a repayment occurs.
     /// @dev The callback is called only if data is not empty.
-    /// @param assets The assets of repaid assets.
+    /// @param assets The amount of repaid assets.
     /// @param data Arbitrary data passed to the `repay` function.
     function onMorphoRepay(uint256 assets, bytes calldata data) external;
 }
@@ -26,7 +26,7 @@ interface IMorphoRepayCallback {
 interface IMorphoSupplyCallback {
     /// @notice Callback called when a supply occurs.
     /// @dev The callback is called only if data is not empty.
-    /// @param assets The assets of supplied assets.
+    /// @param assets The amount of supplied assets.
     /// @param data Arbitrary data passed to the `supply` function.
     function onMorphoSupply(uint256 assets, bytes calldata data) external;
 }
@@ -34,15 +34,15 @@ interface IMorphoSupplyCallback {
 /// @title IMorphoSupplyCollateralCallback
 /// @notice Interface that users willing to use `supplyCollateral`'s callback must implement.
 interface IMorphoSupplyCollateralCallback {
-    /// @notice Callback called when a supply occurs.
+    /// @notice Callback called when a supply of collateral occurs.
     /// @dev The callback is called only if data is not empty.
-    /// @param assets The assets of supplied assets.
+    /// @param assets The amount of supplied collateral.
     /// @param data Arbitrary data passed to the `supplyCollateral` function.
     function onMorphoSupplyCollateral(uint256 assets, bytes calldata data) external;
 }
 
-/// @title IMorphoWithdrawCallback
-/// @notice Interface that users willing to use `withdraw`'s callback must implement.
+/// @title IMorphoFlashLoanCallback
+/// @notice Interface that users willing to use `flashLoan`'s callback must implement.
 interface IMorphoFlashLoanCallback {
     /// @notice Callback called when a flash loan occurs.
     /// @dev The callback is called only if data is not empty.
