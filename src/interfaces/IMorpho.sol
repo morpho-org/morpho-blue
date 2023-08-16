@@ -213,15 +213,17 @@ interface IMorpho is IFlashLender {
 
     /// @notice Liquidates the given `seized` assets to the given `market` of the given `borrower`'s position,
     ///         optionally calling back the caller's `onMorphoLiquidate` function with the given `data`.
-    /// @dev Seizing more than the collateral balance will underflow and revert without any error message.
+    /// @dev Either `seized` or `repaidShares` should be zero.
+    ///      Seizing more than the collateral balance will underflow and revert without any error message.
     /// @dev Repaying more than the borrow balance will underflow and revert without any error message.
     /// @param market The market of the position.
     /// @param borrower The owner of the position.
     /// @param seized The assets of collateral to seize.
+    /// @param shares The amount of shares to repay.
     /// @param data Arbitrary data to pass to the `onMorphoLiquidate` callback. Pass empty data if not needed.
     /// @return assetsRepaid The amount of assets repaid.
     /// @return sharesRepaid The amount of shares repaid.
-    function liquidate(Market memory market, address borrower, uint256 seized, bytes memory data)
+    function liquidate(Market memory market, address borrower, uint256 seized, uint256 shares, bytes memory data)
         external
         returns (uint256 assetsRepaid, uint256 sharesRepaid);
 

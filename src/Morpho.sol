@@ -330,13 +330,16 @@ contract Morpho is IMorpho {
     /* LIQUIDATION */
 
     /// @inheritdoc IMorpho
-    function liquidate(Market memory market, address borrower, uint256 seized, bytes calldata data)
-        external
-        returns (uint256 assetsRepaid, uint256 sharesRepaid)
-    {
+    function liquidate(
+        Market memory market,
+        address borrower,
+        uint256 seized,
+        uint256 borrowedShares,
+        bytes calldata data
+    ) external returns (uint256 assetsRepaid, uint256 sharesRepaid) {
         Id id = market.id();
         require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
-        require(seized != 0, ErrorsLib.ZERO_ASSETS);
+        require(UtilsLib.exactlyOneZero(seized, borrowedShares), ErrorsLib.INCONSISTENT_INPUT);
 
         _accrueInterests(market, id);
 
@@ -344,9 +347,17 @@ contract Morpho is IMorpho {
 
         require(!_isHealthy(market, id, borrower, collateralPrice), ErrorsLib.HEALTHY_POSITION);
 
-        assetsRepaid =
-            seized.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(liquidationIncentiveFactor(market.lltv));
-        sharesRepaid = assetsRepaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
+        if (seized > 0) {
+            assetsRepaid =
+                seized.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(liquidationIncentiveFactor(market.lltv));
+            sharesRepaid = assetsRepaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
+        } else {
+            sharesRepaid = borrowedShares;
+            assetsRepaid = sharesRepaid.toAssetsDown(totalBorrow[id], totalBorrowShares[id]);
+            seized = assetsRepaid.wMulDown(liquidationIncentiveFactor(market.lltv)).mulDivDown(
+                ORACLE_PRICE_SCALE, collateralPrice
+            );
+        }
 
         borrowShares[id][borrower] -= sharesRepaid;
         totalBorrowShares[id] -= sharesRepaid;
@@ -372,6 +383,8 @@ contract Morpho is IMorpho {
         if (data.length > 0) IMorphoLiquidateCallback(msg.sender).onMorphoLiquidate(assetsRepaid, data);
 
         IERC20(market.borrowableToken).safeTransferFrom(msg.sender, address(this), assetsRepaid);
+
+        return (assetsRepaid, sharesRepaid);
     }
 
     /* FLASH LOANS */

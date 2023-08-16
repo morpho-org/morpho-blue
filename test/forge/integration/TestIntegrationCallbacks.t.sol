@@ -142,8 +142,8 @@ contract IntegrationCallbacksTest is
         borrowableToken.approve(address(morpho), 0);
 
         vm.expectRevert();
-        morpho.liquidate(market, address(this), toSeize, hex"");
-        morpho.liquidate(market, address(this), toSeize, abi.encode(this.testLiquidateCallback.selector, hex""));
+        morpho.liquidate(market, address(this), toSeize, 0, hex"");
+        morpho.liquidate(market, address(this), toSeize, 0, abi.encode(this.testLiquidateCallback.selector, hex""));
     }
 
     function testFlashActions(uint256 amount) public {
