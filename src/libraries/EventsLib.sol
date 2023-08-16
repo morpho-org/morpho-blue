@@ -138,10 +138,10 @@ library EventsLib {
     /// @param usedNonce The nonce that was used.
     event IncrementNonce(address indexed caller, address indexed authorizer, uint256 usedNonce);
 
-    /// @notice Emitted when accruing interests.
+    /// @notice Emitted when accruing interest.
     /// @param id The market id.
     /// @param prevBorrowRate The previous borrow rate.
-    /// @param interests The amount of interests accrued.
+    /// @param interest The amount of interest accrued.
     /// @param feeShares The amount of shares minted as fee.
-    event AccrueInterests(Id indexed id, uint256 prevBorrowRate, uint256 interests, uint256 feeShares);
+    event AccrueInterest(Id indexed id, uint256 prevBorrowRate, uint256 interest, uint256 feeShares);
 }
