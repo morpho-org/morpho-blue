@@ -16,12 +16,9 @@ tdly.setup({
 
 dotenv.config();
 
-const config: HardhatUserConfig = {
+let config: HardhatUserConfig = {
   defaultNetwork: "hardhat",
   networks: {
-    tenderly: {
-      url: process.env.TENDERLY_FORK_URL!,
-    },
     hardhat: {
       chainId: 1,
       gasPrice: 0,
@@ -66,12 +63,26 @@ const config: HardhatUserConfig = {
   tracer: {
     defaultVerbosity: 1,
     gasCost: true,
-  },
-  tenderly: {
-    username: "morpho-labs", // tenderly username (or organization name)
-    project: "blue", // project name
-    privateVerification: true // if true, contracts will be verified privately, if false, contracts will be verified publicly
   }
 };
+
+const tenderlyForkUrl = process.env.TENDERLY_FORK_URL;
+if (tenderlyForkUrl) {
+  console.log("Tenderly fork url detected, enabling tenderly network")
+  config = {
+    ...config,
+    networks: {
+      ...config.networks,
+      tenderly: {
+        url: tenderlyForkUrl,
+      }
+    },
+    tenderly: {
+      username: "morpho-labs", // tenderly username (or organization name)
+      project: "blue", // project name
+      privateVerification: true // if true, contracts will be verified privately, if false, contracts will be verified publicly
+    }
+  }
+}
 
 export default config;
