@@ -442,20 +442,20 @@ contract Morpho is IMorpho {
 
         if (marketTotalBorrow != 0) {
             uint256 borrowRate = IIrm(market.irm).borrowRate(market);
-            uint256 accruedInterests = marketTotalBorrow.wMulDown(borrowRate.wTaylorCompounded(elapsed));
-            totalBorrow[id] = marketTotalBorrow + accruedInterests;
-            totalSupply[id] += accruedInterests;
+            uint256 interests = marketTotalBorrow.wMulDown(borrowRate.wTaylorCompounded(elapsed));
+            totalBorrow[id] = marketTotalBorrow + interests;
+            totalSupply[id] += interests;
 
             uint256 feeShares;
             if (fee[id] != 0) {
-                uint256 feeAmount = accruedInterests.wMulDown(fee[id]);
+                uint256 feeAmount = interests.wMulDown(fee[id]);
                 // The fee amount is subtracted from the total supply in this calculation to compensate for the fact that total supply is already updated.
                 feeShares = feeAmount.toSharesDown(totalSupply[id] - feeAmount, totalSupplyShares[id]);
                 supplyShares[id][feeRecipient] += feeShares;
                 totalSupplyShares[id] += feeShares;
             }
 
-            emit EventsLib.AccrueInterests(id, borrowRate, accruedInterests, feeShares);
+            emit EventsLib.AccrueInterests(id, borrowRate, interests, feeShares);
         }
 
         lastUpdate[id] = block.timestamp;
