@@ -50,7 +50,7 @@ contract IntegrationBorrowTest is BaseTest {
 
         vm.startPrank(supplier);
         collateralToken.approve(address(morpho), amount);
-        morpho.supplyCollateral(market, amount, supplier, hex"");
+        morpho.supplyCollateral(market, amount, supplier);
         vm.stopPrank();
 
         vm.prank(attacker);
@@ -75,7 +75,7 @@ contract IntegrationBorrowTest is BaseTest {
         collateralToken.setBalance(BORROWER, amountCollateral);
 
         vm.startPrank(BORROWER);
-        morpho.supplyCollateral(market, amountCollateral, BORROWER, hex"");
+        morpho.supplyCollateral(market, amountCollateral, BORROWER);
         vm.expectRevert(bytes(ErrorsLib.INSUFFICIENT_COLLATERAL));
         morpho.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
         vm.stopPrank();
@@ -98,7 +98,7 @@ contract IntegrationBorrowTest is BaseTest {
         collateralToken.setBalance(BORROWER, amountCollateral);
 
         vm.startPrank(BORROWER);
-        morpho.supplyCollateral(market, amountCollateral, BORROWER, hex"");
+        morpho.supplyCollateral(market, amountCollateral, BORROWER);
         vm.expectRevert(bytes(ErrorsLib.INSUFFICIENT_LIQUIDITY));
         morpho.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
         vm.stopPrank();
@@ -121,7 +121,7 @@ contract IntegrationBorrowTest is BaseTest {
         collateralToken.setBalance(BORROWER, amountCollateral);
 
         vm.startPrank(BORROWER);
-        morpho.supplyCollateral(market, amountCollateral, BORROWER, hex"");
+        morpho.supplyCollateral(market, amountCollateral, BORROWER);
 
         uint256 expectedBorrowShares = amountBorrowed.toSharesUp(0, 0);
 
@@ -161,7 +161,7 @@ contract IntegrationBorrowTest is BaseTest {
         collateralToken.setBalance(BORROWER, amountCollateral);
 
         vm.startPrank(BORROWER);
-        morpho.supplyCollateral(market, amountCollateral, BORROWER, hex"");
+        morpho.supplyCollateral(market, amountCollateral, BORROWER);
 
         vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.Borrow(id, BORROWER, BORROWER, RECEIVER, expectedAmountBorrowed, sharesBorrowed);
@@ -195,7 +195,7 @@ contract IntegrationBorrowTest is BaseTest {
 
         vm.startPrank(ONBEHALF);
         collateralToken.approve(address(morpho), amountCollateral);
-        morpho.supplyCollateral(market, amountCollateral, ONBEHALF, hex"");
+        morpho.supplyCollateral(market, amountCollateral, ONBEHALF);
         morpho.setAuthorization(BORROWER, true);
         vm.stopPrank();
 
@@ -238,7 +238,7 @@ contract IntegrationBorrowTest is BaseTest {
 
         vm.startPrank(ONBEHALF);
         collateralToken.approve(address(morpho), amountCollateral);
-        morpho.supplyCollateral(market, amountCollateral, ONBEHALF, hex"");
+        morpho.supplyCollateral(market, amountCollateral, ONBEHALF);
         morpho.setAuthorization(BORROWER, true);
         vm.stopPrank();
 

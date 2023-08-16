@@ -122,8 +122,7 @@ interface IMorpho is IFlashLender {
     /// @notice Creates `market`.
     function createMarket(Market memory market) external;
 
-    /// @notice Supplies the given `assets` or `shares` to the given `market` on behalf of `onBehalf`,
-    ///         optionally calling back the caller's `onMorphoSupply` function with the given `data`.
+    /// @notice Supplies the given `assets` or `shares` to the given `market` on behalf of `onBehalf`.
     /// @dev Either `assets` or `shares` should be zero.
     ///      Most usecases should rely on `assets` as an input so the caller
     ///      is guaranteed to have `assets` tokens pulled from their balance,
@@ -134,10 +133,9 @@ interface IMorpho is IFlashLender {
     /// @param assets The amount of assets to supply.
     /// @param shares The amount of shares to mint.
     /// @param onBehalf The address that will receive the position.
-    /// @param data Arbitrary data to pass to the `onMorphoSupply` callback. Pass empty data if not needed.
     /// @return assetsSupplied The amount of assets supplied.
     /// @return sharesSupplied The amount of shares minted.
-    function supply(Market memory market, uint256 assets, uint256 shares, address onBehalf, bytes memory data)
+    function supply(Market memory market, uint256 assets, uint256 shares, address onBehalf)
         external
         returns (uint256 assetsSupplied, uint256 sharesSupplied);
 
@@ -176,8 +174,7 @@ interface IMorpho is IFlashLender {
         external
         returns (uint256 assetsBorrowed, uint256 sharesBorrowed);
 
-    /// @notice Repays the given `assets` or `shares` to the given `market` on behalf of `onBehalf`,
-    ///         optionally calling back the caller's `onMorphoReplay` function with the given `data`.
+    /// @notice Repays the given `assets` or `shares` to the given `market` on behalf of `onBehalf`.
     /// @dev Either `assets` or `shares` should be zero.
     ///      To repay the whole debt, pass the `shares`'s balance of `onBehalf`.
     /// @dev Repaying an amount corresponding to more shares than borrowed will underflow and revert without any error message.
@@ -185,22 +182,19 @@ interface IMorpho is IFlashLender {
     /// @param assets The amount of assets to repay.
     /// @param shares The amount of shares to burn.
     /// @param onBehalf The address of the owner of the debt.
-    /// @param data Arbitrary data to pass to the `onMorphoRepay` callback. Pass empty data if not needed.
     /// @return assetsRepaid The amount of assets repaid.
     /// @return sharesRepaid The amount of shares burned.
-    function repay(Market memory market, uint256 assets, uint256 shares, address onBehalf, bytes memory data)
+    function repay(Market memory market, uint256 assets, uint256 shares, address onBehalf)
         external
         returns (uint256 assetsRepaid, uint256 sharesRepaid);
 
-    /// @notice Supplies the given `assets` of collateral to the given `market` on behalf of `onBehalf`,
-    ///         optionally calling back the caller's `onMorphoSupplyCollateral` function with the given `data`.
+    /// @notice Supplies the given `assets` of collateral to the given `market` on behalf of `onBehalf`.
     /// @dev Interests are not accrued since it's not required and it saves gas.
     /// @dev Supplying a large amount can overflow and revert without any error message.
     /// @param market The market to supply collateral to.
     /// @param assets The amount of collateral to supply.
     /// @param onBehalf The address that will receive the collateral.
-    /// @param data Arbitrary data to pass to the `onMorphoSupplyCollateral` callback. Pass empty data if not needed.
-    function supplyCollateral(Market memory market, uint256 assets, address onBehalf, bytes memory data) external;
+    function supplyCollateral(Market memory market, uint256 assets, address onBehalf) external;
 
     /// @notice Withdraws the given `assets` of collateral from the given `market` on behalf of `onBehalf` to `receiver`.
     /// @dev `msg.sender` must be authorized to manage `onBehalf`'s positions.
@@ -211,17 +205,15 @@ interface IMorpho is IFlashLender {
     /// @param receiver The address that will receive the withdrawn collateral.
     function withdrawCollateral(Market memory market, uint256 assets, address onBehalf, address receiver) external;
 
-    /// @notice Liquidates the given `seized` assets to the given `market` of the given `borrower`'s position,
-    ///         optionally calling back the caller's `onMorphoLiquidate` function with the given `data`.
+    /// @notice Liquidates the given `seized` assets to the given `market` of the given `borrower`'s position.
     /// @dev Seizing more than the collateral balance will underflow and revert without any error message.
     /// @dev Repaying more than the borrow balance will underflow and revert without any error message.
     /// @param market The market of the position.
     /// @param borrower The owner of the position.
     /// @param seized The amount of collateral to seize.
-    /// @param data Arbitrary data to pass to the `onMorphoLiquidate` callback. Pass empty data if not needed.
     /// @return assetsRepaid The amount of assets repaid.
     /// @return sharesRepaid The amount of shares burned.
-    function liquidate(Market memory market, address borrower, uint256 seized, bytes memory data)
+    function liquidate(Market memory market, address borrower, uint256 seized)
         external
         returns (uint256 assetsRepaid, uint256 sharesRepaid);
 

@@ -169,7 +169,7 @@ contract Morpho is IMorpho {
     /* SUPPLY MANAGEMENT */
 
     /// @inheritdoc IMorpho
-    function supply(Market memory market, uint256 assets, uint256 shares, address onBehalf, bytes calldata data)
+    function supply(Market memory market, uint256 assets, uint256 shares, address onBehalf)
         external
         returns (uint256, uint256)
     {
@@ -188,8 +188,6 @@ contract Morpho is IMorpho {
         totalSupply[id] += assets;
 
         emit EventsLib.Supply(id, msg.sender, onBehalf, assets, shares);
-
-        if (data.length > 0) IMorphoSupplyCallback(msg.sender).onMorphoSupply(assets, data);
 
         IERC20(market.borrowableToken).safeTransferFrom(msg.sender, address(this), assets);
 
@@ -260,7 +258,7 @@ contract Morpho is IMorpho {
     }
 
     /// @inheritdoc IMorpho
-    function repay(Market memory market, uint256 assets, uint256 shares, address onBehalf, bytes calldata data)
+    function repay(Market memory market, uint256 assets, uint256 shares, address onBehalf)
         external
         returns (uint256, uint256)
     {
@@ -280,8 +278,6 @@ contract Morpho is IMorpho {
 
         emit EventsLib.Repay(id, msg.sender, onBehalf, assets, shares);
 
-        if (data.length > 0) IMorphoRepayCallback(msg.sender).onMorphoRepay(assets, data);
-
         IERC20(market.borrowableToken).safeTransferFrom(msg.sender, address(this), assets);
 
         return (assets, shares);
@@ -290,7 +286,7 @@ contract Morpho is IMorpho {
     /* COLLATERAL MANAGEMENT */
 
     /// @inheritdoc IMorpho
-    function supplyCollateral(Market memory market, uint256 assets, address onBehalf, bytes calldata data) external {
+    function supplyCollateral(Market memory market, uint256 assets, address onBehalf) external {
         Id id = market.id();
         require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
         require(assets != 0, ErrorsLib.ZERO_ASSETS);
@@ -301,8 +297,6 @@ contract Morpho is IMorpho {
         collateral[id][onBehalf] += assets;
 
         emit EventsLib.SupplyCollateral(id, msg.sender, onBehalf, assets);
-
-        if (data.length > 0) IMorphoSupplyCollateralCallback(msg.sender).onMorphoSupplyCollateral(assets, data);
 
         IERC20(market.collateralToken).safeTransferFrom(msg.sender, address(this), assets);
     }
@@ -330,7 +324,7 @@ contract Morpho is IMorpho {
     /* LIQUIDATION */
 
     /// @inheritdoc IMorpho
-    function liquidate(Market memory market, address borrower, uint256 seized, bytes calldata data)
+    function liquidate(Market memory market, address borrower, uint256 seized)
         external
         returns (uint256 assetsRepaid, uint256 sharesRepaid)
     {
@@ -368,8 +362,6 @@ contract Morpho is IMorpho {
         IERC20(market.collateralToken).safeTransfer(msg.sender, seized);
 
         emit EventsLib.Liquidate(id, msg.sender, borrower, assetsRepaid, sharesRepaid, seized, badDebtShares);
-
-        if (data.length > 0) IMorphoLiquidateCallback(msg.sender).onMorphoLiquidate(assetsRepaid, data);
 
         IERC20(market.borrowableToken).safeTransferFrom(msg.sender, address(this), assetsRepaid);
     }

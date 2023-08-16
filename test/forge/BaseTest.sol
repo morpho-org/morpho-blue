@@ -111,14 +111,14 @@ contract BaseTest is Test {
 
     function _supply(uint256 amount) internal {
         borrowableToken.setBalance(address(this), amount);
-        morpho.supply(market, amount, 0, address(this), hex"");
+        morpho.supply(market, amount, 0, address(this));
     }
 
     function _supplyCollateralForBorrower(address borrower) internal {
         collateralToken.setBalance(borrower, HIGH_COLLATERAL_AMOUNT);
         vm.startPrank(borrower);
         collateralToken.approve(address(morpho), type(uint256).max);
-        morpho.supplyCollateral(market, HIGH_COLLATERAL_AMOUNT, borrower, hex"");
+        morpho.supplyCollateral(market, HIGH_COLLATERAL_AMOUNT, borrower);
         vm.stopPrank();
     }
 

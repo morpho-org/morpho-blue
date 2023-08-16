@@ -9,13 +9,13 @@ contract IntegrationSupplyCollateralTest is BaseTest {
 
         vm.prank(SUPPLIER);
         vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
-        morpho.supplyCollateral(marketFuzz, amount, SUPPLIER, hex"");
+        morpho.supplyCollateral(marketFuzz, amount, SUPPLIER);
     }
 
     function testSupplyCollateralZeroAmount(address SUPPLIER) public {
         vm.prank(SUPPLIER);
         vm.expectRevert(bytes(ErrorsLib.ZERO_ASSETS));
-        morpho.supplyCollateral(market, 0, SUPPLIER, hex"");
+        morpho.supplyCollateral(market, 0, SUPPLIER);
     }
 
     function testSupplyCollateralOnBehalfZeroAddress(uint256 amount) public {
@@ -23,7 +23,7 @@ contract IntegrationSupplyCollateralTest is BaseTest {
 
         vm.prank(SUPPLIER);
         vm.expectRevert(bytes(ErrorsLib.ZERO_ADDRESS));
-        morpho.supplyCollateral(market, amount, address(0), hex"");
+        morpho.supplyCollateral(market, amount, address(0));
     }
 
     function testSupplyCollateral(uint256 amount) public {
@@ -35,7 +35,7 @@ contract IntegrationSupplyCollateralTest is BaseTest {
 
         vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.SupplyCollateral(id, SUPPLIER, ONBEHALF, amount);
-        morpho.supplyCollateral(market, amount, ONBEHALF, hex"");
+        morpho.supplyCollateral(market, amount, ONBEHALF);
 
         assertEq(morpho.collateral(id, ONBEHALF), amount, "collateral");
         assertEq(collateralToken.balanceOf(SUPPLIER), 0, "SUPPLIER balance");

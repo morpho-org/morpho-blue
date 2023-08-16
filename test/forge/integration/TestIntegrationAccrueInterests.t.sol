@@ -23,14 +23,14 @@ contract IntegrationAccrueInterestsTest is BaseTest {
         morpho.setFeeRecipient(OWNER);
 
         borrowableToken.setBalance(address(this), amountSupplied);
-        morpho.supply(market, amountSupplied, 0, address(this), hex"");
+        morpho.supply(market, amountSupplied, 0, address(this));
 
         uint256 collateralPrice = IOracle(market.oracle).price();
         collateralToken.setBalance(BORROWER, amountBorrowed.wDivUp(LLTV).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice));
 
         vm.startPrank(BORROWER);
         morpho.supplyCollateral(
-            market, amountBorrowed.wDivUp(LLTV).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice), BORROWER, hex""
+            market, amountBorrowed.wDivUp(LLTV).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice), BORROWER
         );
         morpho.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
         vm.stopPrank();
@@ -56,7 +56,7 @@ contract IntegrationAccrueInterestsTest is BaseTest {
         morpho.setFeeRecipient(OWNER);
 
         borrowableToken.setBalance(address(this), amountSupplied);
-        morpho.supply(market, amountSupplied, 0, address(this), hex"");
+        morpho.supply(market, amountSupplied, 0, address(this));
 
         // New block.
         vm.roll(block.number + 1);
@@ -86,14 +86,14 @@ contract IntegrationAccrueInterestsTest is BaseTest {
 
         borrowableToken.setBalance(address(this), amountSupplied);
         borrowableToken.setBalance(address(this), amountSupplied);
-        morpho.supply(market, amountSupplied, 0, address(this), hex"");
+        morpho.supply(market, amountSupplied, 0, address(this));
 
         uint256 collateralPrice = IOracle(market.oracle).price();
         collateralToken.setBalance(BORROWER, amountBorrowed.wDivUp(LLTV).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice));
 
         vm.startPrank(BORROWER);
         morpho.supplyCollateral(
-            market, amountBorrowed.wDivUp(LLTV).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice), BORROWER, hex""
+            market, amountBorrowed.wDivUp(LLTV).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice), BORROWER
         );
 
         morpho.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
@@ -150,14 +150,14 @@ contract IntegrationAccrueInterestsTest is BaseTest {
         vm.stopPrank();
 
         borrowableToken.setBalance(address(this), amountSupplied);
-        morpho.supply(market, amountSupplied, 0, address(this), hex"");
+        morpho.supply(market, amountSupplied, 0, address(this));
 
         uint256 collateralPrice = IOracle(market.oracle).price();
         collateralToken.setBalance(BORROWER, amountBorrowed.wDivUp(LLTV).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice));
 
         vm.startPrank(BORROWER);
         morpho.supplyCollateral(
-            market, amountBorrowed.wDivUp(LLTV).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice), BORROWER, hex""
+            market, amountBorrowed.wDivUp(LLTV).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice), BORROWER
         );
         morpho.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
         vm.stopPrank();

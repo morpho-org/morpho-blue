@@ -18,7 +18,7 @@ contract IntegrationWithdrawTest is BaseTest {
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
         borrowableToken.setBalance(address(this), amount);
-        morpho.supply(market, amount, 0, address(this), hex"");
+        morpho.supply(market, amount, 0, address(this));
 
         vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
         morpho.withdraw(market, 0, 0, address(this), address(this));
@@ -29,7 +29,7 @@ contract IntegrationWithdrawTest is BaseTest {
         shares = bound(shares, 1, MAX_TEST_SHARES);
 
         borrowableToken.setBalance(address(this), amount);
-        morpho.supply(market, amount, 0, address(this), hex"");
+        morpho.supply(market, amount, 0, address(this));
 
         vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
         morpho.withdraw(market, amount, shares, address(this), address(this));
@@ -39,7 +39,7 @@ contract IntegrationWithdrawTest is BaseTest {
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
         borrowableToken.setBalance(address(this), amount);
-        morpho.supply(market, amount, 0, address(this), hex"");
+        morpho.supply(market, amount, 0, address(this));
 
         vm.expectRevert(bytes(ErrorsLib.ZERO_ADDRESS));
         morpho.withdraw(market, amount, 0, address(this), address(0));
@@ -50,7 +50,7 @@ contract IntegrationWithdrawTest is BaseTest {
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
         borrowableToken.setBalance(address(this), amount);
-        morpho.supply(market, amount, 0, address(this), hex"");
+        morpho.supply(market, amount, 0, address(this));
 
         vm.prank(attacker);
         vm.expectRevert(bytes(ErrorsLib.UNAUTHORIZED));
@@ -64,7 +64,7 @@ contract IntegrationWithdrawTest is BaseTest {
         borrowableToken.setBalance(SUPPLIER, amountSupplied);
 
         vm.prank(SUPPLIER);
-        morpho.supply(market, amountSupplied, 0, SUPPLIER, hex"");
+        morpho.supply(market, amountSupplied, 0, SUPPLIER);
 
         uint256 collateralPrice = IOracle(market.oracle).price();
         uint256 amountCollateral = amountBorrowed.wDivUp(LLTV).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice);
@@ -72,7 +72,7 @@ contract IntegrationWithdrawTest is BaseTest {
         collateralToken.setBalance(BORROWER, amountCollateral);
 
         vm.startPrank(BORROWER);
-        morpho.supplyCollateral(market, amountCollateral, BORROWER, hex"");
+        morpho.supplyCollateral(market, amountCollateral, BORROWER);
         morpho.borrow(market, amountBorrowed, 0, BORROWER, RECEIVER);
         vm.stopPrank();
 
@@ -91,10 +91,10 @@ contract IntegrationWithdrawTest is BaseTest {
 
         borrowableToken.setBalance(address(this), amountSupplied);
         collateralToken.setBalance(BORROWER, amountCollateral);
-        morpho.supply(market, amountSupplied, 0, address(this), hex"");
+        morpho.supply(market, amountSupplied, 0, address(this));
 
         vm.startPrank(BORROWER);
-        morpho.supplyCollateral(market, amountCollateral, BORROWER, hex"");
+        morpho.supplyCollateral(market, amountCollateral, BORROWER);
         morpho.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
         vm.stopPrank();
 
@@ -139,10 +139,10 @@ contract IntegrationWithdrawTest is BaseTest {
 
         borrowableToken.setBalance(address(this), amountSupplied);
         collateralToken.setBalance(BORROWER, amountCollateral);
-        morpho.supply(market, amountSupplied, 0, address(this), hex"");
+        morpho.supply(market, amountSupplied, 0, address(this));
 
         vm.startPrank(BORROWER);
-        morpho.supplyCollateral(market, amountCollateral, BORROWER, hex"");
+        morpho.supplyCollateral(market, amountCollateral, BORROWER);
         morpho.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
         vm.stopPrank();
 
@@ -180,8 +180,8 @@ contract IntegrationWithdrawTest is BaseTest {
         collateralToken.setBalance(ONBEHALF, amountCollateral);
 
         vm.startPrank(ONBEHALF);
-        morpho.supplyCollateral(market, amountCollateral, ONBEHALF, hex"");
-        morpho.supply(market, amountSupplied, 0, ONBEHALF, hex"");
+        morpho.supplyCollateral(market, amountCollateral, ONBEHALF);
+        morpho.supply(market, amountSupplied, 0, ONBEHALF);
         morpho.borrow(market, amountBorrowed, 0, ONBEHALF, ONBEHALF);
         vm.stopPrank();
 
@@ -232,8 +232,8 @@ contract IntegrationWithdrawTest is BaseTest {
         collateralToken.setBalance(ONBEHALF, amountCollateral);
 
         vm.startPrank(ONBEHALF);
-        morpho.supplyCollateral(market, amountCollateral, ONBEHALF, hex"");
-        morpho.supply(market, amountSupplied, 0, ONBEHALF, hex"");
+        morpho.supplyCollateral(market, amountCollateral, ONBEHALF);
+        morpho.supply(market, amountSupplied, 0, ONBEHALF);
         morpho.borrow(market, amountBorrowed, 0, ONBEHALF, ONBEHALF);
         vm.stopPrank();
 
