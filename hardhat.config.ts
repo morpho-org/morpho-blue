@@ -10,9 +10,7 @@ import "hardhat-tracer";
 import { HardhatUserConfig } from "hardhat/config";
 import "solidity-coverage";
 import * as tdly from "@tenderly/hardhat-tenderly";
-tdly.setup({
-  automaticVerifications: true
-});
+
 
 dotenv.config();
 
@@ -83,6 +81,9 @@ if (tenderlyForkUrl) {
       privateVerification: true // if true, contracts will be verified privately, if false, contracts will be verified publicly
     }
   }
+  tdly.setup({
+    automaticVerifications: true
+  });
 }
 
 export default config;
