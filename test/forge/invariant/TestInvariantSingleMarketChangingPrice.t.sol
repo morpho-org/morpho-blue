@@ -32,7 +32,7 @@ contract SingleMarketChangingPriceInvariantTest is InvariantBaseTest {
 
         targetSelector(FuzzSelector({addr: address(this), selectors: selectors}));
 
-        oracle.setPrice(1e18);
+        oracle.setPrice(1e36);
     }
 
     function newBlock(uint8 elapsed) public {
@@ -60,7 +60,7 @@ contract SingleMarketChangingPriceInvariantTest is InvariantBaseTest {
     }
 
     function supplyOnMorpho(uint256 amount) public {
-        amount = bound(amount, 1, 2 ** 64);
+        amount = bound(amount, 1, MAX_TEST_AMOUNT);
         borrowableToken.setBalance(msg.sender, amount);
 
         vm.prank(msg.sender);
@@ -185,7 +185,7 @@ contract SingleMarketChangingPriceInvariantTest is InvariantBaseTest {
     }
 
     function supplyCollateralOnMorpho(uint256 amount) public {
-        amount = bound(amount, 1, 2 ** 64);
+        amount = bound(amount, 1, MAX_TEST_AMOUNT);
         collateralToken.setBalance(msg.sender, amount);
 
         vm.prank(msg.sender);

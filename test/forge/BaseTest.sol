@@ -14,15 +14,19 @@ contract BaseTest is Test {
     using MathLib for uint256;
     using MarketLib for Market;
 
-    uint256 internal constant HIGH_COLLATERAL_AMOUNT = 1e25;
-    uint256 internal constant MIN_TEST_AMOUNT = 1000;
-    uint256 internal constant MAX_TEST_AMOUNT = 2 ** 64;
+    uint256 internal constant HIGH_COLLATERAL_AMOUNT = 1e35;
+    uint256 internal constant MIN_TEST_AMOUNT = 100;
+    uint256 internal constant MAX_TEST_AMOUNT = 1e28;
     uint256 internal constant MIN_TEST_SHARES = MIN_TEST_AMOUNT * SharesMathLib.VIRTUAL_SHARES;
     uint256 internal constant MAX_TEST_SHARES = MAX_TEST_AMOUNT * SharesMathLib.VIRTUAL_SHARES;
-    uint256 internal constant MIN_COLLATERAL_PRICE = 100;
-    uint256 internal constant MAX_COLLATERAL_PRICE = 2 ** 64;
+    uint256 internal constant MIN_COLLATERAL_PRICE = 1000;
+    uint256 internal constant MAX_COLLATERAL_PRICE = 1e40;
 
+    address internal SUPPLIER = _addrFromHashedString("Morpho Supplier");
     address internal BORROWER = _addrFromHashedString("Morpho Borrower");
+    address internal REPAYER = _addrFromHashedString("Morpho Repayer");
+    address internal ONBEHALF = _addrFromHashedString("Morpho On Behalf");
+    address internal RECEIVER = _addrFromHashedString("Morpho Receiver");
     address internal LIQUIDATOR = _addrFromHashedString("Morpho Liquidator");
     address internal OWNER = _addrFromHashedString("Morpho Owner");
 
@@ -38,7 +42,11 @@ contract BaseTest is Test {
 
     function setUp() public virtual {
         vm.label(OWNER, "Owner");
+        vm.label(SUPPLIER, "Supplier");
         vm.label(BORROWER, "Borrower");
+        vm.label(REPAYER, "Repayer");
+        vm.label(ONBEHALF, "OnBehalf");
+        vm.label(RECEIVER, "Receiver");
         vm.label(LIQUIDATOR, "Liquidator");
 
         // Create Morpho.
@@ -55,7 +63,7 @@ contract BaseTest is Test {
         oracle = new Oracle();
         vm.label(address(oracle), "Oracle");
 
-        oracle.setPrice(1e25);
+        oracle.setPrice(1e36);
 
         irm = new Irm(morpho);
         vm.label(address(irm), "IRM");
@@ -69,17 +77,28 @@ contract BaseTest is Test {
         morpho.createMarket(market);
         vm.stopPrank();
 
-        oracle.setPrice(1e25);
-
         borrowableToken.approve(address(morpho), type(uint256).max);
         collateralToken.approve(address(morpho), type(uint256).max);
+        vm.startPrank(SUPPLIER);
+        borrowableToken.approve(address(morpho), type(uint256).max);
+        collateralToken.approve(address(morpho), type(uint256).max);
+        vm.stopPrank();
         vm.startPrank(BORROWER);
+        borrowableToken.approve(address(morpho), type(uint256).max);
+        collateralToken.approve(address(morpho), type(uint256).max);
+        vm.stopPrank();
+        vm.startPrank(REPAYER);
         borrowableToken.approve(address(morpho), type(uint256).max);
         collateralToken.approve(address(morpho), type(uint256).max);
         vm.stopPrank();
         vm.startPrank(LIQUIDATOR);
         borrowableToken.approve(address(morpho), type(uint256).max);
         collateralToken.approve(address(morpho), type(uint256).max);
+        vm.stopPrank();
+        vm.startPrank(ONBEHALF);
+        borrowableToken.approve(address(morpho), type(uint256).max);
+        collateralToken.approve(address(morpho), type(uint256).max);
+        morpho.setAuthorization(BORROWER, true);
         vm.stopPrank();
 
         vm.roll(block.number + 1);
@@ -90,12 +109,12 @@ contract BaseTest is Test {
         return address(uint160(uint256(keccak256(bytes(str)))));
     }
 
-    function _provideLiquidity(uint256 amount) internal {
+    function _supply(uint256 amount) internal {
         borrowableToken.setBalance(address(this), amount);
         morpho.supply(market, amount, 0, address(this), hex"");
     }
 
-    function _provideCollateralForBorrower(address borrower) internal {
+    function _supplyCollateralForBorrower(address borrower) internal {
         collateralToken.setBalance(borrower, HIGH_COLLATERAL_AMOUNT);
         vm.startPrank(borrower);
         collateralToken.approve(address(morpho), type(uint256).max);
@@ -112,6 +131,7 @@ contract BaseTest is Test {
         amountBorrowed = bound(amountBorrowed, MIN_TEST_AMOUNT, MAX_TEST_AMOUNT);
 
         uint256 minCollateral = amountBorrowed.wDivUp(market.lltv).mulDivUp(ORACLE_PRICE_SCALE, priceCollateral);
+        // vm.assume(minCollateral <= MAX_TEST_AMOUNT);
 
         amountCollateral = bound(amountCollateral, minCollateral, max(minCollateral, MAX_TEST_AMOUNT));
 
@@ -126,8 +146,11 @@ contract BaseTest is Test {
         priceCollateral = bound(priceCollateral, MIN_COLLATERAL_PRICE, MAX_COLLATERAL_PRICE);
         amountBorrowed = bound(amountBorrowed, MIN_TEST_AMOUNT, MAX_TEST_AMOUNT);
 
-        uint256 maxCollateral = amountBorrowed.wDivDown(market.lltv).mulDivUp(ORACLE_PRICE_SCALE, priceCollateral);
-        vm.assume(maxCollateral != 0);
+        uint256 maxCollateral = amountBorrowed.wDivDown(market.lltv).mulDivDown(ORACLE_PRICE_SCALE, priceCollateral);
+        vm.assume(
+            maxCollateral.mulDivDown(priceCollateral, ORACLE_PRICE_SCALE).wMulDown(market.lltv) < amountBorrowed
+                && maxCollateral > 0
+        );
 
         amountCollateral = bound(amountBorrowed, 1, maxCollateral);
 
