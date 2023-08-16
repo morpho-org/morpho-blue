@@ -20,8 +20,8 @@ methods {
     function getMarketId(MorphoHarness.Market) external returns MorphoHarness.Id envfree;
 
     // Temporary workaround a bug that requires to have address instead of an interface in the signature
-    function SafeTransferLib.tmpSafeTransfer(address token, address to, uint256 value) internal => summarySafeTransferFrom(token, currentContract, to, value);
-    function SafeTransferLib.tmpSafeTransferFrom(address token, address from, address to, uint256 value) internal => summarySafeTransferFrom(token, from, to, value);
+    function SafeTransferLib.safeTransfer(address token, address to, uint256 value) internal => summarySafeTransferFrom(token, currentContract, to, value);
+    function SafeTransferLib.safeTransferFrom(address token, address from, address to, uint256 value) internal => summarySafeTransferFrom(token, from, to, value);
 }
 
 ghost mapping(MorphoHarness.Id => mathint) sumSupplyShares
@@ -167,4 +167,20 @@ rule marketIdUnique() {
     assert market1.oracle == market2.oracle;
     assert market1.irm == market2.irm;
     assert market1.lltv == market2.lltv;
+}
+
+rule supplyAsssetsShares() {
+    MorphoHarness.Market market;
+    uint256 assets;
+    uint256 shares;
+    uint256 supplyAssets;
+    uint256 supplyShares;
+    address onbehalf;
+    bytes data;
+    env e;
+
+    supplyAssets, supplyShares = supply(e, market, assets, shares, onbehalf, data);
+
+    assert assets != 0 => supplyAssets == assets;
+    assert assets == 0 => supplyShares == shares;
 }
