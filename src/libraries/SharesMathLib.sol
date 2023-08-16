@@ -3,6 +3,10 @@ pragma solidity ^0.8.0;
 
 import {MathLib} from "./MathLib.sol";
 
+uint256 constant VIRTUAL_SHARES = 1e18;
+
+uint256 constant VIRTUAL_ASSETS = 1;
+
 /// @title SharesMathLib
 /// @author Morpho Labs
 /// @custom:contact security@morpho.xyz
@@ -11,10 +15,6 @@ import {MathLib} from "./MathLib.sol";
 ///      https://docs.openzeppelin.com/contracts/4.x/erc4626#inflation-attack.
 library SharesMathLib {
     using MathLib for uint256;
-
-    uint256 internal constant VIRTUAL_SHARES = 1e18;
-
-    uint256 internal constant VIRTUAL_ASSETS = 1;
 
     /// @dev Calculates the value of the given assets quoted in shares, rounding down.
     /// @dev Provided that assets <= totalAssets, this function satisfies the invariant: shares <= totalShares.

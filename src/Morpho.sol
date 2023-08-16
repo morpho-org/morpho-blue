@@ -17,19 +17,15 @@ import {IOracle} from "./interfaces/IOracle.sol";
 import {UtilsLib} from "./libraries/UtilsLib.sol";
 import {EventsLib} from "./libraries/EventsLib.sol";
 import {ErrorsLib} from "./libraries/ErrorsLib.sol";
+import {LiquidationLib} from "./libraries/LiquidationLib.sol";
 import {MarketLib} from "./libraries/MarketLib.sol";
 import {MathLib, WAD} from "./libraries/MathLib.sol";
+import {PriceLib} from "./libraries/PriceLib.sol";
 import {SharesMathLib} from "./libraries/SharesMathLib.sol";
 import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
 
 /// @dev The maximum fee a market can have (25%).
 uint256 constant MAX_FEE = 0.25e18;
-/// @dev Oracle price scale.
-uint256 constant ORACLE_PRICE_SCALE = 1e36;
-/// @dev Liquidation cursor.
-uint256 constant LIQUIDATION_CURSOR = 0.3e18;
-/// @dev Max liquidation incentive factor.
-uint256 constant MAX_LIQUIDATION_INCENTIVE_FACTOR = 1.15e18;
 
 /// @dev The EIP-712 typeHash for EIP712Domain.
 bytes32 constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
@@ -43,8 +39,10 @@ bytes32 constant AUTHORIZATION_TYPEHASH =
 /// @custom:contact security@morpho.xyz
 /// @notice The Morpho contract.
 contract Morpho is IMorpho {
+    using LiquidationLib for uint256;
     using MathLib for uint256;
     using MarketLib for Market;
+    using PriceLib for uint256;
     using SharesMathLib for uint256;
     using SafeTransferLib for IERC20;
 
@@ -344,8 +342,7 @@ contract Morpho is IMorpho {
 
         require(!_isHealthy(market, id, borrower, collateralPrice), ErrorsLib.HEALTHY_POSITION);
 
-        assetsRepaid =
-            seized.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(liquidationIncentiveFactor(market.lltv));
+        assetsRepaid = seized.toRepaid(collateralPrice, market.lltv);
         sharesRepaid = assetsRepaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
 
         borrowShares[id][borrower] -= sharesRepaid;
@@ -442,7 +439,7 @@ contract Morpho is IMorpho {
 
         if (marketTotalBorrow != 0) {
             uint256 borrowRate = IIrm(market.irm).borrowRate(market);
-            uint256 accruedInterests = marketTotalBorrow.wMulDown(borrowRate.wTaylorCompounded(elapsed));
+            uint256 accruedInterests = marketTotalBorrow.accruedTaylorCompounded(borrowRate, elapsed);
             totalBorrow[id] = marketTotalBorrow + accruedInterests;
             totalSupply[id] += accruedInterests;
 
@@ -479,7 +476,7 @@ contract Morpho is IMorpho {
         returns (bool)
     {
         uint256 borrowed = borrowShares[id][user].toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
-        uint256 maxBorrow = collateral[id][user].mulDivDown(collateralPrice, ORACLE_PRICE_SCALE).wMulDown(market.lltv);
+        uint256 maxBorrow = collateral[id][user].toMaxBorrowable(collateralPrice, market.lltv);
 
         return maxBorrow >= borrowed;
     }
@@ -500,13 +497,5 @@ contract Morpho is IMorpho {
                 mstore(add(res, mul(i, 32)), sload(slot))
             }
         }
-    }
-
-    /* LIQUIDATION INCENTIVE FACTOR */
-
-    /// @dev The liquidation incentive factor is min(maxIncentiveFactor, 1/(1 - cursor(1 - lltv))).
-    function liquidationIncentiveFactor(uint256 lltv) private pure returns (uint256) {
-        return
-            UtilsLib.min(MAX_LIQUIDATION_INCENTIVE_FACTOR, WAD.wDivDown(WAD - LIQUIDATION_CURSOR.wMulDown(WAD - lltv)));
     }
 }

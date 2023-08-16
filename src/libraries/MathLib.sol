@@ -9,6 +9,8 @@ uint256 constant WAD = 1e18;
 /// @notice Library to manage fixed-point arithmetic.
 /// @dev Inspired by https://github.com/morpho-org/morpho-utils.
 library MathLib {
+    using MathLib for uint256;
+
     uint256 internal constant MAX_UINT256 = 2 ** 256 - 1;
 
     /// @dev (x * y) / WAD rounded down.
@@ -63,9 +65,13 @@ library MathLib {
     ///      to approximate a continuous compound interest rate: e^(nx) - 1.
     function wTaylorCompounded(uint256 x, uint256 n) internal pure returns (uint256) {
         uint256 firstTerm = x * n;
-        uint256 secondTerm = wMulDown(firstTerm, firstTerm) / 2;
-        uint256 thirdTerm = wMulDown(secondTerm, firstTerm) / 3;
+        uint256 secondTerm = firstTerm.wMulDown(firstTerm) / 2;
+        uint256 thirdTerm = secondTerm.wMulDown(firstTerm) / 3;
 
         return firstTerm + secondTerm + thirdTerm;
+    }
+
+    function accruedTaylorCompounded(uint256 amount, uint256 rate, uint256 elapsed) internal pure returns (uint256) {
+        return amount.wMulDown(rate.wTaylorCompounded(elapsed));
     }
 }

@@ -4,7 +4,9 @@ pragma solidity ^0.8.0;
 import "../BaseTest.sol";
 
 contract IntegrationLiquidateTest is BaseTest {
+    using LiquidationLib for uint256;
     using MathLib for uint256;
+    using PriceLib for uint256;
     using SharesMathLib for uint256;
 
     function testLiquidateNotCreatedMarket(Market memory marketFuzz) public {
@@ -66,10 +68,9 @@ contract IntegrationLiquidateTest is BaseTest {
         amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
         _supply(amountSupplied);
 
-        uint256 incentive = _liquidationIncentive(market.lltv);
-        uint256 maxSeized = amountBorrowed.wMulDown(incentive).mulDivDown(ORACLE_PRICE_SCALE, priceCollateral);
+        uint256 maxSeized = amountBorrowed.toSeized(priceCollateral, LLTV);
         amountSeized = bound(amountSeized, 1, min(maxSeized, amountCollateral - 1));
-        uint256 expectedRepaid = amountSeized.mulDivUp(priceCollateral, ORACLE_PRICE_SCALE).wDivUp(incentive);
+        uint256 expectedRepaid = amountSeized.toRepaid(priceCollateral, LLTV);
 
         borrowableToken.setBalance(LIQUIDATOR, amountBorrowed);
         collateralToken.setBalance(BORROWER, amountCollateral);
@@ -113,7 +114,6 @@ contract IntegrationLiquidateTest is BaseTest {
     }
 
     struct LiquidateBadDebtTestParams {
-        uint256 incentive;
         uint256 expectedRepaid;
         uint256 expectedRepaidShares;
         uint256 borrowSharesBeforeLiquidation;
@@ -136,8 +136,7 @@ contract IntegrationLiquidateTest is BaseTest {
 
         vm.assume(amountCollateral > 1);
 
-        params.incentive = _liquidationIncentive(market.lltv);
-        params.expectedRepaid = amountCollateral.mulDivUp(priceCollateral, ORACLE_PRICE_SCALE).wDivUp(params.incentive);
+        params.expectedRepaid = amountCollateral.toRepaid(priceCollateral, LLTV);
 
         uint256 minBorrowed = max(params.expectedRepaid, amountBorrowed);
         amountBorrowed = bound(amountBorrowed, minBorrowed, max(minBorrowed, MAX_TEST_AMOUNT));
@@ -178,7 +177,7 @@ contract IntegrationLiquidateTest is BaseTest {
             params.expectedRepaid,
             params.expectedRepaidShares,
             amountCollateral,
-            params.expectedBadDebt * SharesMathLib.VIRTUAL_SHARES
+            params.expectedBadDebt * VIRTUAL_SHARES
         );
         (uint256 returnRepaid, uint256 returnRepaidShares) = morpho.liquidate(market, BORROWER, amountCollateral, hex"");
 

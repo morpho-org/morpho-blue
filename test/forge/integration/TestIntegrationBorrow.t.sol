@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import "../BaseTest.sol";
 
 contract IntegrationBorrowTest is BaseTest {
+    using LiquidationLib for uint256;
     using MathLib for uint256;
     using SharesMathLib for uint256;
 
@@ -150,7 +151,7 @@ contract IntegrationBorrowTest is BaseTest {
         uint256 expectedAmountBorrowed = sharesBorrowed.toAssetsDown(0, 0);
 
         uint256 expectedBorrowedValue = sharesBorrowed.toAssetsUp(expectedAmountBorrowed, sharesBorrowed);
-        uint256 minCollateral = expectedBorrowedValue.wDivUp(market.lltv).mulDivUp(ORACLE_PRICE_SCALE, priceCollateral);
+        uint256 minCollateral = expectedBorrowedValue.toMinCollateral(priceCollateral, LLTV);
         amountCollateral = bound(amountCollateral, minCollateral, max(minCollateral, MAX_TEST_AMOUNT));
 
         amountSupplied = bound(amountSupplied, expectedAmountBorrowed, MAX_TEST_AMOUNT);
@@ -226,7 +227,7 @@ contract IntegrationBorrowTest is BaseTest {
         uint256 expectedAmountBorrowed = sharesBorrowed.toAssetsDown(0, 0);
 
         uint256 expectedBorrowedValue = sharesBorrowed.toAssetsUp(expectedAmountBorrowed, sharesBorrowed);
-        uint256 minCollateral = expectedBorrowedValue.wDivUp(market.lltv).mulDivUp(ORACLE_PRICE_SCALE, priceCollateral);
+        uint256 minCollateral = expectedBorrowedValue.toMinCollateral(priceCollateral, LLTV);
         amountCollateral = bound(amountCollateral, minCollateral, max(minCollateral, MAX_TEST_AMOUNT));
 
         amountSupplied = bound(amountSupplied, expectedAmountBorrowed, MAX_TEST_AMOUNT);

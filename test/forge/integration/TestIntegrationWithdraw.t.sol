@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import "../BaseTest.sol";
 
 contract IntegrationWithdrawTest is BaseTest {
+    using LiquidationLib for uint256;
     using MathLib for uint256;
     using SharesMathLib for uint256;
 
@@ -67,7 +68,7 @@ contract IntegrationWithdrawTest is BaseTest {
         morpho.supply(market, amountSupplied, 0, SUPPLIER, hex"");
 
         uint256 collateralPrice = IOracle(market.oracle).price();
-        uint256 amountCollateral = amountBorrowed.wDivUp(LLTV).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice);
+        uint256 amountCollateral = amountBorrowed.toMinCollateral(collateralPrice, LLTV);
 
         collateralToken.setBalance(BORROWER, amountCollateral);
 
@@ -87,7 +88,7 @@ contract IntegrationWithdrawTest is BaseTest {
         amountWithdrawn = bound(amountWithdrawn, 1, amountSupplied - amountBorrowed);
 
         uint256 collateralPrice = IOracle(market.oracle).price();
-        uint256 amountCollateral = amountBorrowed.wDivUp(LLTV).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice);
+        uint256 amountCollateral = amountBorrowed.toMinCollateral(collateralPrice, LLTV);
 
         borrowableToken.setBalance(address(this), amountSupplied);
         collateralToken.setBalance(BORROWER, amountCollateral);
@@ -127,7 +128,7 @@ contract IntegrationWithdrawTest is BaseTest {
         amountBorrowed = bound(amountBorrowed, 1, amountSupplied - 1);
 
         uint256 collateralPrice = IOracle(market.oracle).price();
-        uint256 amountCollateral = amountBorrowed.wDivUp(LLTV).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice);
+        uint256 amountCollateral = amountBorrowed.toMinCollateral(collateralPrice, LLTV);
 
         uint256 expectedSupplyShares = amountSupplied.toSharesDown(0, 0);
         uint256 availableLiquidity = amountSupplied - amountBorrowed;
@@ -174,7 +175,7 @@ contract IntegrationWithdrawTest is BaseTest {
         amountWithdrawn = bound(amountWithdrawn, 1, amountSupplied - amountBorrowed);
 
         uint256 collateralPrice = IOracle(market.oracle).price();
-        uint256 amountCollateral = amountBorrowed.wDivUp(LLTV).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice);
+        uint256 amountCollateral = amountBorrowed.toMinCollateral(collateralPrice, LLTV);
 
         borrowableToken.setBalance(ONBEHALF, amountSupplied);
         collateralToken.setBalance(ONBEHALF, amountCollateral);
@@ -218,7 +219,7 @@ contract IntegrationWithdrawTest is BaseTest {
         amountBorrowed = bound(amountBorrowed, 1, amountSupplied - 1);
 
         uint256 collateralPrice = IOracle(market.oracle).price();
-        uint256 amountCollateral = amountBorrowed.wDivUp(LLTV).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice);
+        uint256 amountCollateral = amountBorrowed.toMinCollateral(collateralPrice, LLTV);
 
         uint256 expectedSupplyShares = amountSupplied.toSharesDown(0, 0);
         uint256 availableLiquidity = amountSupplied - amountBorrowed;

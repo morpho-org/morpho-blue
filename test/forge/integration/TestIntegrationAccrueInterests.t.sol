@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import "../BaseTest.sol";
 
 contract IntegrationAccrueInterestsTest is BaseTest {
+    using LiquidationLib for uint256;
     using MathLib for uint256;
     using SharesMathLib for uint256;
 
@@ -19,12 +20,10 @@ contract IntegrationAccrueInterestsTest is BaseTest {
         morpho.supply(market, amountSupplied, 0, address(this), hex"");
 
         uint256 collateralPrice = IOracle(market.oracle).price();
-        collateralToken.setBalance(BORROWER, amountBorrowed.wDivUp(LLTV).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice));
+        collateralToken.setBalance(BORROWER, amountBorrowed.toMinCollateral(collateralPrice, LLTV));
 
         vm.startPrank(BORROWER);
-        morpho.supplyCollateral(
-            market, amountBorrowed.wDivUp(LLTV).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice), BORROWER, hex""
-        );
+        morpho.supplyCollateral(market, amountBorrowed.toMinCollateral(collateralPrice, LLTV), BORROWER, hex"");
         morpho.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
         vm.stopPrank();
 
@@ -82,12 +81,10 @@ contract IntegrationAccrueInterestsTest is BaseTest {
         morpho.supply(market, amountSupplied, 0, address(this), hex"");
 
         uint256 collateralPrice = IOracle(market.oracle).price();
-        collateralToken.setBalance(BORROWER, amountBorrowed.wDivUp(LLTV).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice));
+        collateralToken.setBalance(BORROWER, amountBorrowed.toMinCollateral(collateralPrice, LLTV));
 
         vm.startPrank(BORROWER);
-        morpho.supplyCollateral(
-            market, amountBorrowed.wDivUp(LLTV).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice), BORROWER, hex""
-        );
+        morpho.supplyCollateral(market, amountBorrowed.toMinCollateral(collateralPrice, LLTV), BORROWER, hex"");
 
         morpho.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
         vm.stopPrank();
@@ -146,12 +143,10 @@ contract IntegrationAccrueInterestsTest is BaseTest {
         morpho.supply(market, amountSupplied, 0, address(this), hex"");
 
         uint256 collateralPrice = IOracle(market.oracle).price();
-        collateralToken.setBalance(BORROWER, amountBorrowed.wDivUp(LLTV).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice));
+        collateralToken.setBalance(BORROWER, amountBorrowed.toMinCollateral(collateralPrice, LLTV));
 
         vm.startPrank(BORROWER);
-        morpho.supplyCollateral(
-            market, amountBorrowed.wDivUp(LLTV).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice), BORROWER, hex""
-        );
+        morpho.supplyCollateral(market, amountBorrowed.toMinCollateral(collateralPrice, LLTV), BORROWER, hex"");
         morpho.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
         vm.stopPrank();
 

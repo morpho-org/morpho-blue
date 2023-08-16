@@ -12,6 +12,7 @@ contract IntegrationCallbacksTest is
     IMorphoSupplyCollateralCallback,
     IMorphoFlashLoanCallback
 {
+    using LiquidationLib for uint256;
     using MarketLib for Market;
     using MathLib for uint256;
 
@@ -104,13 +105,13 @@ contract IntegrationCallbacksTest is
     function testRepayCallback(uint256 amount) public {
         amount = bound(amount, MIN_COLLATERAL_PRICE, MAX_TEST_AMOUNT);
 
-        oracle.setPrice(WAD);
+        oracle.setPrice(ORACLE_PRICE_SCALE);
 
         borrowableToken.setBalance(address(this), amount);
-        collateralToken.setBalance(address(this), amount.mulDivUp(ORACLE_PRICE_SCALE, WAD));
+        collateralToken.setBalance(address(this), amount.toMinCollateral(ORACLE_PRICE_SCALE, LLTV));
 
         morpho.supply(market, amount, 0, address(this), hex"");
-        morpho.supplyCollateral(market, amount.mulDivUp(ORACLE_PRICE_SCALE, WAD), address(this), hex"");
+        morpho.supplyCollateral(market, amount.toMinCollateral(ORACLE_PRICE_SCALE, LLTV), address(this), hex"");
         morpho.borrow(market, amount.wMulDown(LLTV), 0, address(this), address(this));
 
         borrowableToken.approve(address(morpho), 0);
@@ -125,16 +126,16 @@ contract IntegrationCallbacksTest is
     function testLiquidateCallback(uint256 amount) public {
         amount = bound(amount, MIN_TEST_AMOUNT, MAX_TEST_AMOUNT);
 
-        oracle.setPrice(WAD);
+        oracle.setPrice(ORACLE_PRICE_SCALE);
 
         borrowableToken.setBalance(address(this), amount);
-        collateralToken.setBalance(address(this), amount.mulDivUp(ORACLE_PRICE_SCALE, WAD).wDivUp(market.lltv));
+        collateralToken.setBalance(address(this), amount.toMinCollateral(ORACLE_PRICE_SCALE, LLTV));
 
         morpho.supply(market, amount, 0, address(this), hex"");
-        morpho.supplyCollateral(market, amount.mulDivUp(ORACLE_PRICE_SCALE, WAD), address(this), hex"");
-        morpho.borrow(market, amount.wMulDown(LLTV), 0, address(this), address(this));
+        morpho.supplyCollateral(market, amount.toMinCollateral(ORACLE_PRICE_SCALE, LLTV), address(this), hex"");
+        morpho.borrow(market, amount, 0, address(this), address(this));
 
-        oracle.setPrice(0.99e18);
+        oracle.setPrice(ORACLE_PRICE_SCALE - ORACLE_PRICE_SCALE / 100);
 
         uint256 toSeize = amount.wMulDown(LLTV);
 
@@ -149,9 +150,9 @@ contract IntegrationCallbacksTest is
     function testFlashActions(uint256 amount) public {
         amount = bound(amount, 10, MAX_TEST_AMOUNT);
 
-        oracle.setPrice(WAD);
+        oracle.setPrice(ORACLE_PRICE_SCALE);
 
-        uint256 toBorrow = amount.mulDivDown(WAD, ORACLE_PRICE_SCALE).wMulDown(LLTV);
+        uint256 toBorrow = amount.toMaxBorrowable(ORACLE_PRICE_SCALE, LLTV);
         vm.assume(toBorrow != 0);
 
         borrowableToken.setBalance(address(this), toBorrow);
