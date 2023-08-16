@@ -4,12 +4,13 @@
     "compile": "npx hardhat compile --force",
     "test": "npx hardhat test",
     "lint": "prettier --check test/hardhat && forge fmt --check",
-    "lint:fix": "prettier --write test/hardhat && forge fmt"
+    "lint:fix": "prettier --write test/hardhat script && forge fmt"
   },
   "dependencies": {
     "@ethersproject/abi": "^5.7.0",
     "@ethersproject/bytes": "^5.7.0",
     "@ethersproject/providers": "^5.7.2",
+    "@tenderly/hardhat-tenderly": "^1.7.7",
     "ethers": "^5.7.2",
     "ethers-maths": "^3.5.3",
     "lodash": "^4.17.21"
@@ -27,7 +28,7 @@
     "@types/chai": "^4.3.5",
     "@types/lodash": "^4.14.195",
     "@types/mocha": "^10.0.1",
-    "@types/node": "^20.4.2",
+    "@types/node": "^20.5.0",
     "chai": "^4.3.7",
     "dotenv": "^16.3.1",
     "hardhat": "^2.17.0",

@@ -8,8 +8,10 @@
       "outDir": "dist",
       "moduleResolution": "nodenext",
       "resolveJsonModule": true,
-      "declaration": true
+      "declaration": true,
+      "types": ["node"]
     },
+
     "include": ["types", "test/hardhat"],
     "files": ["./hardhat.config.ts"]
 }

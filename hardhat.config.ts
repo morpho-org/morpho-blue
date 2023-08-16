@@ -9,12 +9,19 @@ import "hardhat-gas-reporter";
 import "hardhat-tracer";
 import { HardhatUserConfig } from "hardhat/config";
 import "solidity-coverage";
+import * as tdly from "@tenderly/hardhat-tenderly";
+tdly.setup({
+  automaticVerifications: true
+});
 
 dotenv.config();
 
 const config: HardhatUserConfig = {
   defaultNetwork: "hardhat",
   networks: {
+    tenderly: {
+      url: process.env.TENDERLY_FORK_URL!,
+    },
     hardhat: {
       chainId: 1,
       gasPrice: 0,
@@ -52,10 +59,19 @@ const config: HardhatUserConfig = {
     outDir: "types/",
     externalArtifacts: ["deps/**/*.json"],
   },
+  gasReporter: {
+
+    excludeContracts: ["src/mocks/"],
+  },
   tracer: {
     defaultVerbosity: 1,
     gasCost: true,
   },
+  tenderly: {
+    username: "morpho-labs", // tenderly username (or organization name)
+    project: "blue", // project name
+    privateVerification: true // if true, contracts will be verified privately, if false, contracts will be verified publicly
+  }
 };
 
 export default config;
