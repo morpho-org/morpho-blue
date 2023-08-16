@@ -7,7 +7,7 @@ import { parseUnits } from "ethers/lib/utils";
 import hre from "hardhat";
 import { Morpho, OracleMock, ERC20Mock, IrmMock } from "types";
 import { MarketStruct } from "types/src/Morpho";
-import { FlashBorrowerMock } from "types/src/mocks/FlashBorrowerMock";
+import { MorphoFlashLoanCallback } from "types/src/mocks/MorphoFlashLoanCallback";
 
 const closePositions = false;
 // Without the division it overflows.
@@ -40,7 +40,7 @@ describe("Morpho", () => {
   let collateral: ERC20Mock;
   let oracle: OracleMock;
   let irm: IrmMock;
-  let flashBorrower: FlashBorrowerMock;
+  let flashBorrower: MorphoFlashLoanCallback;
 
   let market: MarketStruct;
   let id: Buffer;
@@ -104,7 +104,7 @@ describe("Morpho", () => {
     await borrowable.setBalance(liquidator.address, initBalance);
     await borrowable.connect(liquidator).approve(morpho.address, constants.MaxUint256);
 
-    const FlashBorrowerFactory = await hre.ethers.getContractFactory("FlashBorrowerMock", admin);
+    const FlashBorrowerFactory = await hre.ethers.getContractFactory("MorphoFlashLoanCallback", admin);
 
     flashBorrower = await FlashBorrowerFactory.deploy(morpho.address);
   });

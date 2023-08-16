@@ -2,11 +2,11 @@
 pragma solidity ^0.8.0;
 
 import {IFlashLender} from "../interfaces/IFlashLender.sol";
-import {IMorphoFlashLoanCallback} from "../interfaces/IMorphoCallbacks.sol";
+import {IMorphoFlashLoanCallback} from "../interfaces/IMorphoFlashLoanCallback.sol";
 
 import {ERC20} from "openzeppelin-contracts/token/ERC20/ERC20.sol";
 
-contract FlashBorrowerMock is IMorphoFlashLoanCallback {
+contract MorphoFlashLoanCallback is IMorphoFlashLoanCallback {
     IFlashLender private immutable MORPHO;
 
     constructor(IFlashLender newMorpho) {
