@@ -10,6 +10,8 @@ uint256 constant WAD = 1e18;
 /// @dev Inspired by https://github.com/morpho-org/morpho-utils.
 library MathLib {
     uint256 internal constant MAX_UINT256 = 2 ** 256 - 1;
+    uint256 private constant TWO_WAD = 2 * WAD;
+    uint256 private constant THREE_WAD = 3 * WAD;
 
     /// @dev (x * y) / WAD rounded down.
     function wMulDown(uint256 x, uint256 y) internal pure returns (uint256) {
@@ -55,8 +57,8 @@ library MathLib {
     ///      to approximate a continuous compound interest rate: e^(nx) - 1.
     function wTaylorCompounded(uint256 x, uint256 n) internal pure returns (uint256) {
         uint256 firstTerm = x * n;
-        uint256 secondTerm = wMulDown(firstTerm, firstTerm) / 2;
-        uint256 thirdTerm = wMulDown(secondTerm, firstTerm) / 3;
+        uint256 secondTerm = mulDivDown(firstTerm, firstTerm, TWO_WAD);
+        uint256 thirdTerm = mulDivDown(secondTerm, firstTerm, THREE_WAD);
 
         return firstTerm + secondTerm + thirdTerm;
     }
