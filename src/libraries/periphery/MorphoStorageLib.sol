@@ -24,59 +24,59 @@ library MorphoStorageLib {
     uint256 internal constant IS_LLTV_ENABLED_SLOT = 12;
     uint256 internal constant IS_AUTHORIZED_SLOT = 13;
 
-    function owner() internal pure returns (bytes32) {
+    function ownerSlot() internal pure returns (bytes32) {
         return bytes32(OWNER_SLOT);
     }
 
-    function feeRecipient() internal pure returns (bytes32) {
+    function feeRecipientSlot() internal pure returns (bytes32) {
         return bytes32(FEE_RECIPIENT_SLOT);
     }
 
-    function supplyShares(Id id, address user) internal pure returns (bytes32) {
+    function supplySharesSlot(Id id, address user) internal pure returns (bytes32) {
         return keccak256(abi.encode(user, keccak256(abi.encode(id, SUPPLY_SHARES_SLOT))));
     }
 
-    function borrowShares(Id id, address user) internal pure returns (bytes32) {
+    function borrowSharesSlot(Id id, address user) internal pure returns (bytes32) {
         return keccak256(abi.encode(user, keccak256(abi.encode(id, BORROW_SHARES_SLOT))));
     }
 
-    function collateral(Id id, address user) internal pure returns (bytes32) {
+    function collateralSlot(Id id, address user) internal pure returns (bytes32) {
         return keccak256(abi.encode(user, keccak256(abi.encode(id, COLLATERAL_SLOT))));
     }
 
-    function totalSupply(Id id) internal pure returns (bytes32) {
+    function totalSupplySlot(Id id) internal pure returns (bytes32) {
         return keccak256(abi.encode(id, TOTAL_SUPPLY_SLOT));
     }
 
-    function totalSupplyShares(Id id) internal pure returns (bytes32) {
+    function totalSupplySharesSlot(Id id) internal pure returns (bytes32) {
         return keccak256(abi.encode(id, TOTAL_SUPPLY_SHARES_SLOT));
     }
 
-    function totalBorrow(Id id) internal pure returns (bytes32) {
+    function totalBorrowSlot(Id id) internal pure returns (bytes32) {
         return keccak256(abi.encode(id, TOTAL_BORROW_SLOT));
     }
 
-    function totalBorrowShares(Id id) internal pure returns (bytes32) {
+    function totalBorrowSharesSlot(Id id) internal pure returns (bytes32) {
         return keccak256(abi.encode(id, TOTAL_BORROW_SHARES_SLOT));
     }
 
-    function lastUpdate(Id id) internal pure returns (bytes32) {
+    function lastUpdateSlot(Id id) internal pure returns (bytes32) {
         return keccak256(abi.encode(id, LAST_UPDATE_SLOT));
     }
 
-    function fee(Id id) internal pure returns (bytes32) {
+    function feeSlot(Id id) internal pure returns (bytes32) {
         return keccak256(abi.encode(id, FEE_SLOT));
     }
 
-    function isIrmEnabled(address irm) internal pure returns (bytes32) {
+    function isIrmEnabledSlot(address irm) internal pure returns (bytes32) {
         return keccak256(abi.encode(irm, IS_IRM_ENABLED_SLOT));
     }
 
-    function isLltvEnabled(uint256 lltv) internal pure returns (bytes32) {
+    function isLltvEnabledSlot(uint256 lltv) internal pure returns (bytes32) {
         return keccak256(abi.encode(lltv, IS_LLTV_ENABLED_SLOT));
     }
 
-    function isAuthorized(address delegator, address manager) internal pure returns (bytes32) {
+    function isAuthorizedSlot(address delegator, address manager) internal pure returns (bytes32) {
         return keccak256(abi.encode(manager, keccak256(abi.encode(delegator, IS_AUTHORIZED_SLOT))));
     }
 }
