@@ -31,7 +31,6 @@ contract MathLibTest is Test {
 
     function testMulDivDownOverflow(uint256 x, uint256 y, uint256 denominator) public {
         denominator = bound(denominator, 1, type(uint256).max);
-        // Division by zero if denominator == 0.
         // Overflow if
         //     x * y > type(uint256).max
         // <=> y > 0 and x > type(uint256).max / y

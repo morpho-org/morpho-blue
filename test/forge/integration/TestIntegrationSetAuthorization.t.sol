@@ -61,7 +61,6 @@ contract IntegrationAuthorization is BaseTest {
         authorization.deadline = bound(authorization.deadline, block.timestamp + 1, type(uint256).max);
         authorization.nonce = bound(authorization.nonce, 1, type(uint256).max);
 
-        vm.assume(authorization.nonce != 0);
 
         // Private key must be less than the secp256k1 curve order.
         privateKey = bound(privateKey, 1, type(uint32).max);
