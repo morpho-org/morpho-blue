@@ -30,7 +30,15 @@ contract MathLibTest is Test {
     }
 
     function testMulDivDownOverflow(uint256 x, uint256 y, uint256 denominator) public {
-        vm.assume(denominator > 0 && y > 0 && x > type(uint256).max / y);
+        denominator = bound(denominator, 1, type(uint256).max);
+        // Overflow if
+        //     x * y > type(uint256).max
+        // <=> y > 0 and x > type(uint256).max / y
+        // With
+        //     type(uint256).max / y < type(uint256).max
+        // <=> y > 1
+        y = bound(y, 2, type(uint256).max);
+        x = bound(x, type(uint256).max / y + 1, type(uint256).max);
 
         vm.expectRevert();
         MathLib.mulDivDown(x, y, denominator);
@@ -42,18 +50,24 @@ contract MathLibTest is Test {
     }
 
     function testMulDivUp(uint256 x, uint256 y, uint256 denominator) public {
-        vm.assume(
-            denominator > 0 && denominator < type(uint256).max && y > 0
-                && x <= (type(uint256).max - denominator - 1) / y
-        );
+        denominator = bound(denominator, 1, type(uint256).max - 1);
+        y = bound(y, 1, type(uint256).max);
+        x = bound(x, 0, (type(uint256).max - denominator - 1) / y);
 
         assertEq(MathLib.mulDivUp(x, y, denominator), x * y == 0 ? 0 : (x * y - 1) / denominator + 1);
     }
 
     function testMulDivUpOverflow(uint256 x, uint256 y, uint256 denominator) public {
         denominator = bound(denominator, 1, type(uint256).max);
-        uint256 denominatorMinusOne = denominator - 1; // Needed to avoid overflow in the next line.
-        vm.assume(y > 0 && x > (type(uint256).max - denominatorMinusOne) / y);
+        // Overflow if
+        //     x * y + denominator - 1 > type(uint256).max
+        // <=> x * y > type(uint256).max - denominator + 1
+        // <=> y > 0 and x > (type(uint256).max - denominator + 1) / y
+        // With
+        //     (type(uint256).max - denominator + 1) / y < type(uint256).max
+        // <=> y > (type(uint256).max - denominator + 1) / type(uint256).max
+        y = bound(y, (type(uint256).max - denominator + 1) / type(uint256).max + 1, type(uint256).max);
+        x = bound(x, (type(uint256).max - denominator + 1) / y + 1, type(uint256).max);
 
         vm.expectRevert();
         MathLib.mulDivUp(x, y, denominator);
