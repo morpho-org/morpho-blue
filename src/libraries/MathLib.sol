@@ -33,15 +33,7 @@ library MathLib {
 
     /// @dev (x * y) / denominator rounded down.
     function mulDivDown(uint256 x, uint256 y, uint256 denominator) internal pure returns (uint256 z) {
-        // Division by zero if denominator == 0.
-        // Overflow if
-        //     x * y > type(uint256).max
-        // <=> y > 0 and x > type(uint256).max / y
-        assembly {
-            if or(mul(y, gt(x, div(MAX_UINT256, y))), iszero(denominator)) { revert(0, 0) }
-
-            z := div(mul(x, y), denominator)
-        }
+        return (x * y) / denominator;
     }
 
     /// @dev (x * y) / denominator rounded up.
