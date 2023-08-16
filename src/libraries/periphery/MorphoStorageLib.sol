@@ -37,15 +37,15 @@ library MorphoStorageLib {
     }
 
     function supplySharesSlot(Id id, address user) internal pure returns (bytes32) {
-        return _getMappingSlot(user, uint256(_getMappingSlot(id, SUPPLY_SHARES_SLOT)));
+        return _getMappingSlot(id, user, SUPPLY_SHARES_SLOT);
     }
 
     function borrowSharesSlot(Id id, address user) internal pure returns (bytes32) {
-        return _getMappingSlot(user, uint256(_getMappingSlot(id, BORROW_SHARES_SLOT)));
+        return _getMappingSlot(id, user, BORROW_SHARES_SLOT);
     }
 
     function collateralSlot(Id id, address user) internal pure returns (bytes32) {
-        return _getMappingSlot(user, uint256(_getMappingSlot(id, COLLATERAL_SLOT)));
+        return _getMappingSlot(id, user, COLLATERAL_SLOT);
     }
 
     function totalSupplySlot(Id id) internal pure returns (bytes32) {
@@ -81,13 +81,17 @@ library MorphoStorageLib {
     }
 
     function isAuthorizedSlot(address authorizer, address authorizee) internal pure returns (bytes32) {
-        return _getMappingSlot(authorizee, uint256(_getMappingSlot(authorizer, IS_AUTHORIZED_SLOT)));
+        return _getMappingSlot(authorizer, authorizee, IS_AUTHORIZED_SLOT);
     }
 
     /* PRIVATE */
 
-    function _getMappingSlot(bytes32 key, uint256 slot) private pure returns (bytes32) {
-        return keccak256(abi.encode(key, slot));
+    function _getMappingSlot(Id key1, address key2, uint256 slot) private pure returns (bytes32) {
+        return _getMappingSlot(key2, uint256(_getMappingSlot(key1, slot)));
+    }
+
+    function _getMappingSlot(address key1, address key2, uint256 slot) private pure returns (bytes32) {
+        return _getMappingSlot(key2, uint256(_getMappingSlot(key1, slot)));
     }
 
     function _getMappingSlot(Id key, uint256 slot) private pure returns (bytes32) {
