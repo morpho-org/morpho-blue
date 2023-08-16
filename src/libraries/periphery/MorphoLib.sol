@@ -21,7 +21,7 @@ library MorphoLib {
     using MarketLib for Market;
     using SharesMathLib for uint256;
 
-    function accruedInterests(IMorpho morpho, Market memory market)
+    function virtualAccrueInterest(IMorpho morpho, Market memory market)
         internal
         view
         returns (uint256 totalSupply, uint256 toralBorrow, uint256 totalSupplyShares)
@@ -63,11 +63,11 @@ library MorphoLib {
     }
 
     function expectedTotalSupply(IMorpho morpho, Market memory market) internal view returns (uint256 totalSupply) {
-        (totalSupply,,) = accruedInterests(morpho, market);
+        (totalSupply,,) = virtualAccrueInterest(morpho, market);
     }
 
     function expectedTotalBorrow(IMorpho morpho, Market memory market) internal view returns (uint256 totalBorrow) {
-        (, totalBorrow,) = accruedInterests(morpho, market);
+        (, totalBorrow,) = virtualAccrueInterest(morpho, market);
     }
 
     function expectedTotalSupplyShares(IMorpho morpho, Market memory market)
@@ -75,7 +75,7 @@ library MorphoLib {
         view
         returns (uint256 totalSupplyShares)
     {
-        (,, totalSupplyShares) = accruedInterests(morpho, market);
+        (,, totalSupplyShares) = virtualAccrueInterest(morpho, market);
     }
 
     function expectedSupplyBalance(IMorpho morpho, Market memory market, address user)
@@ -84,10 +84,10 @@ library MorphoLib {
         returns (uint256)
     {
         Id id = market.id();
-        uint256 userSupplyShares = morpho.supplyShares(id, user);
-        (uint256 marketTotalSupply,, uint256 marketTotalSupplyShares) = accruedInterests(morpho, market);
+        uint256 supplyShares = morpho.supplyShares(id, user);
+        (uint256 totalSupply,, uint256 totalSupplyShares) = virtualAccrueInterest(morpho, market);
 
-        return userSupplyShares.toAssetsDown(marketTotalSupply, marketTotalSupplyShares);
+        return supplyShares.toAssetsDown(totalSupply, totalSupplyShares);
     }
 
     function expectedBorrowBalance(IMorpho morpho, Market memory market, address user)
@@ -96,10 +96,10 @@ library MorphoLib {
         returns (uint256)
     {
         Id id = market.id();
-        uint256 userBorrowShares = morpho.borrowShares(id, user);
-        uint256 marketTotalBorrowShares = morpho.totalBorrowShares(id);
-        (, uint256 marketTotalBorrow,) = accruedInterests(morpho, market);
+        uint256 borrowShares = morpho.borrowShares(id, user);
+        uint256 totalBorrowShares = morpho.totalBorrowShares(id);
+        (, uint256 totalBorrow,) = virtualAccrueInterest(morpho, market);
 
-        return userBorrowShares.toAssetsUp(marketTotalBorrow, marketTotalBorrowShares);
+        return borrowShares.toAssetsUp(totalBorrow, totalBorrowShares);
     }
 }
