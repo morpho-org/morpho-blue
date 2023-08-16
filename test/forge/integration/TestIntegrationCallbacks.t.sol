@@ -101,68 +101,75 @@ contract IntegrationCallbacksTest is
         );
     }
 
-    function testRepayCallback(uint256 amount) public {
-        amount = bound(amount, MIN_COLLATERAL_PRICE, MAX_TEST_AMOUNT);
+    function testRepayCallback(uint256 borrowableAmount) public {
+        borrowableAmount = bound(borrowableAmount, MIN_TEST_AMOUNT, MAX_TEST_AMOUNT);
+        uint256 collateralAmount = borrowableAmount.wDivUp(LLTV);
 
-        oracle.setPrice(WAD);
+        oracle.setPrice(ORACLE_PRICE_SCALE);
 
-        borrowableToken.setBalance(address(this), amount);
-        collateralToken.setBalance(address(this), amount.mulDivUp(ORACLE_PRICE_SCALE, WAD));
+        borrowableToken.setBalance(address(this), borrowableAmount);
+        collateralToken.setBalance(address(this), collateralAmount);
 
-        morpho.supply(market, amount, 0, address(this), hex"");
-        morpho.supplyCollateral(market, amount.mulDivUp(ORACLE_PRICE_SCALE, WAD), address(this), hex"");
-        morpho.borrow(market, amount.wMulDown(LLTV), 0, address(this), address(this));
+        morpho.supply(market, borrowableAmount, 0, address(this), hex"");
+        morpho.supplyCollateral(market, collateralAmount, address(this), hex"");
+        morpho.borrow(market, borrowableAmount, 0, address(this), address(this));
 
         borrowableToken.approve(address(morpho), 0);
 
         vm.expectRevert();
-        morpho.repay(market, amount.wMulDown(LLTV), 0, address(this), hex"");
-        morpho.repay(
-            market, amount.wMulDown(LLTV), 0, address(this), abi.encode(this.testRepayCallback.selector, hex"")
-        );
+        morpho.repay(market, borrowableAmount, 0, address(this), hex"");
+        morpho.repay(market, borrowableAmount, 0, address(this), abi.encode(this.testRepayCallback.selector, hex""));
     }
 
-    function testLiquidateCallback(uint256 amount) public {
-        amount = bound(amount, MIN_TEST_AMOUNT, MAX_TEST_AMOUNT);
+    function testLiquidateCallback(uint256 borrowableAmount) public {
+        borrowableAmount = bound(borrowableAmount, MIN_TEST_AMOUNT, MAX_TEST_AMOUNT);
+        uint256 collateralAmount = borrowableAmount.wDivUp(LLTV);
 
-        oracle.setPrice(WAD);
+        oracle.setPrice(ORACLE_PRICE_SCALE);
 
-        borrowableToken.setBalance(address(this), amount);
-        collateralToken.setBalance(address(this), amount.mulDivUp(ORACLE_PRICE_SCALE, WAD).wDivUp(market.lltv));
+        borrowableToken.setBalance(address(this), borrowableAmount);
+        collateralToken.setBalance(address(this), collateralAmount);
 
-        morpho.supply(market, amount, 0, address(this), hex"");
-        morpho.supplyCollateral(market, amount.mulDivUp(ORACLE_PRICE_SCALE, WAD), address(this), hex"");
-        morpho.borrow(market, amount.wMulDown(LLTV), 0, address(this), address(this));
+        morpho.supply(market, borrowableAmount, 0, address(this), hex"");
+        morpho.supplyCollateral(market, collateralAmount, address(this), hex"");
+        morpho.borrow(market, borrowableAmount, 0, address(this), address(this));
 
         oracle.setPrice(0.99e18);
 
-        uint256 toSeize = amount.wMulDown(LLTV);
-
-        borrowableToken.setBalance(address(this), toSeize);
+        borrowableToken.setBalance(address(this), borrowableAmount);
         borrowableToken.approve(address(morpho), 0);
 
         vm.expectRevert();
-        morpho.liquidate(market, address(this), toSeize, hex"");
-        morpho.liquidate(market, address(this), toSeize, abi.encode(this.testLiquidateCallback.selector, hex""));
+        morpho.liquidate(market, address(this), collateralAmount, hex"");
+        morpho.liquidate(
+            market, address(this), collateralAmount, abi.encode(this.testLiquidateCallback.selector, hex"")
+        );
     }
 
-    function testFlashActions(uint256 amount) public {
-        amount = bound(amount, 10, MAX_TEST_AMOUNT);
+    function testFlashActions(uint256 borrowableAmount) public {
+        borrowableAmount = bound(borrowableAmount, MIN_TEST_AMOUNT, MAX_TEST_AMOUNT);
+        uint256 collateralAmount = borrowableAmount.wDivUp(LLTV);
 
-        oracle.setPrice(WAD);
+        oracle.setPrice(ORACLE_PRICE_SCALE);
 
-        uint256 toBorrow = amount.mulDivDown(WAD, ORACLE_PRICE_SCALE).wMulDown(LLTV);
-        vm.assume(toBorrow != 0);
-
-        borrowableToken.setBalance(address(this), toBorrow);
-        morpho.supply(market, toBorrow, 0, address(this), hex"");
+        borrowableToken.setBalance(address(this), borrowableAmount);
+        morpho.supply(market, borrowableAmount, 0, address(this), hex"");
 
         morpho.supplyCollateral(
-            market, amount, address(this), abi.encode(this.testFlashActions.selector, abi.encode(toBorrow))
+            market,
+            collateralAmount,
+            address(this),
+            abi.encode(this.testFlashActions.selector, abi.encode(borrowableAmount))
         );
         assertGt(morpho.borrowShares(market.id(), address(this)), 0, "no borrow");
 
-        morpho.repay(market, toBorrow, 0, address(this), abi.encode(this.testFlashActions.selector, abi.encode(amount)));
+        morpho.repay(
+            market,
+            borrowableAmount,
+            0,
+            address(this),
+            abi.encode(this.testFlashActions.selector, abi.encode(collateralAmount))
+        );
         assertEq(morpho.collateral(market.id(), address(this)), 0, "no withdraw collateral");
     }
 }
