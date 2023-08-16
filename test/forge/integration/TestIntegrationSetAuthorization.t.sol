@@ -43,7 +43,7 @@ contract IntegrationAuthorization is BaseTest {
     }
 
     function testAuthorizationWithSigWrongPK(Authorization memory authorization, uint256 privateKey) public {
-        authorization.deadline = _bound(authorization.deadline, block.timestamp + 1, type(uint256).max);
+        authorization.deadline = bound(authorization.deadline, block.timestamp + 1, type(uint256).max);
 
         // Private key must be less than the secp256k1 curve order.
         privateKey = bound(privateKey, 1, type(uint32).max);
@@ -58,8 +58,8 @@ contract IntegrationAuthorization is BaseTest {
     }
 
     function testAuthorizationWithSigWrongNonce(Authorization memory authorization, uint256 privateKey) public {
-        authorization.deadline = _bound(authorization.deadline, block.timestamp + 1, type(uint256).max);
-        authorization.nonce = _bound(authorization.nonce, 1, type(uint256).max);
+        authorization.deadline = bound(authorization.deadline, block.timestamp + 1, type(uint256).max);
+        authorization.nonce = bound(authorization.nonce, 1, type(uint256).max);
 
         vm.assume(authorization.nonce != 0);
 
@@ -76,7 +76,7 @@ contract IntegrationAuthorization is BaseTest {
     }
 
     function testAuthorizationWithSig(Authorization memory authorization, uint256 privateKey) public {
-        authorization.deadline = _bound(authorization.deadline, block.timestamp + 1, type(uint256).max);
+        authorization.deadline = bound(authorization.deadline, block.timestamp + 1, type(uint256).max);
 
         // Private key must be less than the secp256k1 curve order.
         privateKey = bound(privateKey, 1, type(uint32).max);
