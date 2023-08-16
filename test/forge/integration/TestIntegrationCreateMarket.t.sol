@@ -20,10 +20,7 @@ contract IntegrationCreateMarketTest is BaseTest {
         marketFuzz.lltv = _boundValidLltv(marketFuzz.lltv);
 
         vm.startPrank(OWNER);
-
-        vm.expectEmit(true, true, true, true, address(morpho));
-        emit EventsLib.EnableLltv(marketFuzz.lltv);
-        morpho.enableLltv(marketFuzz.lltv);
+        if (marketFuzz.lltv != LLTV) morpho.enableLltv(marketFuzz.lltv);
 
         vm.expectRevert(bytes(ErrorsLib.IRM_NOT_ENABLED));
         morpho.createMarket(marketFuzz);
@@ -34,10 +31,7 @@ contract IntegrationCreateMarketTest is BaseTest {
         vm.assume(marketFuzz.lltv != LLTV);
 
         vm.startPrank(OWNER);
-
-        vm.expectEmit(true, true, true, true, address(morpho));
-        emit EventsLib.EnableIrm(marketFuzz.irm);
-        morpho.enableIrm(marketFuzz.irm);
+        if (marketFuzz.irm != market.irm) morpho.enableIrm(marketFuzz.irm);
 
         vm.expectRevert(bytes(ErrorsLib.LLTV_NOT_ENABLED));
         morpho.createMarket(marketFuzz);
@@ -45,17 +39,17 @@ contract IntegrationCreateMarketTest is BaseTest {
     }
 
     function testCreateMarketWithEnabledIrmAndLltv(Market memory marketFuzz) public {
-        marketFuzz.lltv = LLTV;
+        marketFuzz.lltv = _boundValidLltv(marketFuzz.lltv);
         Id marketFuzzId = marketFuzz.id();
 
-        vm.prank(OWNER);
-        vm.expectEmit(true, true, true, true, address(morpho));
-        emit EventsLib.EnableIrm(marketFuzz.irm);
-        morpho.enableIrm(marketFuzz.irm);
+        vm.startPrank(OWNER);
+        if (marketFuzz.irm != market.irm) morpho.enableIrm(marketFuzz.irm);
+        if (marketFuzz.lltv != LLTV) morpho.enableLltv(marketFuzz.lltv);
 
         vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.CreateMarket(marketFuzz.id(), marketFuzz);
         morpho.createMarket(marketFuzz);
+        vm.stopPrank();
 
         assertEq(morpho.lastUpdate(marketFuzzId), block.timestamp, "lastUpdate != block.timestamp");
         assertEq(morpho.totalSupply(marketFuzzId), 0, "totalSupply != 0");
@@ -63,5 +57,18 @@ contract IntegrationCreateMarketTest is BaseTest {
         assertEq(morpho.totalBorrow(marketFuzzId), 0, "totalBorrow != 0");
         assertEq(morpho.totalBorrowShares(marketFuzzId), 0, "totalBorrowShares != 0");
         assertEq(morpho.fee(marketFuzzId), 0, "fee != 0");
+    }
+
+    function testCreateMarketAlreadyCreated(Market memory marketFuzz) public {
+        marketFuzz.lltv = _boundValidLltv(marketFuzz.lltv);
+
+        vm.startPrank(OWNER);
+        if (marketFuzz.irm != market.irm) morpho.enableIrm(marketFuzz.irm);
+        if (marketFuzz.lltv != LLTV) morpho.enableLltv(marketFuzz.lltv);
+        morpho.createMarket(marketFuzz);
+
+        vm.expectRevert(bytes(ErrorsLib.MARKET_CREATED));
+        morpho.createMarket(marketFuzz);
+        vm.stopPrank();
     }
 }
