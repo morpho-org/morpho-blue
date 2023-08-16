@@ -150,10 +150,10 @@ rule supplyRevertZero(MorphoHarness.Market market) {
     assert lastReverted;
 }
 
-invariant invOnlyEnabledLltv(MorphoHarness.Market market)
+invariant onlyEnabledLltv(MorphoHarness.Market market)
     isInitialized(getMarketId(market)) => isLltvEnabled(market.lltv);
 
-invariant invOnlyEnabledIrm(MorphoHarness.Market market)
+invariant onlyEnabledIrm(MorphoHarness.Market market)
     isInitialized(getMarketId(market)) => isIrmEnabled(market.irm);
 
 rule marketIdUnique() {
