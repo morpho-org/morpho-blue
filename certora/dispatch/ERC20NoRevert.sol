@@ -6,6 +6,7 @@ contract ERC20NoRevert {
     string public symbol;
     uint256 public decimals;
     address owner;
+    uint256 public totalSupply;
     mapping(address => uint256) public balanceOf;
     mapping(address => mapping(address => uint256)) public allowed;
 
@@ -35,6 +36,9 @@ contract ERC20NoRevert {
     }
 
     function transferFrom(address _from, address _to, uint256 _amount) public returns (bool) {
+        if (allowed[_from][msg.sender] < _amount) {
+            return false;
+        }
         allowed[_from][msg.sender] -= _amount;
         return _transfer(_from, _to, _amount);
     }
@@ -51,5 +55,6 @@ contract ERC20NoRevert {
 
     function mint(address _receiver, uint256 _amount) public onlyOwner {
         balanceOf[_receiver] += _amount;
+        totalSupply += _amount;
     }
 }
