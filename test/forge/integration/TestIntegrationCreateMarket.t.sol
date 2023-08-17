@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import "../BaseTest.sol";
 
 contract IntegrationCreateMarketTest is BaseTest {
+    using MorphoLib for Morpho;
     using MarketLib for Market;
     using MathLib for uint256;
 

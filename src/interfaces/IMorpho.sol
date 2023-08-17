@@ -23,6 +23,13 @@ struct User {
     uint128 collateral;
 }
 
+struct Totals {
+    uint128 supplyAssets;
+    uint128 supplyShares;
+    uint128 borrowAssets;
+    uint128 borrowShares;
+}
+
 /// @notice Authorization struct.
 /// @param authorizer Authorizer address.
 /// @param authorized Authorized address.
@@ -61,19 +68,7 @@ interface IMorpho {
 
     function user(Id id, address user) external view returns (uint256, uint128, uint128);
 
-    /// @notice The total supply of the market `id`.
-    /// @dev Does not contain the accrued interest since the last interaction.
-    function totalSupply(Id id) external view returns (uint256);
-
-    /// @notice The total supply shares of the market `id`.
-    function totalSupplyShares(Id id) external view returns (uint256);
-
-    /// @notice The total borrow of the market `id`.
-    /// @dev Does not contain the accrued interest since the last interaction.
-    function totalBorrow(Id id) external view returns (uint256);
-
-    /// @notice The total borrow shares of the market `id`.
-    function totalBorrowShares(Id id) external view returns (uint256);
+    function total(Id id) external view returns (uint128, uint128, uint128, uint128);
 
     /// @notice The last update timestamp of the market `id` (also used to check if a market has been created).
     function lastUpdate(Id id) external view returns (uint256);

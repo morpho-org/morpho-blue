@@ -119,8 +119,8 @@ describe("Morpho", () => {
 
       await morpho.connect(user).supply(market, assets, 0, user.address, []);
       await morpho.connect(user).withdraw(market, assets.div(2), 0, user.address, user.address);
-      const totalSupply = await morpho.totalSupply(id);
-      const totalBorrow = await morpho.totalBorrow(id);
+      const totalSupply = (await morpho.total(id)).supplyAssets;
+      const totalBorrow = (await morpho.total(id)).borrowAssets;
       const liquidity = BigNumber.from(totalSupply).sub(BigNumber.from(totalBorrow));
 
       assets = BigNumber.min(assets, BigNumber.from(liquidity).div(2));

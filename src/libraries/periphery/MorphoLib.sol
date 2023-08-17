@@ -30,19 +30,18 @@ library MorphoInterestLib {
     {
         Id id = market.id();
 
-        bytes32[] memory slots = new bytes32[](5);
-        slots[0] = MorphoStorageLib.totalSupplySlot(id);
-        slots[1] = MorphoStorageLib.totalBorrowSlot(id);
-        slots[2] = MorphoStorageLib.totalSupplySharesSlot(id);
-        slots[3] = MorphoStorageLib.feeSlot(id);
-        slots[4] = MorphoStorageLib.lastUpdateSlot(id);
+        bytes32[] memory slots = new bytes32[](4);
+        slots[0] = MorphoStorageLib.totalSlot(id);
+        slots[1] = bytes32(uint256(MorphoStorageLib.totalSlot(id)) + 1);
+        slots[2] = MorphoStorageLib.feeSlot(id);
+        slots[3] = MorphoStorageLib.lastUpdateSlot(id);
 
         bytes32[] memory values = morpho.extsload(slots);
-        totalSupply = uint256(values[0]);
-        toralBorrow = uint256(values[1]);
-        totalSupplyShares = uint256(values[2]);
-        uint256 fee = uint256(values[3]);
-        uint256 lastUpdate = uint256(values[4]);
+        totalSupply = uint256(values[0] >> 128);
+        totalSupplyShares = uint128(uint256(values[0]));
+        toralBorrow = uint256(values[1] >> 128);
+        uint256 fee = uint256(values[2]);
+        uint256 lastUpdate = uint256(values[3]);
 
         uint256 elapsed = block.timestamp - lastUpdate;
 

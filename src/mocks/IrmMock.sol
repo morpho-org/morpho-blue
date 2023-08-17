@@ -6,10 +6,12 @@ import {Id, Market, IMorpho} from "../interfaces/IMorpho.sol";
 
 import {MathLib} from "../libraries/MathLib.sol";
 import {MarketLib} from "../libraries/MarketLib.sol";
+import {MorphoLib} from "../libraries/periphery/MorphoGettersLib.sol";
 
 contract IrmMock is IIrm {
     using MathLib for uint256;
     using MarketLib for Market;
+    using MorphoLib for IMorpho;
 
     IMorpho private immutable MORPHO;
 

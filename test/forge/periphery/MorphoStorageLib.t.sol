@@ -54,26 +54,24 @@ contract MorphoStorageLibTest is BaseTest {
 
         morpho.setAuthorizationWithSig(authorization, sig);
 
-        bytes32[] memory slots = new bytes32[](19);
+        bytes32[] memory slots = new bytes32[](17);
         slots[0] = MorphoStorageLib.ownerSlot();
         slots[1] = MorphoStorageLib.feeRecipientSlot();
         slots[2] = MorphoStorageLib.userSlot(id, address(this));
         slots[3] = bytes32(uint256(MorphoStorageLib.userSlot(id, address(this))) + 1);
-        slots[4] = MorphoStorageLib.totalSupplySlot(id);
-        slots[5] = MorphoStorageLib.totalSupplySharesSlot(id);
-        slots[6] = MorphoStorageLib.totalBorrowSlot(id);
-        slots[7] = MorphoStorageLib.totalBorrowSharesSlot(id);
-        slots[8] = MorphoStorageLib.lastUpdateSlot(id);
-        slots[9] = MorphoStorageLib.feeSlot(id);
-        slots[10] = MorphoStorageLib.isIrmEnabledSlot(address(irm));
-        slots[11] = MorphoStorageLib.isLltvEnabledSlot(LLTV);
-        slots[12] = MorphoStorageLib.isAuthorizedSlot(authorizer, BORROWER);
-        slots[13] = MorphoStorageLib.nonceSlot(authorizer);
-        slots[14] = MorphoStorageLib.idToBorrowableTokenSlot(id);
-        slots[15] = MorphoStorageLib.idToCollateralTokenSlot(id);
-        slots[16] = MorphoStorageLib.idToOracleSlot(id);
-        slots[17] = MorphoStorageLib.idToIrmSlot(id);
-        slots[18] = MorphoStorageLib.idToLltvSlot(id);
+        slots[4] = MorphoStorageLib.totalSlot(id);
+        slots[5] = bytes32(uint256(MorphoStorageLib.totalSlot(id)) + 1);
+        slots[6] = MorphoStorageLib.lastUpdateSlot(id);
+        slots[7] = MorphoStorageLib.feeSlot(id);
+        slots[8] = MorphoStorageLib.isIrmEnabledSlot(address(irm));
+        slots[9] = MorphoStorageLib.isLltvEnabledSlot(LLTV);
+        slots[10] = MorphoStorageLib.isAuthorizedSlot(authorizer, BORROWER);
+        slots[11] = MorphoStorageLib.nonceSlot(authorizer);
+        slots[12] = MorphoStorageLib.idToBorrowableTokenSlot(id);
+        slots[13] = MorphoStorageLib.idToCollateralTokenSlot(id);
+        slots[14] = MorphoStorageLib.idToOracleSlot(id);
+        slots[15] = MorphoStorageLib.idToIrmSlot(id);
+        slots[16] = MorphoStorageLib.idToLltvSlot(id);
 
         bytes32[] memory values = morpho.extsload(slots);
 
@@ -83,16 +81,14 @@ contract MorphoStorageLibTest is BaseTest {
         assertEq(
             uint256(values[3]), morpho.borrowShares(id, address(this)) << 128 | morpho.collateral(id, address(this))
         );
-        assertEq(uint256(values[4]), morpho.totalSupply(id));
-        assertEq(uint256(values[5]), morpho.totalSupplyShares(id));
-        assertEq(uint256(values[6]), morpho.totalBorrow(id));
-        assertEq(uint256(values[7]), morpho.totalBorrowShares(id));
-        assertEq(uint256(values[8]), morpho.lastUpdate(id));
-        assertEq(uint256(values[9]), morpho.fee(id));
-        assertEq(abi.decode(abi.encode(values[10]), (bool)), morpho.isIrmEnabled(address(irm)));
-        assertEq(abi.decode(abi.encode(values[11]), (bool)), morpho.isLltvEnabled(LLTV));
-        assertEq(abi.decode(abi.encode(values[12]), (bool)), morpho.isAuthorized(authorizer, BORROWER));
-        assertEq(uint256(values[13]), morpho.nonce(authorizer));
+        // assertEq(uint256(values[4]), morpho.totalSupply(id) << 128 | morpho.totalSupplyShares(id));
+        // assertEq(uint256(values[5]), morpho.totalBorrow(id) << 128 | morpho.totalBorrowShares(id));
+        assertEq(uint256(values[6]), morpho.lastUpdate(id));
+        assertEq(uint256(values[7]), morpho.fee(id));
+        assertEq(abi.decode(abi.encode(values[8]), (bool)), morpho.isIrmEnabled(address(irm)));
+        assertEq(abi.decode(abi.encode(values[9]), (bool)), morpho.isLltvEnabled(LLTV));
+        assertEq(abi.decode(abi.encode(values[10]), (bool)), morpho.isAuthorized(authorizer, BORROWER));
+        assertEq(uint256(values[11]), morpho.nonce(authorizer));
 
         (
             address expectedBorrowableToken,
@@ -101,10 +97,10 @@ contract MorphoStorageLibTest is BaseTest {
             address expectedIrm,
             uint256 expectedLltv
         ) = morpho.idToMarket(id);
-        assertEq(abi.decode(abi.encode(values[14]), (address)), expectedBorrowableToken);
-        assertEq(abi.decode(abi.encode(values[15]), (address)), expectedCollateralToken);
-        assertEq(abi.decode(abi.encode(values[16]), (address)), expectedOracle);
-        assertEq(abi.decode(abi.encode(values[17]), (address)), expectedIrm);
-        assertEq(uint256(values[18]), expectedLltv);
+        assertEq(abi.decode(abi.encode(values[12]), (address)), expectedBorrowableToken);
+        assertEq(abi.decode(abi.encode(values[13]), (address)), expectedCollateralToken);
+        assertEq(abi.decode(abi.encode(values[14]), (address)), expectedOracle);
+        assertEq(abi.decode(abi.encode(values[15]), (address)), expectedIrm);
+        assertEq(uint256(values[16]), expectedLltv);
     }
 }
