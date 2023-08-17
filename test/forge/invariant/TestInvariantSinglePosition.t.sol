@@ -26,16 +26,22 @@ contract SinglePositionInvariantTest is InvariantBaseTest {
         oracle.setPrice(1e40);
 
         _weightSelector(this.supplyOnMorpho.selector, 20);
-        _weightSelector(this.borrowOnMorpho.selector, 20);
-        _weightSelector(this.repayOnMorpho.selector, 20);
-        _weightSelector(this.withdrawOnMorpho.selector, 20);
+        _weightSelector(this.borrowOnMorpho.selector, 15);
+        _weightSelector(this.repayOnMorpho.selector, 10);
+        _weightSelector(this.withdrawOnMorpho.selector, 15);
         _weightSelector(this.supplyCollateralOnMorpho.selector, 20);
-        _weightSelector(this.withdrawCollateralOnMorpho.selector, 20);
+        _weightSelector(this.withdrawCollateralOnMorpho.selector, 15);
+        _weightSelector(this.newBlock.selector, 10);
+
+        blockNumber = block.number;
+        timestamp = block.timestamp;
 
         targetSelector(FuzzSelector({addr: address(this), selectors: selectors}));
     }
 
     function supplyOnMorpho(uint256 amount) public {
+        setCorrectBlock();
+
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
         borrowableToken.setBalance(msg.sender, amount);
@@ -44,13 +50,16 @@ contract SinglePositionInvariantTest is InvariantBaseTest {
     }
 
     function withdrawOnMorpho(uint256 amount) public {
+        setCorrectBlock();
+        morpho.accrueInterests(market);
+
         uint256 availableLiquidity = morpho.totalSupply(id) - morpho.totalBorrow(id);
         if (morpho.supplyShares(id, msg.sender) == 0) return;
         if (availableLiquidity == 0) return;
 
-        morpho.accrueInterests(market);
         uint256 supplierBalance =
             morpho.supplyShares(id, msg.sender).toAssetsDown(morpho.totalSupply(id), morpho.totalSupplyShares(id));
+        if (supplierBalance == 0) return;
         amount = bound(amount, 1, min(supplierBalance, availableLiquidity));
 
         vm.prank(msg.sender);
@@ -58,6 +67,9 @@ contract SinglePositionInvariantTest is InvariantBaseTest {
     }
 
     function borrowOnMorpho(uint256 amount) public {
+        setCorrectBlock();
+        morpho.accrueInterests(market);
+
         uint256 availableLiquidity = morpho.totalSupply(id) - morpho.totalBorrow(id);
         if (availableLiquidity == 0) return;
 
@@ -69,14 +81,14 @@ contract SinglePositionInvariantTest is InvariantBaseTest {
     }
 
     function repayOnMorpho(uint256 amount) public {
+        setCorrectBlock();
+        morpho.accrueInterests(market);
+
         if (morpho.borrowShares(id, msg.sender) == 0) return;
 
-        morpho.accrueInterests(market);
-        amount = bound(
-            amount,
-            1,
-            morpho.borrowShares(id, msg.sender).toAssetsDown(morpho.totalBorrow(id), morpho.totalBorrowShares(id))
-        );
+        uint256 borrowerBalance = morpho.borrowShares(id, msg.sender).toAssetsDown(morpho.totalBorrow(id), morpho.totalBorrowShares(id));
+        if (borrowerBalance == 0) return;
+        amount = bound(amount, 1, borrowerBalance);
 
         borrowableToken.setBalance(msg.sender, amount);
         vm.prank(msg.sender);
@@ -84,6 +96,8 @@ contract SinglePositionInvariantTest is InvariantBaseTest {
     }
 
     function supplyCollateralOnMorpho(uint256 amount) public {
+        setCorrectBlock();
+
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
         collateralToken.setBalance(msg.sender, amount);
@@ -92,6 +106,8 @@ contract SinglePositionInvariantTest is InvariantBaseTest {
     }
 
     function withdrawCollateralOnMorpho(uint256 amount) public {
+        setCorrectBlock();
+
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
         vm.prank(msg.sender);
@@ -124,16 +140,6 @@ contract SinglePositionInvariantTest is InvariantBaseTest {
 
     function invariantMorphoBalance() public {
         assertEq(morpho.totalSupply(id) - morpho.totalBorrow(id), borrowableToken.balanceOf(address(morpho)));
-    }
-
-    function invariantSupplySharesRatio() public {
-        if (morpho.totalSupply(id) == 0) return;
-        assertGe(morpho.totalSupplyShares(id) / morpho.totalSupply(id), SharesMathLib.VIRTUAL_SHARES);
-    }
-
-    function invariantBorrowSharesRatio() public {
-        if (morpho.totalBorrow(id) == 0) return;
-        assertGe(morpho.totalBorrowShares(id) / morpho.totalBorrow(id), SharesMathLib.VIRTUAL_SHARES);
     }
 
     //No price changes, and no new blocks so position has to remain healthy

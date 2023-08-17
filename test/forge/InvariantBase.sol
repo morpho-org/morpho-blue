@@ -7,6 +7,9 @@ contract InvariantBaseTest is BaseTest {
     using MathLib for uint256;
     using SharesMathLib for uint256;
 
+    uint256 blockNumber;
+    uint256 timestamp;
+
     bytes4[] internal selectors;
 
     address[] internal addressArray;
@@ -49,6 +52,18 @@ contract InvariantBaseTest is BaseTest {
             vm.prank(senders[i]);
             morpho.supplyCollateral(market, 1e30, senders[i], hex"");
         }
+    }
+
+    function newBlock(uint256 elapsed) public {
+        elapsed = bound(elapsed, 10, 1 days);
+
+        blockNumber += 1;
+        timestamp += elapsed;
+    }
+
+    function setCorrectBlock() internal {
+        vm.roll(blockNumber);
+        vm.warp(timestamp);
     }
 
     function _randomSenderToWithdrawOnBehalf(address[] memory addresses, address seed, address sender)
@@ -144,6 +159,7 @@ contract InvariantBaseTest is BaseTest {
         for (uint256 i; i < addresses.length; ++i) {
             sum += morpho.supplyShares(id, addresses[i]);
         }
+        sum += morpho.supplyShares(id, morpho.feeRecipient());
     }
 
     function sumUsersBorrowShares(address[] memory addresses) internal view returns (uint256 sum) {
@@ -157,6 +173,9 @@ contract InvariantBaseTest is BaseTest {
             sum +=
                 morpho.supplyShares(id, addresses[i]).toAssetsDown(morpho.totalSupply(id), morpho.totalSupplyShares(id));
         }
+        sum += morpho.supplyShares(id, morpho.feeRecipient()).toAssetsDown(
+            morpho.totalSupply(id), morpho.totalSupplyShares(id)
+        );
     }
 
     function sumUsersBorrowedAmounts(address[] memory addresses) internal view returns (uint256 sum) {

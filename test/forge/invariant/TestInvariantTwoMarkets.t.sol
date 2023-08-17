@@ -36,23 +36,33 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
         // High price because of the 1e36 price scale
         oracle.setPrice(1e40);
 
+        _weightSelector(this.setMarketFee.selector, 5);
         _weightSelector(this.supplyOnMorpho.selector, 20);
-        _weightSelector(this.borrowOnMorpho.selector, 20);
-        _weightSelector(this.repayOnMorpho.selector, 20);
-        _weightSelector(this.withdrawOnMorpho.selector, 20);
+        _weightSelector(this.borrowOnMorpho.selector, 15);
+        _weightSelector(this.repayOnMorpho.selector, 10);
+        _weightSelector(this.withdrawOnMorpho.selector, 15);
         _weightSelector(this.supplyCollateralOnMorpho.selector, 20);
-        _weightSelector(this.withdrawCollateralOnMorpho.selector, 20);
-        _weightSelector(this.newBlock.selector, 1);
+        _weightSelector(this.withdrawCollateralOnMorpho.selector, 15);
+        _weightSelector(this.newBlock.selector, 10);
+
+        blockNumber = block.number;
+        timestamp = block.timestamp;
 
         targetSelector(FuzzSelector({addr: address(this), selectors: selectors}));
     }
 
-    function newBlock(uint8 elapsed) public {
-        vm.roll(block.number + 1);
-        vm.warp(block.timestamp + elapsed);
+    function setMarketFee(uint256 newFee) public {
+        setCorrectBlock();
+
+        newFee = bound(newFee, 0.1e18, MAX_FEE);
+
+        vm.prank(OWNER);
+        morpho.setFee(market, newFee);
     }
 
     function supplyOnMorpho(uint256 amount, bool changeMarket) public {
+        setCorrectBlock();
+
         Market memory chosenMarket;
         Id chosenId;
         if (!changeMarket) {
@@ -71,6 +81,9 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
     }
 
     function withdrawOnMorpho(uint256 amount, bool changeMarket) public {
+        setCorrectBlock();
+        morpho.accrueInterests(market);
+
         Market memory chosenMarket;
         Id chosenId;
         if (!changeMarket) {
@@ -96,6 +109,9 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
     }
 
     function borrowOnMorpho(uint256 amount, bool changeMarket) public {
+        setCorrectBlock();
+        morpho.accrueInterests(market);
+
         Market memory chosenMarket;
         Id chosenId;
         if (!changeMarket) {
@@ -117,6 +133,9 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
     }
 
     function repayOnMorpho(uint256 amount, bool changeMarket) public {
+        setCorrectBlock();
+        morpho.accrueInterests(market);
+
         Market memory chosenMarket;
         Id chosenId;
         if (!changeMarket) {
@@ -161,6 +180,9 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
     }
 
     function withdrawCollateralOnMorpho(uint256 amount, bool changeMarket) public {
+        setCorrectBlock();
+        morpho.accrueInterests(market);
+
         Market memory chosenMarket;
         Id chosenId;
         if (!changeMarket) {
