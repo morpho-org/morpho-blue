@@ -48,3 +48,4 @@ jobs:
           - verifyBlueExitLiquidity.sh
           - verifyBlueTransfer.sh
           - verifyReentrancy.sh
+          - verifyDifficultMath.sh
