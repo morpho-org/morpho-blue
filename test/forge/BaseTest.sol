@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
 import {SigUtils} from "test/forge/helpers/SigUtils.sol";
-import {MorphoLib} from "test/forge/helpers/MorphoLib.sol";
+import {MorphoLib} from "src/libraries/periphery/MorphoLib.sol";
 import "src/Morpho.sol";
 import {ERC20Mock as ERC20} from "src/mocks/ERC20Mock.sol";
 import {OracleMock as Oracle} from "src/mocks/OracleMock.sol";

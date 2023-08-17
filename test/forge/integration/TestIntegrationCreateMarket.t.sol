@@ -67,7 +67,7 @@ contract IntegrationCreateMarketTest is BaseTest {
         if (marketFuzz.lltv != LLTV) morpho.enableLltv(marketFuzz.lltv);
         morpho.createMarket(marketFuzz);
 
-        vm.expectRevert(bytes(ErrorsLib.MARKET_CREATED));
+        vm.expectRevert(bytes(ErrorsLib.MARKET_ALREADY_CREATED));
         morpho.createMarket(marketFuzz);
         vm.stopPrank();
     }
