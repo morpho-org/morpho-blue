@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.19;
+pragma solidity 0.8.21;
 
 import {Id, IMorpho, Market, Authorization, Signature} from "./interfaces/IMorpho.sol";
 import {IFlashLender} from "./interfaces/IFlashLender.sol";
