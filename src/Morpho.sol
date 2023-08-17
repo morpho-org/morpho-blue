@@ -433,6 +433,7 @@ contract Morpho is IMorpho {
     }
 
     /// @dev Accrues interests for `market`.
+    /// @dev Assumes the given `market` and `id` match.
     function _accrueInterests(Market memory market, Id id) internal {
         uint256 elapsed = block.timestamp - lastUpdate[id];
 
@@ -463,7 +464,8 @@ contract Morpho is IMorpho {
 
     /* HEALTH CHECK */
 
-    /// @notice Returns whether the position of `user` in the given `market` is healthy.
+    /// @dev Returns whether the position of `user` in the given `market` is healthy.
+    /// @dev Assumes the given `market` and `id` match.
     function _isHealthy(Market memory market, Id id, address user) internal view returns (bool) {
         if (borrowShares[id][user] == 0) return true;
 
@@ -472,7 +474,8 @@ contract Morpho is IMorpho {
         return _isHealthy(market, id, user, collateralPrice);
     }
 
-    /// @notice Returns whether the position of `user` in the given `market` with the given `collateralPrice` and `priceScale` is healthy.
+    /// @dev Returns whether the position of `user` in the given `market` with the given `collateralPrice` is healthy.
+    /// @dev Assumes the given `market` and `id` match.
     function _isHealthy(Market memory market, Id id, address user, uint256 collateralPrice)
         internal
         view
@@ -504,7 +507,7 @@ contract Morpho is IMorpho {
 
     /* LIQUIDATION INCENTIVE FACTOR */
 
-    /// @dev The liquidation incentive factor is min(maxIncentiveFactor, 1/(1 - cursor(1 - lltv))).
+    /// @dev The liquidation incentive factor is min(maxIncentiveFactor, 1/(1 - cursor*(1 - lltv))).
     function liquidationIncentiveFactor(uint256 lltv) private pure returns (uint256) {
         return
             UtilsLib.min(MAX_LIQUIDATION_INCENTIVE_FACTOR, WAD.wDivDown(WAD - LIQUIDATION_CURSOR.wMulDown(WAD - lltv)));
