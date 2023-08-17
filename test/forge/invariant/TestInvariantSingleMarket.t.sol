@@ -90,7 +90,8 @@ contract SingleMarketInvariantTest is InvariantBaseTest {
         if (morpho.borrowShares(id, msg.sender) == 0) return;
 
         morpho.accrueInterests(market);
-        uint256 borrowerBalance = morpho.borrowShares(id, msg.sender).toAssetsDown(morpho.totalBorrow(id), morpho.totalBorrowShares(id));
+        uint256 borrowerBalance =
+            morpho.borrowShares(id, msg.sender).toAssetsDown(morpho.totalBorrow(id), morpho.totalBorrowShares(id));
         if (borrowerBalance == 0) return;
         amount = bound(amount, 1, borrowerBalance);
 

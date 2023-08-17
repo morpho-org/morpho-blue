@@ -86,7 +86,8 @@ contract SinglePositionInvariantTest is InvariantBaseTest {
 
         if (morpho.borrowShares(id, msg.sender) == 0) return;
 
-        uint256 borrowerBalance = morpho.borrowShares(id, msg.sender).toAssetsDown(morpho.totalBorrow(id), morpho.totalBorrowShares(id));
+        uint256 borrowerBalance =
+            morpho.borrowShares(id, msg.sender).toAssetsDown(morpho.totalBorrow(id), morpho.totalBorrowShares(id));
         if (borrowerBalance == 0) return;
         amount = bound(amount, 1, borrowerBalance);
 
