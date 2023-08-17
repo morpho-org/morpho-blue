@@ -55,6 +55,7 @@
             │   └── revert with MARKET_CREATED
             └── when market is not already created
                 ├── it should set lastUpdate[market.id] to block.timestamp
+                ├── it should set idToMarket[id] to market
                 └── it should emit CreateMarket(market.id, market)
 .
 └── supply(Market memory market, uint256 assets, uint256 shares, address onBehalf, bytes calldata data) external

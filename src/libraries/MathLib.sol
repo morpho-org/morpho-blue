@@ -47,11 +47,11 @@ library MathLib {
     /// @dev (x * y) / denominator rounded up.
     function mulDivUp(uint256 x, uint256 y, uint256 denominator) internal pure returns (uint256 z) {
         // Underflow if denominator == 0.
-        // Division by 0 if denominator == 0 (this case cannot occure since the above underflow happens before).
+        // Division by 0 if denominator == 0 (this case cannot occur since the above underflow happens before).
         // Overflow if
         //     x * y + denominator - 1 > type(uint256).max
-        // <=> x * y > type(uint256).max - denominator - 1
-        // <=> y > 0 and x > (type(uint256).max - denominator - 1) / y
+        // <=> x * y > type(uint256).max - denominator + 1
+        // <=> y > 0 and x > (type(uint256).max - denominator + 1) / y
         assembly {
             if or(mul(y, gt(x, div(sub(MAX_UINT256, sub(denominator, 1)), y))), iszero(denominator)) { revert(0, 0) }
 
