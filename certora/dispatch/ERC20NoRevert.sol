@@ -5,7 +5,7 @@ contract ERC20NoRevert {
     string public name;
     string public symbol;
     uint256 public decimals;
-    address owner;
+    address public owner;
     uint256 public totalSupply;
     mapping(address => uint256) public balanceOf;
     mapping(address => mapping(address => uint256)) public allowed;

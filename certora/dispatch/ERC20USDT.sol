@@ -7,7 +7,8 @@ contract ERC20USDT {
     string public name;
     string public symbol;
     uint256 public decimals;
-    address owner;
+    uint256 public totalSupply;
+    address public owner;
     mapping(address => uint256) public balanceOf;
     mapping(address => mapping(address => uint256)) public allowed;
 
@@ -23,7 +24,7 @@ contract ERC20USDT {
         _;
     }
 
-    function _transfer(address _from, address _to, uint256 _amount) public {
+    function _transfer(address _from, address _to, uint256 _amount) internal {
         balanceOf[_from] -= _amount;
         balanceOf[_to] += _amount;
     }
@@ -51,5 +52,6 @@ contract ERC20USDT {
 
     function mint(address _receiver, uint256 _amount) public onlyOwner {
         balanceOf[_receiver] += _amount;
+        totalSupply += _amount;
     }
 }
