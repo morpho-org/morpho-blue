@@ -31,9 +31,7 @@ rule checkTransferSummary(address token, address from, address to, uint256 amoun
     doTransfer(token, from, to, amount);
     uint256 finalBalance = getBalance(token, currentContract);
 
-    mathint initialGhostBalance = myBalances[token];
+    require myBalances[token] == initialBalance;
     summarySafeTransferFrom(token, from, to, amount);
-    mathint finalGhostBalance = myBalances[token];
-
-    assert finalGhostBalance - initialGhostBalance == finalBalance - initialBalance;
+    assert myBalances[token] == finalBalance;
 }
