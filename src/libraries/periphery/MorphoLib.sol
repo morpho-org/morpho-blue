@@ -78,6 +78,7 @@ library MorphoLib {
         (,, totalSupplyShares) = virtualAccrueInterest(morpho, market);
     }
 
+    /// @dev Warning: It does not work for `feeRecipient` because the increase of supply shares during the interest accrual is not taken into account.
     function expectedSupplyBalance(IMorpho morpho, Market memory market, address user)
         internal
         view
