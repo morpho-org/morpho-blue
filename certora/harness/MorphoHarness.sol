@@ -25,6 +25,19 @@ contract MorphoHarness is Morpho {
         return totalBorrowShares[id] + SharesMathLib.VIRTUAL_SHARES;
     }
 
+    // Setter functions for summarizing accrueInterests
+    function setTotalSupply(Id id, uint256 newValue) external {
+        totalSupply[id] = newValue;
+    }
+
+    function setTotalSupplyShares(Id id, uint256 newValue) external {
+        totalSupplyShares[id] = newValue;
+    }
+
+    function setTotalBorrow(Id id, uint256 newValue) external {
+        totalBorrow[id] = newValue;
+    }
+
     function getMarketId(Market memory market) external pure returns (Id) {
         return market.id();
     }
