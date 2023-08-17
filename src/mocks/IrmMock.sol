@@ -4,11 +4,11 @@ pragma solidity ^0.8.0;
 import {IIrm} from "../interfaces/IIrm.sol";
 import {Id, Market, IMorpho} from "../interfaces/IMorpho.sol";
 
-import {FixedPointMathLib} from "../libraries/FixedPointMathLib.sol";
+import {MathLib} from "../libraries/MathLib.sol";
 import {MarketLib} from "../libraries/MarketLib.sol";
 
 contract IrmMock is IIrm {
-    using FixedPointMathLib for uint256;
+    using MathLib for uint256;
     using MarketLib for Market;
 
     IMorpho private immutable MORPHO;
@@ -18,6 +18,10 @@ contract IrmMock is IIrm {
     }
 
     function borrowRate(Market memory market) external view returns (uint256) {
+        return borrowRateView(market);
+    }
+
+    function borrowRateView(Market memory market) public view returns (uint256) {
         Id id = market.id();
         uint256 utilization = MORPHO.totalBorrow(id).wDivDown(MORPHO.totalSupply(id));
 

@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import {FixedPointMathLib} from "./FixedPointMathLib.sol";
+import {MathLib} from "./MathLib.sol";
 
-/// @title SharesMath
+/// @title SharesMathLib
 /// @author Morpho Labs
 /// @custom:contact security@morpho.xyz
 /// @notice Shares management library.
 /// @dev This implementation mitigates share price manipulations, using OpenZeppelin's method of virtual shares:
-/// https://docs.openzeppelin.com/contracts/4.x/erc4626#inflation-attack.
+///      https://docs.openzeppelin.com/contracts/4.x/erc4626#inflation-attack.
 library SharesMathLib {
-    using FixedPointMathLib for uint256;
+    using MathLib for uint256;
 
     uint256 internal constant VIRTUAL_SHARES = 100;
 
