@@ -27,9 +27,9 @@ rule checkTransferSummary(address token, address from, address to, uint256 amoun
 
     require from != to => getBalance(token, from) + getBalance(token, to) <= to_mathint(getTotalSupply(token));
 
-    uint256 initialBalance = getBalance(token, currentContract);
+    mathint initialBalance = getBalance(token, currentContract);
     doTransfer(token, from, to, amount);
-    uint256 finalBalance = getBalance(token, currentContract);
+    mathint finalBalance = getBalance(token, currentContract);
 
     require myBalances[token] == initialBalance;
     summarySafeTransferFrom(token, from, to, amount);
