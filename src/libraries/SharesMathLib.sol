@@ -12,7 +12,7 @@ import {MathLib} from "./MathLib.sol";
 library SharesMathLib {
     using MathLib for uint256;
 
-    uint256 internal constant VIRTUAL_SHARES = 100;
+    uint256 internal constant VIRTUAL_SHARES = 1e6;
 
     uint256 internal constant VIRTUAL_ASSETS = 1;
 
