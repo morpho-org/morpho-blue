@@ -6,7 +6,7 @@ import {IMorphoFlashLoanCallback} from "../interfaces/IMorphoFlashLoanCallback.s
 
 import {ERC20} from "openzeppelin-contracts/token/ERC20/ERC20.sol";
 
-contract MorphoFlashLoanCallback is IMorphoFlashLoanCallback {
+contract FlashBorrowerMock is IMorphoFlashLoanCallback {
     IFlashLender private immutable MORPHO;
 
     constructor(IFlashLender newMorpho) {
@@ -17,9 +17,8 @@ contract MorphoFlashLoanCallback is IMorphoFlashLoanCallback {
         MORPHO.flashLoan(token, assets, data);
     }
 
-    function onMorphoFlashLoan(uint256 assets, bytes calldata data) external {
+    function onMorphoFlashLoan(address token, uint256 assets, bytes calldata) external {
         require(msg.sender == address(MORPHO));
-        address token = abi.decode(data, (address));
         ERC20(token).approve(address(MORPHO), assets);
     }
 }

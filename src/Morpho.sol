@@ -368,7 +368,7 @@ contract Morpho is IMorpho {
 
         emit EventsLib.FlashLoan(msg.sender, token, assets);
 
-        IMorphoFlashLoanCallback(msg.sender).onMorphoFlashLoan(assets, data);
+        IMorphoFlashLoanCallback(msg.sender).onMorphoFlashLoan(token, assets, data);
 
         IERC20(token).safeTransferFrom(msg.sender, address(this), assets);
     }

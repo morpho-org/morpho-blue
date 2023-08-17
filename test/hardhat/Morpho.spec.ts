@@ -104,7 +104,7 @@ describe("Morpho", () => {
     await borrowable.setBalance(liquidator.address, initBalance);
     await borrowable.connect(liquidator).approve(morpho.address, constants.MaxUint256);
 
-    const FlashBorrowerFactory = await hre.ethers.getContractFactory("MorphoFlashLoanCallback", admin);
+    const FlashBorrowerFactory = await hre.ethers.getContractFactory("FlashBorrowerMock", admin);
 
     flashBorrower = await FlashBorrowerFactory.deploy(morpho.address);
   });
