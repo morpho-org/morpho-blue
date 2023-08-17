@@ -9,6 +9,8 @@ import {Id} from "../MarketLib.sol";
 /// @notice Helper library exposing getters to access Morpho storage variables' slot.
 /// @dev This library is not used in Morpho itself and is intended to be used by integrators.
 library MorphoStorageLib {
+    /* SLOTS */
+
     uint256 internal constant OWNER_SLOT = 0;
     uint256 internal constant FEE_RECIPIENT_SLOT = 1;
     uint256 internal constant SUPPLY_SHARES_SLOT = 2;
@@ -23,6 +25,18 @@ library MorphoStorageLib {
     uint256 internal constant IS_IRM_ENABLED_SLOT = 11;
     uint256 internal constant IS_LLTV_ENABLED_SLOT = 12;
     uint256 internal constant IS_AUTHORIZED_SLOT = 13;
+    uint256 internal constant NONCE_SLOT = 14;
+    uint256 internal constant ID_TO_MARKET_SLOT = 15;
+
+    /* SLOT OFFSETS */
+
+    uint256 internal constant BORROWABLE_TOKEN_SLOT_OFFSET = 0;
+    uint256 internal constant COLLATERAL_TOKEN_SLOT_OFFSET = 1;
+    uint256 internal constant ORACLE_SLOT_OFFSET = 2;
+    uint256 internal constant IRM_SLOT_OFFSET = 3;
+    uint256 internal constant LLTV_SLOT_OFFSET = 4;
+
+    /* GETTERS */
 
     function ownerSlot() internal pure returns (bytes32) {
         return bytes32(OWNER_SLOT);
@@ -76,7 +90,31 @@ library MorphoStorageLib {
         return keccak256(abi.encode(lltv, IS_LLTV_ENABLED_SLOT));
     }
 
-    function isAuthorizedSlot(address delegator, address manager) internal pure returns (bytes32) {
-        return keccak256(abi.encode(manager, keccak256(abi.encode(delegator, IS_AUTHORIZED_SLOT))));
+    function isAuthorizedSlot(address authorizer, address authorizee) internal pure returns (bytes32) {
+        return keccak256(abi.encode(authorizee, keccak256(abi.encode(authorizer, IS_AUTHORIZED_SLOT))));
+    }
+
+    function nonceSlot(address authorizer) internal pure returns (bytes32) {
+        return keccak256(abi.encode(authorizer, NONCE_SLOT));
+    }
+
+    function idToBorrowTokenSlot(Id id) internal pure returns (bytes32) {
+        return bytes32(uint256(keccak256(abi.encode(id, ID_TO_MARKET_SLOT))) + BORROWABLE_TOKEN_SLOT_OFFSET);
+    }
+
+    function idToCollateralTokenSlot(Id id) internal pure returns (bytes32) {
+        return bytes32(uint256(keccak256(abi.encode(id, ID_TO_MARKET_SLOT))) + COLLATERAL_TOKEN_SLOT_OFFSET);
+    }
+
+    function idToOracleSlot(Id id) internal pure returns (bytes32) {
+        return bytes32(uint256(keccak256(abi.encode(id, ID_TO_MARKET_SLOT))) + ORACLE_SLOT_OFFSET);
+    }
+
+    function idToIrmSlot(Id id) internal pure returns (bytes32) {
+        return bytes32(uint256(keccak256(abi.encode(id, ID_TO_MARKET_SLOT))) + IRM_SLOT_OFFSET);
+    }
+
+    function idToLltvSlot(Id id) internal pure returns (bytes32) {
+        return bytes32(uint256(keccak256(abi.encode(id, ID_TO_MARKET_SLOT))) + LLTV_SLOT_OFFSET);
     }
 }
