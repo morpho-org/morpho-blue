@@ -1,6 +1,7 @@
 methods {
     function getVirtualTotalSupply(MorphoHarness.Id) external returns uint256 envfree;
     function getVirtualTotalSupplyShares(MorphoHarness.Id) external returns uint256 envfree;
+    function supplyShares(MorphoHarness.Id, address user) external returns uint256 envfree;
     function totalSupply(MorphoHarness.Id) external returns uint256 envfree;
     function totalBorrow(MorphoHarness.Id) external returns uint256 envfree;
     function supplyShares(MorphoHarness.Id, address user) external returns uint256 envfree;
@@ -290,4 +291,39 @@ filtered {
     mathint collateralAfter = collateral(id, user);
     assert borrowShares(id, user) == 0;
     assert collateralAfter >= collateralBefore;
+}
+
+rule noTimeTravel(method f, env e, calldataarg data) filtered {
+    f -> !f.isView
+} {
+    MorphoHarness.Id id;
+    require lastUpdate(id) <= e.block.timestamp;
+    f(e, data);
+    assert lastUpdate(id) <= e.block.timestamp;
+}
+
+rule canWithdrawAll() {
+    MorphoHarness.Market market;
+    uint256 withdrawnAssets;
+    uint256 withdrawnShares;
+    address receiver;
+    env e;
+
+    MorphoHarness.Id id = getMarketId(market);
+    uint256 shares = supplyShares(id, e.msg.sender);
+
+    require isInitialized(id);
+    require e.msg.sender != 0;
+    require receiver != 0;
+    require e.msg.value == 0;
+    require shares > 0;
+    require totalBorrow(id) == 0;
+    require lastUpdate(id) <= e.block.timestamp;
+    require shares < totalSupplyShares(id);
+    require totalSupplyShares(id) < 10^40 && totalSupply(id) < 10^30;
+
+    withdrawnAssets, withdrawnShares = withdraw@withrevert(e, market, 0, shares, e.msg.sender, receiver);
+
+    assert withdrawnShares == shares;
+    assert !lastReverted, "Can withdraw all assets if nobody borrows";
 }
