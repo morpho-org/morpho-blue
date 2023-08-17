@@ -7,7 +7,7 @@ certoraRun \
     certora/dispatch/ERC20Good.sol \
     certora/dispatch/ERC20USDT.sol \
     certora/dispatch/ERC20NoRevert.sol \
-    --verify TransferHarness:certora/specs/BlueTransferSummary.spec \
+    --verify TransferHarness:certora/specs/BlueTransfer.spec \
     --packages openzeppelin-contracts=lib/openzeppelin-contracts/contracts \
     --loop_iter 3 \
     --optimistic_loop \

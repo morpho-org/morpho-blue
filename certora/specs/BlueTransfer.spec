@@ -22,7 +22,7 @@ function summarySafeTransferFrom(address token, address from, address to, uint25
     }
 }
 
-rule checkTransferSummary(address token, address from, address to, uint256 amount) {
+rule checkTransfer(address token, address from, address to, uint256 amount) {
     require from == currentContract || to == currentContract;
 
     require from != to => getBalance(token, from) + getBalance(token, to) <= to_mathint(getTotalSupply(token));
