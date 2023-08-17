@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.21;
 
-import {Id, IMorpho, Market, Authorization, Signature} from "./interfaces/IMorpho.sol";
+import {Id, IMorpho, Market, Totals, Authorization, Signature} from "./interfaces/IMorpho.sol";
 import {IFlashLender} from "./interfaces/IFlashLender.sol";
 import {
     IMorphoLiquidateCallback,
@@ -66,13 +66,9 @@ contract Morpho is IMorpho {
     /// @inheritdoc IMorpho
     mapping(Id => mapping(address => uint256)) public collateral;
     /// @inheritdoc IMorpho
-    mapping(Id => uint256) public totalSupply;
+    mapping(Id => Totals) public totalSupply;
     /// @inheritdoc IMorpho
-    mapping(Id => uint256) public totalSupplyShares;
-    /// @inheritdoc IMorpho
-    mapping(Id => uint256) public totalBorrow;
-    /// @inheritdoc IMorpho
-    mapping(Id => uint256) public totalBorrowShares;
+    mapping(Id => Totals) public totalBorrow;
     /// @inheritdoc IMorpho
     mapping(Id => uint256) public lastUpdate;
     /// @inheritdoc IMorpho
@@ -180,12 +176,13 @@ contract Morpho is IMorpho {
 
         _accrueInterests(market, id);
 
-        if (assets > 0) shares = assets.toSharesDown(totalSupply[id], totalSupplyShares[id]);
-        else assets = shares.toAssetsUp(totalSupply[id], totalSupplyShares[id]);
+        if (assets > 0) shares = assets.toSharesDown(totalSupply[id].assets, totalSupply[id].shares);
+        else assets = shares.toAssetsUp(totalSupply[id].assets, totalSupply[id].shares);
+        require(shares < 2 ** 128 && assets < 2 ** 128);
 
         supplyShares[id][onBehalf] += shares;
-        totalSupplyShares[id] += shares;
-        totalSupply[id] += assets;
+        totalSupply[id].shares += uint128(shares);
+        totalSupply[id].assets += uint128(assets);
 
         emit EventsLib.Supply(id, msg.sender, onBehalf, assets, shares);
 
@@ -210,16 +207,17 @@ contract Morpho is IMorpho {
 
         _accrueInterests(market, id);
 
-        if (assets > 0) shares = assets.toSharesUp(totalSupply[id], totalSupplyShares[id]);
-        else assets = shares.toAssetsDown(totalSupply[id], totalSupplyShares[id]);
+        if (assets > 0) shares = assets.toSharesUp(totalSupply[id].assets, totalSupply[id].shares);
+        else assets = shares.toAssetsDown(totalSupply[id].assets, totalSupply[id].shares);
+        require(shares < 2 ** 128 && assets < 2 ** 128);
 
         supplyShares[id][onBehalf] -= shares;
-        totalSupplyShares[id] -= shares;
-        totalSupply[id] -= assets;
+        totalSupply[id].shares -= uint128(shares);
+        totalSupply[id].assets -= uint128(assets);
 
         emit EventsLib.Withdraw(id, msg.sender, onBehalf, receiver, assets, shares);
 
-        require(totalBorrow[id] <= totalSupply[id], ErrorsLib.INSUFFICIENT_LIQUIDITY);
+        require(totalBorrow[id].assets <= totalSupply[id].assets, ErrorsLib.INSUFFICIENT_LIQUIDITY);
 
         IERC20(market.borrowableToken).safeTransfer(receiver, assets);
 
@@ -242,17 +240,18 @@ contract Morpho is IMorpho {
 
         _accrueInterests(market, id);
 
-        if (assets > 0) shares = assets.toSharesUp(totalBorrow[id], totalBorrowShares[id]);
-        else assets = shares.toAssetsDown(totalBorrow[id], totalBorrowShares[id]);
+        if (assets > 0) shares = assets.toSharesUp(totalBorrow[id].assets, totalBorrow[id].shares);
+        else assets = shares.toAssetsDown(totalBorrow[id].assets, totalBorrow[id].shares);
+        require(shares < 2 ** 128 && assets < 2 ** 128);
 
         borrowShares[id][onBehalf] += shares;
-        totalBorrowShares[id] += shares;
-        totalBorrow[id] += assets;
+        totalBorrow[id].shares += uint128(shares);
+        totalBorrow[id].assets += uint128(assets);
 
         emit EventsLib.Borrow(id, msg.sender, onBehalf, receiver, assets, shares);
 
         require(_isHealthy(market, id, onBehalf), ErrorsLib.INSUFFICIENT_COLLATERAL);
-        require(totalBorrow[id] <= totalSupply[id], ErrorsLib.INSUFFICIENT_LIQUIDITY);
+        require(totalBorrow[id].assets <= totalSupply[id].assets, ErrorsLib.INSUFFICIENT_LIQUIDITY);
 
         IERC20(market.borrowableToken).safeTransfer(receiver, assets);
 
@@ -271,12 +270,13 @@ contract Morpho is IMorpho {
 
         _accrueInterests(market, id);
 
-        if (assets > 0) shares = assets.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
-        else assets = shares.toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
+        if (assets > 0) shares = assets.toSharesDown(totalBorrow[id].assets, totalBorrow[id].shares);
+        else assets = shares.toAssetsUp(totalBorrow[id].assets, totalBorrow[id].shares);
+        require(shares < 2 ** 128 && assets < 2 ** 128);
 
         borrowShares[id][onBehalf] -= shares;
-        totalBorrowShares[id] -= shares;
-        totalBorrow[id] -= assets;
+        totalBorrow[id].shares -= uint128(shares);
+        totalBorrow[id].assets -= uint128(assets);
 
         emit EventsLib.Repay(id, msg.sender, onBehalf, assets, shares);
 
@@ -346,11 +346,12 @@ contract Morpho is IMorpho {
 
         assetsRepaid =
             seized.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(liquidationIncentiveFactor(market.lltv));
-        sharesRepaid = assetsRepaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
+        sharesRepaid = assetsRepaid.toSharesDown(totalBorrow[id].assets, totalBorrow[id].shares);
+        require(sharesRepaid < 2 ** 128 && assetsRepaid < 2 ** 128);
 
         borrowShares[id][borrower] -= sharesRepaid;
-        totalBorrowShares[id] -= sharesRepaid;
-        totalBorrow[id] -= assetsRepaid;
+        totalBorrow[id].shares -= uint128(sharesRepaid);
+        totalBorrow[id].assets -= uint128(assetsRepaid);
 
         collateral[id][borrower] -= seized;
 
@@ -358,10 +359,11 @@ contract Morpho is IMorpho {
         uint256 badDebtShares;
         if (collateral[id][borrower] == 0) {
             badDebtShares = borrowShares[id][borrower];
-            uint256 badDebt = badDebtShares.toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
-            totalSupply[id] -= badDebt;
-            totalBorrow[id] -= badDebt;
-            totalBorrowShares[id] -= badDebtShares;
+            uint256 badDebt = badDebtShares.toAssetsUp(totalBorrow[id].assets, totalBorrow[id].shares);
+            require(badDebt < 2 ** 128);
+            totalSupply[id].assets -= uint128(badDebt);
+            totalBorrow[id].assets -= uint128(badDebt);
+            totalBorrow[id].shares -= uint128(badDebtShares);
             borrowShares[id][borrower] = 0;
         }
 
@@ -439,21 +441,21 @@ contract Morpho is IMorpho {
 
         if (elapsed == 0) return;
 
-        uint256 marketTotalBorrow = totalBorrow[id];
+        uint256 marketTotalBorrow = totalBorrow[id].assets;
 
         if (marketTotalBorrow != 0) {
             uint256 borrowRate = IIrm(market.irm).borrowRate(market);
             uint256 accruedInterests = marketTotalBorrow.wMulDown(borrowRate.wTaylorCompounded(elapsed));
-            totalBorrow[id] = marketTotalBorrow + accruedInterests;
-            totalSupply[id] += accruedInterests;
+            totalBorrow[id].assets += uint128(accruedInterests);
+            totalSupply[id].assets += uint128(accruedInterests);
 
             uint256 feeShares;
             if (fee[id] != 0) {
                 uint256 feeAmount = accruedInterests.wMulDown(fee[id]);
                 // The fee amount is subtracted from the total supply in this calculation to compensate for the fact that total supply is already updated.
-                feeShares = feeAmount.toSharesDown(totalSupply[id] - feeAmount, totalSupplyShares[id]);
+                feeShares = feeAmount.toSharesDown(totalSupply[id].assets - feeAmount, totalSupply[id].shares);
                 supplyShares[id][feeRecipient] += feeShares;
-                totalSupplyShares[id] += feeShares;
+                totalSupply[id].shares += uint128(feeShares);
             }
 
             emit EventsLib.AccrueInterests(id, borrowRate, accruedInterests, feeShares);
@@ -481,7 +483,7 @@ contract Morpho is IMorpho {
         view
         returns (bool)
     {
-        uint256 borrowed = borrowShares[id][user].toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
+        uint256 borrowed = borrowShares[id][user].toAssetsUp(totalBorrow[id].assets, totalBorrow[id].shares);
         uint256 maxBorrow = collateral[id][user].mulDivDown(collateralPrice, ORACLE_PRICE_SCALE).wMulDown(market.lltv);
 
         return maxBorrow >= borrowed;

@@ -19,6 +19,11 @@ struct Market {
     uint256 lltv;
 }
 
+struct Totals {
+    uint128 assets;
+    uint128 shares;
+}
+
 /// @notice Authorization struct.
 /// @param authorizer Authorizer address.
 /// @param authorized Authorized address.
@@ -66,17 +71,11 @@ interface IMorpho is IFlashLender {
 
     /// @notice The total supply of the market `id`.
     /// @dev Does not contain the accrued interest since the last interaction.
-    function totalSupply(Id id) external view returns (uint256);
-
-    /// @notice The total supply shares of the market `id`.
-    function totalSupplyShares(Id id) external view returns (uint256);
+    function totalSupply(Id id) external view returns (uint128, uint128);
 
     /// @notice The total borrow of the market `id`.
     /// @dev Does not contain the accrued interest since the last interaction.
-    function totalBorrow(Id id) external view returns (uint256);
-
-    /// @notice The total borrow shares of the market `id`.
-    function totalBorrowShares(Id id) external view returns (uint256);
+    function totalBorrow(Id id) external view returns (uint128, uint128);
 
     /// @notice The last update timestamp of the market `id` (also used to check if a market has been created).
     function lastUpdate(Id id) external view returns (uint256);
