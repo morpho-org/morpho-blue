@@ -52,7 +52,7 @@
         │   └── revert with LLTV_NOT_ENABLED
         └── when market.lltv is enabled
             ├── when market is already created
-            │   └── revert with MARKET_CREATED
+            │   └── revert with MARKET_ALREADY_CREATED
             └── when market is not already created
                 ├── it should set lastUpdate[market.id] to block.timestamp
                 ├── it should set idToMarket[id] to market
