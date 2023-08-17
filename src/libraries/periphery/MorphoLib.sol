@@ -14,14 +14,14 @@ import {MorphoStorageLib} from "./MorphoStorageLib.sol";
 /// @custom:contact security@morpho.xyz
 /// @notice Helper library exposing getters with the expected value after interest accrual.
 /// @dev This library is not used in Morpho itself and is intended to be used by integrators.
-/// @dev The getter to retrieve the total borrow shares is not exposed because interest accrual does not apply to it.
+/// @dev The getter to retrieve the expected total borrow shares is not exposed because interest accrual does not apply to it.
 ///      The value can be queried directly on Morpho using `totalBorrowShares`.
 library MorphoLib {
     using MathLib for uint256;
     using MarketLib for Market;
     using SharesMathLib for uint256;
 
-    function virtualAccrueInterest(IMorpho morpho, Market memory market)
+    function expectedAccrueInterest(IMorpho morpho, Market memory market)
         internal
         view
         returns (uint256 totalSupply, uint256 toralBorrow, uint256 totalSupplyShares)
@@ -63,11 +63,11 @@ library MorphoLib {
     }
 
     function expectedTotalSupply(IMorpho morpho, Market memory market) internal view returns (uint256 totalSupply) {
-        (totalSupply,,) = virtualAccrueInterest(morpho, market);
+        (totalSupply,,) = expectedAccrueInterest(morpho, market);
     }
 
     function expectedTotalBorrow(IMorpho morpho, Market memory market) internal view returns (uint256 totalBorrow) {
-        (, totalBorrow,) = virtualAccrueInterest(morpho, market);
+        (, totalBorrow,) = expectedAccrueInterest(morpho, market);
     }
 
     function expectedTotalSupplyShares(IMorpho morpho, Market memory market)
@@ -75,7 +75,7 @@ library MorphoLib {
         view
         returns (uint256 totalSupplyShares)
     {
-        (,, totalSupplyShares) = virtualAccrueInterest(morpho, market);
+        (,, totalSupplyShares) = expectedAccrueInterest(morpho, market);
     }
 
     /// @dev Warning: It does not work for `feeRecipient` because their supply shares increase is not taken into account.
@@ -86,7 +86,7 @@ library MorphoLib {
     {
         Id id = market.id();
         uint256 supplyShares = morpho.supplyShares(id, user);
-        (uint256 totalSupply,, uint256 totalSupplyShares) = virtualAccrueInterest(morpho, market);
+        (uint256 totalSupply,, uint256 totalSupplyShares) = expectedAccrueInterest(morpho, market);
 
         return supplyShares.toAssetsDown(totalSupply, totalSupplyShares);
     }
@@ -99,7 +99,7 @@ library MorphoLib {
         Id id = market.id();
         uint256 borrowShares = morpho.borrowShares(id, user);
         uint256 totalBorrowShares = morpho.totalBorrowShares(id);
-        (, uint256 totalBorrow,) = virtualAccrueInterest(morpho, market);
+        (, uint256 totalBorrow,) = expectedAccrueInterest(morpho, market);
 
         return borrowShares.toAssetsUp(totalBorrow, totalBorrowShares);
     }

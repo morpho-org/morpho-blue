@@ -10,12 +10,13 @@ contract MorphoStorageLibTest is BaseTest {
     using MathLib for uint256;
     using SharesMathLib for uint256;
 
-    function testStorage() public {
+    function testStorage(uint256 amountSupplied, uint256 amountBorrowed, uint256 timeElapsed, uint256 fee) public {
         // Prepare storage layout with non empty values.
 
-        uint256 amountSupplied = 1 ether;
-        uint256 amountBorrowed = 0.5 ether;
-        uint256 fee = 0.01 ether;
+        amountSupplied = bound(amountSupplied, 2, MAX_TEST_AMOUNT);
+        amountBorrowed = bound(amountBorrowed, 1, amountSupplied);
+        timeElapsed = uint32(bound(timeElapsed, 1, 1e8));
+        fee = bound(fee, 1, MAX_FEE);
 
         // Set fee parameters.
         vm.startPrank(OWNER);
@@ -68,7 +69,7 @@ contract MorphoStorageLibTest is BaseTest {
         slots[12] = MorphoStorageLib.isLltvEnabledSlot(LLTV);
         slots[13] = MorphoStorageLib.isAuthorizedSlot(authorizer, BORROWER);
         slots[14] = MorphoStorageLib.nonceSlot(authorizer);
-        slots[15] = MorphoStorageLib.idToBorrowTokenSlot(id);
+        slots[15] = MorphoStorageLib.idToBorrowableTokenSlot(id);
         slots[16] = MorphoStorageLib.idToCollateralTokenSlot(id);
         slots[17] = MorphoStorageLib.idToOracleSlot(id);
         slots[18] = MorphoStorageLib.idToIrmSlot(id);
@@ -76,8 +77,8 @@ contract MorphoStorageLibTest is BaseTest {
 
         bytes32[] memory values = morpho.extsload(slots);
 
-        assertEq(abi.decode(abi.encodePacked(values[0]), (address)), morpho.owner());
-        assertEq(abi.decode(abi.encodePacked(values[1]), (address)), morpho.feeRecipient());
+        assertEq(abi.decode(abi.encode(values[0]), (address)), morpho.owner());
+        assertEq(abi.decode(abi.encode(values[1]), (address)), morpho.feeRecipient());
         assertEq(uint256(values[2]), morpho.supplyShares(id, address(this)));
         assertEq(uint256(values[3]), morpho.borrowShares(id, address(this)));
         assertEq(uint256(values[4]), morpho.collateral(id, address(this)));
@@ -87,9 +88,9 @@ contract MorphoStorageLibTest is BaseTest {
         assertEq(uint256(values[8]), morpho.totalBorrowShares(id));
         assertEq(uint256(values[9]), morpho.lastUpdate(id));
         assertEq(uint256(values[10]), morpho.fee(id));
-        assertEq(abi.decode(abi.encodePacked(values[11]), (bool)), morpho.isIrmEnabled(address(irm)));
-        assertEq(abi.decode(abi.encodePacked(values[12]), (bool)), morpho.isLltvEnabled(LLTV));
-        assertEq(abi.decode(abi.encodePacked(values[13]), (bool)), morpho.isAuthorized(authorizer, BORROWER));
+        assertEq(abi.decode(abi.encode(values[11]), (bool)), morpho.isIrmEnabled(address(irm)));
+        assertEq(abi.decode(abi.encode(values[12]), (bool)), morpho.isLltvEnabled(LLTV));
+        assertEq(abi.decode(abi.encode(values[13]), (bool)), morpho.isAuthorized(authorizer, BORROWER));
         assertEq(uint256(values[14]), morpho.nonce(authorizer));
 
         (
@@ -99,10 +100,10 @@ contract MorphoStorageLibTest is BaseTest {
             address expectedIrm,
             uint256 expectedLltv
         ) = morpho.idToMarket(id);
-        assertEq(abi.decode(abi.encodePacked(values[15]), (address)), expectedBorrowableToken);
-        assertEq(abi.decode(abi.encodePacked(values[16]), (address)), expectedCollateralToken);
-        assertEq(abi.decode(abi.encodePacked(values[17]), (address)), expectedOracle);
-        assertEq(abi.decode(abi.encodePacked(values[18]), (address)), expectedIrm);
+        assertEq(abi.decode(abi.encode(values[15]), (address)), expectedBorrowableToken);
+        assertEq(abi.decode(abi.encode(values[16]), (address)), expectedCollateralToken);
+        assertEq(abi.decode(abi.encode(values[17]), (address)), expectedOracle);
+        assertEq(abi.decode(abi.encode(values[18]), (address)), expectedIrm);
         assertEq(uint256(values[19]), expectedLltv);
     }
 }

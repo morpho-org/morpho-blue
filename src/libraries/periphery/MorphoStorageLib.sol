@@ -30,11 +30,11 @@ library MorphoStorageLib {
 
     /* SLOT OFFSETS */
 
-    uint256 internal constant BORROWABLE_TOKEN_SLOT_OFFSET = 0;
-    uint256 internal constant COLLATERAL_TOKEN_SLOT_OFFSET = 1;
-    uint256 internal constant ORACLE_SLOT_OFFSET = 2;
-    uint256 internal constant IRM_SLOT_OFFSET = 3;
-    uint256 internal constant LLTV_SLOT_OFFSET = 4;
+    uint256 internal constant BORROWABLE_TOKEN_OFFSET = 0;
+    uint256 internal constant COLLATERAL_TOKEN_OFFSET = 1;
+    uint256 internal constant ORACLE_OFFSET = 2;
+    uint256 internal constant IRM_OFFSET = 3;
+    uint256 internal constant LLTV_OFFSET = 4;
 
     /* GETTERS */
 
@@ -98,23 +98,23 @@ library MorphoStorageLib {
         return keccak256(abi.encode(authorizer, NONCE_SLOT));
     }
 
-    function idToBorrowTokenSlot(Id id) internal pure returns (bytes32) {
-        return bytes32(uint256(keccak256(abi.encode(id, ID_TO_MARKET_SLOT))) + BORROWABLE_TOKEN_SLOT_OFFSET);
+    function idToBorrowableTokenSlot(Id id) internal pure returns (bytes32) {
+        return bytes32(uint256(keccak256(abi.encode(id, ID_TO_MARKET_SLOT))) + BORROWABLE_TOKEN_OFFSET);
     }
 
     function idToCollateralTokenSlot(Id id) internal pure returns (bytes32) {
-        return bytes32(uint256(keccak256(abi.encode(id, ID_TO_MARKET_SLOT))) + COLLATERAL_TOKEN_SLOT_OFFSET);
+        return bytes32(uint256(keccak256(abi.encode(id, ID_TO_MARKET_SLOT))) + COLLATERAL_TOKEN_OFFSET);
     }
 
     function idToOracleSlot(Id id) internal pure returns (bytes32) {
-        return bytes32(uint256(keccak256(abi.encode(id, ID_TO_MARKET_SLOT))) + ORACLE_SLOT_OFFSET);
+        return bytes32(uint256(keccak256(abi.encode(id, ID_TO_MARKET_SLOT))) + ORACLE_OFFSET);
     }
 
     function idToIrmSlot(Id id) internal pure returns (bytes32) {
-        return bytes32(uint256(keccak256(abi.encode(id, ID_TO_MARKET_SLOT))) + IRM_SLOT_OFFSET);
+        return bytes32(uint256(keccak256(abi.encode(id, ID_TO_MARKET_SLOT))) + IRM_OFFSET);
     }
 
     function idToLltvSlot(Id id) internal pure returns (bytes32) {
-        return bytes32(uint256(keccak256(abi.encode(id, ID_TO_MARKET_SLOT))) + LLTV_SLOT_OFFSET);
+        return bytes32(uint256(keccak256(abi.encode(id, ID_TO_MARKET_SLOT))) + LLTV_OFFSET);
     }
 }
