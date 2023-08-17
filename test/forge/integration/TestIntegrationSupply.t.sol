@@ -5,6 +5,7 @@ import "../BaseTest.sol";
 
 contract IntegrationSupplyTest is BaseTest {
     using MathLib for uint256;
+    using MorphoLib for Morpho;
     using SharesMathLib for uint256;
 
     function testSupplyMarketNotCreated(Market memory marketFuzz, uint256 amount) public {

@@ -5,6 +5,7 @@ import "../BaseTest.sol";
 
 contract IntegrationWithdrawCollateralTest is BaseTest {
     using MathLib for uint256;
+    using MorphoLib for Morpho;
 
     function testWithdrawCollateralMarketNotCreated(Market memory marketFuzz) public {
         vm.assume(neq(marketFuzz, market));
@@ -15,7 +16,7 @@ contract IntegrationWithdrawCollateralTest is BaseTest {
     }
 
     function testWithdrawCollateralZeroAmount(uint256 amount) public {
-        amount = bound(amount, 1, MAX_TEST_AMOUNT);
+        amount = bound(amount, 1, MAX_COLLATERAL_ASSETS);
 
         collateralToken.setBalance(SUPPLIER, amount);
 
@@ -29,7 +30,7 @@ contract IntegrationWithdrawCollateralTest is BaseTest {
     }
 
     function testWithdrawCollateralToZeroAddress(uint256 amount) public {
-        amount = bound(amount, 1, MAX_TEST_AMOUNT);
+        amount = bound(amount, 1, MAX_COLLATERAL_ASSETS);
 
         collateralToken.setBalance(SUPPLIER, amount);
 
@@ -43,7 +44,7 @@ contract IntegrationWithdrawCollateralTest is BaseTest {
 
     function testWithdrawCollateralUnauthorized(address attacker, uint256 amount) public {
         vm.assume(attacker != SUPPLIER);
-        amount = bound(amount, 1, MAX_TEST_AMOUNT);
+        amount = bound(amount, 1, MAX_COLLATERAL_ASSETS);
 
         collateralToken.setBalance(SUPPLIER, amount);
 
@@ -88,11 +89,16 @@ contract IntegrationWithdrawCollateralTest is BaseTest {
     ) public {
         (amountCollateral, amountBorrowed, priceCollateral) =
             _boundHealthyPosition(amountCollateral, amountBorrowed, priceCollateral);
+        vm.assume(amountCollateral < MAX_COLLATERAL_ASSETS);
 
         amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
         _supply(amountSupplied);
 
-        amountCollateralExcess = bound(amountCollateralExcess, 1, MAX_TEST_AMOUNT);
+        amountCollateralExcess = bound(
+            amountCollateralExcess,
+            1,
+            min(MAX_COLLATERAL_ASSETS - amountCollateral, type(uint256).max / priceCollateral - amountCollateral)
+        );
 
         oracle.setPrice(priceCollateral);
 
@@ -122,13 +128,18 @@ contract IntegrationWithdrawCollateralTest is BaseTest {
     ) public {
         (amountCollateral, amountBorrowed, priceCollateral) =
             _boundHealthyPosition(amountCollateral, amountBorrowed, priceCollateral);
+        vm.assume(amountCollateral < MAX_COLLATERAL_ASSETS);
 
         amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
         _supply(amountSupplied);
 
         oracle.setPrice(priceCollateral);
 
-        amountCollateralExcess = bound(amountCollateralExcess, 1, MAX_TEST_AMOUNT);
+        amountCollateralExcess = bound(
+            amountCollateralExcess,
+            1,
+            min(MAX_COLLATERAL_ASSETS - amountCollateral, type(uint256).max / priceCollateral - amountCollateral)
+        );
 
         collateralToken.setBalance(ONBEHALF, amountCollateral + amountCollateralExcess);
 

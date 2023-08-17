@@ -4,6 +4,8 @@ pragma solidity ^0.8.0;
 import "../BaseTest.sol";
 
 contract IntegrationSupplyCollateralTest is BaseTest {
+    using MorphoLib for Morpho;
+
     function testSupplyCollateralMarketNotCreated(Market memory marketFuzz, uint256 amount) public {
         vm.assume(neq(marketFuzz, market));
 
@@ -27,7 +29,7 @@ contract IntegrationSupplyCollateralTest is BaseTest {
     }
 
     function testSupplyCollateral(uint256 amount) public {
-        amount = bound(amount, 1, MAX_TEST_AMOUNT);
+        amount = bound(amount, 1, MAX_COLLATERAL_ASSETS);
 
         collateralToken.setBalance(SUPPLIER, amount);
 

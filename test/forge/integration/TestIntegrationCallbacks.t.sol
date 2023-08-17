@@ -13,6 +13,7 @@ contract IntegrationCallbacksTest is
     IMorphoFlashLoanCallback
 {
     using MarketLib for Market;
+    using MorphoLib for Morpho;
     using MathLib for uint256;
 
     // Callback functions.
@@ -89,7 +90,7 @@ contract IntegrationCallbacksTest is
     }
 
     function testSupplyCollateralCallback(uint256 amount) public {
-        amount = bound(amount, 1, MAX_TEST_AMOUNT);
+        amount = bound(amount, 1, MAX_COLLATERAL_ASSETS);
 
         collateralToken.setBalance(address(this), amount);
         collateralToken.approve(address(morpho), 0);
@@ -103,7 +104,9 @@ contract IntegrationCallbacksTest is
 
     function testRepayCallback(uint256 borrowableAmount) public {
         borrowableAmount = bound(borrowableAmount, MIN_TEST_AMOUNT, MAX_TEST_AMOUNT);
-        uint256 collateralAmount = borrowableAmount.wDivUp(LLTV);
+        uint256 collateralAmount;
+        (collateralAmount, borrowableAmount,) =
+            _boundHealthyPosition(0, borrowableAmount, IOracle(market.oracle).price());
 
         oracle.setPrice(ORACLE_PRICE_SCALE);
 
@@ -123,7 +126,9 @@ contract IntegrationCallbacksTest is
 
     function testLiquidateCallback(uint256 borrowableAmount) public {
         borrowableAmount = bound(borrowableAmount, MIN_TEST_AMOUNT, MAX_TEST_AMOUNT);
-        uint256 collateralAmount = borrowableAmount.wDivUp(LLTV);
+        uint256 collateralAmount;
+        (collateralAmount, borrowableAmount,) =
+            _boundHealthyPosition(0, borrowableAmount, IOracle(market.oracle).price());
 
         oracle.setPrice(ORACLE_PRICE_SCALE);
 
@@ -148,7 +153,9 @@ contract IntegrationCallbacksTest is
 
     function testFlashActions(uint256 borrowableAmount) public {
         borrowableAmount = bound(borrowableAmount, MIN_TEST_AMOUNT, MAX_TEST_AMOUNT);
-        uint256 collateralAmount = borrowableAmount.wDivUp(LLTV);
+        uint256 collateralAmount;
+        (collateralAmount, borrowableAmount,) =
+            _boundHealthyPosition(0, borrowableAmount, IOracle(market.oracle).price());
 
         oracle.setPrice(ORACLE_PRICE_SCALE);
 

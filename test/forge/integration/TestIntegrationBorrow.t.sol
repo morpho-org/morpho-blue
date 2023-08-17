@@ -5,6 +5,7 @@ import "../BaseTest.sol";
 
 contract IntegrationBorrowTest is BaseTest {
     using MathLib for uint256;
+    using MorphoLib for Morpho;
     using SharesMathLib for uint256;
 
     function testBorrowMarketNotCreated(Market memory marketFuzz, address borrowerFuzz, uint256 amount) public {
@@ -42,20 +43,20 @@ contract IntegrationBorrowTest is BaseTest {
 
     function testBorrowUnauthorized(address supplier, address attacker, uint256 amount) public {
         vm.assume(supplier != attacker && supplier != address(0));
-        amount = bound(amount, 1, MAX_TEST_AMOUNT);
+        (uint256 amountCollateral, uint256 amountBorrowed,) = _boundHealthyPosition(amount, amount, ORACLE_PRICE_SCALE);
 
-        _supply(amount);
+        _supply(amountBorrowed);
 
-        collateralToken.setBalance(supplier, amount);
+        collateralToken.setBalance(supplier, amountCollateral);
 
         vm.startPrank(supplier);
-        collateralToken.approve(address(morpho), amount);
-        morpho.supplyCollateral(market, amount, supplier, hex"");
+        collateralToken.approve(address(morpho), amountCollateral);
+        morpho.supplyCollateral(market, amountCollateral, supplier, hex"");
         vm.stopPrank();
 
         vm.prank(attacker);
         vm.expectRevert(bytes(ErrorsLib.UNAUTHORIZED));
-        morpho.borrow(market, amount, 0, supplier, RECEIVER);
+        morpho.borrow(market, amountBorrowed, 0, supplier, RECEIVER);
     }
 
     function testBorrowUnhealthyPosition(
@@ -89,7 +90,7 @@ contract IntegrationBorrowTest is BaseTest {
     ) public {
         (amountCollateral, amountBorrowed, priceCollateral) =
             _boundHealthyPosition(amountCollateral, amountBorrowed, priceCollateral);
-
+        vm.assume(amountBorrowed >= 2);
         amountSupplied = bound(amountSupplied, 1, amountBorrowed - 1);
         _supply(amountSupplied);
 
@@ -148,10 +149,11 @@ contract IntegrationBorrowTest is BaseTest {
         priceCollateral = bound(priceCollateral, MIN_COLLATERAL_PRICE, MAX_COLLATERAL_PRICE);
         sharesBorrowed = bound(sharesBorrowed, MIN_TEST_SHARES, MAX_TEST_SHARES);
         uint256 expectedAmountBorrowed = sharesBorrowed.toAssetsDown(0, 0);
-
         uint256 expectedBorrowedValue = sharesBorrowed.toAssetsUp(expectedAmountBorrowed, sharesBorrowed);
         uint256 minCollateral = expectedBorrowedValue.wDivUp(market.lltv).mulDivUp(ORACLE_PRICE_SCALE, priceCollateral);
-        amountCollateral = bound(amountCollateral, minCollateral, max(minCollateral, MAX_TEST_AMOUNT));
+        vm.assume(minCollateral <= MAX_COLLATERAL_ASSETS);
+        amountCollateral = bound(amountCollateral, minCollateral, MAX_COLLATERAL_ASSETS);
+        vm.assume(amountCollateral <= type(uint256).max / priceCollateral);
 
         amountSupplied = bound(amountSupplied, expectedAmountBorrowed, MAX_TEST_AMOUNT);
         _supply(amountSupplied);
@@ -224,10 +226,11 @@ contract IntegrationBorrowTest is BaseTest {
         priceCollateral = bound(priceCollateral, MIN_COLLATERAL_PRICE, MAX_COLLATERAL_PRICE);
         sharesBorrowed = bound(sharesBorrowed, MIN_TEST_SHARES, MAX_TEST_SHARES);
         uint256 expectedAmountBorrowed = sharesBorrowed.toAssetsDown(0, 0);
-
         uint256 expectedBorrowedValue = sharesBorrowed.toAssetsUp(expectedAmountBorrowed, sharesBorrowed);
         uint256 minCollateral = expectedBorrowedValue.wDivUp(market.lltv).mulDivUp(ORACLE_PRICE_SCALE, priceCollateral);
-        amountCollateral = bound(amountCollateral, minCollateral, max(minCollateral, MAX_TEST_AMOUNT));
+        vm.assume(minCollateral <= MAX_COLLATERAL_ASSETS);
+        amountCollateral = bound(amountCollateral, minCollateral, MAX_COLLATERAL_ASSETS);
+        vm.assume(amountCollateral <= type(uint256).max / priceCollateral);
 
         amountSupplied = bound(amountSupplied, expectedAmountBorrowed, MAX_TEST_AMOUNT);
         _supply(amountSupplied);

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.21;
 
-import {Id, IMorpho, Market, Authorization, Signature} from "./interfaces/IMorpho.sol";
+import {Id, IMorpho, Market, User, Authorization, Signature} from "./interfaces/IMorpho.sol";
 import {IFlashLender} from "./interfaces/IFlashLender.sol";
 import {
     IMorphoLiquidateCallback,
@@ -60,11 +60,7 @@ contract Morpho is IMorpho {
     /// @inheritdoc IMorpho
     address public feeRecipient;
     /// @inheritdoc IMorpho
-    mapping(Id => mapping(address => uint256)) public supplyShares;
-    /// @inheritdoc IMorpho
-    mapping(Id => mapping(address => uint256)) public borrowShares;
-    /// @inheritdoc IMorpho
-    mapping(Id => mapping(address => uint256)) public collateral;
+    mapping(Id => mapping(address => User)) public user;
     /// @inheritdoc IMorpho
     mapping(Id => uint256) public totalSupply;
     /// @inheritdoc IMorpho
@@ -183,7 +179,7 @@ contract Morpho is IMorpho {
         if (assets > 0) shares = assets.toSharesDown(totalSupply[id], totalSupplyShares[id]);
         else assets = shares.toAssetsUp(totalSupply[id], totalSupplyShares[id]);
 
-        supplyShares[id][onBehalf] += shares;
+        user[id][onBehalf].supplyShares += shares;
         totalSupplyShares[id] += shares;
         totalSupply[id] += assets;
 
@@ -213,7 +209,7 @@ contract Morpho is IMorpho {
         if (assets > 0) shares = assets.toSharesUp(totalSupply[id], totalSupplyShares[id]);
         else assets = shares.toAssetsDown(totalSupply[id], totalSupplyShares[id]);
 
-        supplyShares[id][onBehalf] -= shares;
+        user[id][onBehalf].supplyShares -= shares;
         totalSupplyShares[id] -= shares;
         totalSupply[id] -= assets;
 
@@ -245,7 +241,7 @@ contract Morpho is IMorpho {
         if (assets > 0) shares = assets.toSharesUp(totalBorrow[id], totalBorrowShares[id]);
         else assets = shares.toAssetsDown(totalBorrow[id], totalBorrowShares[id]);
 
-        borrowShares[id][onBehalf] += shares;
+        user[id][onBehalf].borrowShares += uint128(shares);
         totalBorrowShares[id] += shares;
         totalBorrow[id] += assets;
 
@@ -274,7 +270,7 @@ contract Morpho is IMorpho {
         if (assets > 0) shares = assets.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
         else assets = shares.toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
 
-        borrowShares[id][onBehalf] -= shares;
+        user[id][onBehalf].borrowShares -= uint128(shares);
         totalBorrowShares[id] -= shares;
         totalBorrow[id] -= assets;
 
@@ -295,10 +291,11 @@ contract Morpho is IMorpho {
         require(lastUpdate[id] != 0, ErrorsLib.MARKET_NOT_CREATED);
         require(assets != 0, ErrorsLib.ZERO_ASSETS);
         require(onBehalf != address(0), ErrorsLib.ZERO_ADDRESS);
+        require(assets < 2 ** 128, "too much");
 
         // Don't accrue interests because it's not required and it saves gas.
 
-        collateral[id][onBehalf] += assets;
+        user[id][onBehalf].collateral += uint128(assets);
 
         emit EventsLib.SupplyCollateral(id, msg.sender, onBehalf, assets);
 
@@ -318,7 +315,7 @@ contract Morpho is IMorpho {
 
         _accrueInterests(market, id);
 
-        collateral[id][onBehalf] -= assets;
+        user[id][onBehalf].collateral -= uint128(assets);
 
         emit EventsLib.WithdrawCollateral(id, msg.sender, onBehalf, receiver, assets);
 
@@ -348,21 +345,21 @@ contract Morpho is IMorpho {
             seized.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(liquidationIncentiveFactor(market.lltv));
         sharesRepaid = assetsRepaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
 
-        borrowShares[id][borrower] -= sharesRepaid;
+        user[id][borrower].borrowShares -= uint128(sharesRepaid);
         totalBorrowShares[id] -= sharesRepaid;
         totalBorrow[id] -= assetsRepaid;
 
-        collateral[id][borrower] -= seized;
+        user[id][borrower].collateral -= uint128(seized);
 
         // Realize the bad debt if needed.
         uint256 badDebtShares;
-        if (collateral[id][borrower] == 0) {
-            badDebtShares = borrowShares[id][borrower];
+        if (user[id][borrower].collateral == 0) {
+            badDebtShares = user[id][borrower].borrowShares;
             uint256 badDebt = badDebtShares.toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
             totalSupply[id] -= badDebt;
             totalBorrow[id] -= badDebt;
             totalBorrowShares[id] -= badDebtShares;
-            borrowShares[id][borrower] = 0;
+            user[id][borrower].borrowShares = 0;
         }
 
         IERC20(market.collateralToken).safeTransfer(msg.sender, seized);
@@ -418,8 +415,8 @@ contract Morpho is IMorpho {
         );
     }
 
-    function _isSenderAuthorized(address user) internal view returns (bool) {
-        return msg.sender == user || isAuthorized[user][msg.sender];
+    function _isSenderAuthorized(address theUser) internal view returns (bool) {
+        return msg.sender == theUser || isAuthorized[theUser][msg.sender];
     }
 
     /* INTEREST MANAGEMENT */
@@ -452,7 +449,7 @@ contract Morpho is IMorpho {
                 uint256 feeAmount = accruedInterests.wMulDown(fee[id]);
                 // The fee amount is subtracted from the total supply in this calculation to compensate for the fact that total supply is already updated.
                 feeShares = feeAmount.toSharesDown(totalSupply[id] - feeAmount, totalSupplyShares[id]);
-                supplyShares[id][feeRecipient] += feeShares;
+                user[id][feeRecipient].supplyShares += feeShares;
                 totalSupplyShares[id] += feeShares;
             }
 
@@ -466,23 +463,24 @@ contract Morpho is IMorpho {
 
     /// @dev Returns whether the position of `user` in the given `market` is healthy.
     /// @dev Assumes the given `market` and `id` match.
-    function _isHealthy(Market memory market, Id id, address user) internal view returns (bool) {
-        if (borrowShares[id][user] == 0) return true;
+    function _isHealthy(Market memory market, Id id, address borrower) internal view returns (bool) {
+        if (user[id][borrower].borrowShares == 0) return true;
 
         uint256 collateralPrice = IOracle(market.oracle).price();
 
-        return _isHealthy(market, id, user, collateralPrice);
+        return _isHealthy(market, id, borrower, collateralPrice);
     }
 
     /// @dev Returns whether the position of `user` in the given `market` with the given `collateralPrice` is healthy.
     /// @dev Assumes the given `market` and `id` match.
-    function _isHealthy(Market memory market, Id id, address user, uint256 collateralPrice)
+    function _isHealthy(Market memory market, Id id, address borrower, uint256 collateralPrice)
         internal
         view
         returns (bool)
     {
-        uint256 borrowed = borrowShares[id][user].toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
-        uint256 maxBorrow = collateral[id][user].mulDivDown(collateralPrice, ORACLE_PRICE_SCALE).wMulDown(market.lltv);
+        uint256 borrowed = uint256(user[id][borrower].borrowShares).toAssetsUp(totalBorrow[id], totalBorrowShares[id]);
+        uint256 maxBorrow =
+            uint256(user[id][borrower].collateral).mulDivDown(collateralPrice, ORACLE_PRICE_SCALE).wMulDown(market.lltv);
 
         return maxBorrow >= borrowed;
     }

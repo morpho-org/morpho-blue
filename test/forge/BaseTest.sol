@@ -5,6 +5,7 @@ import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
 import {SigUtils} from "test/forge/helpers/SigUtils.sol";
+import {MorphoLib} from "test/forge/helpers/MorphoLib.sol";
 import "src/Morpho.sol";
 import {ERC20Mock as ERC20} from "src/mocks/ERC20Mock.sol";
 import {OracleMock as Oracle} from "src/mocks/OracleMock.sol";
@@ -21,6 +22,7 @@ contract BaseTest is Test {
     uint256 internal constant MAX_TEST_SHARES = MAX_TEST_AMOUNT * SharesMathLib.VIRTUAL_SHARES;
     uint256 internal constant MIN_COLLATERAL_PRICE = 1000;
     uint256 internal constant MAX_COLLATERAL_PRICE = 1e40;
+    uint256 internal constant MAX_COLLATERAL_ASSETS = type(uint128).max;
 
     address internal SUPPLIER = _addrFromHashedString("Morpho Supplier");
     address internal BORROWER = _addrFromHashedString("Morpho Borrower");
@@ -131,10 +133,18 @@ contract BaseTest is Test {
         amountBorrowed = bound(amountBorrowed, MIN_TEST_AMOUNT, MAX_TEST_AMOUNT);
 
         uint256 minCollateral = amountBorrowed.wDivUp(market.lltv).mulDivUp(ORACLE_PRICE_SCALE, priceCollateral);
-        // vm.assume(minCollateral <= MAX_TEST_AMOUNT);
 
-        amountCollateral = bound(amountCollateral, minCollateral, max(minCollateral, MAX_TEST_AMOUNT));
+        if (minCollateral <= MAX_COLLATERAL_ASSETS) {
+            amountCollateral = bound(amountCollateral, minCollateral, MAX_COLLATERAL_ASSETS);
+        } else {
+            amountCollateral = MAX_COLLATERAL_ASSETS;
+            amountBorrowed = min(
+                amountBorrowed.wMulDown(market.lltv).mulDivDown(priceCollateral, ORACLE_PRICE_SCALE), MAX_TEST_AMOUNT
+            );
+        }
 
+        vm.assume(amountBorrowed > 0);
+        vm.assume(amountCollateral < type(uint256).max / priceCollateral);
         return (amountCollateral, amountBorrowed, priceCollateral);
     }
 
@@ -147,13 +157,9 @@ contract BaseTest is Test {
         amountBorrowed = bound(amountBorrowed, MIN_TEST_AMOUNT, MAX_TEST_AMOUNT);
 
         uint256 maxCollateral = amountBorrowed.wDivDown(market.lltv).mulDivDown(ORACLE_PRICE_SCALE, priceCollateral);
-        vm.assume(
-            maxCollateral.mulDivDown(priceCollateral, ORACLE_PRICE_SCALE).wMulDown(market.lltv) < amountBorrowed
-                && maxCollateral > 0
-        );
+        amountCollateral = bound(amountBorrowed, 0, min(maxCollateral, MAX_COLLATERAL_ASSETS));
 
-        amountCollateral = bound(amountBorrowed, 1, maxCollateral);
-
+        vm.assume(amountCollateral > 0);
         return (amountCollateral, amountBorrowed, priceCollateral);
     }
 

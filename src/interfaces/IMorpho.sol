@@ -19,6 +19,12 @@ struct Market {
     uint256 lltv;
 }
 
+struct User {
+    uint256 supplyShares;
+    uint128 borrowShares;
+    uint128 collateral;
+}
+
 /// @notice Authorization struct.
 /// @param authorizer Authorizer address.
 /// @param authorized Authorized address.
@@ -55,14 +61,7 @@ interface IMorpho is IFlashLender {
     /// @dev The recipient receives the fees through a supply position.
     function feeRecipient() external view returns (address);
 
-    /// @notice The `user`'s supply shares on the market `id`.
-    function supplyShares(Id id, address user) external view returns (uint256);
-
-    /// @notice The `user`'s borrow shares on the market `id`.
-    function borrowShares(Id id, address user) external view returns (uint256);
-
-    /// @notice The `user`'s collateral balance on the market `id`.
-    function collateral(Id id, address user) external view returns (uint256);
+    function user(Id id, address user) external view returns (uint256, uint128, uint128);
 
     /// @notice The total supply of the market `id`.
     /// @dev Does not contain the accrued interest since the last interaction.
