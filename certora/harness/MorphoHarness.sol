@@ -1,4 +1,4 @@
-pragma solidity 0.8.19;
+pragma solidity 0.8.21;
 
 import "../../src/Morpho.sol";
 import "../../src/libraries/SharesMathLib.sol";
