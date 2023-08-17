@@ -183,10 +183,10 @@ contract IntegrationAccrueInterestTest is BaseTest {
         morpho.accrueInterest(market);
 
         assertEq(
-            morpho.totalBorrow(id), params.totalBorrowBeforeAccrued + params.expectedAccruedInterest, "total borrow"
+            morpho.totalSupply(id), params.totalSupplyBeforeAccrued + params.expectedAccruedInterest, "total supply"
         );
         assertEq(
-            morpho.totalSupply(id), params.totalSupplyBeforeAccrued + params.expectedAccruedInterest, "total supply"
+            morpho.totalBorrow(id), params.totalBorrowBeforeAccrued + params.expectedAccruedInterest, "total borrow"
         );
         assertEq(
             morpho.totalSupplyShares(id),
