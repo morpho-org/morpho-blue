@@ -102,8 +102,8 @@ interface IMorpho {
         returns (address borrowableAsset, address collateralAsset, address oracle, address irm, uint256 lltv);
 
     /// @notice Sets `newOwner` as owner of the contract.
-    /// @dev Warning: No two step transfer ownership.
-    /// @dev Warning: The owner can be set to zero address.
+    /// @dev Warning: No two-step transfer ownership.
+    /// @dev Warning: The owner can be set to the zero address.
     function setOwner(address newOwner) external;
 
     /// @notice Enables `irm` as possible IRM for market creation.
@@ -115,11 +115,11 @@ interface IMorpho {
     function enableLltv(uint256 lltv) external;
 
     /// @notice Sets the `newFee` for `market`.
-    /// @dev Warning: The recipient can be zero address.
+    /// @dev Warning: The recipient can be the zero address.
     function setFee(Market memory market, uint256 newFee) external;
 
     /// @notice Sets `recipient` as recipient of the fee.
-    /// @dev Warning: The recipient can be set to zero address.
+    /// @dev Warning: The recipient can be set to the zero address.
     function setFeeRecipient(address recipient) external;
 
     /// @notice Creates `market`.
