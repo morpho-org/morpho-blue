@@ -14,6 +14,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Install submodules
+        run: git submodule update --init --recursive
+
       - name: Install python
         uses: actions/setup-python@v4
         with:
@@ -44,4 +47,5 @@ jobs:
           - verifyBlue.sh
           - verifyBlueRatioMathSummary.sh
           - verifyBlueExitLiquidity.sh
+          - verifyBlueTransfer.sh
           - verifyReentrancy.sh
