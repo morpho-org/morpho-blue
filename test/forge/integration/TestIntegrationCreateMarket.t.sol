@@ -4,8 +4,9 @@ pragma solidity ^0.8.0;
 import "../BaseTest.sol";
 
 contract IntegrationCreateMarketTest is BaseTest {
-    using MarketLib for Market;
     using MathLib for uint256;
+    using MarketLib for Market;
+    using MorphoLib for Morpho;
 
     function testCreateMarketWithNotEnabledIrmAndNotEnabledLltv(Market memory marketFuzz) public {
         vm.assume(marketFuzz.irm != address(irm) && marketFuzz.lltv != LLTV);
@@ -52,9 +53,9 @@ contract IntegrationCreateMarketTest is BaseTest {
         vm.stopPrank();
 
         assertEq(morpho.lastUpdate(marketFuzzId), block.timestamp, "lastUpdate != block.timestamp");
-        assertEq(morpho.totalSupply(marketFuzzId), 0, "totalSupply != 0");
+        assertEq(morpho.totalSupplyAssets(marketFuzzId), 0, "totalSupplyAssets != 0");
         assertEq(morpho.totalSupplyShares(marketFuzzId), 0, "totalSupplyShares != 0");
-        assertEq(morpho.totalBorrow(marketFuzzId), 0, "totalBorrow != 0");
+        assertEq(morpho.totalBorrowAssets(marketFuzzId), 0, "totalBorrowAssets != 0");
         assertEq(morpho.totalBorrowShares(marketFuzzId), 0, "totalBorrowShares != 0");
         assertEq(morpho.fee(marketFuzzId), 0, "fee != 0");
     }

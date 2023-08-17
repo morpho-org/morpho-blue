@@ -5,6 +5,7 @@ import "../BaseTest.sol";
 
 contract IntegrationSupplyTest is BaseTest {
     using MathLib for uint256;
+    using MorphoLib for Morpho;
     using SharesMathLib for uint256;
 
     function testSupplyMarketNotCreated(Market memory marketFuzz, uint256 amount) public {
@@ -56,7 +57,7 @@ contract IntegrationSupplyTest is BaseTest {
         assertEq(returnAssets, amount, "returned asset amount");
         assertEq(returnShares, expectedSupplyShares, "returned shares amount");
         assertEq(morpho.supplyShares(id, ONBEHALF), expectedSupplyShares, "supply shares");
-        assertEq(morpho.totalSupply(id), amount, "total supply");
+        assertEq(morpho.totalSupplyAssets(id), amount, "total supply");
         assertEq(morpho.totalSupplyShares(id), expectedSupplyShares, "total supply shares");
         assertEq(borrowableToken.balanceOf(SUPPLIER), 0, "SUPPLIER balance");
         assertEq(borrowableToken.balanceOf(address(morpho)), amount, "morpho balance");
@@ -78,7 +79,7 @@ contract IntegrationSupplyTest is BaseTest {
         assertEq(returnAssets, expectedSuppliedAmount, "returned asset amount");
         assertEq(returnShares, shares, "returned shares amount");
         assertEq(morpho.supplyShares(id, ONBEHALF), shares, "supply shares");
-        assertEq(morpho.totalSupply(id), expectedSuppliedAmount, "total supply");
+        assertEq(morpho.totalSupplyAssets(id), expectedSuppliedAmount, "total supply");
         assertEq(morpho.totalSupplyShares(id), shares, "total supply shares");
         assertEq(borrowableToken.balanceOf(SUPPLIER), 0, "SUPPLIER balance");
         assertEq(borrowableToken.balanceOf(address(morpho)), expectedSuppliedAmount, "morpho balance");

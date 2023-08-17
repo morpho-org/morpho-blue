@@ -178,7 +178,7 @@ contract Morpho is IMorpho {
 
         if (assets > 0) shares = assets.toSharesDown(totalSupply[id].assets, totalSupply[id].shares);
         else assets = shares.toAssetsUp(totalSupply[id].assets, totalSupply[id].shares);
-        require(shares < 2 ** 128 && assets < 2 ** 128);
+        require(shares < 2 ** 128 && assets < 2 ** 128, "too big");
 
         supplyShares[id][onBehalf] += shares;
         totalSupply[id].shares += uint128(shares);
@@ -209,7 +209,7 @@ contract Morpho is IMorpho {
 
         if (assets > 0) shares = assets.toSharesUp(totalSupply[id].assets, totalSupply[id].shares);
         else assets = shares.toAssetsDown(totalSupply[id].assets, totalSupply[id].shares);
-        require(shares < 2 ** 128 && assets < 2 ** 128);
+        require(shares < 2 ** 128 && assets < 2 ** 128, "too big");
 
         supplyShares[id][onBehalf] -= shares;
         totalSupply[id].shares -= uint128(shares);
@@ -242,7 +242,7 @@ contract Morpho is IMorpho {
 
         if (assets > 0) shares = assets.toSharesUp(totalBorrow[id].assets, totalBorrow[id].shares);
         else assets = shares.toAssetsDown(totalBorrow[id].assets, totalBorrow[id].shares);
-        require(shares < 2 ** 128 && assets < 2 ** 128);
+        require(shares < 2 ** 128 && assets < 2 ** 128, "too big");
 
         borrowShares[id][onBehalf] += shares;
         totalBorrow[id].shares += uint128(shares);
@@ -272,7 +272,7 @@ contract Morpho is IMorpho {
 
         if (assets > 0) shares = assets.toSharesDown(totalBorrow[id].assets, totalBorrow[id].shares);
         else assets = shares.toAssetsUp(totalBorrow[id].assets, totalBorrow[id].shares);
-        require(shares < 2 ** 128 && assets < 2 ** 128);
+        require(shares < 2 ** 128 && assets < 2 ** 128, "too big");
 
         borrowShares[id][onBehalf] -= shares;
         totalBorrow[id].shares -= uint128(shares);
@@ -347,7 +347,7 @@ contract Morpho is IMorpho {
         assetsRepaid =
             seized.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(liquidationIncentiveFactor(market.lltv));
         sharesRepaid = assetsRepaid.toSharesDown(totalBorrow[id].assets, totalBorrow[id].shares);
-        require(sharesRepaid < 2 ** 128 && assetsRepaid < 2 ** 128);
+        require(sharesRepaid < 2 ** 128 && assetsRepaid < 2 ** 128, "too big");
 
         borrowShares[id][borrower] -= sharesRepaid;
         totalBorrow[id].shares -= uint128(sharesRepaid);
@@ -360,7 +360,7 @@ contract Morpho is IMorpho {
         if (collateral[id][borrower] == 0) {
             badDebtShares = borrowShares[id][borrower];
             uint256 badDebt = badDebtShares.toAssetsUp(totalBorrow[id].assets, totalBorrow[id].shares);
-            require(badDebt < 2 ** 128);
+            require(badDebt < 2 ** 128, "too big");
             totalSupply[id].assets -= uint128(badDebt);
             totalBorrow[id].assets -= uint128(badDebt);
             totalBorrow[id].shares -= uint128(badDebtShares);
