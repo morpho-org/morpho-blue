@@ -194,7 +194,7 @@ interface IMorpho is IFlashLender {
 
     /// @notice Supplies the given `assets` of collateral to the given `market` on behalf of `onBehalf`,
     ///         optionally calling back the caller's `onMorphoSupplyCollateral` function with the given `data`.
-    /// @dev Interests are not accrued since it's not required and it saves gas.
+    /// @dev Interest are not accrued since it's not required and it saves gas.
     /// @dev Supplying a large amount can overflow and revert without any error message.
     /// @param market The market to supply collateral to.
     /// @param assets The amount of collateral to supply.
@@ -235,8 +235,8 @@ interface IMorpho is IFlashLender {
     /// @param signature The signature.
     function setAuthorizationWithSig(Authorization calldata authorization, Signature calldata signature) external;
 
-    /// @notice Accrues interests for `market`.
-    function accrueInterests(Market memory market) external;
+    /// @notice Accrues interest for `market`.
+    function accrueInterest(Market memory market) external;
 
     /// @notice Returns the data stored on the different `slots`.
     function extsload(bytes32[] memory slots) external view returns (bytes32[] memory res);

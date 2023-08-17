@@ -18,6 +18,10 @@ contract IrmMock is IIrm {
     }
 
     function borrowRate(Market memory market) external view returns (uint256) {
+        return borrowRateView(market);
+    }
+
+    function borrowRateView(Market memory market) public view returns (uint256) {
         Id id = market.id();
         uint256 utilization = MORPHO.totalBorrow(id).wDivDown(MORPHO.totalSupply(id));
 
