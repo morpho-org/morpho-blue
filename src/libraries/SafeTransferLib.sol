@@ -5,7 +5,7 @@ import {ErrorsLib} from "../libraries/ErrorsLib.sol";
 
 import {IERC20} from "../interfaces/IERC20.sol";
 
-interface ERC20 {
+interface IERC20Internal {
     function transfer(address to, uint256 value) external returns (bool);
     function transferFrom(address from, address to, uint256 value) external returns (bool);
 }
@@ -18,13 +18,14 @@ interface ERC20 {
 /// @dev It is the responsibility of the market creator to make sure that the address of the token has non-zero code.
 library SafeTransferLib {
     function safeTransfer(IERC20 token, address to, uint256 value) internal {
-        (bool success, bytes memory returndata) = address(token).call(abi.encodeCall(ERC20.transfer, (to, value)));
+        (bool success, bytes memory returndata) =
+            address(token).call(abi.encodeCall(IERC20Internal.transfer, (to, value)));
         require(success && (returndata.length == 0 || abi.decode(returndata, (bool))), ErrorsLib.TRANSFER_FAILED);
     }
 
     function safeTransferFrom(IERC20 token, address from, address to, uint256 value) internal {
         (bool success, bytes memory returndata) =
-            address(token).call(abi.encodeCall(ERC20.transferFrom, (from, to, value)));
+            address(token).call(abi.encodeCall(IERC20Internal.transferFrom, (from, to, value)));
         require(success && (returndata.length == 0 || abi.decode(returndata, (bool))), ErrorsLib.TRANSFER_FROM_FAILED);
     }
 }
