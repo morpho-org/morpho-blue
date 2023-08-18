@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import {Id, Market} from "../interfaces/IMorpho.sol";
+import {Id, Info} from "../interfaces/IMorpho.sol";
 
 /// @title MarketLib
 /// @author Morpho Labs
@@ -9,7 +9,7 @@ import {Id, Market} from "../interfaces/IMorpho.sol";
 /// @notice Library to convert a market to its id.
 library MarketLib {
     /// @notice Returns the id of a `market`.
-    function id(Market memory market) internal pure returns (Id) {
-        return Id.wrap(keccak256(abi.encode(market)));
+    function id(Info memory info) internal pure returns (Id) {
+        return Id.wrap(keccak256(abi.encode(info)));
     }
 }

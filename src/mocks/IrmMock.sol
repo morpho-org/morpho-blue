@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import {IIrm} from "../interfaces/IIrm.sol";
-import {Id, Market, IMorpho} from "../interfaces/IMorpho.sol";
+import {Id, Info, IMorpho} from "../interfaces/IMorpho.sol";
 
 import {MathLib} from "../libraries/MathLib.sol";
 import {MarketLib} from "../libraries/MarketLib.sol";
@@ -10,7 +10,7 @@ import {MorphoLib} from "../libraries/periphery/MorphoGettersLib.sol";
 
 contract IrmMock is IIrm {
     using MathLib for uint256;
-    using MarketLib for Market;
+    using MarketLib for Info;
     using MorphoLib for IMorpho;
 
     IMorpho private immutable MORPHO;
@@ -19,12 +19,12 @@ contract IrmMock is IIrm {
         MORPHO = morpho;
     }
 
-    function borrowRate(Market memory market) external view returns (uint256) {
-        return borrowRateView(market);
+    function borrowRate(Info memory info) external view returns (uint256) {
+        return borrowRateView(info);
     }
 
-    function borrowRateView(Market memory market) public view returns (uint256) {
-        Id id = market.id();
+    function borrowRateView(Info memory info) public view returns (uint256) {
+        Id id = info.id();
         uint256 utilization = MORPHO.totalBorrow(id).wDivDown(MORPHO.totalSupply(id));
 
         // Divide by the number of seconds in a year.

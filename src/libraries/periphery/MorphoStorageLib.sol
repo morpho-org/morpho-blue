@@ -14,14 +14,12 @@ library MorphoStorageLib {
     uint256 internal constant OWNER_SLOT = 0;
     uint256 internal constant FEE_RECIPIENT_SLOT = 1;
     uint256 internal constant USER_SLOT = 2;
-    uint256 internal constant TOTAL_SLOT = 3;
-    uint256 internal constant LAST_UPDATE_SLOT = 4;
-    uint256 internal constant FEE_SLOT = 5;
-    uint256 internal constant IS_IRM_ENABLED_SLOT = 6;
-    uint256 internal constant IS_LLTV_ENABLED_SLOT = 7;
-    uint256 internal constant IS_AUTHORIZED_SLOT = 8;
-    uint256 internal constant NONCE_SLOT = 9;
-    uint256 internal constant ID_TO_MARKET_SLOT = 10;
+    uint256 internal constant MARKET_SLOT = 3;
+    uint256 internal constant IS_IRM_ENABLED_SLOT = 4;
+    uint256 internal constant IS_LLTV_ENABLED_SLOT = 5;
+    uint256 internal constant IS_AUTHORIZED_SLOT = 6;
+    uint256 internal constant NONCE_SLOT = 7;
+    uint256 internal constant ID_TO_MARKET_SLOT = 8;
 
     /* SLOT OFFSETS */
 
@@ -45,16 +43,8 @@ library MorphoStorageLib {
         return keccak256(abi.encode(user, keccak256(abi.encode(id, USER_SLOT))));
     }
 
-    function totalSlot(Id id) internal pure returns (bytes32) {
-        return keccak256(abi.encode(id, TOTAL_SLOT));
-    }
-
-    function lastUpdateSlot(Id id) internal pure returns (bytes32) {
-        return keccak256(abi.encode(id, LAST_UPDATE_SLOT));
-    }
-
-    function feeSlot(Id id) internal pure returns (bytes32) {
-        return keccak256(abi.encode(id, FEE_SLOT));
+    function marketSlot(Id id) internal pure returns (bytes32) {
+        return keccak256(abi.encode(id, MARKET_SLOT));
     }
 
     function isIrmEnabledSlot(address irm) internal pure returns (bytes32) {

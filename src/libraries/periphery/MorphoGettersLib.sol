@@ -17,18 +17,26 @@ library MorphoLib {
     }
 
     function totalSupply(IMorpho morpho, Id id) internal view returns (uint256 res) {
-        (res,,,) = morpho.total(id);
+        (res,,,,,) = morpho.market(id);
     }
 
     function totalSupplyShares(IMorpho morpho, Id id) internal view returns (uint256 res) {
-        (, res,,) = morpho.total(id);
+        (, res,,,,) = morpho.market(id);
     }
 
     function totalBorrow(IMorpho morpho, Id id) internal view returns (uint256 res) {
-        (,, res,) = morpho.total(id);
+        (,, res,,,) = morpho.market(id);
     }
 
     function totalBorrowShares(IMorpho morpho, Id id) internal view returns (uint256 res) {
-        (,,, res) = morpho.total(id);
+        (,,, res,,) = morpho.market(id);
+    }
+
+    function lastUpdate(IMorpho morpho, Id id) internal view returns (uint256 res) {
+        (,,,, res,) = morpho.market(id);
+    }
+
+    function fee(IMorpho morpho, Id id) internal view returns (uint256 res) {
+        (,,,,, res) = morpho.market(id);
     }
 }

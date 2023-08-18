@@ -8,7 +8,7 @@ contract IntegrationBorrowTest is BaseTest {
     using MorphoLib for Morpho;
     using SharesMathLib for uint256;
 
-    function testBorrowMarketNotCreated(Market memory marketFuzz, address borrowerFuzz, uint256 amount) public {
+    function testBorrowMarketNotCreated(Info memory marketFuzz, address borrowerFuzz, uint256 amount) public {
         vm.assume(neq(marketFuzz, market));
 
         vm.prank(borrowerFuzz);

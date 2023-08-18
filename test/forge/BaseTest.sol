@@ -12,8 +12,8 @@ import {OracleMock as Oracle} from "src/mocks/OracleMock.sol";
 import {IrmMock as Irm} from "src/mocks/IrmMock.sol";
 
 contract BaseTest is Test {
+    using MarketLib for Info;
     using MathLib for uint256;
-    using MarketLib for Market;
 
     uint256 internal constant HIGH_COLLATERAL_AMOUNT = 1e35;
     uint256 internal constant MIN_TEST_AMOUNT = 100;
@@ -39,7 +39,7 @@ contract BaseTest is Test {
     ERC20 internal collateralToken;
     Oracle internal oracle;
     Irm internal irm;
-    Market internal market;
+    Info internal market;
     Id internal id;
 
     function setUp() public {
@@ -70,7 +70,7 @@ contract BaseTest is Test {
         irm = new Irm(morpho);
         vm.label(address(irm), "IRM");
 
-        market = Market(address(borrowableToken), address(collateralToken), address(oracle), address(irm), LLTV);
+        market = Info(address(borrowableToken), address(collateralToken), address(oracle), address(irm), LLTV);
         id = market.id();
 
         vm.startPrank(OWNER);
@@ -176,7 +176,7 @@ contract BaseTest is Test {
             UtilsLib.min(MAX_LIQUIDATION_INCENTIVE_FACTOR, WAD.wDivDown(WAD - LIQUIDATION_CURSOR.wMulDown(WAD - lltv)));
     }
 
-    function neq(Market memory a, Market memory b) internal pure returns (bool) {
+    function neq(Info memory a, Info memory b) internal pure returns (bool) {
         return (Id.unwrap(a.id()) != Id.unwrap(b.id()));
     }
 

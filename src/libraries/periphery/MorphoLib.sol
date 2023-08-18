@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import {Id, Market, IMorpho} from "../../interfaces/IMorpho.sol";
+import {Id, Info, IMorpho} from "../../interfaces/IMorpho.sol";
 import {IIrm} from "../../interfaces/IIrm.sol";
 
 import {MathLib} from "../MathLib.sol";
@@ -18,37 +18,36 @@ import {MorphoStorageLib} from "./MorphoStorageLib.sol";
 /// @dev The getter to retrieve the expected total borrow shares is not exposed because interest accrual does not apply to it.
 ///      The value can be queried directly on Morpho using `totalBorrowShares`.
 library MorphoInterestLib {
+    using MarketLib for Info;
     using MathLib for uint256;
-    using MarketLib for Market;
     using MorphoLib for IMorpho;
     using SharesMathLib for uint256;
 
-    function expectedAccrueInterest(IMorpho morpho, Market memory market)
+    function expectedAccrueInterest(IMorpho morpho, Info memory info)
         internal
         view
         returns (uint256 totalSupply, uint256 toralBorrow, uint256 totalSupplyShares)
     {
-        Id id = market.id();
+        Id id = info.id();
 
-        bytes32[] memory slots = new bytes32[](4);
-        slots[0] = MorphoStorageLib.totalSlot(id);
-        slots[1] = bytes32(uint256(MorphoStorageLib.totalSlot(id)) + 1);
-        slots[2] = MorphoStorageLib.feeSlot(id);
-        slots[3] = MorphoStorageLib.lastUpdateSlot(id);
+        bytes32[] memory slots = new bytes32[](3);
+        slots[0] = MorphoStorageLib.marketSlot(id);
+        slots[1] = bytes32(uint256(MorphoStorageLib.marketSlot(id)) + 1);
+        slots[2] = bytes32(uint256(MorphoStorageLib.marketSlot(id)) + 2);
 
         bytes32[] memory values = morpho.extsload(slots);
-        totalSupply = uint128(uint256(values[0]));
-        totalSupplyShares = uint256(values[0]) >> 128;
-        toralBorrow = uint128(uint256(values[1]));
-        uint256 fee = uint256(values[2]);
-        uint256 lastUpdate = uint256(values[3]);
+        totalSupply = uint256(values[0] << 128 >> 128);
+        totalSupplyShares = uint256(values[0] >> 128);
+        toralBorrow = uint256(values[1] << 128 >> 128);
+        uint256 lastUpdate = uint256(values[2] << 128 >> 128);
+        uint256 fee = uint256(values[2] >> 128);
 
         uint256 elapsed = block.timestamp - lastUpdate;
 
         if (elapsed == 0) return (totalSupply, toralBorrow, totalSupplyShares);
 
         if (toralBorrow != 0) {
-            uint256 borrowRate = IIrm(market.irm).borrowRateView(market);
+            uint256 borrowRate = IIrm(info.irm).borrowRateView(info);
             uint256 interest = toralBorrow.wMulDown(borrowRate.wTaylorCompounded(elapsed));
             toralBorrow += interest;
             totalSupply += interest;
@@ -63,44 +62,36 @@ library MorphoInterestLib {
         }
     }
 
-    function expectedTotalSupply(IMorpho morpho, Market memory market) internal view returns (uint256 totalSupply) {
-        (totalSupply,,) = expectedAccrueInterest(morpho, market);
+    function expectedTotalSupply(IMorpho morpho, Info memory info) internal view returns (uint256 totalSupply) {
+        (totalSupply,,) = expectedAccrueInterest(morpho, info);
     }
 
-    function expectedTotalBorrow(IMorpho morpho, Market memory market) internal view returns (uint256 totalBorrow) {
-        (, totalBorrow,) = expectedAccrueInterest(morpho, market);
+    function expectedTotalBorrow(IMorpho morpho, Info memory info) internal view returns (uint256 totalBorrow) {
+        (, totalBorrow,) = expectedAccrueInterest(morpho, info);
     }
 
-    function expectedTotalSupplyShares(IMorpho morpho, Market memory market)
+    function expectedTotalSupplyShares(IMorpho morpho, Info memory info)
         internal
         view
         returns (uint256 totalSupplyShares)
     {
-        (,, totalSupplyShares) = expectedAccrueInterest(morpho, market);
+        (,, totalSupplyShares) = expectedAccrueInterest(morpho, info);
     }
 
     /// @dev Warning: It does not work for `feeRecipient` because their supply shares increase is not taken into account.
-    function expectedSupplyBalance(IMorpho morpho, Market memory market, address user)
-        internal
-        view
-        returns (uint256)
-    {
-        Id id = market.id();
+    function expectedSupplyBalance(IMorpho morpho, Info memory info, address user) internal view returns (uint256) {
+        Id id = info.id();
         uint256 supplyShares = morpho.supplyShares(id, user);
-        (uint256 totalSupply,, uint256 totalSupplyShares) = expectedAccrueInterest(morpho, market);
+        (uint256 totalSupply,, uint256 totalSupplyShares) = expectedAccrueInterest(morpho, info);
 
         return supplyShares.toAssetsDown(totalSupply, totalSupplyShares);
     }
 
-    function expectedBorrowBalance(IMorpho morpho, Market memory market, address user)
-        internal
-        view
-        returns (uint256)
-    {
-        Id id = market.id();
+    function expectedBorrowBalance(IMorpho morpho, Info memory info, address user) internal view returns (uint256) {
+        Id id = info.id();
         uint256 borrowShares = morpho.borrowShares(id, user);
         uint256 totalBorrowShares = morpho.totalBorrowShares(id);
-        (, uint256 totalBorrow,) = expectedAccrueInterest(morpho, market);
+        (, uint256 totalBorrow,) = expectedAccrueInterest(morpho, info);
 
         return borrowShares.toAssetsUp(totalBorrow, totalBorrowShares);
     }

@@ -8,7 +8,7 @@ contract IntegrationLiquidateTest is BaseTest {
     using MorphoLib for Morpho;
     using SharesMathLib for uint256;
 
-    function testLiquidateNotCreatedMarket(Market memory marketFuzz) public {
+    function testLiquidateNotCreatedMarket(Info memory marketFuzz) public {
         vm.assume(neq(marketFuzz, market));
 
         vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));

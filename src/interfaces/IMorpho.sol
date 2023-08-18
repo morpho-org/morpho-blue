@@ -9,7 +9,7 @@ type Id is bytes32;
 /// @param oracle The address of the oracle.
 /// @param irm The address of the interest rate model.
 /// @param lltv The Liquidation LTV.
-struct Market {
+struct Info {
     address borrowableToken;
     address collateralToken;
     address oracle;
@@ -23,11 +23,13 @@ struct User {
     uint128 collateral;
 }
 
-struct Totals {
-    uint128 supplyAssets;
-    uint128 supplyShares;
-    uint128 borrowAssets;
-    uint128 borrowShares;
+struct Market {
+    uint128 totalSupplyAssets;
+    uint128 totalSupplyShares;
+    uint128 totalBorrowAssets;
+    uint128 totalBorrowShares;
+    uint128 lastUpdate;
+    uint128 fee;
 }
 
 /// @notice Authorization struct.
@@ -68,13 +70,7 @@ interface IMorpho {
 
     function user(Id id, address user) external view returns (uint256, uint128, uint128);
 
-    function total(Id id) external view returns (uint128, uint128, uint128, uint128);
-
-    /// @notice The last update timestamp of the market `id` (also used to check if a market has been created).
-    function lastUpdate(Id id) external view returns (uint256);
-
-    /// @notice The fee of the market `id`.
-    function fee(Id id) external view returns (uint256);
+    function market(Id id) external view returns (uint128, uint128, uint128, uint128, uint128, uint128);
 
     /// @notice Whether the `irm` is enabled.
     function isIrmEnabled(address irm) external view returns (bool);
@@ -110,14 +106,14 @@ interface IMorpho {
 
     /// @notice Sets the `newFee` for `market`.
     /// @dev Warning: The recipient can be the zero address.
-    function setFee(Market memory market, uint256 newFee) external;
+    function setFee(Info memory market, uint256 newFee) external;
 
     /// @notice Sets `recipient` as recipient of the fee.
     /// @dev Warning: The recipient can be set to the zero address.
     function setFeeRecipient(address recipient) external;
 
     /// @notice Creates `market`.
-    function createMarket(Market memory market) external;
+    function createMarket(Info memory market) external;
 
     /// @notice Supplies the given `assets` or `shares` to the given `market` on behalf of `onBehalf`,
     ///         optionally calling back the caller's `onMorphoSupply` function with the given `data`.
@@ -134,7 +130,7 @@ interface IMorpho {
     /// @param data Arbitrary data to pass to the `onMorphoSupply` callback. Pass empty data if not needed.
     /// @return assetsSupplied The amount of assets supplied.
     /// @return sharesSupplied The amount of shares minted.
-    function supply(Market memory market, uint256 assets, uint256 shares, address onBehalf, bytes memory data)
+    function supply(Info memory market, uint256 assets, uint256 shares, address onBehalf, bytes memory data)
         external
         returns (uint256 assetsSupplied, uint256 sharesSupplied);
 
@@ -150,7 +146,7 @@ interface IMorpho {
     /// @param receiver The address that will receive the withdrawn assets.
     /// @return assetsWithdrawn The amount of assets withdrawn.
     /// @return sharesWithdrawn The amount of shares burned.
-    function withdraw(Market memory market, uint256 assets, uint256 shares, address onBehalf, address receiver)
+    function withdraw(Info memory market, uint256 assets, uint256 shares, address onBehalf, address receiver)
         external
         returns (uint256 assetsWithdrawn, uint256 sharesWithdrawn);
 
@@ -169,7 +165,7 @@ interface IMorpho {
     /// @param receiver The address that will receive the debt.
     /// @return assetsBorrowed The amount of assets borrowed.
     /// @return sharesBorrowed The amount of shares minted.
-    function borrow(Market memory market, uint256 assets, uint256 shares, address onBehalf, address receiver)
+    function borrow(Info memory market, uint256 assets, uint256 shares, address onBehalf, address receiver)
         external
         returns (uint256 assetsBorrowed, uint256 sharesBorrowed);
 
@@ -185,7 +181,7 @@ interface IMorpho {
     /// @param data Arbitrary data to pass to the `onMorphoRepay` callback. Pass empty data if not needed.
     /// @return assetsRepaid The amount of assets repaid.
     /// @return sharesRepaid The amount of shares burned.
-    function repay(Market memory market, uint256 assets, uint256 shares, address onBehalf, bytes memory data)
+    function repay(Info memory market, uint256 assets, uint256 shares, address onBehalf, bytes memory data)
         external
         returns (uint256 assetsRepaid, uint256 sharesRepaid);
 
@@ -197,7 +193,7 @@ interface IMorpho {
     /// @param assets The amount of collateral to supply.
     /// @param onBehalf The address that will receive the collateral.
     /// @param data Arbitrary data to pass to the `onMorphoSupplyCollateral` callback. Pass empty data if not needed.
-    function supplyCollateral(Market memory market, uint256 assets, address onBehalf, bytes memory data) external;
+    function supplyCollateral(Info memory market, uint256 assets, address onBehalf, bytes memory data) external;
 
     /// @notice Withdraws the given `assets` of collateral from the given `market` on behalf of `onBehalf` to `receiver`.
     /// @dev `msg.sender` must be authorized to manage `onBehalf`'s positions.
@@ -206,7 +202,7 @@ interface IMorpho {
     /// @param assets The amount of collateral to withdraw.
     /// @param onBehalf The address of the owner of the collateral.
     /// @param receiver The address that will receive the withdrawn collateral.
-    function withdrawCollateral(Market memory market, uint256 assets, address onBehalf, address receiver) external;
+    function withdrawCollateral(Info memory market, uint256 assets, address onBehalf, address receiver) external;
 
     /// @notice Liquidates the given `seized` assets to the given `market` of the given `borrower`'s position,
     ///         optionally calling back the caller's `onMorphoLiquidate` function with the given `data`.
@@ -218,7 +214,7 @@ interface IMorpho {
     /// @param data Arbitrary data to pass to the `onMorphoLiquidate` callback. Pass empty data if not needed.
     /// @return assetsRepaid The amount of assets repaid.
     /// @return sharesRepaid The amount of shares burned.
-    function liquidate(Market memory market, address borrower, uint256 seized, bytes memory data)
+    function liquidate(Info memory market, address borrower, uint256 seized, bytes memory data)
         external
         returns (uint256 assetsRepaid, uint256 sharesRepaid);
 
@@ -239,7 +235,7 @@ interface IMorpho {
     function setAuthorizationWithSig(Authorization calldata authorization, Signature calldata signature) external;
 
     /// @notice Accrues interest for `market`.
-    function accrueInterest(Market memory market) external;
+    function accrueInterest(Info memory market) external;
 
     /// @notice Returns the data stored on the different `slots`.
     function extsload(bytes32[] memory slots) external view returns (bytes32[] memory res);

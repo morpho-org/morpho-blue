@@ -8,7 +8,7 @@ contract IntegrationRepayTest is BaseTest {
     using MorphoLib for Morpho;
     using SharesMathLib for uint256;
 
-    function testRepayMarketNotCreated(Market memory marketFuzz) public {
+    function testRepayMarketNotCreated(Info memory marketFuzz) public {
         vm.assume(neq(marketFuzz, market));
 
         vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));

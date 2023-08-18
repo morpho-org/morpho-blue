@@ -5,10 +5,10 @@ import "../BaseTest.sol";
 
 contract IntegrationCreateMarketTest is BaseTest {
     using MorphoLib for Morpho;
-    using MarketLib for Market;
+    using MarketLib for Info;
     using MathLib for uint256;
 
-    function testCreateMarketWithNotEnabledIrmAndNotEnabledLltv(Market memory marketFuzz) public {
+    function testCreateMarketWithNotEnabledIrmAndNotEnabledLltv(Info memory marketFuzz) public {
         vm.assume(marketFuzz.irm != address(irm) && marketFuzz.lltv != LLTV);
 
         vm.prank(OWNER);
@@ -16,7 +16,7 @@ contract IntegrationCreateMarketTest is BaseTest {
         morpho.createMarket(marketFuzz);
     }
 
-    function testCreateMarketWithNotEnabledIrmAndEnabledLltv(Market memory marketFuzz) public {
+    function testCreateMarketWithNotEnabledIrmAndEnabledLltv(Info memory marketFuzz) public {
         vm.assume(marketFuzz.irm != address(irm));
         marketFuzz.lltv = _boundValidLltv(marketFuzz.lltv);
 
@@ -28,7 +28,7 @@ contract IntegrationCreateMarketTest is BaseTest {
         vm.stopPrank();
     }
 
-    function testCreateMarketWithEnabledIrmAndNotEnabledLltv(Market memory marketFuzz) public {
+    function testCreateMarketWithEnabledIrmAndNotEnabledLltv(Info memory marketFuzz) public {
         vm.assume(marketFuzz.lltv != LLTV);
 
         vm.startPrank(OWNER);
@@ -39,7 +39,7 @@ contract IntegrationCreateMarketTest is BaseTest {
         vm.stopPrank();
     }
 
-    function testCreateMarketWithEnabledIrmAndLltv(Market memory marketFuzz) public {
+    function testCreateMarketWithEnabledIrmAndLltv(Info memory marketFuzz) public {
         marketFuzz.lltv = _boundValidLltv(marketFuzz.lltv);
         Id marketFuzzId = marketFuzz.id();
 
@@ -60,7 +60,7 @@ contract IntegrationCreateMarketTest is BaseTest {
         assertEq(morpho.fee(marketFuzzId), 0, "fee != 0");
     }
 
-    function testCreateMarketAlreadyCreated(Market memory marketFuzz) public {
+    function testCreateMarketAlreadyCreated(Info memory marketFuzz) public {
         marketFuzz.lltv = _boundValidLltv(marketFuzz.lltv);
 
         vm.startPrank(OWNER);
