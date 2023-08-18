@@ -6,6 +6,7 @@ import "../BaseTest.sol";
 contract IntegrationWithdrawCollateralTest is BaseTest {
     using MathLib for uint256;
     using MorphoLib for Morpho;
+    using MorphoTestLib for Morpho;
 
     function testWithdrawCollateralMarketNotCreated(Info memory marketFuzz) public {
         vm.assume(neq(marketFuzz, market));

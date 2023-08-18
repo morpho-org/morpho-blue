@@ -6,6 +6,7 @@ import "forge-std/console.sol";
 
 import {SigUtils} from "test/forge/helpers/SigUtils.sol";
 import {MorphoLib} from "src/libraries/periphery/MorphoLib.sol";
+import {MorphoTestLib} from "test/forge/helpers/MorphoTestLib.sol";
 import "src/Morpho.sol";
 import {ERC20Mock as ERC20} from "src/mocks/ERC20Mock.sol";
 import {OracleMock as Oracle} from "src/mocks/OracleMock.sol";
@@ -15,6 +16,7 @@ contract BaseTest is Test {
     using MarketLib for Info;
     using MathLib for uint256;
     using MorphoLib for Morpho;
+    using MorphoTestLib for Morpho;
 
     uint256 internal constant HIGH_COLLATERAL_AMOUNT = 1e35;
     uint256 internal constant MIN_TEST_AMOUNT = 100;

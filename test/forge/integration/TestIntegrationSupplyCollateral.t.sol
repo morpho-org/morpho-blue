@@ -5,6 +5,7 @@ import "../BaseTest.sol";
 
 contract IntegrationSupplyCollateralTest is BaseTest {
     using MorphoLib for Morpho;
+    using MorphoTestLib for Morpho;
 
     function testSupplyCollateralMarketNotCreated(Info memory marketFuzz, uint256 amount) public {
         vm.assume(neq(marketFuzz, market));

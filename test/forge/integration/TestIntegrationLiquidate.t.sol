@@ -6,6 +6,7 @@ import "../BaseTest.sol";
 contract IntegrationLiquidateTest is BaseTest {
     using MathLib for uint256;
     using MorphoLib for Morpho;
+    using MorphoTestLib for Morpho;
     using SharesMathLib for uint256;
 
     function testLiquidateNotCreatedMarket(Info memory marketFuzz) public {
