@@ -9,16 +9,15 @@ import "../BaseTest.sol";
 contract MorphoStorageLibTest is BaseTest {
     using MathLib for uint256;
     using MorphoLib for Morpho;
-    using MorphoTestLib for Morpho;
     using SharesMathLib for uint256;
 
-    function testStorage(uint256 amountSupplied, uint256 amountBorrowed, uint256 timeElapsed, uint128 fee) public {
+    function testStorage(uint256 amountSupplied, uint256 amountBorrowed, uint256 timeElapsed, uint256 fee) public {
         // Prepare storage layout with non empty values.
 
         amountSupplied = bound(amountSupplied, 2, MAX_TEST_AMOUNT);
         amountBorrowed = bound(amountBorrowed, 1, amountSupplied);
         timeElapsed = uint32(bound(timeElapsed, 1, 1e8));
-        fee = uint128(bound(fee, 1, MAX_FEE));
+        fee = bound(fee, 1, MAX_FEE);
 
         // Set fee parameters.
         vm.startPrank(OWNER);

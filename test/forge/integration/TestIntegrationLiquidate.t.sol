@@ -6,21 +6,20 @@ import "../BaseTest.sol";
 contract IntegrationLiquidateTest is BaseTest {
     using MathLib for uint256;
     using MorphoLib for Morpho;
-    using MorphoTestLib for Morpho;
     using SharesMathLib for uint256;
 
     function testLiquidateNotCreatedMarket(Info memory marketFuzz) public {
         vm.assume(neq(marketFuzz, market));
 
         vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
-        morpho.liquidate(marketFuzz, address(this), uint256(1), hex"");
+        morpho.liquidate(marketFuzz, address(this), 1, hex"");
     }
 
     function testLiquidateZeroAmount() public {
         vm.prank(BORROWER);
 
         vm.expectRevert(bytes(ErrorsLib.ZERO_ASSETS));
-        morpho.liquidate(market, address(this), uint256(0), hex"");
+        morpho.liquidate(market, address(this), 0, hex"");
     }
 
     function testLiquidateHealthyPosition(

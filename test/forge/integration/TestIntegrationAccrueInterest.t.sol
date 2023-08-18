@@ -6,7 +6,6 @@ import "../BaseTest.sol";
 contract IntegrationAccrueInterestTest is BaseTest {
     using MathLib for uint256;
     using MorphoLib for Morpho;
-    using MorphoTestLib for Morpho;
     using SharesMathLib for uint256;
 
     function testAccrueInterestMarketNotCreated(Info memory marketFuzz) public {
@@ -134,7 +133,7 @@ contract IntegrationAccrueInterestTest is BaseTest {
         uint256 amountSupplied,
         uint256 amountBorrowed,
         uint256 timeElapsed,
-        uint128 fee
+        uint256 fee
     ) public {
         AccrueInterestWithFeesTestParams memory params;
 
@@ -143,7 +142,7 @@ contract IntegrationAccrueInterestTest is BaseTest {
         (amountCollateral, amountBorrowed,) = _boundHealthyPosition(amountCollateral, amountBorrowed, collateralPrice);
         amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
         timeElapsed = uint32(bound(timeElapsed, 1, 1e8));
-        fee = uint128(bound(fee, 1, MAX_FEE));
+        fee = bound(fee, 1, MAX_FEE);
 
         // Set fee parameters.
         vm.startPrank(OWNER);

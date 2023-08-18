@@ -5,7 +5,6 @@ import "../BaseTest.sol";
 
 contract IntegrationSupplyCollateralTest is BaseTest {
     using MorphoLib for Morpho;
-    using MorphoTestLib for Morpho;
 
     function testSupplyCollateralMarketNotCreated(Info memory marketFuzz, uint256 amount) public {
         vm.assume(neq(marketFuzz, market));
@@ -18,7 +17,7 @@ contract IntegrationSupplyCollateralTest is BaseTest {
     function testSupplyCollateralZeroAmount(address SUPPLIER) public {
         vm.prank(SUPPLIER);
         vm.expectRevert(bytes(ErrorsLib.ZERO_ASSETS));
-        morpho.supplyCollateral(market, uint256(0), SUPPLIER, hex"");
+        morpho.supplyCollateral(market, 0, SUPPLIER, hex"");
     }
 
     function testSupplyCollateralOnBehalfZeroAddress(uint256 amount) public {

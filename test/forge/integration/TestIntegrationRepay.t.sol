@@ -6,19 +6,18 @@ import "../BaseTest.sol";
 contract IntegrationRepayTest is BaseTest {
     using MathLib for uint256;
     using MorphoLib for Morpho;
-    using MorphoTestLib for Morpho;
     using SharesMathLib for uint256;
 
     function testRepayMarketNotCreated(Info memory marketFuzz) public {
         vm.assume(neq(marketFuzz, market));
 
         vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
-        morpho.repay(marketFuzz, uint256(1), uint256(0), address(this), hex"");
+        morpho.repay(marketFuzz, 1, 0, address(this), hex"");
     }
 
     function testRepayZeroAmount() public {
         vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
-        morpho.repay(market, uint256(0), uint256(0), address(this), hex"");
+        morpho.repay(market, 0, 0, address(this), hex"");
     }
 
     function testRepayInconsistentInput(uint256 amount, uint256 shares) public {
@@ -30,7 +29,7 @@ contract IntegrationRepayTest is BaseTest {
     }
 
     function testRepayOnBehalfZeroAddress(uint256 input, bool isAmount) public {
-        input = bound(input, 1, type(uint128).max);
+        input = bound(input, 1, type(uint256).max);
         vm.expectRevert(bytes(ErrorsLib.ZERO_ADDRESS));
         morpho.repay(market, isAmount ? input : 0, isAmount ? 0 : input, address(0), hex"");
     }

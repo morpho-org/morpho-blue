@@ -15,7 +15,6 @@ contract IntegrationCallbacksTest is
     using MarketLib for Info;
     using MathLib for uint256;
     using MorphoLib for Morpho;
-    using MorphoTestLib for Morpho;
 
     // Callback functions.
 

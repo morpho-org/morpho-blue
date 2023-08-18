@@ -8,11 +8,10 @@ import "../BaseTest.sol";
 contract MorphoInterestLibTest is BaseTest {
     using MathLib for uint256;
     using MorphoLib for Morpho;
-    using MorphoTestLib for Morpho;
     using SharesMathLib for uint256;
     using MorphoInterestLib for Morpho;
 
-    function testVirtualAccrueInterest(uint256 amountSupplied, uint256 amountBorrowed, uint256 timeElapsed, uint128 fee)
+    function testVirtualAccrueInterest(uint256 amountSupplied, uint256 amountBorrowed, uint256 timeElapsed, uint256 fee)
         public
     {
         _generatePendingInterest(amountSupplied, amountBorrowed, timeElapsed, fee);
@@ -27,7 +26,7 @@ contract MorphoInterestLibTest is BaseTest {
         assertEq(virtualTotalSupplyShares, morpho.totalSupplyShares(id), "total supply shares");
     }
 
-    function testExpectedTotalSupply(uint256 amountSupplied, uint256 amountBorrowed, uint256 timeElapsed, uint128 fee)
+    function testExpectedTotalSupply(uint256 amountSupplied, uint256 amountBorrowed, uint256 timeElapsed, uint256 fee)
         public
     {
         _generatePendingInterest(amountSupplied, amountBorrowed, timeElapsed, fee);
@@ -39,7 +38,7 @@ contract MorphoInterestLibTest is BaseTest {
         assertEq(expectedTotalSupply, morpho.totalSupply(id));
     }
 
-    function testExpectedTotalBorrow(uint256 amountSupplied, uint256 amountBorrowed, uint256 timeElapsed, uint128 fee)
+    function testExpectedTotalBorrow(uint256 amountSupplied, uint256 amountBorrowed, uint256 timeElapsed, uint256 fee)
         public
     {
         _generatePendingInterest(amountSupplied, amountBorrowed, timeElapsed, fee);
@@ -55,7 +54,7 @@ contract MorphoInterestLibTest is BaseTest {
         uint256 amountSupplied,
         uint256 amountBorrowed,
         uint256 timeElapsed,
-        uint128 fee
+        uint256 fee
     ) public {
         _generatePendingInterest(amountSupplied, amountBorrowed, timeElapsed, fee);
 
@@ -66,7 +65,7 @@ contract MorphoInterestLibTest is BaseTest {
         assertEq(expectedTotalSupplyShares, morpho.totalSupplyShares(id));
     }
 
-    function testExpectedSupplyBalance(uint256 amountSupplied, uint256 amountBorrowed, uint256 timeElapsed, uint128 fee)
+    function testExpectedSupplyBalance(uint256 amountSupplied, uint256 amountBorrowed, uint256 timeElapsed, uint256 fee)
         internal
     {
         _generatePendingInterest(amountSupplied, amountBorrowed, timeElapsed, fee);
@@ -81,7 +80,7 @@ contract MorphoInterestLibTest is BaseTest {
         assertEq(expectedSupplyBalance, actualSupplyBalance);
     }
 
-    function testExpectedBorrowBalance(uint256 amountSupplied, uint256 amountBorrowed, uint256 timeElapsed, uint128 fee)
+    function testExpectedBorrowBalance(uint256 amountSupplied, uint256 amountBorrowed, uint256 timeElapsed, uint256 fee)
         internal
     {
         _generatePendingInterest(amountSupplied, amountBorrowed, timeElapsed, fee);
@@ -96,13 +95,13 @@ contract MorphoInterestLibTest is BaseTest {
         assertEq(expectedBorrowBalance, actualBorrowBalance);
     }
 
-    function _generatePendingInterest(uint256 amountSupplied, uint256 amountBorrowed, uint256 timeElapsed, uint128 fee)
+    function _generatePendingInterest(uint256 amountSupplied, uint256 amountBorrowed, uint256 timeElapsed, uint256 fee)
         internal
     {
         amountSupplied = bound(amountSupplied, 0, MAX_TEST_AMOUNT);
         amountBorrowed = bound(amountBorrowed, 0, amountSupplied);
         timeElapsed = uint32(bound(timeElapsed, 0, 1e8));
-        fee = uint128(bound(fee, 0, MAX_FEE));
+        fee = bound(fee, 0, MAX_FEE);
 
         // Set fee parameters.
         vm.startPrank(OWNER);

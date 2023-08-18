@@ -6,7 +6,6 @@ import "../BaseTest.sol";
 contract IntegrationBorrowTest is BaseTest {
     using MathLib for uint256;
     using MorphoLib for Morpho;
-    using MorphoTestLib for Morpho;
     using SharesMathLib for uint256;
 
     function testBorrowMarketNotCreated(Info memory marketFuzz, address borrowerFuzz, uint256 amount) public {
@@ -20,7 +19,7 @@ contract IntegrationBorrowTest is BaseTest {
     function testBorrowZeroAmount(address borrowerFuzz) public {
         vm.prank(borrowerFuzz);
         vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
-        morpho.borrow(market, uint256(0), uint256(0), borrowerFuzz, RECEIVER);
+        morpho.borrow(market, 0, 0, borrowerFuzz, RECEIVER);
     }
 
     function testBorrowInconsistentInput(address borrowerFuzz, uint256 amount, uint256 shares) public {

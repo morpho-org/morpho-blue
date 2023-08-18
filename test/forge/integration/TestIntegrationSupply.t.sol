@@ -6,7 +6,6 @@ import "../BaseTest.sol";
 contract IntegrationSupplyTest is BaseTest {
     using MathLib for uint256;
     using MorphoLib for Morpho;
-    using MorphoTestLib for Morpho;
     using SharesMathLib for uint256;
 
     function testSupplyMarketNotCreated(Info memory marketFuzz, uint256 amount) public {
@@ -22,7 +21,7 @@ contract IntegrationSupplyTest is BaseTest {
 
         vm.prank(SUPPLIER);
         vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
-        morpho.supply(market, uint256(0), 0, SUPPLIER, hex"");
+        morpho.supply(market, 0, 0, SUPPLIER, hex"");
     }
 
     function testSupplyOnBehalfZeroAddress(uint256 amount) public {
