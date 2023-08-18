@@ -446,7 +446,7 @@ contract Morpho is IMorpho {
         if (elapsed == 0) return;
 
         if (market[id].totalBorrowAssets != 0) {
-            uint256 borrowRate = IIrm(marketParams.irm).borrowRate(marketParams);
+            uint256 borrowRate = IIrm(marketParams.irm).borrowRate(id, market[id]);
             uint256 interest = market[id].totalBorrowAssets.wMulDown(borrowRate.wTaylorCompounded(elapsed));
             market[id].totalBorrowAssets += interest.toUint128();
             market[id].totalSupplyAssets += interest.toUint128();

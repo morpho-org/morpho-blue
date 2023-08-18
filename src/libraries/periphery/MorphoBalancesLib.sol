@@ -47,7 +47,7 @@ library MorphoBalancesLib {
         if (elapsed == 0) return (totalSupply, toralBorrow, totalSupplyShares);
 
         if (toralBorrow != 0) {
-            uint256 borrowRate = IIrm(marketParams.irm).borrowRateView(marketParams);
+            uint256 borrowRate = IIrm(marketParams.irm).borrowRateView(id);
             uint256 interest = toralBorrow.wMulDown(borrowRate.wTaylorCompounded(elapsed));
             toralBorrow += interest;
             totalSupply += interest;
