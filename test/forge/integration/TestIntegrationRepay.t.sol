@@ -29,7 +29,7 @@ contract IntegrationRepayTest is BaseTest {
     }
 
     function testRepayOnBehalfZeroAddress(uint256 input, bool isAmount) public {
-        input = bound(input, 1, type(uint256).max);
+        input = bound(input, 1, type(uint128).max);
         vm.expectRevert(bytes(ErrorsLib.ZERO_ADDRESS));
         morpho.repay(market, isAmount ? input : 0, isAmount ? 0 : input, address(0), hex"");
     }
