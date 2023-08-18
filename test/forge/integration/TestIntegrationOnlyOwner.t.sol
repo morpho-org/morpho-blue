@@ -6,6 +6,7 @@ import "../BaseTest.sol";
 contract IntegrationOnlyOwnerTest is BaseTest {
     using MarketLib for Market;
     using MathLib for uint256;
+    using MorphoLib for Morpho;
 
     function testSetOwnerWhenNotOwner(address addressFuzz) public {
         vm.assume(addressFuzz != OWNER);
@@ -82,12 +83,12 @@ contract IntegrationOnlyOwnerTest is BaseTest {
         morpho.setFee(market, feeFuzz);
     }
 
-    function testSetFeeWhenMarketNotCreated(Market memory marketFuzz, uint256 feeFuzz) public {
-        vm.assume(neq(marketFuzz, market));
+    function testSetFeeWhenMarketNotCreated(MarketParams memory marketParamsFuzz, uint256 feeFuzz) public {
+        vm.assume(neq(marketParamsFuzz, market));
 
         vm.prank(OWNER);
         vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
-        morpho.setFee(marketFuzz, feeFuzz);
+        morpho.setFee(marketParamsFuzz, feeFuzz);
     }
 
     function testSetTooHighFee(uint256 feeFuzz) public {

@@ -4,12 +4,14 @@ pragma solidity ^0.8.0;
 import "../BaseTest.sol";
 
 contract IntegrationSupplyCollateralTest is BaseTest {
-    function testSupplyCollateralMarketNotCreated(Market memory marketFuzz, uint256 amount) public {
-        vm.assume(neq(marketFuzz, market));
+    using MorphoLib for Morpho;
+
+    function testSupplyCollateralMarketNotCreated(MarketParams memory marketParamsFuzz, uint256 amount) public {
+        vm.assume(neq(marketParamsFuzz, market));
 
         vm.prank(SUPPLIER);
         vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
-        morpho.supplyCollateral(marketFuzz, amount, SUPPLIER, hex"");
+        morpho.supplyCollateral(marketParamsFuzz, amount, SUPPLIER, hex"");
     }
 
     function testSupplyCollateralZeroAmount(address SUPPLIER) public {
@@ -27,7 +29,7 @@ contract IntegrationSupplyCollateralTest is BaseTest {
     }
 
     function testSupplyCollateral(uint256 amount) public {
-        amount = bound(amount, 1, MAX_TEST_AMOUNT);
+        amount = bound(amount, 1, MAX_COLLATERAL_ASSETS);
 
         collateralToken.setBalance(SUPPLIER, amount);
 
