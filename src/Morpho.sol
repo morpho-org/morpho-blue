@@ -40,6 +40,7 @@ bytes32 constant AUTHORIZATION_TYPEHASH =
 /// @custom:contact security@morpho.xyz
 /// @notice The Morpho contract.
 contract Morpho is IMorpho {
+    using MathLib for uint128;
     using MathLib for uint256;
     using MarketLib for Config;
     using UtilsLib for uint256;
@@ -330,8 +331,11 @@ contract Morpho is IMorpho {
 
         require(!_isHealthy(config, id, borrower, collateralPrice), ErrorsLib.HEALTHY_POSITION);
 
-        assetsRepaid =
-            seized.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(liquidationIncentiveFactor(config.lltv));
+        // The liquidation incentive factor is min(maxIncentiveFactor, 1/(1 - cursor*(1 - lltv))).
+        uint256 incentiveFactor = UtilsLib.min(
+            MAX_LIQUIDATION_INCENTIVE_FACTOR, WAD.wDivDown(WAD - LIQUIDATION_CURSOR.wMulDown(WAD - config.lltv))
+        );
+        assetsRepaid = seized.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(incentiveFactor);
         sharesRepaid = assetsRepaid.toSharesDown(market[id].totalBorrowAssets, market[id].totalBorrowShares);
 
         user[id][borrower].borrowShares -= sharesRepaid.toUint128();
@@ -425,11 +429,9 @@ contract Morpho is IMorpho {
 
         if (elapsed == 0) return;
 
-        uint256 marketTotalBorrow = market[id].totalBorrowAssets;
-
-        if (marketTotalBorrow != 0) {
+        if (market[id].totalBorrowAssets != 0) {
             uint256 borrowRate = IIrm(config.irm).borrowRate(config);
-            uint256 interest = marketTotalBorrow.wMulDown(borrowRate.wTaylorCompounded(elapsed));
+            uint256 interest = market[id].totalBorrowAssets.wMulDown(borrowRate.wTaylorCompounded(elapsed));
             market[id].totalBorrowAssets += interest.toUint128();
             market[id].totalSupplyAssets += interest.toUint128();
 
@@ -494,13 +496,5 @@ contract Morpho is IMorpho {
                 mstore(add(res, mul(i, 32)), sload(slot))
             }
         }
-    }
-
-    /* LIQUIDATION INCENTIVE FACTOR */
-
-    /// @dev The liquidation incentive factor is min(maxIncentiveFactor, 1/(1 - cursor*(1 - lltv))).
-    function liquidationIncentiveFactor(uint256 lltv) private pure returns (uint256) {
-        return
-            UtilsLib.min(MAX_LIQUIDATION_INCENTIVE_FACTOR, WAD.wDivDown(WAD - LIQUIDATION_CURSOR.wMulDown(WAD - lltv)));
     }
 }
