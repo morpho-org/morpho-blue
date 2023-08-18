@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import {MorphoInterestLib} from "../../../src/libraries/periphery/MorphoLib.sol";
+import {MorphoInterestLib} from "src/libraries/periphery/MorphoInterestLib.sol";
 
 import "../BaseTest.sol";
 
-contract MorphoLibTest is BaseTest {
+contract MorphoInterestLibTest is BaseTest {
     using MathLib for uint256;
     using MorphoLib for Morpho;
     using SharesMathLib for uint256;

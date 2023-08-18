@@ -6,7 +6,7 @@ import {Id, Info, IMorpho} from "../interfaces/IMorpho.sol";
 
 import {MathLib} from "../libraries/MathLib.sol";
 import {MarketLib} from "../libraries/MarketLib.sol";
-import {MorphoLib} from "../libraries/periphery/MorphoGettersLib.sol";
+import {MorphoLib} from "../libraries/periphery/MorphoLib.sol";
 
 contract IrmMock is IIrm {
     using MathLib for uint256;
