@@ -7,11 +7,7 @@ uint256 constant WAD = 1e18;
 /// @author Morpho Labs
 /// @custom:contact security@morpho.xyz
 /// @notice Library to manage fixed-point arithmetic.
-/// @dev Inspired by https://github.com/morpho-org/morpho-utils.
 library MathLib {
-    uint256 private constant TWO_WAD = 2 * WAD;
-    uint256 private constant THREE_WAD = 3 * WAD;
-
     /// @dev (x * y) / WAD rounded down.
     function wMulDown(uint256 x, uint256 y) internal pure returns (uint256) {
         return mulDivDown(x, y, WAD);
@@ -46,8 +42,8 @@ library MathLib {
     ///      to approximate a continuous compound interest rate: e^(nx) - 1.
     function wTaylorCompounded(uint256 x, uint256 n) internal pure returns (uint256) {
         uint256 firstTerm = x * n;
-        uint256 secondTerm = mulDivDown(firstTerm, firstTerm, TWO_WAD);
-        uint256 thirdTerm = mulDivDown(secondTerm, firstTerm, THREE_WAD);
+        uint256 secondTerm = mulDivDown(firstTerm, firstTerm, 2 * WAD);
+        uint256 thirdTerm = mulDivDown(secondTerm, firstTerm, 3 * WAD);
 
         return firstTerm + secondTerm + thirdTerm;
     }
