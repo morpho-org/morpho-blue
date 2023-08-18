@@ -487,7 +487,7 @@ contract Morpho is IMorpho {
     /* STORAGE VIEW */
 
     /// @inheritdoc IMorpho
-    function extsload(uint256[] calldata slots) external view returns (bytes32[] memory res) {
+    function sloads(uint256[] calldata slots) external view returns (bytes32[] memory res) {
         uint256 nSlots = slots.length;
 
         res = new bytes32[](nSlots);

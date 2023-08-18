@@ -13,7 +13,7 @@ contract IntegrationGetterTest is BaseTest {
         vm.store(address(morpho), bytes32(slots[0]), value0);
         vm.store(address(morpho), bytes32(slots[1]), value1);
 
-        bytes32[] memory values = morpho.extsload(slots);
+        bytes32[] memory values = morpho.sloads(slots);
 
         assertEq(values.length, 2, "values.length");
         assertEq(values[0], slot > 0 ? value0 : value1, "value0");

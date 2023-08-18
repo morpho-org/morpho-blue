@@ -75,7 +75,7 @@ contract MorphoStorageLibTest is BaseTest {
         slots[18] = MorphoStorageLib.idToIrmSlot(id);
         slots[19] = MorphoStorageLib.idToLltvSlot(id);
 
-        bytes32[] memory values = morpho.extsload(slots);
+        bytes32[] memory values = morpho.sloads(slots);
 
         assertEq(uint256(values[0]), uint256(uint160(morpho.owner())));
         assertEq(uint256(values[1]), uint256(uint160(morpho.feeRecipient())));

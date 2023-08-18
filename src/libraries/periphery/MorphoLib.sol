@@ -35,7 +35,7 @@ library MorphoLib {
         slots[3] = MorphoStorageLib.feeSlot(id);
         slots[4] = MorphoStorageLib.lastUpdateSlot(id);
 
-        bytes32[] memory values = morpho.extsload(slots);
+        bytes32[] memory values = morpho.sloads(slots);
         totalSupply = uint256(values[0]);
         toralBorrow = uint256(values[1]);
         totalSupplyShares = uint256(values[2]);
