@@ -33,7 +33,7 @@
             ├── when newFee > MAX_FEE
             │   └── revert with MAX_FEE_EXCEEDED
             └── when newFee <= MAX_FEE
-                ├── it should accrue the interests
+                ├── it should accrue the interest
                 ├── it should set fee[market.id] to newFee
                 └── it should emit SetFee(market.id, newFee)
 .
@@ -52,7 +52,7 @@
         │   └── revert with LLTV_NOT_ENABLED
         └── when market.lltv is enabled
             ├── when market is already created
-            │   └── revert with MARKET_CREATED
+            │   └── revert with MARKET_ALREADY_CREATED
             └── when market is not already created
                 ├── it should set lastUpdate[market.id] to block.timestamp
                 ├── it should set idToMarket[id] to market
@@ -68,7 +68,7 @@
             ├── when onBehalf is the zero address
             │   └── revert with ZERO_ADDRESS
             └── when onBehalf is not the zero address
-                ├── it should accrue the interests
+                ├── it should accrue the interest
                 ├── when assets is not zero
                 │   └── it should set shares to assets.toSharesUp(totalSupply[market.id], totalSupplyShares[market.id])
                 ├── when assets is zero
@@ -95,7 +95,7 @@
                 ├── when not sender and not approved
                 │   └── revert with UNAUTHORIZED
                 └── when sender or approved
-                    ├── it should accrue the interests
+                    ├── it should accrue the interest
                     ├── when assets is not zero
                     │   └── it should set shares to assets.toSharesUp(totalSupply[market.id], totalSupplyShares[market.id])
                     ├── when assets is zero
@@ -123,7 +123,7 @@
                 ├── when not sender and not approved
                 │   └── revert with UNAUTHORIZED
                 └── when sender or approved
-                    ├── it should accrue the interests
+                    ├── it should accrue the interest
                     ├── when assets is not zero
                     │   └── it should set shares to assets.toSharesUp(totalSupply[market.id], totalSupplyShares[market.id])
                     ├── when assets is zero
@@ -152,7 +152,7 @@
             ├── when onBehalf is the zero address
             │   └── revert with ZERO_ADDRESS
             └── when onBehalf is not the zero address
-                ├── it should accrue the interests
+                ├── it should accrue the interest
                 ├── when assets is not zero
                 │   └── it should set shares to assets.toSharesUp(totalSupply[market.id], totalSupplyShares[market.id])
                 ├── when assets is zero
@@ -195,7 +195,7 @@
                 ├── when not sender and not approved
                 │   └── revert with MANAGER_NOT_APPROVED
                 └── when sender or approved
-                    ├── it should accrue the interests
+                    ├── it should accrue the interest
                     ├── it should remove assets from collateral[market.id][onBehalf]
                     ├── it should emit WithdrawCollateral(market.id, msg.sender, onBehalf, receiver, assets)
                     ├── it should transfer assets of the collateral asset to the receiver
@@ -209,7 +209,7 @@
         ├── when the assets to seized is zero
         │   └── revert with ZERO_ASSETS
         └── when the assets to seized is not zero
-            ├── it should accrue the interests
+            ├── it should accrue the interest
             ├── when position is healthy
             │   └── revert with HEALTHY_POSITION
             └── when the position is not healthy
@@ -257,24 +257,24 @@
     ├── should set isApproved[msg.sender][authorized] to newIsAuthorized
     └── it should emit SetAuthorization(msg.sender, msg.sender, authorized, newIsAuthorized)
 .
-└── accrueInterests(Market memory market) external
+└── accrueInterest(Market memory market) external
     ├── when market is not created
     │   └── revert with MARKET_NOT_CREATED
     └── when market is created
-        └── it should accrue the interests
+        └── it should accrue the interest
 .
-└── _accrueInterests(Market memory market, Id id) internal
-    └── when interests not already accrued in the block
+└── _accrueInterest(Market memory market, Id id) internal
+    └── when interest not already accrued in the block
         ├── it should set lastUpdate to block.timestamp
         └── when marketTotalBorrow is not 0
-            ├── it should compute accruedInterests = marketTotalBorrow.wMulDown(borrowRate.wTaylorCompounded(elapsed))
-            ├── it should add accruedInterests to totalBorrow
-            ├── it should add accruedInterests to totalSupply
+            ├── it should compute accruedInterest = marketTotalBorrow.wMulDown(borrowRate.wTaylorCompounded(elapsed))
+            ├── it should add accruedInterest to totalBorrow
+            ├── it should add accruedInterest to totalSupply
             └── when fee[id] != 0
-            │   ├── it should add accruedInterests.wMulDown(fee[id]) to feeAmount
+            │   ├── it should add accruedInterest.wMulDown(fee[id]) to feeAmount
             │   ├── it should add feeAmount.mulDivDown(totalSupplyShares[id], totalSupply[id] - feeAmount) to supplyShares[id][feeRecipient]
             │   └── it should add feeAmount.mulDivDown(totalSupplyShares[id], totalSupply[id] - feeAmount) to totalSupplyShares[id]
-            └── it should emit AccrueInterests(id, borrowRate, accruedInterests, feeShares)
+            └── it should emit AccrueInterest(id, borrowRate, accruedInterest, feeShares)
 .
 └── _isHealthy(Market memory market, Id id, address user, uint256 collateralPrice) internal
     ├── it should compute borrowed = borrowShares[id][user].toAssetsUp(totalBorrow[id], totalBorrowShares[id])
