@@ -84,7 +84,8 @@ contract IntegrationLiquidateTest is BaseTest {
 
         oracle.setPrice(priceCollateral);
 
-        uint256 expectedRepaidShares = expectedRepaid.toSharesDown(morpho.totalBorrow(id), morpho.totalBorrowShares(id));
+        uint256 expectedRepaidShares =
+            expectedRepaid.toSharesDown(morpho.totalBorrowAssets(id), morpho.totalBorrowShares(id));
 
         vm.prank(LIQUIDATOR);
 
@@ -97,7 +98,7 @@ contract IntegrationLiquidateTest is BaseTest {
         assertEq(returnRepaid, expectedRepaid, "returned asset amount");
         assertEq(returnRepaidShares, expectedRepaidShares, "returned shares amount");
         assertEq(morpho.borrowShares(id, BORROWER), expectedBorrowShares, "borrow shares");
-        assertEq(morpho.totalBorrow(id), amountBorrowed - expectedRepaid, "total borrow");
+        assertEq(morpho.totalBorrowAssets(id), amountBorrowed - expectedRepaid, "total borrow");
         assertEq(morpho.totalBorrowShares(id), expectedBorrowShares, "total borrow shares");
         assertEq(morpho.collateral(id, BORROWER), amountCollateral - amountSeized, "collateral");
         assertEq(borrowableToken.balanceOf(BORROWER), amountBorrowed, "borrower balance");
@@ -159,11 +160,11 @@ contract IntegrationLiquidateTest is BaseTest {
         oracle.setPrice(priceCollateral);
 
         params.expectedRepaidShares =
-            params.expectedRepaid.toSharesDown(morpho.totalBorrow(id), morpho.totalBorrowShares(id));
+            params.expectedRepaid.toSharesDown(morpho.totalBorrowAssets(id), morpho.totalBorrowShares(id));
         params.borrowSharesBeforeLiquidation = morpho.borrowShares(id, BORROWER);
         params.totalBorrowSharesBeforeLiquidation = morpho.totalBorrowShares(id);
-        params.totalBorrowBeforeLiquidation = morpho.totalBorrow(id);
-        params.totalSupplyBeforeLiquidation = morpho.totalSupply(id);
+        params.totalBorrowBeforeLiquidation = morpho.totalBorrowAssets(id);
+        params.totalSupplyBeforeLiquidation = morpho.totalSupplyAssets(id);
         params.expectedBadDebt = (params.borrowSharesBeforeLiquidation - params.expectedRepaidShares).toAssetsUp(
             params.totalBorrowBeforeLiquidation - params.expectedRepaid,
             params.totalBorrowSharesBeforeLiquidation - params.expectedRepaidShares
@@ -200,10 +201,12 @@ contract IntegrationLiquidateTest is BaseTest {
         assertEq(morpho.borrowShares(id, BORROWER), 0, "borrow shares");
         assertEq(morpho.totalBorrowShares(id), 0, "total borrow shares");
         assertEq(
-            morpho.totalBorrow(id),
+            morpho.totalBorrowAssets(id),
             params.totalBorrowBeforeLiquidation - params.expectedRepaid - params.expectedBadDebt,
             "total borrow"
         );
-        assertEq(morpho.totalSupply(id), params.totalSupplyBeforeLiquidation - params.expectedBadDebt, "total supply");
+        assertEq(
+            morpho.totalSupplyAssets(id), params.totalSupplyBeforeLiquidation - params.expectedBadDebt, "total supply"
+        );
     }
 }

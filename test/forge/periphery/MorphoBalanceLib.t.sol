@@ -21,8 +21,8 @@ contract MorphoBalanceLibTest is BaseTest {
 
         morpho.accrueInterest(market);
 
-        assertEq(virtualTotalSupply, morpho.totalSupply(id), "total supply");
-        assertEq(virtualTotalBorrow, morpho.totalBorrow(id), "total borrow");
+        assertEq(virtualTotalSupply, morpho.totalSupplyAssets(id), "total supply");
+        assertEq(virtualTotalBorrow, morpho.totalBorrowAssets(id), "total borrow");
         assertEq(virtualTotalSupplyShares, morpho.totalSupplyShares(id), "total supply shares");
     }
 
@@ -35,7 +35,7 @@ contract MorphoBalanceLibTest is BaseTest {
 
         morpho.accrueInterest(market);
 
-        assertEq(expectedTotalSupply, morpho.totalSupply(id));
+        assertEq(expectedTotalSupply, morpho.totalSupplyAssets(id));
     }
 
     function testExpectedTotalBorrow(uint256 amountSupplied, uint256 amountBorrowed, uint256 timeElapsed, uint256 fee)
@@ -47,7 +47,7 @@ contract MorphoBalanceLibTest is BaseTest {
 
         morpho.accrueInterest(market);
 
-        assertEq(expectedTotalBorrow, morpho.totalBorrow(id));
+        assertEq(expectedTotalBorrow, morpho.totalBorrowAssets(id));
     }
 
     function testExpectedTotalSupplyShares(
@@ -74,8 +74,9 @@ contract MorphoBalanceLibTest is BaseTest {
 
         morpho.accrueInterest(market);
 
-        uint256 actualSupplyBalance =
-            morpho.supplyShares(id, address(this)).toAssetsDown(morpho.totalSupply(id), morpho.totalSupplyShares(id));
+        uint256 actualSupplyBalance = morpho.supplyShares(id, address(this)).toAssetsDown(
+            morpho.totalSupplyAssets(id), morpho.totalSupplyShares(id)
+        );
 
         assertEq(expectedSupplyBalance, actualSupplyBalance);
     }
@@ -89,8 +90,9 @@ contract MorphoBalanceLibTest is BaseTest {
 
         morpho.accrueInterest(market);
 
-        uint256 actualBorrowBalance =
-            morpho.borrowShares(id, address(this)).toAssetsUp(morpho.totalBorrow(id), morpho.totalBorrowShares(id));
+        uint256 actualBorrowBalance = morpho.borrowShares(id, address(this)).toAssetsUp(
+            morpho.totalBorrowAssets(id), morpho.totalBorrowShares(id)
+        );
 
         assertEq(expectedBorrowBalance, actualBorrowBalance);
     }
