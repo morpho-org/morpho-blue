@@ -35,14 +35,14 @@ contract IntegrationAccrueInterestTest is BaseTest {
         morpho.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
         vm.stopPrank();
 
-        uint256 totalBorrowBeforeAccrued = morpho.totalBorrow(id);
-        uint256 totalSupplyBeforeAccrued = morpho.totalSupply(id);
+        uint256 totalBorrowBeforeAccrued = morpho.totalBorrowAssets(id);
+        uint256 totalSupplyBeforeAccrued = morpho.totalSupplyAssets(id);
         uint256 totalSupplySharesBeforeAccrued = morpho.totalSupplyShares(id);
 
         morpho.accrueInterest(market);
 
-        assertEq(morpho.totalBorrow(id), totalBorrowBeforeAccrued, "total borrow");
-        assertEq(morpho.totalSupply(id), totalSupplyBeforeAccrued, "total supply");
+        assertEq(morpho.totalBorrowAssets(id), totalBorrowBeforeAccrued, "total borrow");
+        assertEq(morpho.totalSupplyAssets(id), totalSupplyBeforeAccrued, "total supply");
         assertEq(morpho.totalSupplyShares(id), totalSupplySharesBeforeAccrued, "total supply shares");
         assertEq(morpho.supplyShares(id, OWNER), 0, "feeRecipient's supply shares");
     }
@@ -62,14 +62,14 @@ contract IntegrationAccrueInterestTest is BaseTest {
         vm.roll(block.number + 1);
         vm.warp(block.timestamp + timeElapsed);
 
-        uint256 totalBorrowBeforeAccrued = morpho.totalBorrow(id);
-        uint256 totalSupplyBeforeAccrued = morpho.totalSupply(id);
+        uint256 totalBorrowBeforeAccrued = morpho.totalBorrowAssets(id);
+        uint256 totalSupplyBeforeAccrued = morpho.totalSupplyAssets(id);
         uint256 totalSupplySharesBeforeAccrued = morpho.totalSupplyShares(id);
 
         morpho.accrueInterest(market);
 
-        assertEq(morpho.totalBorrow(id), totalBorrowBeforeAccrued, "total borrow");
-        assertEq(morpho.totalSupply(id), totalSupplyBeforeAccrued, "total supply");
+        assertEq(morpho.totalBorrowAssets(id), totalBorrowBeforeAccrued, "total borrow");
+        assertEq(morpho.totalSupplyAssets(id), totalSupplyBeforeAccrued, "total supply");
         assertEq(morpho.totalSupplyShares(id), totalSupplySharesBeforeAccrued, "total supply shares");
         assertEq(morpho.supplyShares(id, OWNER), 0, "feeRecipient's supply shares");
         assertEq(morpho.lastUpdate(id), block.timestamp, "last update");
@@ -102,9 +102,9 @@ contract IntegrationAccrueInterestTest is BaseTest {
         vm.roll(block.number + 1);
         vm.warp(block.timestamp + timeElapsed);
 
-        uint256 borrowRate = (morpho.totalBorrow(id).wDivDown(morpho.totalSupply(id))) / 365 days;
-        uint256 totalBorrowBeforeAccrued = morpho.totalBorrow(id);
-        uint256 totalSupplyBeforeAccrued = morpho.totalSupply(id);
+        uint256 borrowRate = (morpho.totalBorrowAssets(id).wDivDown(morpho.totalSupplyAssets(id))) / 365 days;
+        uint256 totalBorrowBeforeAccrued = morpho.totalBorrowAssets(id);
+        uint256 totalSupplyBeforeAccrued = morpho.totalSupplyAssets(id);
         uint256 totalSupplySharesBeforeAccrued = morpho.totalSupplyShares(id);
         uint256 expectedAccruedInterest = totalBorrowBeforeAccrued.wMulDown(borrowRate.wTaylorCompounded(timeElapsed));
 
@@ -112,8 +112,8 @@ contract IntegrationAccrueInterestTest is BaseTest {
         emit EventsLib.AccrueInterest(id, borrowRate, expectedAccruedInterest, 0);
         morpho.accrueInterest(market);
 
-        assertEq(morpho.totalBorrow(id), totalBorrowBeforeAccrued + expectedAccruedInterest, "total borrow");
-        assertEq(morpho.totalSupply(id), totalSupplyBeforeAccrued + expectedAccruedInterest, "total supply");
+        assertEq(morpho.totalBorrowAssets(id), totalBorrowBeforeAccrued + expectedAccruedInterest, "total borrow");
+        assertEq(morpho.totalSupplyAssets(id), totalSupplyBeforeAccrued + expectedAccruedInterest, "total supply");
         assertEq(morpho.totalSupplyShares(id), totalSupplySharesBeforeAccrued, "total supply shares");
         assertEq(morpho.supplyShares(id, OWNER), 0, "feeRecipient's supply shares");
         assertEq(morpho.lastUpdate(id), block.timestamp, "last update");
@@ -164,9 +164,9 @@ contract IntegrationAccrueInterestTest is BaseTest {
         vm.roll(block.number + 1);
         vm.warp(block.timestamp + timeElapsed);
 
-        params.borrowRate = (morpho.totalBorrow(id).wDivDown(morpho.totalSupply(id))) / 365 days;
-        params.totalBorrowBeforeAccrued = morpho.totalBorrow(id);
-        params.totalSupplyBeforeAccrued = morpho.totalSupply(id);
+        params.borrowRate = (morpho.totalBorrowAssets(id).wDivDown(morpho.totalSupplyAssets(id))) / 365 days;
+        params.totalBorrowBeforeAccrued = morpho.totalBorrowAssets(id);
+        params.totalSupplyBeforeAccrued = morpho.totalSupplyAssets(id);
         params.totalSupplySharesBeforeAccrued = morpho.totalSupplyShares(id);
         params.expectedAccruedInterest =
             params.totalBorrowBeforeAccrued.wMulDown(params.borrowRate.wTaylorCompounded(timeElapsed));
@@ -181,10 +181,14 @@ contract IntegrationAccrueInterestTest is BaseTest {
         morpho.accrueInterest(market);
 
         assertEq(
-            morpho.totalSupply(id), params.totalSupplyBeforeAccrued + params.expectedAccruedInterest, "total supply"
+            morpho.totalSupplyAssets(id),
+            params.totalSupplyBeforeAccrued + params.expectedAccruedInterest,
+            "total supply"
         );
         assertEq(
-            morpho.totalBorrow(id), params.totalBorrowBeforeAccrued + params.expectedAccruedInterest, "total borrow"
+            morpho.totalBorrowAssets(id),
+            params.totalBorrowBeforeAccrued + params.expectedAccruedInterest,
+            "total borrow"
         );
         assertEq(
             morpho.totalSupplyShares(id),

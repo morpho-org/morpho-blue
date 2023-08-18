@@ -110,7 +110,7 @@ contract IntegrationWithdrawTest is BaseTest {
         assertEq(returnShares, expectedWithdrawnShares, "returned shares amount");
         assertEq(morpho.supplyShares(id, address(this)), expectedSupplyShares, "supply shares");
         assertEq(morpho.totalSupplyShares(id), expectedSupplyShares, "total supply shares");
-        assertEq(morpho.totalSupply(id), amountSupplied - amountWithdrawn, "total supply");
+        assertEq(morpho.totalSupplyAssets(id), amountSupplied - amountWithdrawn, "total supply");
         assertEq(borrowableToken.balanceOf(RECEIVER), amountWithdrawn, "RECEIVER balance");
         assertEq(borrowableToken.balanceOf(BORROWER), amountBorrowed, "borrower balance");
         assertEq(
@@ -152,7 +152,7 @@ contract IntegrationWithdrawTest is BaseTest {
         assertEq(returnAssets, expectedAmountWithdrawn, "returned asset amount");
         assertEq(returnShares, sharesWithdrawn, "returned shares amount");
         assertEq(morpho.supplyShares(id, address(this)), expectedSupplyShares, "supply shares");
-        assertEq(morpho.totalSupply(id), amountSupplied - expectedAmountWithdrawn, "total supply");
+        assertEq(morpho.totalSupplyAssets(id), amountSupplied - expectedAmountWithdrawn, "total supply");
         assertEq(morpho.totalSupplyShares(id), expectedSupplyShares, "total supply shares");
         assertEq(borrowableToken.balanceOf(RECEIVER), expectedAmountWithdrawn, "RECEIVER balance");
         assertEq(
@@ -196,7 +196,7 @@ contract IntegrationWithdrawTest is BaseTest {
         assertEq(returnAssets, amountWithdrawn, "returned asset amount");
         assertEq(returnShares, expectedWithdrawnShares, "returned shares amount");
         assertEq(morpho.supplyShares(id, ONBEHALF), expectedSupplyShares, "supply shares");
-        assertEq(morpho.totalSupply(id), amountSupplied - amountWithdrawn, "total supply");
+        assertEq(morpho.totalSupplyAssets(id), amountSupplied - amountWithdrawn, "total supply");
         assertEq(morpho.totalSupplyShares(id), expectedSupplyShares, "total supply shares");
         assertEq(borrowableToken.balanceOf(RECEIVER) - receiverBalanceBefore, amountWithdrawn, "RECEIVER balance");
         assertEq(
@@ -243,7 +243,7 @@ contract IntegrationWithdrawTest is BaseTest {
         assertEq(returnAssets, expectedAmountWithdrawn, "returned asset amount");
         assertEq(returnShares, sharesWithdrawn, "returned shares amount");
         assertEq(morpho.supplyShares(id, ONBEHALF), expectedSupplyShares, "supply shares");
-        assertEq(morpho.totalSupply(id), amountSupplied - expectedAmountWithdrawn, "total supply");
+        assertEq(morpho.totalSupplyAssets(id), amountSupplied - expectedAmountWithdrawn, "total supply");
         assertEq(morpho.totalSupplyShares(id), expectedSupplyShares, "total supply shares");
         assertEq(
             borrowableToken.balanceOf(RECEIVER) - receiverBalanceBefore, expectedAmountWithdrawn, "RECEIVER balance"
