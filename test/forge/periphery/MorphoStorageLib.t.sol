@@ -81,8 +81,8 @@ contract MorphoStorageLibTest is BaseTest {
         assertEq(
             uint256(values[3]), morpho.borrowShares(id, address(this)) << 128 | morpho.collateral(id, address(this))
         );
-        // assertEq(uint256(values[4]), morpho.totalSupply(id) << 128 | morpho.totalSupplyShares(id));
-        // assertEq(uint256(values[5]), morpho.totalBorrow(id) << 128 | morpho.totalBorrowShares(id));
+        assertEq(uint256(values[4]), morpho.totalSupplyShares(id) << 128 | morpho.totalSupply(id));
+        assertEq(uint256(values[5]), morpho.totalBorrowShares(id) << 128 | morpho.totalBorrow(id));
         assertEq(uint256(values[6]), morpho.lastUpdate(id));
         assertEq(uint256(values[7]), morpho.fee(id));
         assertEq(abi.decode(abi.encode(values[8]), (bool)), morpho.isIrmEnabled(address(irm)));

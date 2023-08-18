@@ -10,7 +10,7 @@ import {SharesMathLib} from "../SharesMathLib.sol";
 import {MorphoLib} from "./MorphoGettersLib.sol";
 import {MorphoStorageLib} from "./MorphoStorageLib.sol";
 
-/// @title MorphoLib
+/// @title MorphoInterestLib
 /// @author Morpho Labs
 /// @custom:contact security@morpho.xyz
 /// @notice Helper library exposing getters with the expected value after interest accrual.
@@ -37,9 +37,9 @@ library MorphoInterestLib {
         slots[3] = MorphoStorageLib.lastUpdateSlot(id);
 
         bytes32[] memory values = morpho.extsload(slots);
-        totalSupply = uint256(values[0] >> 128);
-        totalSupplyShares = uint128(uint256(values[0]));
-        toralBorrow = uint256(values[1] >> 128);
+        totalSupply = uint128(uint256(values[0]));
+        totalSupplyShares = uint256(values[0]) >> 128;
+        toralBorrow = uint128(uint256(values[1]));
         uint256 fee = uint256(values[2]);
         uint256 lastUpdate = uint256(values[3]);
 
