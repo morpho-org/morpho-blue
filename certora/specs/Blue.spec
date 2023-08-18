@@ -1,7 +1,6 @@
 methods {
     function getVirtualTotalSupply(MorphoHarness.Id) external returns uint256 envfree;
     function getVirtualTotalSupplyShares(MorphoHarness.Id) external returns uint256 envfree;
-    function supplyShares(MorphoHarness.Id, address user) external returns uint256 envfree;
     function totalSupply(MorphoHarness.Id) external returns uint256 envfree;
     function totalBorrow(MorphoHarness.Id) external returns uint256 envfree;
     function supplyShares(MorphoHarness.Id, address user) external returns uint256 envfree;
