@@ -14,6 +14,7 @@ import {IrmMock as Irm} from "src/mocks/IrmMock.sol";
 contract BaseTest is Test {
     using MarketLib for Info;
     using MathLib for uint256;
+    using MorphoLib for Morpho;
 
     uint256 internal constant HIGH_COLLATERAL_AMOUNT = 1e35;
     uint256 internal constant MIN_TEST_AMOUNT = 100;

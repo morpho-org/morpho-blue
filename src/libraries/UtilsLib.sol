@@ -20,4 +20,11 @@ library UtilsLib {
             z := xor(x, mul(xor(x, y), lt(y, x)))
         }
     }
+
+    function toUint128(uint256 x) internal pure returns (uint128 z) {
+        require(x <= type(uint128).max, "x > type(uint128).max");
+        assembly {
+            z := x
+        }
+    }
 }

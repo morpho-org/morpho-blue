@@ -12,12 +12,12 @@ contract IntegrationRepayTest is BaseTest {
         vm.assume(neq(marketFuzz, market));
 
         vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
-        morpho.repay(marketFuzz, 1, 0, address(this), hex"");
+        morpho.repay(marketFuzz, uint256(1), uint256(0), address(this), hex"");
     }
 
     function testRepayZeroAmount() public {
         vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
-        morpho.repay(market, 0, 0, address(this), hex"");
+        morpho.repay(market, uint256(0), uint256(0), address(this), hex"");
     }
 
     function testRepayInconsistentInput(uint256 amount, uint256 shares) public {

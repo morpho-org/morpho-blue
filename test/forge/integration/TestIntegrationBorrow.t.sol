@@ -19,7 +19,7 @@ contract IntegrationBorrowTest is BaseTest {
     function testBorrowZeroAmount(address borrowerFuzz) public {
         vm.prank(borrowerFuzz);
         vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
-        morpho.borrow(market, 0, 0, borrowerFuzz, RECEIVER);
+        morpho.borrow(market, uint256(0), uint256(0), borrowerFuzz, RECEIVER);
     }
 
     function testBorrowInconsistentInput(address borrowerFuzz, uint256 amount, uint256 shares) public {

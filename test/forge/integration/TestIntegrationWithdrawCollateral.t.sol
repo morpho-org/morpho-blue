@@ -12,7 +12,7 @@ contract IntegrationWithdrawCollateralTest is BaseTest {
 
         vm.prank(SUPPLIER);
         vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
-        morpho.withdrawCollateral(marketFuzz, 1, SUPPLIER, RECEIVER);
+        morpho.withdrawCollateral(marketFuzz, uint256(1), SUPPLIER, RECEIVER);
     }
 
     function testWithdrawCollateralZeroAmount(uint256 amount) public {
@@ -25,7 +25,7 @@ contract IntegrationWithdrawCollateralTest is BaseTest {
         morpho.supplyCollateral(market, amount, SUPPLIER, hex"");
 
         vm.expectRevert(bytes(ErrorsLib.ZERO_ASSETS));
-        morpho.withdrawCollateral(market, 0, SUPPLIER, RECEIVER);
+        morpho.withdrawCollateral(market, uint256(0), SUPPLIER, RECEIVER);
         vm.stopPrank();
     }
 

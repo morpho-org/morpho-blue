@@ -21,7 +21,7 @@ contract IntegrationSupplyTest is BaseTest {
 
         vm.prank(SUPPLIER);
         vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
-        morpho.supply(market, 0, 0, SUPPLIER, hex"");
+        morpho.supply(market, uint256(0), 0, SUPPLIER, hex"");
     }
 
     function testSupplyOnBehalfZeroAddress(uint256 amount) public {

@@ -12,7 +12,7 @@ contract IntegrationWithdrawTest is BaseTest {
         vm.assume(neq(marketFuzz, market));
 
         vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
-        morpho.withdraw(marketFuzz, 1, 0, address(this), address(this));
+        morpho.withdraw(marketFuzz, 1, uint256(0), address(this), address(this));
     }
 
     function testWithdrawZeroAmount(uint256 amount) public {
@@ -22,7 +22,7 @@ contract IntegrationWithdrawTest is BaseTest {
         morpho.supply(market, amount, 0, address(this), hex"");
 
         vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
-        morpho.withdraw(market, 0, 0, address(this), address(this));
+        morpho.withdraw(market, uint256(0), 0, address(this), address(this));
     }
 
     function testWithdrawInconsistentInput(uint256 amount, uint256 shares) public {
