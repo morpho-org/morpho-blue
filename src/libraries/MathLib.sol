@@ -9,7 +9,6 @@ uint256 constant WAD = 1e18;
 /// @notice Library to manage fixed-point arithmetic.
 /// @dev Inspired by https://github.com/morpho-org/morpho-utils.
 library MathLib {
-    uint256 internal constant MAX_UINT256 = 2 ** 256 - 1;
     uint256 private constant TWO_WAD = 2 * WAD;
     uint256 private constant THREE_WAD = 3 * WAD;
 
