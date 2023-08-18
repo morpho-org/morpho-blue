@@ -348,15 +348,12 @@ contract Morpho is IMorpho {
             MAX_LIQUIDATION_INCENTIVE_FACTOR, WAD.wDivDown(WAD - LIQUIDATION_CURSOR.wMulDown(WAD - market.lltv))
         );
         if (seized > 0) {
-            assetsRepaid =
-                seized.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(incentive);
+            assetsRepaid = seized.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(incentive);
             sharesRepaid = assetsRepaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
         } else {
             sharesRepaid = borrowedShares;
             assetsRepaid = sharesRepaid.toAssetsDown(totalBorrow[id], totalBorrowShares[id]);
-            seized = assetsRepaid.wMulDown(incentive).mulDivDown(
-                ORACLE_PRICE_SCALE, collateralPrice
-            );
+            seized = assetsRepaid.wMulDown(incentive).mulDivDown(ORACLE_PRICE_SCALE, collateralPrice);
         }
 
         borrowShares[id][borrower] -= sharesRepaid;
