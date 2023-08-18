@@ -51,7 +51,7 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
         targetSelector(FuzzSelector({addr: address(this), selectors: selectors}));
     }
 
-    function chooseMarket(bool changeMarket) internal view returns(Market memory chosenMarket, Id chosenId){
+    function chooseMarket(bool changeMarket) internal view returns (Market memory chosenMarket, Id chosenId) {
         if (!changeMarket) {
             chosenMarket = market;
             chosenId = id;

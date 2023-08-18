@@ -56,7 +56,7 @@ contract InvariantBaseTest is BaseTest {
 
     /// @dev Apparently permanently setting block number and timestamp with cheatcodes in this function doesn't work,
     ///      they get reset to the ones defined in the set up function after each function call.
-    ///      The solution we choose is to store these in storage, and set them with roll and warp cheatcodes with the 
+    ///      The solution we choose is to store these in storage, and set them with roll and warp cheatcodes with the
     ///      setCorrectBlock function at the the begenning of each function.
     ///      The purpose of this function is to increment these variables to simulate a new block.
     function newBlock(uint256 elapsed) public {
