@@ -31,17 +31,11 @@ contract SinglePositionInvariantTest is InvariantBaseTest {
         _weightSelector(this.withdrawOnMorpho.selector, 15);
         _weightSelector(this.supplyCollateralOnMorpho.selector, 20);
         _weightSelector(this.withdrawCollateralOnMorpho.selector, 15);
-        _weightSelector(this.newBlock.selector, 10);
-
-        blockNumber = block.number;
-        timestamp = block.timestamp;
 
         targetSelector(FuzzSelector({addr: address(this), selectors: selectors}));
     }
 
     function supplyOnMorpho(uint256 amount) public {
-        setCorrectBlock();
-
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
         borrowableToken.setBalance(msg.sender, amount);
@@ -50,9 +44,6 @@ contract SinglePositionInvariantTest is InvariantBaseTest {
     }
 
     function withdrawOnMorpho(uint256 amount) public {
-        setCorrectBlock();
-        morpho.accrueInterests(market);
-
         uint256 availableLiquidity = morpho.totalSupply(id) - morpho.totalBorrow(id);
         if (morpho.supplyShares(id, msg.sender) == 0) return;
         if (availableLiquidity == 0) return;
@@ -67,13 +58,9 @@ contract SinglePositionInvariantTest is InvariantBaseTest {
     }
 
     function borrowOnMorpho(uint256 amount) public {
-        setCorrectBlock();
-        morpho.accrueInterests(market);
-
         uint256 availableLiquidity = morpho.totalSupply(id) - morpho.totalBorrow(id);
         if (availableLiquidity == 0) return;
 
-        morpho.accrueInterests(market);
         amount = bound(amount, 1, availableLiquidity);
 
         vm.prank(msg.sender);
@@ -81,9 +68,6 @@ contract SinglePositionInvariantTest is InvariantBaseTest {
     }
 
     function repayOnMorpho(uint256 amount) public {
-        setCorrectBlock();
-        morpho.accrueInterests(market);
-
         if (morpho.borrowShares(id, msg.sender) == 0) return;
 
         uint256 borrowerBalance =
@@ -97,8 +81,6 @@ contract SinglePositionInvariantTest is InvariantBaseTest {
     }
 
     function supplyCollateralOnMorpho(uint256 amount) public {
-        setCorrectBlock();
-
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
         collateralToken.setBalance(msg.sender, amount);
@@ -107,8 +89,6 @@ contract SinglePositionInvariantTest is InvariantBaseTest {
     }
 
     function withdrawCollateralOnMorpho(uint256 amount) public {
-        setCorrectBlock();
-
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
         vm.prank(msg.sender);
@@ -135,7 +115,7 @@ contract SinglePositionInvariantTest is InvariantBaseTest {
         assertGe(borrowedAmount, morpho.totalBorrow(id));
     }
 
-    function invariantTotalBorrowLessThanTotalSupply() public {
+    function invariantTotalSupplyGreaterThanTotalBorrow() public {
         assertGe(morpho.totalSupply(id), morpho.totalBorrow(id));
     }
 
@@ -143,7 +123,7 @@ contract SinglePositionInvariantTest is InvariantBaseTest {
         assertEq(morpho.totalSupply(id) - morpho.totalBorrow(id), borrowableToken.balanceOf(address(morpho)));
     }
 
-    //No price changes, and no new blocks so position has to remain healthy
+    // No price changes, and no new blocks so position has to remain healthy.
     function invariantHealthyPosition() public {
         assertTrue(isHealthy(market, id, user));
     }

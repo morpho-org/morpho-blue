@@ -51,6 +51,16 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
         targetSelector(FuzzSelector({addr: address(this), selectors: selectors}));
     }
 
+    function chooseMarket(bool changeMarket) internal view returns(Market memory chosenMarket, Id chosenId){
+        if (!changeMarket) {
+            chosenMarket = market;
+            chosenId = id;
+        } else {
+            chosenMarket = market2;
+            chosenId = id2;
+        }
+    }
+
     function setMarketFee(uint256 newFee) public {
         setCorrectBlock();
 
@@ -63,15 +73,7 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
     function supplyOnMorpho(uint256 amount, bool changeMarket) public {
         setCorrectBlock();
 
-        Market memory chosenMarket;
-        Id chosenId;
-        if (!changeMarket) {
-            chosenMarket = market;
-            chosenId = id;
-        } else {
-            chosenMarket = market2;
-            chosenId = id2;
-        }
+        (Market memory chosenMarket,) = chooseMarket(changeMarket);
 
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
@@ -82,23 +84,15 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
 
     function withdrawOnMorpho(uint256 amount, bool changeMarket) public {
         setCorrectBlock();
-        morpho.accrueInterests(market);
+        morpho.accrueInterest(market);
 
-        Market memory chosenMarket;
-        Id chosenId;
-        if (!changeMarket) {
-            chosenMarket = market;
-            chosenId = id;
-        } else {
-            chosenMarket = market2;
-            chosenId = id2;
-        }
+        (Market memory chosenMarket, Id chosenId) = chooseMarket(changeMarket);
 
         uint256 availableLiquidity = morpho.totalSupply(chosenId) - morpho.totalBorrow(chosenId);
         if (morpho.supplyShares(chosenId, msg.sender) == 0) return;
         if (availableLiquidity == 0) return;
 
-        morpho.accrueInterests(market);
+        morpho.accrueInterest(market);
         uint256 supplierBalance = morpho.supplyShares(chosenId, msg.sender).toAssetsDown(
             morpho.totalSupply(chosenId), morpho.totalSupplyShares(chosenId)
         );
@@ -110,22 +104,14 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
 
     function borrowOnMorpho(uint256 amount, bool changeMarket) public {
         setCorrectBlock();
-        morpho.accrueInterests(market);
+        morpho.accrueInterest(market);
 
-        Market memory chosenMarket;
-        Id chosenId;
-        if (!changeMarket) {
-            chosenMarket = market;
-            chosenId = id;
-        } else {
-            chosenMarket = market2;
-            chosenId = id2;
-        }
+        (Market memory chosenMarket, Id chosenId) = chooseMarket(changeMarket);
 
         uint256 availableLiquidity = morpho.totalSupply(chosenId) - morpho.totalBorrow(chosenId);
         if (availableLiquidity == 0) return;
 
-        morpho.accrueInterests(market);
+        morpho.accrueInterest(market);
         amount = bound(amount, 1, availableLiquidity);
 
         vm.prank(msg.sender);
@@ -134,20 +120,13 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
 
     function repayOnMorpho(uint256 amount, bool changeMarket) public {
         setCorrectBlock();
-        morpho.accrueInterests(market);
+        morpho.accrueInterest(market);
 
-        Market memory chosenMarket;
-        Id chosenId;
-        if (!changeMarket) {
-            chosenMarket = market;
-            chosenId = id;
-        } else {
-            chosenMarket = market2;
-            chosenId = id2;
-        }
+        (Market memory chosenMarket, Id chosenId) = chooseMarket(changeMarket);
+
         if (morpho.borrowShares(chosenId, msg.sender) == 0) return;
 
-        morpho.accrueInterests(market);
+        morpho.accrueInterest(market);
         amount = bound(
             amount,
             1,
@@ -162,15 +141,9 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
     }
 
     function supplyCollateralOnMorpho(uint256 amount, bool changeMarket) public {
-        Market memory chosenMarket;
-        Id chosenId;
-        if (!changeMarket) {
-            chosenMarket = market;
-            chosenId = id;
-        } else {
-            chosenMarket = market2;
-            chosenId = id2;
-        }
+        setCorrectBlock();
+
+        (Market memory chosenMarket,) = chooseMarket(changeMarket);
 
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
         collateralToken.setBalance(msg.sender, amount);
@@ -181,17 +154,9 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
 
     function withdrawCollateralOnMorpho(uint256 amount, bool changeMarket) public {
         setCorrectBlock();
-        morpho.accrueInterests(market);
+        morpho.accrueInterest(market);
 
-        Market memory chosenMarket;
-        Id chosenId;
-        if (!changeMarket) {
-            chosenMarket = market;
-            chosenId = id;
-        } else {
-            chosenMarket = market2;
-            chosenId = id2;
-        }
+        (Market memory chosenMarket,) = chooseMarket(changeMarket);
 
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 

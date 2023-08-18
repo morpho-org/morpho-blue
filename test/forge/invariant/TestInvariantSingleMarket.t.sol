@@ -54,7 +54,7 @@ contract SingleMarketInvariantTest is InvariantBaseTest {
 
     function withdrawOnMorpho(uint256 amount) public {
         setCorrectBlock();
-        morpho.accrueInterests(market);
+        morpho.accrueInterest(market);
 
         uint256 availableLiquidity = morpho.totalSupply(id) - morpho.totalBorrow(id);
         if (morpho.supplyShares(id, msg.sender) == 0) return;
@@ -71,12 +71,12 @@ contract SingleMarketInvariantTest is InvariantBaseTest {
 
     function borrowOnMorpho(uint256 amount) public {
         setCorrectBlock();
-        morpho.accrueInterests(market);
+        morpho.accrueInterest(market);
 
         uint256 availableLiquidity = morpho.totalSupply(id) - morpho.totalBorrow(id);
         if (availableLiquidity == 0) return;
 
-        morpho.accrueInterests(market);
+        morpho.accrueInterest(market);
         amount = bound(amount, 1, availableLiquidity);
 
         vm.prank(msg.sender);
@@ -85,13 +85,12 @@ contract SingleMarketInvariantTest is InvariantBaseTest {
 
     function repayOnMorpho(uint256 amount) public {
         setCorrectBlock();
-        morpho.accrueInterests(market);
+        morpho.accrueInterest(market);
 
         if (morpho.borrowShares(id, msg.sender) == 0) return;
 
-        morpho.accrueInterests(market);
-        uint256 borrowerBalance =
-            morpho.borrowShares(id, msg.sender).toAssetsDown(morpho.totalBorrow(id), morpho.totalBorrowShares(id));
+        morpho.accrueInterest(market);
+        uint256 borrowerBalance = morpho.borrowShares(id, msg.sender).toAssetsDown(morpho.totalBorrow(id), morpho.totalBorrowShares(id));
         if (borrowerBalance == 0) return;
         amount = bound(amount, 1, borrowerBalance);
 
@@ -112,7 +111,7 @@ contract SingleMarketInvariantTest is InvariantBaseTest {
 
     function withdrawCollateralOnMorpho(uint256 amount) public {
         setCorrectBlock();
-        morpho.accrueInterests(market);
+        morpho.accrueInterest(market);
 
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
@@ -136,7 +135,7 @@ contract SingleMarketInvariantTest is InvariantBaseTest {
         assertGe(sumUsersBorrowedAmounts(targetSenders()), morpho.totalBorrow(id));
     }
 
-    function invariantTotalBorrowLessThanTotalSupply() public {
+    function invariantTotalSupplyGreaterThanTotalBorrow() public {
         assertGe(morpho.totalSupply(id), morpho.totalBorrow(id));
     }
 
