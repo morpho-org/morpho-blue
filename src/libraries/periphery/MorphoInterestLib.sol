@@ -23,7 +23,7 @@ library MorphoInterestLib {
     using MorphoLib for IMorpho;
     using SharesMathLib for uint256;
 
-    function expectedAccrueInterest(IMorpho morpho, Config memory config)
+    function virtualAccrueInterest(IMorpho morpho, Config memory config)
         internal
         view
         returns (uint256 totalSupply, uint256 toralBorrow, uint256 totalSupplyShares)
@@ -63,11 +63,11 @@ library MorphoInterestLib {
     }
 
     function expectedTotalSupply(IMorpho morpho, Config memory config) internal view returns (uint256 totalSupply) {
-        (totalSupply,,) = expectedAccrueInterest(morpho, config);
+        (totalSupply,,) = virtualAccrueInterest(morpho, config);
     }
 
     function expectedTotalBorrow(IMorpho morpho, Config memory config) internal view returns (uint256 totalBorrow) {
-        (, totalBorrow,) = expectedAccrueInterest(morpho, config);
+        (, totalBorrow,) = virtualAccrueInterest(morpho, config);
     }
 
     function expectedTotalSupplyShares(IMorpho morpho, Config memory config)
@@ -75,7 +75,7 @@ library MorphoInterestLib {
         view
         returns (uint256 totalSupplyShares)
     {
-        (,, totalSupplyShares) = expectedAccrueInterest(morpho, config);
+        (,, totalSupplyShares) = virtualAccrueInterest(morpho, config);
     }
 
     /// @dev Warning: It does not work for `feeRecipient` because their supply shares increase is not taken into account.
@@ -86,7 +86,7 @@ library MorphoInterestLib {
     {
         Id id = config.id();
         uint256 supplyShares = morpho.supplyShares(id, user);
-        (uint256 totalSupply,, uint256 totalSupplyShares) = expectedAccrueInterest(morpho, config);
+        (uint256 totalSupply,, uint256 totalSupplyShares) = virtualAccrueInterest(morpho, config);
 
         return supplyShares.toAssetsDown(totalSupply, totalSupplyShares);
     }
@@ -99,7 +99,7 @@ library MorphoInterestLib {
         Id id = config.id();
         uint256 borrowShares = morpho.borrowShares(id, user);
         uint256 totalBorrowShares = morpho.totalBorrowShares(id);
-        (, uint256 totalBorrow,) = expectedAccrueInterest(morpho, config);
+        (, uint256 totalBorrow,) = virtualAccrueInterest(morpho, config);
 
         return borrowShares.toAssetsUp(totalBorrow, totalBorrowShares);
     }

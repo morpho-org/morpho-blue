@@ -17,7 +17,7 @@ contract MorphoInterestLibTest is BaseTest {
         _generatePendingInterest(amountSupplied, amountBorrowed, timeElapsed, fee);
 
         (uint256 virtualTotalSupply, uint256 virtualTotalBorrow, uint256 virtualTotalSupplyShares) =
-            morpho.expectedAccrueInterest(market);
+            morpho.virtualAccrueInterest(market);
 
         morpho.accrueInterest(market);
 
