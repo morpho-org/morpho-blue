@@ -1,6 +1,8 @@
 methods {
     function lastUpdate(MorphoHarness.Id) external returns uint256 envfree;
+    function collateral(MorphoHarness.Id, address) external returns uint256 envfree;
     function isHealthy(MorphoHarness.Market, address user) external returns bool envfree;
+    function isAuthorized(address, address user) external returns bool envfree;
     function getMarketId(MorphoHarness.Market) external returns MorphoHarness.Id envfree;
     function _.price() external => mockPrice() expect uint256;
     function MathLib.mulDivDown(uint256 a, uint256 b, uint256 c) internal returns uint256 => summaryMulDivDown(a,b,c);
@@ -32,9 +34,11 @@ function summaryMin(uint256 a, uint256 b) returns uint256 {
     return a < b ? a : b;
 }
 
-rule stayHealthy(method f, env e, calldataarg data) filtered {
+rule stayHealthy(method f, env e, calldataarg data)
+filtered {
     f -> !f.isView
-} {
+}
+{
     MorphoHarness.Market market;
     MorphoHarness.Id id = getMarketId(market);
     address user;
@@ -49,4 +53,32 @@ rule stayHealthy(method f, env e, calldataarg data) filtered {
 
     bool stillHealthy = isHealthy(market, user);
     assert !priceChanged => stillHealthy;
+}
+
+rule healthyUserCannotLoseCollateral(method f, calldataarg data)
+filtered {
+    f -> !f.isView
+}
+{
+    MorphoHarness.Market market;
+    uint256 assets;
+    uint256 shares;
+    uint256 suppliedAssets;
+    uint256 suppliedShares;
+    address user;
+    MorphoHarness.Id id = getMarketId(market);
+    env e;
+
+    require !isAuthorized(user, e.msg.sender);
+    require user != e.msg.sender;
+    require lastUpdate(id) == e.block.timestamp;
+    require isHealthy(market, user);
+    mathint collateralBefore = collateral(id, user);
+    priceChanged = false;
+
+    f(e, data);
+
+    require !priceChanged;
+    mathint collateralAfter = collateral(id, user);
+    assert collateralAfter >= collateralBefore;
 }
