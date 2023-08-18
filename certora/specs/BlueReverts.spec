@@ -71,7 +71,8 @@ rule setFeeInputValidation(env e, MorphoHarness.Market market, uint256 newFee) {
     address oldOwner = owner();
     MorphoHarness.Id id = getMarketId(market);
     setFee@withrevert(e, market, newFee);
-    assert e.msg.value != 0 || e.msg.sender != oldOwner || !isCreated(id) || newFee > MAX_FEE() => lastReverted;
+    bool hasReverted = lastReverted;
+    assert e.msg.value != 0 || e.msg.sender != oldOwner || !isCreated(id) || newFee > MAX_FEE() => hasReverted;
 }
 
 rule setFeeRecipientRevertCondition(env e, address recipient) {

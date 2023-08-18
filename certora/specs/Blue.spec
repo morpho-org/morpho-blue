@@ -18,38 +18,40 @@ methods {
     function _.borrowRate(MorphoHarness.Market) external => HAVOC_ECF;
 
     function getMarketId(MorphoHarness.Market) external returns MorphoHarness.Id envfree;
+    function VIRTUAL_ASSETS() external returns uint256 envfree;
+    function VIRTUAL_SHARES() external returns uint256 envfree;
+    function MAX_FEE() external returns uint256 envfree;
 
     function SafeTransferLib.safeTransfer(address token, address to, uint256 value) internal => summarySafeTransferFrom(token, currentContract, to, value);
     function SafeTransferLib.safeTransferFrom(address token, address from, address to, uint256 value) internal => summarySafeTransferFrom(token, from, to, value);
 }
 
-ghost mapping(MorphoHarness.Id => mathint) sumSupplyShares
-{
+ghost mapping(MorphoHarness.Id => mathint) sumSupplyShares {
     init_state axiom (forall MorphoHarness.Id id. sumSupplyShares[id] == 0);
 }
-ghost mapping(MorphoHarness.Id => mathint) sumBorrowShares
-{
+ghost mapping(MorphoHarness.Id => mathint) sumBorrowShares {
     init_state axiom (forall MorphoHarness.Id id. sumBorrowShares[id] == 0);
 }
-ghost mapping(MorphoHarness.Id => mathint) sumCollateral
-{
+ghost mapping(MorphoHarness.Id => mathint) sumCollateral {
     init_state axiom (forall MorphoHarness.Id id. sumCollateral[id] == 0);
 }
-ghost mapping(address => mathint) myBalances
-{
+
+ghost mapping(address => mathint) myBalances {
     init_state axiom (forall address token. myBalances[token] == 0);
 }
-ghost mapping(address => mathint) expectedAmount
-{
+
+ghost mapping(address => mathint) expectedAmount {
     init_state axiom (forall address token. expectedAmount[token] == 0);
 }
 
 ghost mapping(MorphoHarness.Id => address) idToBorrowable;
+
 ghost mapping(MorphoHarness.Id => address) idToCollateral;
 
 hook Sstore idToMarket[KEY MorphoHarness.Id id].borrowableToken address token STORAGE {
     idToBorrowable[id] = token;
 }
+
 hook Sstore idToMarket[KEY MorphoHarness.Id id].collateralToken address token STORAGE {
     idToCollateral[id] = token;
 }
@@ -84,18 +86,15 @@ function summarySafeTransferFrom(address token, address from, address to, uint25
     }
 }
 
-definition VIRTUAL_ASSETS() returns mathint = 1;
-definition VIRTUAL_SHARES() returns mathint = 10^18;
-definition MAX_FEE() returns mathint = 10^18 * 25/100;
 definition isCreated(MorphoHarness.Id id) returns bool =
     (lastUpdate(id) != 0);
 
-
 invariant feeInRange(MorphoHarness.Id id)
-    to_mathint(fee(id)) <= MAX_FEE();
+    fee(id) <= MAX_FEE();
 
 invariant sumSupplySharesCorrect(MorphoHarness.Id id)
     to_mathint(totalSupplyShares(id)) == sumSupplyShares[id];
+
 invariant sumBorrowSharesCorrect(MorphoHarness.Id id)
     to_mathint(totalBorrowShares(id)) == sumBorrowShares[id];
 

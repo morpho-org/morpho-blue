@@ -8,11 +8,11 @@ methods {
     function MathLib.wTaylorCompounded(uint256, uint256) internal returns uint256 => NONDET;
 
     function _.borrowRate(MorphoHarness.Market) external => HAVOC_ECF;
-}
 
-definition VIRTUAL_ASSETS() returns mathint = 1;
-definition VIRTUAL_SHARES() returns mathint = 10^18;
-definition MAX_FEE() returns mathint = 10^18 * 25/100;
+    function VIRTUAL_ASSETS() external returns uint256 envfree;
+    function VIRTUAL_SHARES() external returns uint256 envfree;
+    function MAX_FEE() external returns uint256 envfree;
+}
 
 invariant feeInRange(MorphoHarness.Id id)
     to_mathint(fee(id)) <= MAX_FEE();
