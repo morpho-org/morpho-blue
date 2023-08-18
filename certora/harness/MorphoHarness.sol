@@ -52,4 +52,8 @@ contract MorphoHarness is Morpho {
     function mathLibMulDivDown(uint256 x, uint256 y, uint256 d) public pure returns (uint256) {
         return MathLib.mulDivDown(x, y, d);
     }
+
+    function isHealthy(Market memory market, address user) external view returns (bool) {
+        return _isHealthy(market, market.id(), user);
+    }
 }

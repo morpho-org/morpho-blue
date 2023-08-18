@@ -1,9 +1,11 @@
 methods {
-    function supply(MorphoHarness.Market, uint256, uint256, address, bytes) external;
     function getVirtualTotalSupply(MorphoHarness.Id) external returns uint256 envfree;
     function getVirtualTotalSupplyShares(MorphoHarness.Id) external returns uint256 envfree;
     function totalSupply(MorphoHarness.Id) external returns uint256 envfree;
     function totalBorrow(MorphoHarness.Id) external returns uint256 envfree;
+    function supplyShares(MorphoHarness.Id, address user) external returns uint256 envfree;
+    function borrowShares(MorphoHarness.Id, address user) external returns uint256 envfree;
+    function collateral(MorphoHarness.Id, address user) external returns uint256 envfree;
     function totalSupplyShares(MorphoHarness.Id) external returns uint256 envfree;
     function totalBorrowShares(MorphoHarness.Id) external returns uint256 envfree;
     function fee(MorphoHarness.Id) external returns uint256 envfree;
@@ -11,6 +13,7 @@ methods {
     function idToMarket(MorphoHarness.Id) external returns (address, address, address, address, uint256) envfree;
     function isAuthorized(address, address) external returns bool envfree;
 
+    function isHealthy(MorphoHarness.Market, address user) external returns bool envfree;
     function lastUpdate(MorphoHarness.Id) external returns uint256 envfree;
     function isLltvEnabled(uint256) external returns bool envfree;
     function isIrmEnabled(address) external returns bool envfree;
@@ -156,4 +159,160 @@ rule marketIdUnique() {
     assert market1.oracle == market2.oracle;
     assert market1.irm == market2.irm;
     assert market1.lltv == market2.lltv;
+}
+
+rule onlyUserCanAuthorizeWithoutSig(method f, calldataarg data)
+filtered {
+    f -> !f.isView && f.selector != sig:setAuthorizationWithSig(MorphoHarness.Authorization memory, MorphoHarness.Signature calldata).selector
+}
+{
+    address user;
+    address someone;
+    env e;
+
+    require user != e.msg.sender;
+    bool authorizedBefore = isAuthorized(user, someone);
+
+    f(e, data);
+
+    assert isAuthorized(user, someone) == authorizedBefore;
+}
+
+rule supplyMovesTokensAndIncreasesShares() {
+    MorphoHarness.Market market;
+    uint256 assets;
+    uint256 shares;
+    uint256 suppliedAssets;
+    uint256 suppliedShares;
+    address onbehalf;
+    bytes data;
+    MorphoHarness.Id id = getMarketId(market);
+    env e;
+
+    require e.msg.sender != currentContract;
+    require lastUpdate(id) == e.block.timestamp;
+
+    mathint sharesBefore = supplyShares(id, onbehalf);
+    mathint balanceBefore = myBalances[market.borrowableToken];
+
+    suppliedAssets, suppliedShares = supply(e, market, assets, shares, onbehalf, data);
+    assert assets != 0 => suppliedAssets == assets && shares == 0;
+    assert assets == 0 => suppliedShares == shares && shares != 0;
+
+    mathint sharesAfter = supplyShares(id, onbehalf);
+    mathint balanceAfter = myBalances[market.borrowableToken];
+    assert sharesAfter == sharesBefore + suppliedShares;
+    assert balanceAfter == balanceBefore + suppliedAssets;
+}
+
+rule userCannotLoseSupplyShares(method f, calldataarg data)
+filtered {
+    f -> !f.isView
+}
+{
+    MorphoHarness.Market market;
+    uint256 assets;
+    uint256 shares;
+    uint256 suppliedAssets;
+    uint256 suppliedShares;
+    address user;
+    MorphoHarness.Id id = getMarketId(market);
+    env e;
+
+    require !isAuthorized(user, e.msg.sender);
+    require user != e.msg.sender;
+
+    mathint sharesBefore = supplyShares(id, user);
+
+    f(e, data);
+
+    mathint sharesAfter = supplyShares(id, user);
+    assert sharesAfter >= sharesBefore;
+}
+
+rule userCannotGainBorrowShares(method f, calldataarg data)
+filtered {
+    f -> !f.isView
+}
+{
+    MorphoHarness.Market market;
+    uint256 assets;
+    uint256 shares;
+    uint256 suppliedAssets;
+    uint256 suppliedShares;
+    address user;
+    MorphoHarness.Id id = getMarketId(market);
+    env e;
+
+    require !isAuthorized(user, e.msg.sender);
+    require user != e.msg.sender;
+
+    mathint sharesBefore = borrowShares(id, user);
+
+    f(e, data);
+
+    mathint sharesAfter = borrowShares(id, user);
+    assert sharesAfter <= sharesBefore;
+}
+
+
+rule userWithoutBorrowCannotLoseCollateral(method f, calldataarg data)
+filtered {
+    f -> !f.isView
+}
+{
+    MorphoHarness.Market market;
+    uint256 assets;
+    uint256 shares;
+    uint256 suppliedAssets;
+    uint256 suppliedShares;
+    address user;
+    MorphoHarness.Id id = getMarketId(market);
+    env e;
+
+    require !isAuthorized(user, e.msg.sender);
+    require user != e.msg.sender;
+    require borrowShares(id, user) == 0;
+    mathint collateralBefore = collateral(id, user);
+
+    f(e, data);
+
+    mathint collateralAfter = collateral(id, user);
+    assert borrowShares(id, user) == 0;
+    assert collateralAfter >= collateralBefore;
+}
+
+rule noTimeTravel(method f, env e, calldataarg data) filtered {
+    f -> !f.isView
+} {
+    MorphoHarness.Id id;
+    require lastUpdate(id) <= e.block.timestamp;
+    f(e, data);
+    assert lastUpdate(id) <= e.block.timestamp;
+}
+
+rule canWithdrawAll() {
+    MorphoHarness.Market market;
+    uint256 withdrawnAssets;
+    uint256 withdrawnShares;
+    address receiver;
+    env e;
+
+    MorphoHarness.Id id = getMarketId(market);
+    uint256 shares = supplyShares(id, e.msg.sender);
+
+    require isInitialized(id);
+    require e.msg.sender != 0;
+    require receiver != 0;
+    require e.msg.value == 0;
+    require shares > 0;
+    require totalBorrow(id) == 0;
+    require lastUpdate(id) <= e.block.timestamp;
+    require shares < totalSupplyShares(id);
+    require totalSupplyShares(id) < 10^40 && totalSupply(id) < 10^30;
+
+    withdrawnAssets, withdrawnShares = withdraw@withrevert(e, market, 0, shares, e.msg.sender, receiver);
+
+    assert withdrawnShares == shares;
+    assert !lastReverted, "Can withdraw all assets if nobody borrows";
 }
