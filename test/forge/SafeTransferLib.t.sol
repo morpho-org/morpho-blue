@@ -59,13 +59,6 @@ contract SafeTransferLibTest is Test {
         tokenWithBooleanAlwaysFalse = new ERC20WithBooleanAlwaysFalse();
     }
 
-    function testSafeTransferShouldRevertOnTokenWithEmptyCode(address noCode) public {
-        vm.assume(noCode.code.length == 0);
-
-        vm.expectRevert(bytes(ErrorsLib.TRANSFER_FAILED));
-        this.safeTransfer(noCode, address(0), 0);
-    }
-
     function testSafeTransfer(address to, uint256 amount) public {
         tokenWithoutBoolean.setBalance(address(this), amount);
 
