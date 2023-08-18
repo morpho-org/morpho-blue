@@ -95,4 +95,11 @@ library MorphoLib {
     {
         morpho.withdrawCollateral(market, uint128(assets), onBehalf, receiver);
     }
+
+    function liquidate(IMorpho morpho, Info memory market, address borrower, uint256 seized, bytes memory data)
+        internal
+        returns (uint128 assetsRepaid, uint128 sharesRepaid)
+    {
+        return morpho.liquidate(market, borrower, uint128(seized), data);
+    }
 }

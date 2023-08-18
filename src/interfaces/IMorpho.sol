@@ -106,7 +106,7 @@ interface IMorpho {
 
     /// @notice Sets the `newFee` for `market`.
     /// @dev Warning: The recipient can be the zero address.
-    function setFee(Info memory market, uint256 newFee) external;
+    function setFee(Info memory market, uint128 newFee) external;
 
     /// @notice Sets `recipient` as recipient of the fee.
     /// @dev Warning: The recipient can be set to the zero address.
@@ -214,9 +214,9 @@ interface IMorpho {
     /// @param data Arbitrary data to pass to the `onMorphoLiquidate` callback. Pass empty data if not needed.
     /// @return assetsRepaid The amount of assets repaid.
     /// @return sharesRepaid The amount of shares burned.
-    function liquidate(Info memory market, address borrower, uint256 seized, bytes memory data)
+    function liquidate(Info memory market, address borrower, uint128 seized, bytes memory data)
         external
-        returns (uint256 assetsRepaid, uint256 sharesRepaid);
+        returns (uint128 assetsRepaid, uint128 sharesRepaid);
 
     /// @notice Executes a flash loan.
     /// @param token The token to flash loan.

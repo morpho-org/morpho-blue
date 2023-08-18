@@ -75,7 +75,7 @@ contract IntegrationOnlyOwnerTest is BaseTest {
         assertTrue(morpho.isLltvEnabled(lltvFuzz), "LLTV is not enabled");
     }
 
-    function testSetFeeWhenNotOwner(address addressFuzz, uint256 feeFuzz) public {
+    function testSetFeeWhenNotOwner(address addressFuzz, uint128 feeFuzz) public {
         vm.assume(addressFuzz != OWNER);
 
         vm.prank(addressFuzz);
@@ -83,7 +83,7 @@ contract IntegrationOnlyOwnerTest is BaseTest {
         morpho.setFee(market, feeFuzz);
     }
 
-    function testSetFeeWhenMarketNotCreated(Info memory marketFuzz, uint256 feeFuzz) public {
+    function testSetFeeWhenMarketNotCreated(Info memory marketFuzz, uint128 feeFuzz) public {
         vm.assume(neq(marketFuzz, market));
 
         vm.prank(OWNER);
@@ -91,16 +91,16 @@ contract IntegrationOnlyOwnerTest is BaseTest {
         morpho.setFee(marketFuzz, feeFuzz);
     }
 
-    function testSetTooHighFee(uint256 feeFuzz) public {
-        feeFuzz = bound(feeFuzz, MAX_FEE + 1, type(uint256).max);
+    function testSetTooHighFee(uint128 feeFuzz) public {
+        feeFuzz = uint128(bound(feeFuzz, MAX_FEE + 1, type(uint128).max));
 
         vm.prank(OWNER);
         vm.expectRevert(bytes(ErrorsLib.MAX_FEE_EXCEEDED));
         morpho.setFee(market, feeFuzz);
     }
 
-    function testSetFee(uint256 feeFuzz) public {
-        feeFuzz = bound(feeFuzz, 0, MAX_FEE);
+    function testSetFee(uint128 feeFuzz) public {
+        feeFuzz = uint128(bound(feeFuzz, uint128(0), MAX_FEE));
 
         vm.prank(OWNER);
         vm.expectEmit(true, true, true, true, address(morpho));

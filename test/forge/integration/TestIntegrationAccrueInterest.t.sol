@@ -133,7 +133,7 @@ contract IntegrationAccrueInterestTest is BaseTest {
         uint256 amountSupplied,
         uint256 amountBorrowed,
         uint256 timeElapsed,
-        uint256 fee
+        uint128 fee
     ) public {
         AccrueInterestWithFeesTestParams memory params;
 
@@ -142,7 +142,7 @@ contract IntegrationAccrueInterestTest is BaseTest {
         (amountCollateral, amountBorrowed,) = _boundHealthyPosition(amountCollateral, amountBorrowed, collateralPrice);
         amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
         timeElapsed = uint32(bound(timeElapsed, 1, 1e8));
-        fee = bound(fee, 1, MAX_FEE);
+        fee = uint128(bound(fee, 1, MAX_FEE));
 
         // Set fee parameters.
         vm.startPrank(OWNER);

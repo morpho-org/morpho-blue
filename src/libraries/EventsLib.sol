@@ -15,7 +15,7 @@ library EventsLib {
     /// @notice Emitted when setting a new fee.
     /// @param id The market id.
     /// @param fee The new fee.
-    event SetFee(Id indexed id, uint256 fee);
+    event SetFee(Id indexed id, uint128 fee);
 
     /// @notice Emitted when setting a new fee recipient.
     /// @param feeRecipient The new fee recipient.
