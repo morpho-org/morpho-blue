@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import {Id, Info, IMorpho} from "../../interfaces/IMorpho.sol";
+import {Id, Config, IMorpho} from "../../interfaces/IMorpho.sol";
 import {IIrm} from "../../interfaces/IIrm.sol";
 
 import {MathLib} from "../MathLib.sol";
@@ -18,17 +18,17 @@ import {MorphoStorageLib} from "./MorphoStorageLib.sol";
 /// @dev The getter to retrieve the expected total borrow shares is not exposed because interest accrual does not apply to it.
 ///      The value can be queried directly on Morpho using `totalBorrowShares`.
 library MorphoInterestLib {
-    using MarketLib for Info;
+    using MarketLib for Config;
     using MathLib for uint256;
     using MorphoLib for IMorpho;
     using SharesMathLib for uint256;
 
-    function expectedAccrueInterest(IMorpho morpho, Info memory info)
+    function expectedAccrueInterest(IMorpho morpho, Config memory config)
         internal
         view
         returns (uint256 totalSupply, uint256 toralBorrow, uint256 totalSupplyShares)
     {
-        Id id = info.id();
+        Id id = config.id();
 
         bytes32[] memory slots = new bytes32[](3);
         slots[0] = MorphoStorageLib.marketSlot(id);
@@ -47,7 +47,7 @@ library MorphoInterestLib {
         if (elapsed == 0) return (totalSupply, toralBorrow, totalSupplyShares);
 
         if (toralBorrow != 0) {
-            uint256 borrowRate = IIrm(info.irm).borrowRateView(info);
+            uint256 borrowRate = IIrm(config.irm).borrowRateView(config);
             uint256 interest = toralBorrow.wMulDown(borrowRate.wTaylorCompounded(elapsed));
             toralBorrow += interest;
             totalSupply += interest;
@@ -62,36 +62,44 @@ library MorphoInterestLib {
         }
     }
 
-    function expectedTotalSupply(IMorpho morpho, Info memory info) internal view returns (uint256 totalSupply) {
-        (totalSupply,,) = expectedAccrueInterest(morpho, info);
+    function expectedTotalSupply(IMorpho morpho, Config memory config) internal view returns (uint256 totalSupply) {
+        (totalSupply,,) = expectedAccrueInterest(morpho, config);
     }
 
-    function expectedTotalBorrow(IMorpho morpho, Info memory info) internal view returns (uint256 totalBorrow) {
-        (, totalBorrow,) = expectedAccrueInterest(morpho, info);
+    function expectedTotalBorrow(IMorpho morpho, Config memory config) internal view returns (uint256 totalBorrow) {
+        (, totalBorrow,) = expectedAccrueInterest(morpho, config);
     }
 
-    function expectedTotalSupplyShares(IMorpho morpho, Info memory info)
+    function expectedTotalSupplyShares(IMorpho morpho, Config memory config)
         internal
         view
         returns (uint256 totalSupplyShares)
     {
-        (,, totalSupplyShares) = expectedAccrueInterest(morpho, info);
+        (,, totalSupplyShares) = expectedAccrueInterest(morpho, config);
     }
 
     /// @dev Warning: It does not work for `feeRecipient` because their supply shares increase is not taken into account.
-    function expectedSupplyBalance(IMorpho morpho, Info memory info, address user) internal view returns (uint256) {
-        Id id = info.id();
+    function expectedSupplyBalance(IMorpho morpho, Config memory config, address user)
+        internal
+        view
+        returns (uint256)
+    {
+        Id id = config.id();
         uint256 supplyShares = morpho.supplyShares(id, user);
-        (uint256 totalSupply,, uint256 totalSupplyShares) = expectedAccrueInterest(morpho, info);
+        (uint256 totalSupply,, uint256 totalSupplyShares) = expectedAccrueInterest(morpho, config);
 
         return supplyShares.toAssetsDown(totalSupply, totalSupplyShares);
     }
 
-    function expectedBorrowBalance(IMorpho morpho, Info memory info, address user) internal view returns (uint256) {
-        Id id = info.id();
+    function expectedBorrowBalance(IMorpho morpho, Config memory config, address user)
+        internal
+        view
+        returns (uint256)
+    {
+        Id id = config.id();
         uint256 borrowShares = morpho.borrowShares(id, user);
         uint256 totalBorrowShares = morpho.totalBorrowShares(id);
-        (, uint256 totalBorrow,) = expectedAccrueInterest(morpho, info);
+        (, uint256 totalBorrow,) = expectedAccrueInterest(morpho, config);
 
         return borrowShares.toAssetsUp(totalBorrow, totalBorrowShares);
     }

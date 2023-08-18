@@ -7,12 +7,12 @@ contract IntegrationWithdrawCollateralTest is BaseTest {
     using MathLib for uint256;
     using MorphoLib for Morpho;
 
-    function testWithdrawCollateralMarketNotCreated(Info memory marketFuzz) public {
-        vm.assume(neq(marketFuzz, market));
+    function testWithdrawCollateralMarketNotCreated(Config memory configFuzz) public {
+        vm.assume(neq(configFuzz, market));
 
         vm.prank(SUPPLIER);
         vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
-        morpho.withdrawCollateral(marketFuzz, 1, SUPPLIER, RECEIVER);
+        morpho.withdrawCollateral(configFuzz, 1, SUPPLIER, RECEIVER);
     }
 
     function testWithdrawCollateralZeroAmount(uint256 amount) public {

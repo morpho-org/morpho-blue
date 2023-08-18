@@ -8,12 +8,12 @@ contract IntegrationBorrowTest is BaseTest {
     using MorphoLib for Morpho;
     using SharesMathLib for uint256;
 
-    function testBorrowMarketNotCreated(Info memory marketFuzz, address borrowerFuzz, uint256 amount) public {
-        vm.assume(neq(marketFuzz, market));
+    function testBorrowMarketNotCreated(Config memory configFuzz, address borrowerFuzz, uint256 amount) public {
+        vm.assume(neq(configFuzz, market));
 
         vm.prank(borrowerFuzz);
         vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
-        morpho.borrow(marketFuzz, amount, 0, borrowerFuzz, RECEIVER);
+        morpho.borrow(configFuzz, amount, 0, borrowerFuzz, RECEIVER);
     }
 
     function testBorrowZeroAmount(address borrowerFuzz) public {

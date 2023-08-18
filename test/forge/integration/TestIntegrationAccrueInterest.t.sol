@@ -8,11 +8,11 @@ contract IntegrationAccrueInterestTest is BaseTest {
     using MorphoLib for Morpho;
     using SharesMathLib for uint256;
 
-    function testAccrueInterestMarketNotCreated(Info memory marketFuzz) public {
-        vm.assume(neq(market, marketFuzz));
+    function testAccrueInterestMarketNotCreated(Config memory configFuzz) public {
+        vm.assume(neq(market, configFuzz));
 
         vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
-        morpho.accrueInterest(marketFuzz);
+        morpho.accrueInterest(configFuzz);
     }
 
     function testAccrueInterestNoTimeElapsed(uint256 amountSupplied, uint256 amountBorrowed) public {

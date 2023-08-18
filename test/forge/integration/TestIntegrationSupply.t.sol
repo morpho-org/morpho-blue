@@ -8,12 +8,12 @@ contract IntegrationSupplyTest is BaseTest {
     using MorphoLib for Morpho;
     using SharesMathLib for uint256;
 
-    function testSupplyMarketNotCreated(Info memory marketFuzz, uint256 amount) public {
-        vm.assume(neq(marketFuzz, market));
+    function testSupplyMarketNotCreated(Config memory configFuzz, uint256 amount) public {
+        vm.assume(neq(configFuzz, market));
 
         vm.prank(SUPPLIER);
         vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
-        morpho.supply(marketFuzz, amount, 0, SUPPLIER, hex"");
+        morpho.supply(configFuzz, amount, 0, SUPPLIER, hex"");
     }
 
     function testSupplyZeroAmount() public {

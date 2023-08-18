@@ -83,12 +83,12 @@ contract IntegrationOnlyOwnerTest is BaseTest {
         morpho.setFee(market, feeFuzz);
     }
 
-    function testSetFeeWhenMarketNotCreated(Info memory marketFuzz, uint256 feeFuzz) public {
-        vm.assume(neq(marketFuzz, market));
+    function testSetFeeWhenMarketNotCreated(Config memory configFuzz, uint256 feeFuzz) public {
+        vm.assume(neq(configFuzz, market));
 
         vm.prank(OWNER);
         vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
-        morpho.setFee(marketFuzz, feeFuzz);
+        morpho.setFee(configFuzz, feeFuzz);
     }
 
     function testSetTooHighFee(uint256 feeFuzz) public {

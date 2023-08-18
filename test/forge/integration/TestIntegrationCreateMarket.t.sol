@@ -5,71 +5,71 @@ import "../BaseTest.sol";
 
 contract IntegrationCreateMarketTest is BaseTest {
     using MorphoLib for Morpho;
-    using MarketLib for Info;
+    using MarketLib for Config;
     using MathLib for uint256;
 
-    function testCreateMarketWithNotEnabledIrmAndNotEnabledLltv(Info memory marketFuzz) public {
-        vm.assume(marketFuzz.irm != address(irm) && marketFuzz.lltv != LLTV);
+    function testCreateMarketWithNotEnabledIrmAndNotEnabledLltv(Config memory configFuzz) public {
+        vm.assume(configFuzz.irm != address(irm) && configFuzz.lltv != LLTV);
 
         vm.prank(OWNER);
         vm.expectRevert(bytes(ErrorsLib.IRM_NOT_ENABLED));
-        morpho.createMarket(marketFuzz);
+        morpho.createMarket(configFuzz);
     }
 
-    function testCreateMarketWithNotEnabledIrmAndEnabledLltv(Info memory marketFuzz) public {
-        vm.assume(marketFuzz.irm != address(irm));
-        marketFuzz.lltv = _boundValidLltv(marketFuzz.lltv);
+    function testCreateMarketWithNotEnabledIrmAndEnabledLltv(Config memory configFuzz) public {
+        vm.assume(configFuzz.irm != address(irm));
+        configFuzz.lltv = _boundValidLltv(configFuzz.lltv);
 
         vm.startPrank(OWNER);
-        if (marketFuzz.lltv != LLTV) morpho.enableLltv(marketFuzz.lltv);
+        if (configFuzz.lltv != LLTV) morpho.enableLltv(configFuzz.lltv);
 
         vm.expectRevert(bytes(ErrorsLib.IRM_NOT_ENABLED));
-        morpho.createMarket(marketFuzz);
+        morpho.createMarket(configFuzz);
         vm.stopPrank();
     }
 
-    function testCreateMarketWithEnabledIrmAndNotEnabledLltv(Info memory marketFuzz) public {
-        vm.assume(marketFuzz.lltv != LLTV);
+    function testCreateMarketWithEnabledIrmAndNotEnabledLltv(Config memory configFuzz) public {
+        vm.assume(configFuzz.lltv != LLTV);
 
         vm.startPrank(OWNER);
-        if (marketFuzz.irm != market.irm) morpho.enableIrm(marketFuzz.irm);
+        if (configFuzz.irm != market.irm) morpho.enableIrm(configFuzz.irm);
 
         vm.expectRevert(bytes(ErrorsLib.LLTV_NOT_ENABLED));
-        morpho.createMarket(marketFuzz);
+        morpho.createMarket(configFuzz);
         vm.stopPrank();
     }
 
-    function testCreateMarketWithEnabledIrmAndLltv(Info memory marketFuzz) public {
-        marketFuzz.lltv = _boundValidLltv(marketFuzz.lltv);
-        Id marketFuzzId = marketFuzz.id();
+    function testCreateMarketWithEnabledIrmAndLltv(Config memory configFuzz) public {
+        configFuzz.lltv = _boundValidLltv(configFuzz.lltv);
+        Id configFuzzId = configFuzz.id();
 
         vm.startPrank(OWNER);
-        if (marketFuzz.irm != market.irm) morpho.enableIrm(marketFuzz.irm);
-        if (marketFuzz.lltv != LLTV) morpho.enableLltv(marketFuzz.lltv);
+        if (configFuzz.irm != market.irm) morpho.enableIrm(configFuzz.irm);
+        if (configFuzz.lltv != LLTV) morpho.enableLltv(configFuzz.lltv);
 
         vm.expectEmit(true, true, true, true, address(morpho));
-        emit EventsLib.CreateMarket(marketFuzz.id(), marketFuzz);
-        morpho.createMarket(marketFuzz);
+        emit EventsLib.CreateMarket(configFuzz.id(), configFuzz);
+        morpho.createMarket(configFuzz);
         vm.stopPrank();
 
-        assertEq(morpho.lastUpdate(marketFuzzId), block.timestamp, "lastUpdate != block.timestamp");
-        assertEq(morpho.totalSupply(marketFuzzId), 0, "totalSupply != 0");
-        assertEq(morpho.totalSupplyShares(marketFuzzId), 0, "totalSupplyShares != 0");
-        assertEq(morpho.totalBorrow(marketFuzzId), 0, "totalBorrow != 0");
-        assertEq(morpho.totalBorrowShares(marketFuzzId), 0, "totalBorrowShares != 0");
-        assertEq(morpho.fee(marketFuzzId), 0, "fee != 0");
+        assertEq(morpho.lastUpdate(configFuzzId), block.timestamp, "lastUpdate != block.timestamp");
+        assertEq(morpho.totalSupply(configFuzzId), 0, "totalSupply != 0");
+        assertEq(morpho.totalSupplyShares(configFuzzId), 0, "totalSupplyShares != 0");
+        assertEq(morpho.totalBorrow(configFuzzId), 0, "totalBorrow != 0");
+        assertEq(morpho.totalBorrowShares(configFuzzId), 0, "totalBorrowShares != 0");
+        assertEq(morpho.fee(configFuzzId), 0, "fee != 0");
     }
 
-    function testCreateMarketAlreadyCreated(Info memory marketFuzz) public {
-        marketFuzz.lltv = _boundValidLltv(marketFuzz.lltv);
+    function testCreateMarketAlreadyCreated(Config memory configFuzz) public {
+        configFuzz.lltv = _boundValidLltv(configFuzz.lltv);
 
         vm.startPrank(OWNER);
-        if (marketFuzz.irm != market.irm) morpho.enableIrm(marketFuzz.irm);
-        if (marketFuzz.lltv != LLTV) morpho.enableLltv(marketFuzz.lltv);
-        morpho.createMarket(marketFuzz);
+        if (configFuzz.irm != market.irm) morpho.enableIrm(configFuzz.irm);
+        if (configFuzz.lltv != LLTV) morpho.enableLltv(configFuzz.lltv);
+        morpho.createMarket(configFuzz);
 
         vm.expectRevert(bytes(ErrorsLib.MARKET_ALREADY_CREATED));
-        morpho.createMarket(marketFuzz);
+        morpho.createMarket(configFuzz);
         vm.stopPrank();
     }
 }

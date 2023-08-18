@@ -8,11 +8,11 @@ contract IntegrationLiquidateTest is BaseTest {
     using MorphoLib for Morpho;
     using SharesMathLib for uint256;
 
-    function testLiquidateNotCreatedMarket(Info memory marketFuzz) public {
-        vm.assume(neq(marketFuzz, market));
+    function testLiquidateNotCreatedMarket(Config memory configFuzz) public {
+        vm.assume(neq(configFuzz, market));
 
         vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
-        morpho.liquidate(marketFuzz, address(this), 1, hex"");
+        morpho.liquidate(configFuzz, address(this), 1, hex"");
     }
 
     function testLiquidateZeroAmount() public {
