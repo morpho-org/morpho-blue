@@ -6,12 +6,12 @@ import "../BaseTest.sol";
 contract IntegrationSupplyCollateralTest is BaseTest {
     using MorphoLib for Morpho;
 
-    function testSupplyCollateralMarketNotCreated(Config memory configFuzz, uint256 amount) public {
-        vm.assume(neq(configFuzz, market));
+    function testSupplyCollateralMarketNotCreated(MarketParams memory marketParamsFuzz, uint256 amount) public {
+        vm.assume(neq(marketParamsFuzz, market));
 
         vm.prank(SUPPLIER);
         vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
-        morpho.supplyCollateral(configFuzz, amount, SUPPLIER, hex"");
+        morpho.supplyCollateral(marketParamsFuzz, amount, SUPPLIER, hex"");
     }
 
     function testSupplyCollateralZeroAmount(address SUPPLIER) public {

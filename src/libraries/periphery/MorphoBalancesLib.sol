@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import {Id, Config, IMorpho} from "../../interfaces/IMorpho.sol";
+import {Id, MarketParams, IMorpho} from "../../interfaces/IMorpho.sol";
 import {IIrm} from "../../interfaces/IIrm.sol";
 
 import {MathLib} from "../MathLib.sol";
@@ -18,17 +18,17 @@ import {MorphoStorageLib} from "./MorphoStorageLib.sol";
 /// @dev The getter to retrieve the expected total borrow shares is not exposed because interest accrual does not apply to it.
 ///      The value can be queried directly on Morpho using `totalBorrowShares`.
 library MorphoBalancesLib {
-    using MarketLib for Config;
     using MathLib for uint256;
     using MorphoLib for IMorpho;
     using SharesMathLib for uint256;
+    using MarketLib for MarketParams;
 
-    function expectedMarketBalances(IMorpho morpho, Config memory config)
+    function expectedMarketBalances(IMorpho morpho, MarketParams memory marketParams)
         internal
         view
         returns (uint256 totalSupply, uint256 toralBorrow, uint256 totalSupplyShares)
     {
-        Id id = config.id();
+        Id id = marketParams.id();
 
         bytes32[] memory slots = new bytes32[](3);
         slots[0] = MorphoStorageLib.marketSlot(id);
@@ -47,7 +47,7 @@ library MorphoBalancesLib {
         if (elapsed == 0) return (totalSupply, toralBorrow, totalSupplyShares);
 
         if (toralBorrow != 0) {
-            uint256 borrowRate = IIrm(config.irm).borrowRateView(config);
+            uint256 borrowRate = IIrm(marketParams.irm).borrowRateView(marketParams);
             uint256 interest = toralBorrow.wMulDown(borrowRate.wTaylorCompounded(elapsed));
             toralBorrow += interest;
             totalSupply += interest;
@@ -62,44 +62,52 @@ library MorphoBalancesLib {
         }
     }
 
-    function expectedTotalSupply(IMorpho morpho, Config memory config) internal view returns (uint256 totalSupply) {
-        (totalSupply,,) = expectedMarketBalances(morpho, config);
+    function expectedTotalSupply(IMorpho morpho, MarketParams memory marketParams)
+        internal
+        view
+        returns (uint256 totalSupply)
+    {
+        (totalSupply,,) = expectedMarketBalances(morpho, marketParams);
     }
 
-    function expectedTotalBorrow(IMorpho morpho, Config memory config) internal view returns (uint256 totalBorrow) {
-        (, totalBorrow,) = expectedMarketBalances(morpho, config);
+    function expectedTotalBorrow(IMorpho morpho, MarketParams memory marketParams)
+        internal
+        view
+        returns (uint256 totalBorrow)
+    {
+        (, totalBorrow,) = expectedMarketBalances(morpho, marketParams);
     }
 
-    function expectedTotalSupplyShares(IMorpho morpho, Config memory config)
+    function expectedTotalSupplyShares(IMorpho morpho, MarketParams memory marketParams)
         internal
         view
         returns (uint256 totalSupplyShares)
     {
-        (,, totalSupplyShares) = expectedMarketBalances(morpho, config);
+        (,, totalSupplyShares) = expectedMarketBalances(morpho, marketParams);
     }
 
     /// @dev Warning: It does not work for `feeRecipient` because their supply shares increase is not taken into account.
-    function expectedSupplyBalance(IMorpho morpho, Config memory config, address user)
+    function expectedSupplyBalance(IMorpho morpho, MarketParams memory marketParams, address user)
         internal
         view
         returns (uint256)
     {
-        Id id = config.id();
+        Id id = marketParams.id();
         uint256 supplyShares = morpho.supplyShares(id, user);
-        (uint256 totalSupply,, uint256 totalSupplyShares) = expectedMarketBalances(morpho, config);
+        (uint256 totalSupply,, uint256 totalSupplyShares) = expectedMarketBalances(morpho, marketParams);
 
         return supplyShares.toAssetsDown(totalSupply, totalSupplyShares);
     }
 
-    function expectedBorrowBalance(IMorpho morpho, Config memory config, address user)
+    function expectedBorrowBalance(IMorpho morpho, MarketParams memory marketParams, address user)
         internal
         view
         returns (uint256)
     {
-        Id id = config.id();
+        Id id = marketParams.id();
         uint256 borrowShares = morpho.borrowShares(id, user);
         uint256 totalBorrowShares = morpho.totalBorrowShares(id);
-        (, uint256 totalBorrow,) = expectedMarketBalances(morpho, config);
+        (, uint256 totalBorrow,) = expectedMarketBalances(morpho, marketParams);
 
         return borrowShares.toAssetsUp(totalBorrow, totalBorrowShares);
     }

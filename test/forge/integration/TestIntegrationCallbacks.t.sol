@@ -12,7 +12,7 @@ contract IntegrationCallbacksTest is
     IMorphoSupplyCollateralCallback,
     IMorphoFlashLoanCallback
 {
-    using MarketLib for Config;
+    using MarketLib for MarketParams;
     using MathLib for uint256;
     using MorphoLib for Morpho;
 

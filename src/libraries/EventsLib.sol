@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import {Id, Config} from "../interfaces/IMorpho.sol";
+import {Id, MarketParams} from "../interfaces/IMorpho.sol";
 
 /// @title EventsLib
 /// @author Morpho Labs
@@ -31,8 +31,8 @@ library EventsLib {
 
     /// @notice Emitted when creating a market.
     /// @param id The market id.
-    /// @param market The market that was created.
-    event CreateMarket(Id indexed id, Config market);
+    /// @param marketParams The market that was created.
+    event CreateMarket(Id indexed id, MarketParams marketParams);
 
     /// @notice Emitted on supply of assets.
     /// @param id The market id.

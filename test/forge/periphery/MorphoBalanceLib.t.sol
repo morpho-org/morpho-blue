@@ -9,7 +9,7 @@ contract MorphoBalanceLibTest is BaseTest {
     using MathLib for uint256;
     using MorphoLib for Morpho;
     using SharesMathLib for uint256;
-    using MorphoInterestLib for Morpho;
+    using MorphoBalancesLib for Morpho;
 
     function testVirtualAccrueInterest(uint256 amountSupplied, uint256 amountBorrowed, uint256 timeElapsed, uint256 fee)
         public
@@ -17,7 +17,7 @@ contract MorphoBalanceLibTest is BaseTest {
         _generatePendingInterest(amountSupplied, amountBorrowed, timeElapsed, fee);
 
         (uint256 virtualTotalSupply, uint256 virtualTotalBorrow, uint256 virtualTotalSupplyShares) =
-            morpho.virtualAccrueInterest(market);
+            morpho.expectedMarketBalances(market);
 
         morpho.accrueInterest(market);
 

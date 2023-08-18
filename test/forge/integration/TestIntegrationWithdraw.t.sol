@@ -8,11 +8,11 @@ contract IntegrationWithdrawTest is BaseTest {
     using MorphoLib for Morpho;
     using SharesMathLib for uint256;
 
-    function testWithdrawMarketNotCreated(Config memory configFuzz) public {
-        vm.assume(neq(configFuzz, market));
+    function testWithdrawMarketNotCreated(MarketParams memory marketParamsFuzz) public {
+        vm.assume(neq(marketParamsFuzz, market));
 
         vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
-        morpho.withdraw(configFuzz, 1, 0, address(this), address(this));
+        morpho.withdraw(marketParamsFuzz, 1, 0, address(this), address(this));
     }
 
     function testWithdrawZeroAmount(uint256 amount) public {

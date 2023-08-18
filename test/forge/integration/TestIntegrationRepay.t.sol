@@ -8,11 +8,11 @@ contract IntegrationRepayTest is BaseTest {
     using MorphoLib for Morpho;
     using SharesMathLib for uint256;
 
-    function testRepayMarketNotCreated(Config memory configFuzz) public {
-        vm.assume(neq(configFuzz, market));
+    function testRepayMarketNotCreated(MarketParams memory marketParamsFuzz) public {
+        vm.assume(neq(marketParamsFuzz, market));
 
         vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
-        morpho.repay(configFuzz, 1, 0, address(this), hex"");
+        morpho.repay(marketParamsFuzz, 1, 0, address(this), hex"");
     }
 
     function testRepayZeroAmount() public {
