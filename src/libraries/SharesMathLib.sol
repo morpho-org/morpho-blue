@@ -12,7 +12,7 @@ import {MathLib} from "./MathLib.sol";
 library SharesMathLib {
     using MathLib for uint256;
 
-    /// @notice The number of virtual shares has been chosen low enough to prevent overflows, and high enough to ensure high precision computations.
+    /// @dev The number of virtual shares has been chosen low enough to prevent overflows, and high enough to ensure high precision computations.
     uint256 internal constant VIRTUAL_SHARES = 1e6;
 
     uint256 internal constant VIRTUAL_ASSETS = 1;
