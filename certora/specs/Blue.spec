@@ -301,7 +301,7 @@ rule canWithdrawAll() {
     MorphoHarness.Id id = getMarketId(market);
     uint256 shares = supplyShares(id, e.msg.sender);
 
-    require isInitialized(id);
+    require isCreated(id);
     require e.msg.sender != 0;
     require receiver != 0;
     require e.msg.value == 0;
