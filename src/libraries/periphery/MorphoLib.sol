@@ -35,12 +35,12 @@ library MorphoLib {
         slots[3] = MorphoStorageLib.feeSlot(id);
         slots[4] = MorphoStorageLib.lastUpdateSlot(id);
 
-        uint256[] memory values = morpho.extsload(slots);
-        totalSupply = values[0];
-        toralBorrow = values[1];
-        totalSupplyShares = values[2];
-        uint256 fee = values[3];
-        uint256 lastUpdate = values[4];
+        bytes32[] memory values = morpho.extsload(slots);
+        totalSupply = uint256(values[0]);
+        toralBorrow = uint256(values[1]);
+        totalSupplyShares = uint256(values[2]);
+        uint256 fee = uint256(values[3]);
+        uint256 lastUpdate = uint256(values[4]);
 
         uint256 elapsed = block.timestamp - lastUpdate;
 

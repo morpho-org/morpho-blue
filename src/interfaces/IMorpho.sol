@@ -248,5 +248,5 @@ interface IMorpho {
     function accrueInterest(Market memory market) external;
 
     /// @notice Returns the data stored on the different `slots`.
-    function extsload(uint256[] memory slots) external view returns (uint256[] memory res);
+    function extsload(uint256[] memory slots) external view returns (bytes32[] memory res);
 }
