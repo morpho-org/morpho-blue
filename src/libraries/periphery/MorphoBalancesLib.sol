@@ -10,20 +10,20 @@ import {MarketLib} from "../MarketLib.sol";
 import {SharesMathLib} from "../SharesMathLib.sol";
 import {MorphoStorageLib} from "./MorphoStorageLib.sol";
 
-/// @title MorphoInterestLib
+/// @title MorphoBalancesLib
 /// @author Morpho Labs
 /// @custom:contact security@morpho.xyz
 /// @notice Helper library exposing getters with the expected value after interest accrual.
 /// @dev This library is not used in Morpho itself and is intended to be used by integrators.
 /// @dev The getter to retrieve the expected total borrow shares is not exposed because interest accrual does not apply to it.
 ///      The value can be queried directly on Morpho using `totalBorrowShares`.
-library MorphoInterestLib {
+library MorphoBalancesLib {
     using MarketLib for Config;
     using MathLib for uint256;
     using MorphoLib for IMorpho;
     using SharesMathLib for uint256;
 
-    function virtualAccrueInterest(IMorpho morpho, Config memory config)
+    function expectedMarketBalances(IMorpho morpho, Config memory config)
         internal
         view
         returns (uint256 totalSupply, uint256 toralBorrow, uint256 totalSupplyShares)
@@ -63,11 +63,11 @@ library MorphoInterestLib {
     }
 
     function expectedTotalSupply(IMorpho morpho, Config memory config) internal view returns (uint256 totalSupply) {
-        (totalSupply,,) = virtualAccrueInterest(morpho, config);
+        (totalSupply,,) = expectedMarketBalances(morpho, config);
     }
 
     function expectedTotalBorrow(IMorpho morpho, Config memory config) internal view returns (uint256 totalBorrow) {
-        (, totalBorrow,) = virtualAccrueInterest(morpho, config);
+        (, totalBorrow,) = expectedMarketBalances(morpho, config);
     }
 
     function expectedTotalSupplyShares(IMorpho morpho, Config memory config)
@@ -75,7 +75,7 @@ library MorphoInterestLib {
         view
         returns (uint256 totalSupplyShares)
     {
-        (,, totalSupplyShares) = virtualAccrueInterest(morpho, config);
+        (,, totalSupplyShares) = expectedMarketBalances(morpho, config);
     }
 
     /// @dev Warning: It does not work for `feeRecipient` because their supply shares increase is not taken into account.
@@ -86,7 +86,7 @@ library MorphoInterestLib {
     {
         Id id = config.id();
         uint256 supplyShares = morpho.supplyShares(id, user);
-        (uint256 totalSupply,, uint256 totalSupplyShares) = virtualAccrueInterest(morpho, config);
+        (uint256 totalSupply,, uint256 totalSupplyShares) = expectedMarketBalances(morpho, config);
 
         return supplyShares.toAssetsDown(totalSupply, totalSupplyShares);
     }
@@ -99,7 +99,7 @@ library MorphoInterestLib {
         Id id = config.id();
         uint256 borrowShares = morpho.borrowShares(id, user);
         uint256 totalBorrowShares = morpho.totalBorrowShares(id);
-        (, uint256 totalBorrow,) = virtualAccrueInterest(morpho, config);
+        (, uint256 totalBorrow,) = expectedMarketBalances(morpho, config);
 
         return borrowShares.toAssetsUp(totalBorrow, totalBorrowShares);
     }

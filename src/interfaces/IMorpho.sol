@@ -4,51 +4,28 @@ pragma solidity >=0.5.0;
 type Id is bytes32;
 
 struct Config {
-    /// @notice The address of the borrowable token.
     address borrowableToken;
-    /// @notice The address of the collateral token.
     address collateralToken;
-    /// @notice The address of the oracle.
     address oracle;
-    /// @notice irm The address of the interest rate model.
     address irm;
-    /// @notice lltv The Liquidation LTV.
     uint256 lltv;
 }
 
 struct User {
-    /// @notice The `user`'s supply shares on the market.
-    /// @dev Warning: Does not contain the accrued shares since the last interaction for `feeRecipient`.
     uint256 supplyShares;
-    /// @notice The `user`'s borrow shares on the market.
     uint128 borrowShares;
-    /// @notice The `user`'s collateral balance on the market.
     uint128 collateral;
 }
 
 struct Market {
-    /// @notice The total supply of the market.
-    /// @dev Warning: Does not contain the accrued interest since the last interaction.
     uint128 totalSupplyAssets;
-    /// @notice The total supply shares of the market.
     uint128 totalSupplyShares;
-    /// @notice The total borrow of the market.
-    /// @dev Warning: Does not contain the accrued interest since the last interaction.
     uint128 totalBorrowAssets;
-    /// @notice The total borrow shares of the market.
     uint128 totalBorrowShares;
-    /// @notice The last update timestamp of the market.
     uint128 lastUpdate;
-    /// @notice The fee of the market.
     uint128 fee;
 }
 
-/// @notice Authorization struct.
-/// @param authorizer Authorizer address.
-/// @param authorized Authorized address.
-/// @param isAuthorized The authorization status to set.
-/// @param nonce Signature nonce.
-/// @param deadline Signature deadline.
 struct Authorization {
     address authorizer;
     address authorized;
@@ -57,7 +34,6 @@ struct Authorization {
     uint256 deadline;
 }
 
-/// @notice Contains the `v`, `r` and `s` parameters of an ECDSA signature.
 struct Signature {
     uint8 v;
     bytes32 r;
@@ -80,9 +56,13 @@ interface IMorpho {
     function feeRecipient() external view returns (address);
 
     /// @notice Users' storage for market `id`.
+    /// @dev Warning: supplyShares does not contain the accrued shares since the last interaction for `feeRecipient`.
     function user(Id id, address user) external view returns (uint256, uint128, uint128);
 
     /// @notice Market storage for market `id`.
+    /// @dev Warning: totalSupplyAssets does not contain the accrued interest since the last interaction.
+    /// @dev Warning: totalBorrowAssets does not contain the accrued interest since the last interaction.
+    /// @dev Warning: totalSupplyShares does not contain the additionnal shares accrued by `feeRecipient` since the last interaction.
     function market(Id id) external view returns (uint128, uint128, uint128, uint128, uint128, uint128);
 
     /// @notice Whether the `irm` is enabled.
