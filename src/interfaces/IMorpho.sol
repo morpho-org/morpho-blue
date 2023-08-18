@@ -11,12 +11,16 @@ struct MarketParams {
     uint256 lltv;
 }
 
+/// @dev Warning: `supplyShares` does not contain the accrued shares since the last interaction for `feeRecipient`.
 struct User {
     uint256 supplyShares;
     uint128 borrowShares;
     uint128 collateral;
 }
 
+/// @dev Warning: `totalSupplyAssets` does not contain the accrued interest since the last interaction.
+/// @dev Warning: `totalBorrowAssets` does not contain the accrued interest since the last interaction.
+/// @dev Warning: `totalSupplyShares` does not contain the additionnal shares accrued by `feeRecipient` since the last interaction.
 struct Market {
     uint128 totalSupplyAssets;
     uint128 totalSupplyShares;
@@ -56,13 +60,9 @@ interface IMorpho {
     function feeRecipient() external view returns (address);
 
     /// @notice Users' storage for market `id`.
-    /// @dev Warning: supplyShares does not contain the accrued shares since the last interaction for `feeRecipient`.
     function user(Id id, address user) external view returns (uint256, uint128, uint128);
 
     /// @notice Market storage for market `id`.
-    /// @dev Warning: totalSupplyAssets does not contain the accrued interest since the last interaction.
-    /// @dev Warning: totalBorrowAssets does not contain the accrued interest since the last interaction.
-    /// @dev Warning: totalSupplyShares does not contain the additionnal shares accrued by `feeRecipient` since the last interaction.
     function market(Id id) external view returns (uint128, uint128, uint128, uint128, uint128, uint128);
 
     /// @notice Whether the `irm` is enabled.
