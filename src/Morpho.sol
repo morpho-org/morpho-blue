@@ -424,8 +424,8 @@ contract Morpho is IMorpho {
         );
     }
 
-    function _isSenderAuthorized(address authorizer) internal view returns (bool) {
-        return msg.sender == authorizer || isAuthorized[authorizer][msg.sender];
+    function _isSenderAuthorized(address onBehalf) internal view returns (bool) {
+        return msg.sender == onBehalf || isAuthorized[onBehalf][msg.sender];
     }
 
     /* INTEREST MANAGEMENT */
