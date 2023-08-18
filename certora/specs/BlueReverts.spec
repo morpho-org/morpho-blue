@@ -63,14 +63,15 @@ rule enableIrmRevertCondition(env e, address irm) {
 rule enableLltvRevertCondition(env e, uint256 lltv) {
     address oldOwner = owner();
     enableLltv@withrevert(e, lltv);
-    assert lastReverted <=> e.msg.value != 0 || e.msg.sender != oldOwner || lltv > WAD();
+    assert lastReverted <=> e.msg.value != 0 || e.msg.sender != oldOwner || lltv >= WAD();
 }
 
-rule setFeeRevertCondition(env e, MorphoHarness.Market market, uint256 newFee) {
+// setFee can also revert if the accrueInterests reverts.
+rule setFeeInputValidation(env e, MorphoHarness.Market market, uint256 newFee) {
     address oldOwner = owner();
     MorphoHarness.Id id = getMarketId(market);
     setFee@withrevert(e, market, newFee);
-    assert lastReverted <=> e.msg.value != 0 || e.msg.sender != oldOwner || !isCreated(id) || newFee > MAX_FEE();
+    assert e.msg.value != 0 || e.msg.sender != oldOwner || !isCreated(id) || newFee > MAX_FEE() => lastReverted;
 }
 
 rule setFeeRecipientRevertCondition(env e, address recipient) {
@@ -85,43 +86,43 @@ rule createMarketRevertCondition(env e, MorphoHarness.Market market) {
     assert lastReverted <=> e.msg.value != 0 || !isIrmEnabled(market.irm) || !isLltvEnabled(market.lltv) || lastUpdate(id) != 0;
 }
 
-rule supplyValidation(env e, MorphoHarness.Market market, uint256 assets, uint256 shares, address onBehalf, bytes b) {
+rule supplyInputValidation(env e, MorphoHarness.Market market, uint256 assets, uint256 shares, address onBehalf, bytes b) {
     supply@withrevert(e, market, assets, shares, onBehalf, b);
     assert !exactlyOneZero(assets, shares) || onBehalf == 0 => lastReverted;
 }
 
-rule withdrawValidation(env e, MorphoHarness.Market market, uint256 assets, uint256 shares, address onBehalf, address receiver) {
+rule withdrawInputValidation(env e, MorphoHarness.Market market, uint256 assets, uint256 shares, address onBehalf, address receiver) {
     require e.msg.sender != 0;
     requireInvariant zeroDoesNotAuthorize(e.msg.sender);
     withdraw@withrevert(e, market, assets, shares, onBehalf, receiver);
     assert !exactlyOneZero(assets, shares) || onBehalf == 0 => lastReverted;
 }
 
-rule borrowValidation(env e, MorphoHarness.Market market, uint256 assets, uint256 shares, address onBehalf, address receiver) {
+rule borrowInputValidation(env e, MorphoHarness.Market market, uint256 assets, uint256 shares, address onBehalf, address receiver) {
     require e.msg.sender != 0;
     requireInvariant zeroDoesNotAuthorize(e.msg.sender);
     borrow@withrevert(e, market, assets, shares, onBehalf, receiver);
     assert !exactlyOneZero(assets, shares) || onBehalf == 0 => lastReverted;
 }
 
-rule repayValidation(env e, MorphoHarness.Market market, uint256 assets, uint256 shares, address onBehalf, bytes b) {
+rule repayInputValidation(env e, MorphoHarness.Market market, uint256 assets, uint256 shares, address onBehalf, bytes b) {
     repay@withrevert(e, market, assets, shares, onBehalf, b);
     assert !exactlyOneZero(assets, shares) || onBehalf == 0 => lastReverted;
 }
 
-rule supplyCollateralValidation(env e, MorphoHarness.Market market, uint256 assets, address onBehalf, bytes b) {
+rule supplyCollateralInputValidation(env e, MorphoHarness.Market market, uint256 assets, address onBehalf, bytes b) {
     supplyCollateral@withrevert(e, market, assets, onBehalf, b);
     assert assets == 0 || onBehalf == 0 => lastReverted;
 }
 
-rule withdrawCollateralValidation(env e, MorphoHarness.Market market, uint256 assets, address onBehalf, address receiver) {
+rule withdrawCollateralInputValidation(env e, MorphoHarness.Market market, uint256 assets, address onBehalf, address receiver) {
     require e.msg.sender != 0;
     requireInvariant zeroDoesNotAuthorize(e.msg.sender);
     withdrawCollateral@withrevert(e, market, assets, onBehalf, receiver);
     assert assets == 0 || onBehalf == 0 => lastReverted;
 }
 
-rule liquidateValidation(env e, MorphoHarness.Market market, address borrower, uint256 seized, bytes b) {
+rule liquidateInputValidation(env e, MorphoHarness.Market market, address borrower, uint256 seized, bytes b) {
     liquidate@withrevert(e, market, borrower, seized, b);
     assert seized == 0 => lastReverted;
 }
