@@ -39,8 +39,7 @@ function summaryMulDivDown(uint256 x, uint256 y, uint256 d) returns uint256 {
     return result;
 }
 
-rule accrueInterestsIncreasesRatio()
-{
+rule accrueInterestsIncreasesSupplyRatio() {
     MorphoHarness.Market market;
     MorphoHarness.Id id;
     requireInvariant feeInRange(id);
@@ -48,19 +47,18 @@ rule accrueInterestsIncreasesRatio()
     mathint assetsBefore = totalSupply(id) + VIRTUAL_ASSETS();
     mathint sharesBefore = totalSupplyShares(id) + VIRTUAL_SHARES();
 
-    // we actually check the property for every market, not just for id.
+    // The check is done for every market, not just for id.
     env e;
     accrueInterests(e, market);
 
     mathint assetsAfter = totalSupply(id) + VIRTUAL_ASSETS();
     mathint sharesAfter = totalSupplyShares(id) + VIRTUAL_SHARES();
 
-    // check if ratio increases: assetsBefore/sharesBefore <= assetsAfter / sharesAfter;
+    // Check if ratio increases: assetsBefore/sharesBefore <= assetsAfter / sharesAfter
     assert assetsBefore * sharesAfter <= assetsAfter * sharesBefore;
 }
 
-rule accrueInterestsIncreasesBorrowRatio()
-{
+rule accrueInterestsIncreasesBorrowRatio() {
     MorphoHarness.Market market;
     MorphoHarness.Id id;
     requireInvariant feeInRange(id);
@@ -68,19 +66,19 @@ rule accrueInterestsIncreasesBorrowRatio()
     mathint assetsBefore = totalBorrow(id) + VIRTUAL_ASSETS();
     mathint sharesBefore = totalBorrowShares(id) + VIRTUAL_SHARES();
 
-    // we actually check it for every market, not just for id.
+    // The check is done for every market, not just for id.
     env e;
     accrueInterests(e, market);
 
     mathint assetsAfter = totalBorrow(id) + VIRTUAL_ASSETS();
     mathint sharesAfter = totalBorrowShares(id) + VIRTUAL_SHARES();
 
-    // check if ratio increases: assetsBefore/sharesBefore <= assetsAfter / sharesAfter;
+    // Check if ratio increases: assetsBefore/sharesBefore <= assetsAfter / sharesAfter
     assert assetsBefore * sharesAfter <= assetsAfter * sharesBefore;
 }
 
 
-rule onlyLiquidateCanDecreaseRatio(method f)
+rule onlyLiquidateCanDecreaseSupplyRatio(env e, method f, calldataarg args)
 filtered {
     f -> !f.isView && f.selector != sig:liquidate(MorphoHarness.Market, address, uint256, bytes).selector
 }
@@ -90,25 +88,22 @@ filtered {
 
     mathint assetsBefore = totalSupply(id) + VIRTUAL_ASSETS();
     mathint sharesBefore = totalSupplyShares(id) + VIRTUAL_SHARES();
-    env e;
-    // interest is checked separately by the rules above
-    // here we assume interest has already been accumulated for this block
+
+    // Interest is checked separately by the rules above.
+    // Here we assume interest has already been accumulated for this block.
     require lastUpdate(id) == e.block.timestamp;
 
-    calldataarg args;
     f(e,args);
 
     mathint assetsAfter = totalSupply(id) + VIRTUAL_ASSETS();
     mathint sharesAfter = totalSupplyShares(id) + VIRTUAL_SHARES();
 
-    // check if ratio increases: assetsBefore/sharesBefore <= assetsAfter / sharesAfter;
+    // Check if ratio increases: assetsBefore/sharesBefore <= assetsAfter / sharesAfter
     assert assetsBefore * sharesAfter <= assetsAfter * sharesBefore;
 }
 
-rule onlyAccrueInterestsCanIncreaseBorrowRatio(method f)
-filtered {
-    f -> !f.isView
-}
+rule onlyAccrueInterestsCanIncreaseBorrowRatio(env e, method f, calldataarg args)
+filtered { f -> !f.isView }
 {
     MorphoHarness.Id id;
     requireInvariant feeInRange(id);
@@ -116,15 +111,14 @@ filtered {
     mathint assetsBefore = totalBorrow(id) + VIRTUAL_ASSETS();
     mathint sharesBefore = totalBorrowShares(id) + VIRTUAL_SHARES();
 
-    env e;
-    calldataarg args;
-    // interests would increase borrow ratio, so we need to assume no time passes.
+    // Interest would increase borrow ratio, so we need to assume no time passes.
     require lastUpdate(id) == e.block.timestamp;
+
     f(e,args);
 
     mathint assetsAfter = totalBorrow(id) + VIRTUAL_ASSETS();
     mathint sharesAfter = totalBorrowShares(id) + VIRTUAL_SHARES();
 
-    // check if ratio increases: assetsBefore/sharesBefore <= assetsAfter / sharesAfter;
+    // Check if ratio increases: assetsBefore/sharesBefore <= assetsAfter / sharesAfter
     assert assetsBefore * sharesAfter >= assetsAfter * sharesBefore;
 }
