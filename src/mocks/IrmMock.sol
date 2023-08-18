@@ -6,7 +6,7 @@ import {Id, Market, IMorpho} from "../interfaces/IMorpho.sol";
 
 import {MathLib} from "../libraries/MathLib.sol";
 import {MarketLib} from "../libraries/MarketLib.sol";
-import {MorphoLib} from "../../test/forge/helpers/MorphoLib.sol";
+import {MorphoLib} from "../libraries/periphery/MorphoLib.sol";
 
 contract IrmMock is IIrm {
     using MathLib for uint256;
@@ -20,6 +20,10 @@ contract IrmMock is IIrm {
     }
 
     function borrowRate(Market memory market) external view returns (uint256) {
+        return borrowRateView(market);
+    }
+
+    function borrowRateView(Market memory market) public view returns (uint256) {
         Id id = market.id();
         uint256 utilization = MORPHO.totalBorrowAssets(id).wDivDown(MORPHO.totalSupplyAssets(id));
 

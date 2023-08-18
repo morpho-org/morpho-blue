@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.5.0;
 
-import {IFlashLender} from "./IFlashLender.sol";
-
 type Id is bytes32;
 
 /// @notice Contains the parameters defining market.
@@ -49,7 +47,7 @@ struct Signature {
 /// @author Morpho Labs
 /// @custom:contact security@morpho.xyz
 /// @notice Interface of Morpho.
-interface IMorpho is IFlashLender {
+interface IMorpho {
     /// @notice The EIP-712 domain separator.
     function DOMAIN_SEPARATOR() external view returns (bytes32);
 
@@ -103,19 +101,24 @@ interface IMorpho is IFlashLender {
         returns (address borrowableAsset, address collateralAsset, address oracle, address irm, uint256 lltv);
 
     /// @notice Sets `newOwner` as owner of the contract.
+    /// @dev Warning: No two-step transfer ownership.
+    /// @dev Warning: The owner can be set to the zero address.
     function setOwner(address newOwner) external;
 
     /// @notice Enables `irm` as possible IRM for market creation.
+    /// @dev Warning: It is not possible to disable an IRM.
     function enableIrm(address irm) external;
 
     /// @notice Enables `lltv` as possible LLTV for market creation.
+    /// @dev Warning: It is not possible to disable a LLTV.
     function enableLltv(uint256 lltv) external;
 
     /// @notice Sets the `newFee` for `market`.
-    /// @dev It is the `owner`'s responsibility to ensure `feeRecipient` is set before setting a non-zero fee.
+    /// @dev Warning: The recipient can be the zero address.
     function setFee(Market memory market, uint256 newFee) external;
 
     /// @notice Sets `recipient` as recipient of the fee.
+    /// @dev Warning: The recipient can be set to the zero address.
     function setFeeRecipient(address recipient) external;
 
     /// @notice Creates `market`.
@@ -193,7 +196,7 @@ interface IMorpho is IFlashLender {
 
     /// @notice Supplies the given `assets` of collateral to the given `market` on behalf of `onBehalf`,
     ///         optionally calling back the caller's `onMorphoSupplyCollateral` function with the given `data`.
-    /// @dev Interests are not accrued since it's not required and it saves gas.
+    /// @dev Interest are not accrued since it's not required and it saves gas.
     /// @dev Supplying a large amount can overflow and revert without any error message.
     /// @param market The market to supply collateral to.
     /// @param assets The amount of collateral to supply.
@@ -224,6 +227,12 @@ interface IMorpho is IFlashLender {
         external
         returns (uint256 assetsRepaid, uint256 sharesRepaid);
 
+    /// @notice Executes a flash loan.
+    /// @param token The token to flash loan.
+    /// @param assets The amount of assets to flash loan.
+    /// @param data Arbitrary data to pass to the `onMorphoFlashLoan` callback.
+    function flashLoan(address token, uint256 assets, bytes calldata data) external;
+
     /// @notice Sets the authorization for `authorized` to manage `msg.sender`'s positions.
     /// @param authorized The authorized address.
     /// @param newIsAuthorized The new authorization status.
@@ -234,8 +243,8 @@ interface IMorpho is IFlashLender {
     /// @param signature The signature.
     function setAuthorizationWithSig(Authorization calldata authorization, Signature calldata signature) external;
 
-    /// @notice Accrues interests for `market`.
-    function accrueInterests(Market memory market) external;
+    /// @notice Accrues interest for `market`.
+    function accrueInterest(Market memory market) external;
 
     /// @notice Returns the data stored on the different `slots`.
     function extsload(bytes32[] memory slots) external view returns (bytes32[] memory res);
