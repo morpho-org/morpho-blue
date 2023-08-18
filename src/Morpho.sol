@@ -341,8 +341,11 @@ contract Morpho is IMorpho {
 
         require(!_isHealthy(market, id, borrower, collateralPrice), ErrorsLib.HEALTHY_POSITION);
 
-        assetsRepaid =
-            seized.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(liquidationIncentiveFactor(market.lltv));
+        // The liquidation incentive factor is min(maxIncentiveFactor, 1/(1 - cursor*(1 - lltv))).
+        uint256 incentive = UtilsLib.min(
+            MAX_LIQUIDATION_INCENTIVE_FACTOR, WAD.wDivDown(WAD - LIQUIDATION_CURSOR.wMulDown(WAD - market.lltv))
+        );
+        assetsRepaid = seized.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(incentive);
         sharesRepaid = assetsRepaid.toSharesDown(totalBorrow[id], totalBorrowShares[id]);
 
         borrowShares[id][borrower] -= sharesRepaid;
@@ -436,12 +439,10 @@ contract Morpho is IMorpho {
 
         if (elapsed == 0) return;
 
-        uint256 marketTotalBorrow = totalBorrow[id];
-
-        if (marketTotalBorrow != 0) {
+        if (totalBorrow[id] != 0) {
             uint256 borrowRate = IIrm(market.irm).borrowRate(market);
-            uint256 interest = marketTotalBorrow.wMulDown(borrowRate.wTaylorCompounded(elapsed));
-            totalBorrow[id] = marketTotalBorrow + interest;
+            uint256 interest = totalBorrow[id].wMulDown(borrowRate.wTaylorCompounded(elapsed));
+            totalBorrow[id] += interest;
             totalSupply[id] += interest;
 
             uint256 feeShares;
@@ -500,13 +501,5 @@ contract Morpho is IMorpho {
                 mstore(add(res, mul(i, 32)), sload(slot))
             }
         }
-    }
-
-    /* LIQUIDATION INCENTIVE FACTOR */
-
-    /// @dev The liquidation incentive factor is min(maxIncentiveFactor, 1/(1 - cursor*(1 - lltv))).
-    function liquidationIncentiveFactor(uint256 lltv) private pure returns (uint256) {
-        return
-            UtilsLib.min(MAX_LIQUIDATION_INCENTIVE_FACTOR, WAD.wDivDown(WAD - LIQUIDATION_CURSOR.wMulDown(WAD - lltv)));
     }
 }
