@@ -79,8 +79,10 @@ interface IMorpho {
     /// @dev The recipient receives the fees through a supply position.
     function feeRecipient() external view returns (address);
 
+    /// @notice Users' storage for market `id`.
     function user(Id id, address user) external view returns (uint256, uint128, uint128);
 
+    /// @notice Market storage for market `id`.
     function market(Id id) external view returns (uint128, uint128, uint128, uint128, uint128, uint128);
 
     /// @notice Whether the `irm` is enabled.
