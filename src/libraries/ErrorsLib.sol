@@ -22,13 +22,13 @@ library ErrorsLib {
     string internal constant LLTV_NOT_ENABLED = "LLTV not enabled";
 
     /// @notice Thrown when the market is already created.
-    string internal constant MARKET_CREATED = "market created";
+    string internal constant MARKET_ALREADY_CREATED = "market already created";
 
     /// @notice Thrown when the market is not created.
     string internal constant MARKET_NOT_CREATED = "market not created";
 
     /// @notice Thrown when not exactly one of the input amount is zero.
-    string constant INCONSISTENT_INPUT = "inconsistent input";
+    string internal constant INCONSISTENT_INPUT = "inconsistent input";
 
     /// @notice Thrown when zero assets is passed as input.
     string internal constant ZERO_ASSETS = "zero assets";
