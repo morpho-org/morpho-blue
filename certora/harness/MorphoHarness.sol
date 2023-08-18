@@ -9,6 +9,14 @@ contract MorphoHarness is Morpho {
 
     constructor(address newOwner) Morpho(newOwner) {}
 
+    function MAX_FEE() external pure returns (uint256) {
+        return MAX_FEE;
+    }
+
+    function WAD() external pure returns (uint256) {
+        return WAD;
+    }
+
     function getVirtualTotalSupply(Id id) external view returns (uint256) {
         return totalSupply[id] + SharesMathLib.VIRTUAL_ASSETS;
     }

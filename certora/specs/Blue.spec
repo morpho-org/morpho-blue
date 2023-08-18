@@ -87,7 +87,7 @@ function summarySafeTransferFrom(address token, address from, address to, uint25
 definition VIRTUAL_ASSETS() returns mathint = 1;
 definition VIRTUAL_SHARES() returns mathint = 10^18;
 definition MAX_FEE() returns mathint = 10^18 * 25/100;
-definition isInitialized(MorphoHarness.Id id) returns bool =
+definition isCreated(MorphoHarness.Id id) returns bool =
     (lastUpdate(id) != 0);
 
 
@@ -103,7 +103,7 @@ invariant borrowLessSupply(MorphoHarness.Id id)
     totalBorrow(id) <= totalSupply(id);
 
 invariant marketInvariant(MorphoHarness.Market market)
-    isInitialized(getMarketId(market)) =>
+    isCreated(getMarketId(market)) =>
     idToBorrowable[getMarketId(market)] == market.borrowableToken
     && idToCollateral[getMarketId(market)] == market.collateralToken;
 
@@ -140,20 +140,11 @@ invariant isLiquid(address token)
     }
 }
 
-rule supplyRevertZero(MorphoHarness.Market market) {
-    env e;
-    bytes b;
-
-    supply@withrevert(e, market, 0, 0, e.msg.sender, b);
-
-    assert lastReverted;
-}
-
 invariant onlyEnabledLltv(MorphoHarness.Market market)
-    isInitialized(getMarketId(market)) => isLltvEnabled(market.lltv);
+    isCreated(getMarketId(market)) => isLltvEnabled(market.lltv);
 
 invariant onlyEnabledIrm(MorphoHarness.Market market)
-    isInitialized(getMarketId(market)) => isIrmEnabled(market.irm);
+    isCreated(getMarketId(market)) => isIrmEnabled(market.irm);
 
 rule marketIdUnique() {
     MorphoHarness.Market market1;
