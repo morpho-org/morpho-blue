@@ -13,11 +13,6 @@ library MathLib {
         return mulDivDown(x, y, WAD);
     }
 
-    /// @dev (x * y) / WAD rounded up.
-    function wMulUp(uint256 x, uint256 y) internal pure returns (uint256) {
-        return mulDivUp(x, y, WAD);
-    }
-
     /// @dev (x * WAD) / y rounded down.
     function wDivDown(uint256 x, uint256 y) internal pure returns (uint256) {
         return mulDivDown(x, WAD, y);
