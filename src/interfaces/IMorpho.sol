@@ -53,9 +53,9 @@ interface IMorpho {
     function DOMAIN_SEPARATOR() external view returns (bytes32);
 
     /// @notice The owner of the contract.
-    /// @dev They have the power to change the owner.
-    /// @dev They have the power to set fees on markets and set the fee recipient.
-    /// @dev They have the power to enable but not disable IRMs and LLTVs.
+    /// @dev It has the power to change the owner.
+    /// @dev It has the power to set fees on markets and set the fee recipient.
+    /// @dev It has the power to enable but not disable IRMs and LLTVs.
     function owner() external view returns (address);
 
     /// @notice The fee recipient of all markets.
@@ -79,7 +79,7 @@ interface IMorpho {
     function isAuthorized(address authorizer, address authorized) external view returns (bool);
 
     /// @notice The `authorizer`'s current nonce. Used to prevent replay attacks with EIP-712 signatures.
-    function authorizationNonce(address authorizer) external view returns (uint256);
+    function nonce(address authorizer) external view returns (uint256);
 
     /// @notice The market params corresponding to `id`.
     function idToMarketParams(Id id)

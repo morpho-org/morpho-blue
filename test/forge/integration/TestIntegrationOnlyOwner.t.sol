@@ -8,6 +8,11 @@ contract IntegrationOnlyOwnerTest is BaseTest {
     using MathLib for uint256;
     using MorphoLib for Morpho;
 
+    function testDeployWithAddressZero() public {
+        vm.expectRevert();
+        new Morpho(address(0));
+    }
+
     function testSetOwnerWhenNotOwner(address addressFuzz) public {
         vm.assume(addressFuzz != OWNER);
 

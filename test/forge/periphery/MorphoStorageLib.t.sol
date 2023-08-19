@@ -88,7 +88,7 @@ contract MorphoStorageLibTest is BaseTest {
         assertEq(abi.decode(abi.encode(values[7]), (bool)), morpho.isIrmEnabled(address(irm)));
         assertEq(abi.decode(abi.encode(values[8]), (bool)), morpho.isLltvEnabled(LLTV));
         assertEq(abi.decode(abi.encode(values[9]), (bool)), morpho.isAuthorized(authorizer, BORROWER));
-        assertEq(uint256(values[10]), morpho.authorizationNonce(authorizer));
+        assertEq(uint256(values[10]), morpho.nonce(authorizer));
 
         (
             address expectedBorrowableToken,
