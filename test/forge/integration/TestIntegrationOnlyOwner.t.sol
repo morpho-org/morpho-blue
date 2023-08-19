@@ -9,7 +9,7 @@ contract IntegrationOnlyOwnerTest is BaseTest {
     using MorphoLib for Morpho;
 
     function testDeployWithAddressZero() public {
-        vm.expectRevert();
+        vm.expectRevert(bytes(ErrorsLib.NOT_OWNER));
         new Morpho(address(0));
     }
 
