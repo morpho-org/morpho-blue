@@ -21,18 +21,16 @@ methods {
 invariant feeInRange(MorphoHarness.Id id)
     to_mathint(fee(id)) <= MAX_FEE();
 
-/* This is a simple overapproximative summary, stating that it rounds in the right direction.
- * The summary is checked by the specification in BlueRatioMathSummary.spec.
- */
+// This is a simple overapproximative summary, stating that it rounds in the right direction.
+// The summary is checked by the specification in BlueRatioMathSummary.spec.
 function summaryMulDivUp(uint256 x, uint256 y, uint256 d) returns uint256 {
     uint256 result;
     require result * d >= x * y;
     return result;
 }
 
-/* This is a simple overapproximative summary, stating that it rounds in the right direction.
- * The summary is checked by the specification in BlueRatioMathSummary.spec.
- */
+// This is a simple overapproximative summary, stating that it rounds in the right direction.
+// The summary is checked by the specification in BlueRatioMathSummary.spec.
 function summaryMulDivDown(uint256 x, uint256 y, uint256 d) returns uint256 {
     uint256 result;
     require result * d <= x * y;

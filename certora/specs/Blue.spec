@@ -32,9 +32,11 @@ methods {
 ghost mapping(MorphoHarness.Id => mathint) sumSupplyShares {
     init_state axiom (forall MorphoHarness.Id id. sumSupplyShares[id] == 0);
 }
+
 ghost mapping(MorphoHarness.Id => mathint) sumBorrowShares {
     init_state axiom (forall MorphoHarness.Id id. sumBorrowShares[id] == 0);
 }
+
 ghost mapping(MorphoHarness.Id => mathint) sumCollateral {
     init_state axiom (forall MorphoHarness.Id id. sumCollateral[id] == 0);
 }
@@ -106,8 +108,8 @@ invariant borrowLessSupply(MorphoHarness.Id id)
 
 invariant marketInvariant(MorphoHarness.Market market)
     isCreated(getMarketId(market)) =>
-    idToBorrowable[getMarketId(market)] == market.borrowableToken
-    && idToCollateral[getMarketId(market)] == market.collateralToken;
+    idToBorrowable[getMarketId(market)] == market.borrowableToken &&
+    idToCollateral[getMarketId(market)] == market.collateralToken;
 
 invariant isLiquid(address token)
     expectedAmount[token] <= myBalances[token]
@@ -206,9 +208,7 @@ rule supplyMovesTokensAndIncreasesShares() {
 }
 
 rule userCannotLoseSupplyShares(method f, calldataarg data)
-filtered {
-    f -> !f.isView
-}
+filtered { f -> !f.isView }
 {
     MorphoHarness.Market market;
     uint256 assets;
@@ -231,9 +231,7 @@ filtered {
 }
 
 rule userCannotGainBorrowShares(method f, calldataarg data)
-filtered {
-    f -> !f.isView
-}
+filtered { f -> !f.isView }
 {
     MorphoHarness.Market market;
     uint256 assets;
@@ -257,9 +255,7 @@ filtered {
 
 
 rule userWithoutBorrowCannotLoseCollateral(method f, calldataarg data)
-filtered {
-    f -> !f.isView
-}
+filtered { f -> !f.isView }
 {
     MorphoHarness.Market market;
     uint256 assets;
@@ -282,9 +278,9 @@ filtered {
     assert collateralAfter >= collateralBefore;
 }
 
-rule noTimeTravel(method f, env e, calldataarg data) filtered {
-    f -> !f.isView
-} {
+rule noTimeTravel(method f, env e, calldataarg data)
+filtered { f -> !f.isView }
+{
     MorphoHarness.Id id;
     require lastUpdate(id) <= e.block.timestamp;
     f(e, data);

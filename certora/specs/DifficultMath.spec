@@ -17,7 +17,7 @@ function summaryMulDivDown(uint256 x, uint256 y, uint256 d) returns uint256 {
     return require_uint256((x * y) / d);
 }
 
-/* There should be no profit from supply followed immediately by withdraw */
+// There should be no profit from supply followed immediately by withdraw.
 rule supplyWithdraw() {
     MorphoHarness.Market market;
     uint256 assets;
@@ -46,7 +46,7 @@ rule supplyWithdraw() {
     assert withdrawnAssets <= suppliedAssets;
 }
 
-/* There should be no profit from withdraw followed immediately by supply */
+// There should be no profit from withdraw followed immediately by supply.
 rule withdrawSupply() {
     MorphoHarness.Market market;
     uint256 assets;

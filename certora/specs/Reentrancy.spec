@@ -27,7 +27,7 @@ hook ALL_SLOAD(uint loc) uint v {
 
 hook CALL(uint g, address addr, uint value, uint argsOffset, uint argsLength, uint retOffset, uint retLength) uint rc {
     if (callIsBorrowRate) {
-        /* The calls to borrow rate are trusted and don't count */
+        // The calls to borrow rate are trusted and don't count.
         callIsBorrowRate = false;
         hasCallAfterAccessingStorage = hasCallAfterAccessingStorage;
     } else {
@@ -56,10 +56,9 @@ rule noDelegateCalls(method f, calldataarg data, env e) {
     assert !delegate_call;
 }
 
-/* This rule can be used to check which methods have static calls
-rule hasStaticCalls(method f, calldataarg data, env e) {
-    require !static_call;
-    f(e,data);
-    satisfy static_call;
-}
-*/
+// This rule can be used to check which methods have static calls
+// rule hasStaticCalls(method f, calldataarg data, env e) {
+//     require !static_call;
+//     f(e,data);
+//     satisfy static_call;
+// }
