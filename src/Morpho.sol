@@ -69,7 +69,7 @@ contract Morpho is IMorpho {
     /// @inheritdoc IMorpho
     mapping(address => mapping(address => bool)) public isAuthorized;
     /// @inheritdoc IMorpho
-    mapping(address => uint256) public nonce;
+    mapping(address => uint256) public authorizationNonce;
     /// @inheritdoc IMorpho
     mapping(Id => MarketParams) public idToMarketParams;
 
@@ -78,6 +78,7 @@ contract Morpho is IMorpho {
     /// @notice Initializes the contract.
     /// @param newOwner The new owner of the contract.
     constructor(address newOwner) {
+        require(newOwner != address(0), ErrorsLib.ZERO_ADDRESS);
         owner = newOwner;
 
         DOMAIN_SEPARATOR = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256("Morpho"), block.chainid, address(this)));
@@ -405,9 +406,10 @@ contract Morpho is IMorpho {
     /// @inheritdoc IMorpho
     /// @dev Warning: reverts if the signature has already been submitted.
     /// @dev The signature is malleable, but it has no impact on the security here.
+    /// @dev The nonce is passed as argument to be able to revert with a different error message.
     function setAuthorizationWithSig(Authorization memory authorization, Signature calldata signature) external {
         require(block.timestamp < authorization.deadline, ErrorsLib.SIGNATURE_EXPIRED);
-        require(authorization.nonce == nonce[authorization.authorizer]++, ErrorsLib.INVALID_NONCE);
+        require(authorization.nonce == authorizationNonce[authorization.authorizer]++, ErrorsLib.INVALID_NONCE);
 
         bytes32 hashStruct = keccak256(abi.encode(AUTHORIZATION_TYPEHASH, authorization));
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, hashStruct));

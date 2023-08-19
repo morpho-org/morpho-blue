@@ -88,6 +88,6 @@ contract IntegrationAuthorization is BaseTest {
         morpho.setAuthorizationWithSig(authorization, sig);
 
         assertEq(morpho.isAuthorized(authorization.authorizer, authorization.authorized), authorization.isAuthorized);
-        assertEq(morpho.nonce(authorization.authorizer), 1);
+        assertEq(morpho.authorizationNonce(authorization.authorizer), 1);
     }
 }
