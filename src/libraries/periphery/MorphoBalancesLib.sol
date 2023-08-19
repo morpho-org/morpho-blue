@@ -31,9 +31,9 @@ library MorphoBalancesLib {
         Id id = marketParams.id();
 
         bytes32[] memory slots = new bytes32[](3);
-        slots[0] = MorphoStorageLib.marketSlot(id);
-        slots[1] = bytes32(uint256(MorphoStorageLib.marketSlot(id)) + 1);
-        slots[2] = bytes32(uint256(MorphoStorageLib.marketSlot(id)) + 2);
+        slots[0] = MorphoStorageLib.marketTotalSupplySlot(id);
+        slots[1] = MorphoStorageLib.marketTotalBorrowSlot(id);
+        slots[2] = MorphoStorageLib.marketLastUpdateFeeSlot(id);
 
         bytes32[] memory values = morpho.extsload(slots);
         totalSupplyAssets = uint128(uint256(values[0]));

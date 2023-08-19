@@ -57,11 +57,11 @@ contract MorphoStorageLibTest is BaseTest {
         bytes32[] memory slots = new bytes32[](16);
         slots[0] = MorphoStorageLib.ownerSlot();
         slots[1] = MorphoStorageLib.feeRecipientSlot();
-        slots[2] = bytes32(uint256(MorphoStorageLib.userSlot(id, address(this))) + 0);
-        slots[3] = bytes32(uint256(MorphoStorageLib.userSlot(id, BORROWER)) + 1);
-        slots[4] = bytes32(uint256(MorphoStorageLib.marketSlot(id)) + 0);
-        slots[5] = bytes32(uint256(MorphoStorageLib.marketSlot(id)) + 1);
-        slots[6] = bytes32(uint256(MorphoStorageLib.marketSlot(id)) + 2);
+        slots[2] = MorphoStorageLib.userSupplySharesSlot(id, address(this));
+        slots[3] = MorphoStorageLib.userBorrowSharesCollateralSlot(id, BORROWER);
+        slots[4] = MorphoStorageLib.marketTotalSupplySlot(id);
+        slots[5] = MorphoStorageLib.marketTotalBorrowSlot(id);
+        slots[6] = MorphoStorageLib.marketLastUpdateFeeSlot(id);
         slots[7] = MorphoStorageLib.isIrmEnabledSlot(address(irm));
         slots[8] = MorphoStorageLib.isLltvEnabledSlot(LLTV);
         slots[9] = MorphoStorageLib.isAuthorizedSlot(authorizer, BORROWER);
@@ -74,9 +74,9 @@ contract MorphoStorageLibTest is BaseTest {
 
         bytes32[] memory values = morpho.extsload(slots);
 
-        assertEq(abi.decode(abi.encode(values[0]), (address)), morpho.owner(), "a");
-        assertEq(abi.decode(abi.encode(values[1]), (address)), morpho.feeRecipient(), "b");
-        assertEq(uint256(values[2]), morpho.supplyShares(id, address(this)), "c");
+        assertEq(abi.decode(abi.encode(values[0]), (address)), morpho.owner());
+        assertEq(abi.decode(abi.encode(values[1]), (address)), morpho.feeRecipient());
+        assertEq(uint256(values[2]), morpho.supplyShares(id, address(this)));
         assertEq(uint256(values[3] >> 128), morpho.collateral(id, BORROWER));
         assertEq(uint128(uint256(values[3])), morpho.borrowShares(id, BORROWER));
         assertEq(uint128(uint256(values[4])), morpho.totalSupplyAssets(id));

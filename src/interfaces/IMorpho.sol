@@ -11,16 +11,16 @@ struct MarketParams {
     uint256 lltv;
 }
 
-/// @dev Warning: `supplyShares` does not contain the accrued shares since the last interaction for `feeRecipient`.
+/// @dev Warning: for `feeRecipient, `supplyShares` does not contain the accrued shares since the last interest accrual.
 struct User {
     uint256 supplyShares;
     uint128 borrowShares;
     uint128 collateral;
 }
 
-/// @dev Warning: `totalSupplyAssets` does not contain the accrued interest since the last interaction.
-/// @dev Warning: `totalBorrowAssets` does not contain the accrued interest since the last interaction.
-/// @dev Warning: `totalSupplyShares` does not contain the additionnal shares accrued by `feeRecipient` since the last interaction.
+/// @dev Warning: `totalSupplyAssets` does not contain the accrued interest since the last interest accrual.
+/// @dev Warning: `totalBorrowAssets` does not contain the accrued interest since the last interest accrual.
+/// @dev Warning: `totalSupplyShares` does not contain the additionnal shares accrued by `feeRecipient` since the last interest accrual.
 struct Market {
     uint128 totalSupplyAssets;
     uint128 totalSupplyShares;
