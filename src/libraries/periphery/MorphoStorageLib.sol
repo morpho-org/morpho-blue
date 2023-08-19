@@ -32,8 +32,8 @@ library MorphoStorageLib {
     uint256 internal constant SUPPLY_SHARES_OFFSET = 0;
     uint256 internal constant BORROW_SHARES_AND_COLLATERAL_OFFSET = 1;
 
-    uint256 internal constant TOTAL_SUPPLY_OFFSET = 0;
-    uint256 internal constant TOTAL_BORROW_OFFSET = 1;
+    uint256 internal constant TOTAL_SUPPLY_ASSETS_AND_SHARES_OFFSET = 0;
+    uint256 internal constant TOTAL_BORROW_ASSETS_AND_SHARES_OFFSET = 1;
     uint256 internal constant LAST_UPDATE_AND_FEE_OFFSET = 2;
 
     /* GETTERS */
@@ -58,12 +58,12 @@ library MorphoStorageLib {
         );
     }
 
-    function marketTotalSupplySlot(Id id) internal pure returns (bytes32) {
-        return bytes32(uint256(keccak256(abi.encode(id, MARKET_SLOT))) + TOTAL_SUPPLY_OFFSET);
+    function marketTotalSupplyAssetsAndSharesSlot(Id id) internal pure returns (bytes32) {
+        return bytes32(uint256(keccak256(abi.encode(id, MARKET_SLOT))) + TOTAL_SUPPLY_ASSETS_AND_SHARES_OFFSET);
     }
 
-    function marketTotalBorrowSlot(Id id) internal pure returns (bytes32) {
-        return bytes32(uint256(keccak256(abi.encode(id, MARKET_SLOT))) + TOTAL_BORROW_OFFSET);
+    function marketTotalBorrowAssetsAndSharesSlot(Id id) internal pure returns (bytes32) {
+        return bytes32(uint256(keccak256(abi.encode(id, MARKET_SLOT))) + TOTAL_BORROW_ASSETS_AND_SHARES_OFFSET);
     }
 
     function marketLastUpdateAndFeeSlot(Id id) internal pure returns (bytes32) {

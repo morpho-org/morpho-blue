@@ -403,7 +403,7 @@ contract Morpho is IMorpho {
     }
 
     /// @inheritdoc IMorpho
-    /// @dev Warning: reverts if the signature has already been submitted.
+    /// @dev Warning: Reverts if the signature has already been submitted.
     /// @dev The signature is malleable, but it has no impact on the security here.
     function setAuthorizationWithSig(Authorization memory authorization, Signature calldata signature) external {
         require(block.timestamp < authorization.deadline, ErrorsLib.SIGNATURE_EXPIRED);
