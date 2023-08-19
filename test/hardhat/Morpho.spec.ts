@@ -110,39 +110,25 @@ describe("Morpho", () => {
   });
 
   it("should simulate gas cost [main]", async () => {
-    await hre.network.provider.send("evm_setAutomine", [false]);
-    await hre.network.provider.send("evm_setIntervalMining", [0]);
-
     for (let i = 0; i < signers.length; ++i) {
-      if (i % 20 == 0) console.log("[main]", Math.floor((100 * i) / signers.length), "%");
-
-      if (random() < 1 / 2) await mine(1 + Math.floor(random() * 100), { interval: 12 });
+      console.log("[main]", i, "/", signers.length);
 
       const user = signers[i];
 
       let assets = BigNumber.WAD.mul(1 + Math.floor(random() * 100));
 
-      if (random() < 2 / 3) {
-        Promise.all([
-          morpho.connect(user).supply(market, assets, 0, user.address, []),
-          morpho.connect(user).withdraw(market, assets.div(2), 0, user.address, user.address),
-        ]);
-      } else {
-        const totalSupply = await morpho.totalSupply(id);
-        const totalBorrow = await morpho.totalBorrow(id);
-        const liquidity = BigNumber.from(totalSupply).sub(BigNumber.from(totalBorrow));
+      await morpho.connect(user).supply(market, assets, 0, user.address, []);
+      await morpho.connect(user).withdraw(market, assets.div(2), 0, user.address, user.address);
+      const totalSupplyAssets = (await morpho.market(id)).totalSupplyAssets;
+      const totalBorrowAssets = (await morpho.market(id)).totalBorrowAssets;
+      const liquidity = BigNumber.from(totalSupplyAssets).sub(BigNumber.from(totalBorrowAssets));
 
-        assets = BigNumber.min(assets, BigNumber.from(liquidity).div(2));
+      assets = BigNumber.min(assets, BigNumber.from(liquidity).div(2));
 
-        if (assets > BigNumber.from(0)) {
-          Promise.all([
-            morpho.connect(user).supplyCollateral(market, assets, user.address, []),
-            morpho.connect(user).borrow(market, assets.div(2), 0, user.address, user.address),
-            morpho.connect(user).repay(market, assets.div(4), 0, user.address, []),
-            morpho.connect(user).withdrawCollateral(market, assets.div(8), user.address, user.address),
-          ]);
-        }
-      }
+      await morpho.connect(user).supplyCollateral(market, assets, user.address, []);
+      await morpho.connect(user).borrow(market, assets.div(2), 0, user.address, user.address);
+      await morpho.connect(user).repay(market, assets.div(4), 0, user.address, []);
+      await morpho.connect(user).withdrawCollateral(market, assets.div(8), user.address, user.address);
     }
 
     await hre.network.provider.send("evm_setAutomine", [true]);
@@ -182,7 +168,7 @@ describe("Morpho", () => {
 
       await morpho.connect(liquidator).liquidate(market, borrower.address, seized, "0x");
 
-      const remainingCollateral = await morpho.collateral(id, borrower.address);
+      const remainingCollateral = (await morpho.user(id, borrower.address)).collateral;
 
       if (closePositions)
         expect(remainingCollateral.isZero(), "did not take the whole collateral when closing the position").to.be.true;

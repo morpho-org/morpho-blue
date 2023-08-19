@@ -33,7 +33,7 @@
             ├── when newFee > MAX_FEE
             │   └── revert with MAX_FEE_EXCEEDED
             └── when newFee <= MAX_FEE
-                ├── it should accrue the interests
+                ├── it should accrue the interest
                 ├── it should set fee[market.id] to newFee
                 └── it should emit SetFee(market.id, newFee)
 .
@@ -52,7 +52,7 @@
         │   └── revert with LLTV_NOT_ENABLED
         └── when market.lltv is enabled
             ├── when market is already created
-            │   └── revert with MARKET_CREATED
+            │   └── revert with MARKET_ALREADY_CREATED
             └── when market is not already created
                 ├── it should set lastUpdate[market.id] to block.timestamp
                 ├── it should set idToMarket[id] to market
@@ -68,14 +68,14 @@
             ├── when onBehalf is the zero address
             │   └── revert with ZERO_ADDRESS
             └── when onBehalf is not the zero address
-                ├── it should accrue the interests
+                ├── it should accrue the interest
                 ├── when assets is not zero
-                │   └── it should set shares to assets.toSharesUp(totalSupply[market.id], totalSupplyShares[market.id])
+                │   └── it should set shares to assets.toSharesUp(totalSupplyAssets[market.id], totalSupplyShares[market.id])
                 ├── when assets is zero
-                │   └── it should set assets to shares.toAssetsDown(totalSupply[id], totalSupplyShares[id])
+                │   └── it should set assets to shares.toAssetsDown(totalSupplyAssets[id], totalSupplyShares[id])
                 ├── it should add shares to supplyShares[market.id][onBehalf] 
                 ├── it should add shares to totalSupplyShares[market.id]
-                ├── it should add assets to totalSupply[market.id]
+                ├── it should add assets to totalSupplyAssets[market.id]
                 ├── it should emit Supply(market.id, msg.sender, onBehalf, assets, shares)
                 ├── if data.length > 0
                 │   └── it should call sender's onMorphoSupply callback
@@ -95,19 +95,19 @@
                 ├── when not sender and not approved
                 │   └── revert with UNAUTHORIZED
                 └── when sender or approved
-                    ├── it should accrue the interests
+                    ├── it should accrue the interest
                     ├── when assets is not zero
-                    │   └── it should set shares to assets.toSharesUp(totalSupply[market.id], totalSupplyShares[market.id])
+                    │   └── it should set shares to assets.toSharesUp(totalSupplyAssets[market.id], totalSupplyShares[market.id])
                     ├── when assets is zero
-                    │   └── it should set assets to shares.toAssetsDown(totalSupply[id], totalSupplyShares[id])
+                    │   └── it should set assets to shares.toAssetsDown(totalSupplyAssets[id], totalSupplyShares[id])
                     ├── it should remove shares from supplyShares[market.id][onBehalf] 
                     ├── it should remove shares from totalSupplyShares[market.id]
-                    ├── it should remove assets from totalSupply[market.id]
+                    ├── it should remove assets from totalSupplyAssets[market.id]
                     ├── it should emit Withdraw(market.id, msg.sender, onBehalf, receiver, assets, shares)
                     ├── it should transfer assets of the borrowable asset to the receiver
-                    ├── when totalBorrow[market.id] > totalSupply[market.id]
+                    ├── when totalBorrowAssets[market.id] > totalSupplyAssets[market.id]
                     │   └── revert with INSUFFICIENT_LIQUIDITY
-                    └── when totalBorrow[market.id] <= totalSupply[market.id]
+                    └── when totalBorrowAssets[market.id] <= totalSupplyAssets[market.id]
                         └── it should return the assets and the shares withdrawn
 .
 └── borrow(Market memory market, uint256 assets, uint256 shares, address onBehalf, address receiver) external
@@ -123,22 +123,22 @@
                 ├── when not sender and not approved
                 │   └── revert with UNAUTHORIZED
                 └── when sender or approved
-                    ├── it should accrue the interests
+                    ├── it should accrue the interest
                     ├── when assets is not zero
-                    │   └── it should set shares to assets.toSharesUp(totalSupply[market.id], totalSupplyShares[market.id])
+                    │   └── it should set shares to assets.toSharesUp(totalSupplyAssets[market.id], totalSupplyShares[market.id])
                     ├── when assets is zero
-                    │   └── it should set assets to shares.toAssetsDown(totalSupply[id], totalSupplyShares[id])
+                    │   └── it should set assets to shares.toAssetsDown(totalSupplyAssets[id], totalSupplyShares[id])
                     ├── it should add shares to borrowShares[market.id][onBehalf] 
                     ├── it should add shares to totalBorrowShares[market.id]
-                    ├── it should add assets to totalBorrow[market.id]
+                    ├── it should add assets to totalBorrowAssets[market.id]
                     ├── it should emit Borrow(market.id, msg.sender, onBehalf, receiver, assets, shares)
                     ├── it should transfer assets of the borrowable asset to the receiver
                     ├── when position is not healthy
                     │   └── revert with INSUFFICIENT_COLLATERAL
                     └── when position is healthy
-                        ├── when totalBorrow[market.id] > totalSupply[market.id]
+                        ├── when totalBorrowAssets[market.id] > totalSupplyAssets[market.id]
                         │   └── revert with INSUFFICIENT_LIQUIDITY
-                        └── when totalBorrow[market.id] <= totalSupply[market.id]  
+                        └── when totalBorrowAssets[market.id] <= totalSupplyAssets[market.id]  
                             └── it should return the assets and the shares borrowed
                         
 .
@@ -152,14 +152,14 @@
             ├── when onBehalf is the zero address
             │   └── revert with ZERO_ADDRESS
             └── when onBehalf is not the zero address
-                ├── it should accrue the interests
+                ├── it should accrue the interest
                 ├── when assets is not zero
-                │   └── it should set shares to assets.toSharesUp(totalSupply[market.id], totalSupplyShares[market.id])
+                │   └── it should set shares to assets.toSharesUp(totalSupplyAssets[market.id], totalSupplyShares[market.id])
                 ├── when assets is zero
-                │   └── it should set assets to shares.toAssetsDown(totalSupply[id], totalSupplyShares[id])
+                │   └── it should set assets to shares.toAssetsDown(totalSupplyAssets[id], totalSupplyShares[id])
                 ├── it should remove shares from borrowShares[market.id][onBehalf]
                 ├── it should remove shares from totalBorrowShares[market.id]
-                ├── it should remove assets from totalBorrow[market.id]
+                ├── it should remove assets from totalBorrowAssets[market.id]
                 ├── it should emit Repay(market.id, msg.sender, onBehalf, assets, shares)
                 ├── if data.length > 0
                 │   └── it should call sender's onMorphoRepay callback
@@ -195,7 +195,7 @@
                 ├── when not sender and not approved
                 │   └── revert with MANAGER_NOT_APPROVED
                 └── when sender or approved
-                    ├── it should accrue the interests
+                    ├── it should accrue the interest
                     ├── it should remove assets from collateral[market.id][onBehalf]
                     ├── it should emit WithdrawCollateral(market.id, msg.sender, onBehalf, receiver, assets)
                     ├── it should transfer assets of the collateral asset to the receiver
@@ -209,21 +209,21 @@
         ├── when the assets to seized is zero
         │   └── revert with ZERO_ASSETS
         └── when the assets to seized is not zero
-            ├── it should accrue the interests
+            ├── it should accrue the interest
             ├── when position is healthy
             │   └── revert with HEALTHY_POSITION
             └── when the position is not healthy
                 ├── it should compute repaid = seized.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(incentive)
-                ├── it should compute repaidShares = repaid.toSharesDown(totalBorrow[market.id], totalBorrowShares[market.id]);
+                ├── it should compute repaidShares = repaid.toSharesDown(totalBorrowAssets[market.id], totalBorrowShares[market.id]);
                 ├── it should remove repaidShares from borrowShares[market.id][borrower]
                 ├── it should remove repaidShares from totalBorrowShares[market.id]
-                ├── it should remove repaid from totalBorrow[market.id]
+                ├── it should remove repaid from totalBorrowAssets[market.id]
                 ├── it should remove seized from collateral[market.id][borrower]
                 ├── if after the liquidation the borrower's collateral is 0
                 │   └── it should realize bad debt
-                │       ├── it should compute badDebt = borrowShares[market.id][borrower].toAssetsUp(totalBorrow[market.id], totalBorrowShares[market.id])
-                │       ├── it should remove badDebt from totalSupply[market.id]
-                │       ├── it should remove badDebt from totalBorrow[market.id]
+                │       ├── it should compute badDebt = borrowShares[market.id][borrower].toAssetsUp(totalBorrowAssets[market.id], totalBorrowShares[market.id])
+                │       ├── it should remove badDebt from totalSupplyAssets[market.id]
+                │       ├── it should remove badDebt from totalBorrowAssets[market.id]
                 │       ├── it should remove borrowShares[market.id][borrower] from totalBorrowShares[market.id]
                 │       └── it should set borrowShares[market.id][borrower] to 0
                 ├── it should transfer seized of collateral asset to the sender
@@ -257,27 +257,27 @@
     ├── should set isApproved[msg.sender][authorized] to newIsAuthorized
     └── it should emit SetAuthorization(msg.sender, msg.sender, authorized, newIsAuthorized)
 .
-└── accrueInterests(Market memory market) external
+└── accrueInterest(Market memory market) external
     ├── when market is not created
     │   └── revert with MARKET_NOT_CREATED
     └── when market is created
-        └── it should accrue the interests
+        └── it should accrue the interest
 .
-└── _accrueInterests(Market memory market, Id id) internal
-    └── when interests not already accrued in the block
+└── _accrueInterest(Market memory market, Id id) internal
+    └── when interest not already accrued in the block
         ├── it should set lastUpdate to block.timestamp
         └── when marketTotalBorrow is not 0
-            ├── it should compute accruedInterests = marketTotalBorrow.wMulDown(borrowRate.wTaylorCompounded(elapsed))
-            ├── it should add accruedInterests to totalBorrow
-            ├── it should add accruedInterests to totalSupply
+            ├── it should compute accruedInterest = marketTotalBorrow.wMulDown(borrowRate.wTaylorCompounded(elapsed))
+            ├── it should add accruedInterest to totalBorrowAssets
+            ├── it should add accruedInterest to totalSupplyAssets
             └── when fee[id] != 0
-            │   ├── it should add accruedInterests.wMulDown(fee[id]) to feeAmount
-            │   ├── it should add feeAmount.mulDivDown(totalSupplyShares[id], totalSupply[id] - feeAmount) to supplyShares[id][feeRecipient]
-            │   └── it should add feeAmount.mulDivDown(totalSupplyShares[id], totalSupply[id] - feeAmount) to totalSupplyShares[id]
-            └── it should emit AccrueInterests(id, borrowRate, accruedInterests, feeShares)
+            │   ├── it should add accruedInterest.wMulDown(fee[id]) to feeAmount
+            │   ├── it should add feeAmount.mulDivDown(totalSupplyShares[id], totalSupplyAssets[id] - feeAmount) to supplyShares[id][feeRecipient]
+            │   └── it should add feeAmount.mulDivDown(totalSupplyShares[id], totalSupplyAssets[id] - feeAmount) to totalSupplyShares[id]
+            └── it should emit AccrueInterest(id, borrowRate, accruedInterest, feeShares)
 .
 └── _isHealthy(Market memory market, Id id, address user, uint256 collateralPrice) internal
-    ├── it should compute borrowed = borrowShares[id][user].toAssetsUp(totalBorrow[id], totalBorrowShares[id])
+    ├── it should compute borrowed = borrowShares[id][user].toAssetsUp(totalBorrowAssets[id], totalBorrowShares[id])
     ├── it should compute maxBorrow = collateral[id][user].mulDivDown(collateralPrice, ORACLE_PRICE_SCALE).wMulDown(market.lltv)
     └── it should return maxBorrow >= borrowed
 .
