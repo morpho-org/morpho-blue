@@ -5,7 +5,7 @@ import "../../src/libraries/SharesMathLib.sol";
 import "../../src/libraries/MarketLib.sol";
 
 contract MorphoHarness is Morpho {
-    using MarketLib for Market;
+    using MarketLib for MarketParams;
 
     constructor(address newOwner) Morpho(newOwner) {}
 
@@ -25,24 +25,60 @@ contract MorphoHarness is Morpho {
         return MAX_FEE;
     }
 
-    function getVirtualTotalSupply(Id id) external view returns (uint256) {
-        return totalSupply[id] + SharesMathLib.VIRTUAL_ASSETS;
+    function getTotalSupplyAssets(Id id) external view returns (uint256) {
+        return market[id].totalSupplyAssets;
+    }
+
+    function getTotalSupplyShares(Id id) external view returns (uint256) {
+        return market[id].totalSupplyShares;
+    }
+
+    function getTotalBorrowAssets(Id id) external view returns (uint256) {
+        return market[id].totalBorrowAssets;
+    }
+
+    function getTotalBorrowShares(Id id) external view returns (uint256) {
+        return market[id].totalBorrowShares;
+    }
+
+    function getSupplyShares(Id id, address account) external view returns (uint256) {
+        return user[id][account].supplyShares;
+    }
+
+    function getBorrowShares(Id id, address account) external view returns (uint256) {
+        return user[id][account].borrowShares;
+    }
+
+    function getCollateral(Id id, address account) external view returns (uint256) {
+        return user[id][account].collateral;
+    }
+
+    function getLastUpdate(Id id) external view returns (uint256) {
+        return market[id].lastUpdate;
+    }
+
+    function getFee(Id id) external view returns (uint256) {
+        return market[id].fee;
+    }
+
+    function getVirtualTotalSupplyAssets(Id id) external view returns (uint256) {
+        return market[id].totalSupplyAssets + SharesMathLib.VIRTUAL_ASSETS;
     }
 
     function getVirtualTotalSupplyShares(Id id) external view returns (uint256) {
-        return totalSupplyShares[id] + SharesMathLib.VIRTUAL_SHARES;
+        return market[id].totalSupplyShares + SharesMathLib.VIRTUAL_SHARES;
     }
 
-    function getVirtualTotalBorrow(Id id) external view returns (uint256) {
-        return totalBorrow[id] + SharesMathLib.VIRTUAL_ASSETS;
+    function getVirtualTotalBorrowAssets(Id id) external view returns (uint256) {
+        return market[id].totalBorrowAssets + SharesMathLib.VIRTUAL_ASSETS;
     }
 
     function getVirtualTotalBorrowShares(Id id) external view returns (uint256) {
-        return totalBorrowShares[id] + SharesMathLib.VIRTUAL_SHARES;
+        return market[id].totalBorrowShares + SharesMathLib.VIRTUAL_SHARES;
     }
 
-    function getMarketId(Market memory market) external pure returns (Id) {
-        return market.id();
+    function getMarketId(MarketParams memory marketParams) external pure returns (Id) {
+        return marketParams.id();
     }
 
     function mathLibMulDivUp(uint256 x, uint256 y, uint256 d) public pure returns (uint256) {
@@ -53,7 +89,7 @@ contract MorphoHarness is Morpho {
         return MathLib.mulDivDown(x, y, d);
     }
 
-    function isHealthy(Market memory market, address user) external view returns (bool) {
-        return _isHealthy(market, market.id(), user);
+    function isHealthy(MarketParams memory marketParams, address user) external view returns (bool) {
+        return _isHealthy(marketParams, marketParams.id(), user);
     }
 }
