@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import {MorphoLib} from "../../../src/libraries/periphery/MorphoLib.sol";
+import {MorphoBalancesLib} from "src/libraries/periphery/MorphoBalancesLib.sol";
 
 import "../BaseTest.sol";
 
-contract MorphoLibTest is BaseTest {
+contract MorphoBalanceLibTest is BaseTest {
     using MathLib for uint256;
-    using MorphoLib for IMorpho;
+    using MorphoLib for Morpho;
     using SharesMathLib for uint256;
+    using MorphoBalancesLib for Morpho;
 
     function testVirtualAccrueInterest(uint256 amountSupplied, uint256 amountBorrowed, uint256 timeElapsed, uint256 fee)
         public
@@ -16,12 +17,12 @@ contract MorphoLibTest is BaseTest {
         _generatePendingInterest(amountSupplied, amountBorrowed, timeElapsed, fee);
 
         (uint256 virtualTotalSupply, uint256 virtualTotalBorrow, uint256 virtualTotalSupplyShares) =
-            IMorpho(address(morpho)).expectedAccrueInterest(market);
+            morpho.expectedMarketBalances(market);
 
         morpho.accrueInterest(market);
 
-        assertEq(virtualTotalSupply, morpho.totalSupply(id), "total supply");
-        assertEq(virtualTotalBorrow, morpho.totalBorrow(id), "total borrow");
+        assertEq(virtualTotalSupply, morpho.totalSupplyAssets(id), "total supply");
+        assertEq(virtualTotalBorrow, morpho.totalBorrowAssets(id), "total borrow");
         assertEq(virtualTotalSupplyShares, morpho.totalSupplyShares(id), "total supply shares");
     }
 
@@ -30,11 +31,11 @@ contract MorphoLibTest is BaseTest {
     {
         _generatePendingInterest(amountSupplied, amountBorrowed, timeElapsed, fee);
 
-        uint256 expectedTotalSupply = IMorpho(address(morpho)).expectedTotalSupply(market);
+        uint256 expectedTotalSupply = morpho.expectedTotalSupply(market);
 
         morpho.accrueInterest(market);
 
-        assertEq(expectedTotalSupply, morpho.totalSupply(id));
+        assertEq(expectedTotalSupply, morpho.totalSupplyAssets(id));
     }
 
     function testExpectedTotalBorrow(uint256 amountSupplied, uint256 amountBorrowed, uint256 timeElapsed, uint256 fee)
@@ -42,11 +43,11 @@ contract MorphoLibTest is BaseTest {
     {
         _generatePendingInterest(amountSupplied, amountBorrowed, timeElapsed, fee);
 
-        uint256 expectedTotalBorrow = IMorpho(address(morpho)).expectedTotalBorrow(market);
+        uint256 expectedTotalBorrow = morpho.expectedTotalBorrow(market);
 
         morpho.accrueInterest(market);
 
-        assertEq(expectedTotalBorrow, morpho.totalBorrow(id));
+        assertEq(expectedTotalBorrow, morpho.totalBorrowAssets(id));
     }
 
     function testExpectedTotalSupplyShares(
@@ -57,7 +58,7 @@ contract MorphoLibTest is BaseTest {
     ) public {
         _generatePendingInterest(amountSupplied, amountBorrowed, timeElapsed, fee);
 
-        uint256 expectedTotalSupplyShares = IMorpho(address(morpho)).expectedTotalSupplyShares(market);
+        uint256 expectedTotalSupplyShares = morpho.expectedTotalSupplyShares(market);
 
         morpho.accrueInterest(market);
 
@@ -69,12 +70,13 @@ contract MorphoLibTest is BaseTest {
     {
         _generatePendingInterest(amountSupplied, amountBorrowed, timeElapsed, fee);
 
-        uint256 expectedSupplyBalance = IMorpho(address(morpho)).expectedSupplyBalance(market, address(this));
+        uint256 expectedSupplyBalance = morpho.expectedSupplyBalance(market, address(this));
 
         morpho.accrueInterest(market);
 
-        uint256 actualSupplyBalance =
-            morpho.supplyShares(id, address(this)).toAssetsDown(morpho.totalSupply(id), morpho.totalSupplyShares(id));
+        uint256 actualSupplyBalance = morpho.supplyShares(id, address(this)).toAssetsDown(
+            morpho.totalSupplyAssets(id), morpho.totalSupplyShares(id)
+        );
 
         assertEq(expectedSupplyBalance, actualSupplyBalance);
     }
@@ -84,12 +86,13 @@ contract MorphoLibTest is BaseTest {
     {
         _generatePendingInterest(amountSupplied, amountBorrowed, timeElapsed, fee);
 
-        uint256 expectedBorrowBalance = IMorpho(address(morpho)).expectedBorrowBalance(market, address(this));
+        uint256 expectedBorrowBalance = morpho.expectedBorrowBalance(market, address(this));
 
         morpho.accrueInterest(market);
 
-        uint256 actualBorrowBalance =
-            morpho.borrowShares(id, address(this)).toAssetsUp(morpho.totalBorrow(id), morpho.totalBorrowShares(id));
+        uint256 actualBorrowBalance = morpho.borrowShares(id, address(this)).toAssetsUp(
+            morpho.totalBorrowAssets(id), morpho.totalBorrowShares(id)
+        );
 
         assertEq(expectedBorrowBalance, actualBorrowBalance);
     }

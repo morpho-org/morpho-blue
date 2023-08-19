@@ -5,13 +5,14 @@ import "../BaseTest.sol";
 
 contract IntegrationWithdrawTest is BaseTest {
     using MathLib for uint256;
+    using MorphoLib for Morpho;
     using SharesMathLib for uint256;
 
-    function testWithdrawMarketNotCreated(Market memory marketFuzz) public {
-        vm.assume(neq(marketFuzz, market));
+    function testWithdrawMarketNotCreated(MarketParams memory marketParamsFuzz) public {
+        vm.assume(neq(marketParamsFuzz, market));
 
         vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
-        morpho.withdraw(marketFuzz, 1, 0, address(this), address(this));
+        morpho.withdraw(marketParamsFuzz, 1, 0, address(this), address(this));
     }
 
     function testWithdrawZeroAmount(uint256 amount) public {
@@ -58,16 +59,14 @@ contract IntegrationWithdrawTest is BaseTest {
     }
 
     function testWithdrawInsufficientLiquidity(uint256 amountSupplied, uint256 amountBorrowed) public {
-        amountBorrowed = bound(amountBorrowed, MIN_TEST_AMOUNT, MAX_TEST_AMOUNT);
+        uint256 amountCollateral;
+        (amountCollateral, amountBorrowed,) = _boundHealthyPosition(0, amountBorrowed, IOracle(market.oracle).price());
         amountSupplied = bound(amountSupplied, amountBorrowed + 1, MAX_TEST_AMOUNT + 1);
 
         borrowableToken.setBalance(SUPPLIER, amountSupplied);
 
         vm.prank(SUPPLIER);
         morpho.supply(market, amountSupplied, 0, SUPPLIER, hex"");
-
-        uint256 collateralPrice = IOracle(market.oracle).price();
-        uint256 amountCollateral = amountBorrowed.wDivUp(LLTV).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice);
 
         collateralToken.setBalance(BORROWER, amountCollateral);
 
@@ -82,12 +81,11 @@ contract IntegrationWithdrawTest is BaseTest {
     }
 
     function testWithdrawAssets(uint256 amountSupplied, uint256 amountBorrowed, uint256 amountWithdrawn) public {
-        amountSupplied = bound(amountSupplied, 2, MAX_TEST_AMOUNT);
-        amountBorrowed = bound(amountBorrowed, 1, amountSupplied - 1);
+        uint256 amountCollateral;
+        (amountCollateral, amountBorrowed,) = _boundHealthyPosition(0, amountBorrowed, IOracle(market.oracle).price());
+        vm.assume(amountBorrowed < MAX_TEST_AMOUNT);
+        amountSupplied = bound(amountSupplied, amountBorrowed + 1, MAX_TEST_AMOUNT);
         amountWithdrawn = bound(amountWithdrawn, 1, amountSupplied - amountBorrowed);
-
-        uint256 collateralPrice = IOracle(market.oracle).price();
-        uint256 amountCollateral = amountBorrowed.wDivUp(LLTV).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice);
 
         borrowableToken.setBalance(address(this), amountSupplied);
         collateralToken.setBalance(BORROWER, amountCollateral);
@@ -112,7 +110,7 @@ contract IntegrationWithdrawTest is BaseTest {
         assertEq(returnShares, expectedWithdrawnShares, "returned shares amount");
         assertEq(morpho.supplyShares(id, address(this)), expectedSupplyShares, "supply shares");
         assertEq(morpho.totalSupplyShares(id), expectedSupplyShares, "total supply shares");
-        assertEq(morpho.totalSupply(id), amountSupplied - amountWithdrawn, "total supply");
+        assertEq(morpho.totalSupplyAssets(id), amountSupplied - amountWithdrawn, "total supply");
         assertEq(borrowableToken.balanceOf(RECEIVER), amountWithdrawn, "RECEIVER balance");
         assertEq(borrowableToken.balanceOf(BORROWER), amountBorrowed, "borrower balance");
         assertEq(
@@ -123,11 +121,9 @@ contract IntegrationWithdrawTest is BaseTest {
     }
 
     function testWithdrawShares(uint256 amountSupplied, uint256 amountBorrowed, uint256 sharesWithdrawn) public {
-        amountSupplied = bound(amountSupplied, 2, MAX_TEST_AMOUNT);
-        amountBorrowed = bound(amountBorrowed, 1, amountSupplied - 1);
-
-        uint256 collateralPrice = IOracle(market.oracle).price();
-        uint256 amountCollateral = amountBorrowed.wDivUp(LLTV).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice);
+        uint256 amountCollateral;
+        (amountCollateral, amountBorrowed,) = _boundHealthyPosition(0, amountBorrowed, IOracle(market.oracle).price());
+        amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
 
         uint256 expectedSupplyShares = amountSupplied.toSharesDown(0, 0);
         uint256 availableLiquidity = amountSupplied - amountBorrowed;
@@ -156,7 +152,7 @@ contract IntegrationWithdrawTest is BaseTest {
         assertEq(returnAssets, expectedAmountWithdrawn, "returned asset amount");
         assertEq(returnShares, sharesWithdrawn, "returned shares amount");
         assertEq(morpho.supplyShares(id, address(this)), expectedSupplyShares, "supply shares");
-        assertEq(morpho.totalSupply(id), amountSupplied - expectedAmountWithdrawn, "total supply");
+        assertEq(morpho.totalSupplyAssets(id), amountSupplied - expectedAmountWithdrawn, "total supply");
         assertEq(morpho.totalSupplyShares(id), expectedSupplyShares, "total supply shares");
         assertEq(borrowableToken.balanceOf(RECEIVER), expectedAmountWithdrawn, "RECEIVER balance");
         assertEq(
@@ -169,12 +165,11 @@ contract IntegrationWithdrawTest is BaseTest {
     function testWithdrawAssetsOnBehalf(uint256 amountSupplied, uint256 amountBorrowed, uint256 amountWithdrawn)
         public
     {
-        amountSupplied = bound(amountSupplied, 2, MAX_TEST_AMOUNT);
-        amountBorrowed = bound(amountBorrowed, 1, amountSupplied - 1);
+        uint256 amountCollateral;
+        (amountCollateral, amountBorrowed,) = _boundHealthyPosition(0, amountBorrowed, IOracle(market.oracle).price());
+        vm.assume(amountBorrowed < MAX_TEST_AMOUNT);
+        amountSupplied = bound(amountSupplied, amountBorrowed + 1, MAX_TEST_AMOUNT);
         amountWithdrawn = bound(amountWithdrawn, 1, amountSupplied - amountBorrowed);
-
-        uint256 collateralPrice = IOracle(market.oracle).price();
-        uint256 amountCollateral = amountBorrowed.wDivUp(LLTV).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice);
 
         borrowableToken.setBalance(ONBEHALF, amountSupplied);
         collateralToken.setBalance(ONBEHALF, amountCollateral);
@@ -201,7 +196,7 @@ contract IntegrationWithdrawTest is BaseTest {
         assertEq(returnAssets, amountWithdrawn, "returned asset amount");
         assertEq(returnShares, expectedWithdrawnShares, "returned shares amount");
         assertEq(morpho.supplyShares(id, ONBEHALF), expectedSupplyShares, "supply shares");
-        assertEq(morpho.totalSupply(id), amountSupplied - amountWithdrawn, "total supply");
+        assertEq(morpho.totalSupplyAssets(id), amountSupplied - amountWithdrawn, "total supply");
         assertEq(morpho.totalSupplyShares(id), expectedSupplyShares, "total supply shares");
         assertEq(borrowableToken.balanceOf(RECEIVER) - receiverBalanceBefore, amountWithdrawn, "RECEIVER balance");
         assertEq(
@@ -214,11 +209,9 @@ contract IntegrationWithdrawTest is BaseTest {
     function testWithdrawSharesOnBehalf(uint256 amountSupplied, uint256 amountBorrowed, uint256 sharesWithdrawn)
         public
     {
-        amountSupplied = bound(amountSupplied, 2, MAX_TEST_AMOUNT);
-        amountBorrowed = bound(amountBorrowed, 1, amountSupplied - 1);
-
-        uint256 collateralPrice = IOracle(market.oracle).price();
-        uint256 amountCollateral = amountBorrowed.wDivUp(LLTV).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice);
+        uint256 amountCollateral;
+        (amountCollateral, amountBorrowed,) = _boundHealthyPosition(0, amountBorrowed, IOracle(market.oracle).price());
+        amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
 
         uint256 expectedSupplyShares = amountSupplied.toSharesDown(0, 0);
         uint256 availableLiquidity = amountSupplied - amountBorrowed;
@@ -250,7 +243,7 @@ contract IntegrationWithdrawTest is BaseTest {
         assertEq(returnAssets, expectedAmountWithdrawn, "returned asset amount");
         assertEq(returnShares, sharesWithdrawn, "returned shares amount");
         assertEq(morpho.supplyShares(id, ONBEHALF), expectedSupplyShares, "supply shares");
-        assertEq(morpho.totalSupply(id), amountSupplied - expectedAmountWithdrawn, "total supply");
+        assertEq(morpho.totalSupplyAssets(id), amountSupplied - expectedAmountWithdrawn, "total supply");
         assertEq(morpho.totalSupplyShares(id), expectedSupplyShares, "total supply shares");
         assertEq(
             borrowableToken.balanceOf(RECEIVER) - receiverBalanceBefore, expectedAmountWithdrawn, "RECEIVER balance"
