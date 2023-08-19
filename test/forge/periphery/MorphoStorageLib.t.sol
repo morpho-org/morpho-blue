@@ -58,10 +58,10 @@ contract MorphoStorageLibTest is BaseTest {
         slots[0] = MorphoStorageLib.ownerSlot();
         slots[1] = MorphoStorageLib.feeRecipientSlot();
         slots[2] = MorphoStorageLib.userSupplySharesSlot(id, address(this));
-        slots[3] = MorphoStorageLib.userBorrowSharesCollateralSlot(id, BORROWER);
+        slots[3] = MorphoStorageLib.userBorrowSharesAndCollateralSlot(id, BORROWER);
         slots[4] = MorphoStorageLib.marketTotalSupplySlot(id);
         slots[5] = MorphoStorageLib.marketTotalBorrowSlot(id);
-        slots[6] = MorphoStorageLib.marketLastUpdateFeeSlot(id);
+        slots[6] = MorphoStorageLib.marketLastUpdateAndFeeSlot(id);
         slots[7] = MorphoStorageLib.isIrmEnabledSlot(address(irm));
         slots[8] = MorphoStorageLib.isLltvEnabledSlot(LLTV);
         slots[9] = MorphoStorageLib.isAuthorizedSlot(authorizer, BORROWER);
