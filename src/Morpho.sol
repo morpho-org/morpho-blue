@@ -78,6 +78,7 @@ contract Morpho is IMorpho {
     /// @notice Initializes the contract.
     /// @param newOwner The new owner of the contract.
     constructor(address newOwner) {
+        require(newOwner != address(0), ErrorsLib.ZERO_ADDRESS);
         owner = newOwner;
 
         DOMAIN_SEPARATOR = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256("Morpho"), block.chainid, address(this)));
@@ -405,6 +406,7 @@ contract Morpho is IMorpho {
     /// @inheritdoc IMorpho
     /// @dev Warning: Reverts if the signature has already been submitted.
     /// @dev The signature is malleable, but it has no impact on the security here.
+    /// @dev The nonce is passed as argument to be able to revert with a different error message.
     function setAuthorizationWithSig(Authorization memory authorization, Signature calldata signature) external {
         require(block.timestamp < authorization.deadline, ErrorsLib.SIGNATURE_EXPIRED);
         require(authorization.nonce == nonce[authorization.authorizer]++, ErrorsLib.INVALID_NONCE);
