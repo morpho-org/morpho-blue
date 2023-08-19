@@ -35,7 +35,7 @@ library MorphoBalancesLib {
         slots[1] = MorphoStorageLib.marketTotalBorrowAssetsAndSharesSlot(id);
         slots[2] = MorphoStorageLib.marketLastUpdateAndFeeSlot(id);
 
-        bytes32[] memory values = morpho.extsload(slots);
+        bytes32[] memory values = morpho.extSloads(slots);
         totalSupplyAssets = uint128(uint256(values[0]));
         totalSupplyShares = uint256(values[0] >> 128);
         toralBorrow = uint128(uint256(values[1]));
