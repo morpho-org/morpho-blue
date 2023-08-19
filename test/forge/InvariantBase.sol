@@ -5,6 +5,7 @@ import "test/forge/BaseTest.sol";
 
 contract InvariantBaseTest is BaseTest {
     using MathLib for uint256;
+    using MorphoLib for Morpho;
     using SharesMathLib for uint256;
 
     uint256 blockNumber;
@@ -46,11 +47,13 @@ contract InvariantBaseTest is BaseTest {
         }
     }
 
-    function _supplyHighAmountOfCollateralForAllSenders(address[] memory senders, Market memory market) internal {
+    function _supplyHighAmountOfCollateralForAllSenders(address[] memory senders, MarketParams memory marketParams)
+        internal
+    {
         for (uint256 i; i < senders.length; ++i) {
             collateralToken.setBalance(senders[i], 1e30);
             vm.prank(senders[i]);
-            morpho.supplyCollateral(market, 1e30, senders[i], hex"");
+            morpho.supplyCollateral(marketParams, 1e30, senders[i], hex"");
         }
     }
 
@@ -95,7 +98,7 @@ contract InvariantBaseTest is BaseTest {
         returns (address randomSenderToBorrowOnBehalf)
     {
         for (uint256 i; i < addresses.length; ++i) {
-            if (morpho.collateral(id, addresses[i]) != 0 && isHealthy(market, id, addresses[i])) {
+            if (morpho.collateral(id, addresses[i]) != 0 && isHealthy(id, addresses[i])) {
                 addressArray.push(addresses[i]);
             }
         }
@@ -130,7 +133,7 @@ contract InvariantBaseTest is BaseTest {
         returns (address randomSenderToWithdrawCollateralOnBehalf)
     {
         for (uint256 i; i < addresses.length; ++i) {
-            if (morpho.collateral(id, addresses[i]) != 0 && isHealthy(market, id, addresses[i])) {
+            if (morpho.collateral(id, addresses[i]) != 0 && isHealthy(id, addresses[i])) {
                 addressArray.push(addresses[i]);
             }
         }
@@ -149,7 +152,7 @@ contract InvariantBaseTest is BaseTest {
         returns (address randomSenderToLiquidate)
     {
         for (uint256 i; i < addresses.length; ++i) {
-            if (morpho.borrowShares(id, addresses[i]) != 0 && !isHealthy(market, id, addresses[i])) {
+            if (morpho.borrowShares(id, addresses[i]) != 0 && !isHealthy(id, addresses[i])) {
                 addressArray.push(addresses[i]);
             }
         }
@@ -175,26 +178,28 @@ contract InvariantBaseTest is BaseTest {
 
     function sumUsersSuppliedAmounts(address[] memory addresses) internal view returns (uint256 sum) {
         for (uint256 i; i < addresses.length; ++i) {
-            sum +=
-                morpho.supplyShares(id, addresses[i]).toAssetsDown(morpho.totalSupply(id), morpho.totalSupplyShares(id));
+            sum += morpho.supplyShares(id, addresses[i]).toAssetsDown(
+                morpho.totalSupplyAssets(id), morpho.totalSupplyShares(id)
+            );
         }
         sum += morpho.supplyShares(id, morpho.feeRecipient()).toAssetsDown(
-            morpho.totalSupply(id), morpho.totalSupplyShares(id)
+            morpho.totalSupplyAssets(id), morpho.totalSupplyShares(id)
         );
     }
 
     function sumUsersBorrowedAmounts(address[] memory addresses) internal view returns (uint256 sum) {
         for (uint256 i; i < addresses.length; ++i) {
-            sum +=
-                morpho.borrowShares(id, addresses[i]).toAssetsUp(morpho.totalBorrow(id), morpho.totalBorrowShares(id));
+            sum += morpho.borrowShares(id, addresses[i]).toAssetsUp(
+                morpho.totalBorrowAssets(id), morpho.totalBorrowShares(id)
+            );
         }
     }
 
-    function isHealthy(Market memory market, Id id, address user) public view returns (bool) {
+    function isHealthy(Id id, address user) public view returns (bool) {
         uint256 collateralPrice = IOracle(market.oracle).price();
 
         uint256 borrowed =
-            morpho.borrowShares(id, user).toAssetsUp(morpho.totalBorrow(id), morpho.totalBorrowShares(id));
+            morpho.borrowShares(id, user).toAssetsUp(morpho.totalBorrowAssets(id), morpho.totalBorrowShares(id));
         uint256 maxBorrow =
             morpho.collateral(id, user).mulDivDown(collateralPrice, ORACLE_PRICE_SCALE).wMulDown(market.lltv);
 
