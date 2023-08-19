@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import "../BaseTest.sol";
 
 contract IntegrationGetterTest is BaseTest {
-    function testExtsLoad(uint256 slot, bytes32 value0) public {
+    function testExtSloads(uint256 slot, bytes32 value0) public {
         bytes32[] memory slots = new bytes32[](2);
         slots[0] = bytes32(slot);
         slots[1] = bytes32(slot / 2);
@@ -13,7 +13,7 @@ contract IntegrationGetterTest is BaseTest {
         vm.store(address(morpho), slots[0], value0);
         vm.store(address(morpho), slots[1], value1);
 
-        bytes32[] memory values = morpho.extsload(slots);
+        bytes32[] memory values = morpho.extSloads(slots);
 
         assertEq(values.length, 2, "values.length");
         assertEq(values[0], slot > 0 ? value0 : value1, "value0");
