@@ -1,5 +1,4 @@
 [profile.default]
-evm_version = 'paris'
 via-ir = true
 optimizer_runs = 4294967295
 
