@@ -77,8 +77,8 @@ contract MorphoStorageLibTest is BaseTest {
         assertEq(abi.decode(abi.encode(values[0]), (address)), morpho.owner());
         assertEq(abi.decode(abi.encode(values[1]), (address)), morpho.feeRecipient());
         assertEq(uint256(values[2]), morpho.supplyShares(id, address(this)));
-        assertEq(uint256(values[3] >> 128), morpho.collateral(id, BORROWER));
         assertEq(uint128(uint256(values[3])), morpho.borrowShares(id, BORROWER));
+        assertEq(uint256(values[3] >> 128), morpho.collateral(id, BORROWER));
         assertEq(uint128(uint256(values[4])), morpho.totalSupplyAssets(id));
         assertEq(uint256(values[4] >> 128), morpho.totalSupplyShares(id));
         assertEq(uint128(uint256(values[5])), morpho.totalBorrowAssets(id));
