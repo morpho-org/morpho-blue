@@ -13,8 +13,8 @@ interface IERC20Internal {
 /// @title SafeTransferLib
 /// @author Morpho Labs
 /// @custom:contact security@morpho.xyz
-/// @notice Library to manage tokens not fully ERC20 compliant:
-///         not returning a boolean for `transfer` and `transferFrom` functions.
+/// @notice Library to manage tokens not fully ERC20 compliant: not returning a boolean for `transfer` and
+/// `transferFrom` functions.
 /// @dev It is the responsibility of the market creator to make sure that the address of the token has non-zero code.
 library SafeTransferLib {
     function safeTransfer(IERC20 token, address to, uint256 value) internal {

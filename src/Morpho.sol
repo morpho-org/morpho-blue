@@ -454,7 +454,8 @@ contract Morpho is IMorpho {
             uint256 feeShares;
             if (market[id].fee != 0) {
                 uint256 feeAmount = interest.wMulDown(market[id].fee);
-                // The fee amount is subtracted from the total supply in this calculation to compensate for the fact that total supply is already updated.
+                // The fee amount is subtracted from the total supply in this calculation to compensate for the fact
+                // that total supply is already updated.
                 feeShares =
                     feeAmount.toSharesDown(market[id].totalSupplyAssets - feeAmount, market[id].totalSupplyShares);
                 user[id][feeRecipient].supplyShares += feeShares;

@@ -38,8 +38,8 @@ library MathLib {
         return (x * y + (denominator - 1)) / denominator;
     }
 
-    /// @dev The sum of the last three terms in a four term taylor series expansion
-    ///      to approximate a continuous compound interest rate: e^(nx) - 1.
+    /// @dev The sum of the last three terms in a four term taylor series expansion to approximate a continuous compound
+    /// interest rate: e^(nx) - 1.
     function wTaylorCompounded(uint256 x, uint256 n) internal pure returns (uint256) {
         uint256 firstTerm = x * n;
         uint256 secondTerm = mulDivDown(firstTerm, firstTerm, 2 * WAD);

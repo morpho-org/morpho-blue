@@ -3,4 +3,7 @@ evm_version = 'paris'
 via-ir = true
 optimizer_runs = 4294967295
 
+[fmt]
+wrap_comments = true
+
 # See more config options https://github.com/foundry-rs/foundry/tree/master/crates/config
