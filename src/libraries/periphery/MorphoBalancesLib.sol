@@ -87,8 +87,7 @@ library MorphoBalancesLib {
         (,, totalSupplyShares) = expectedMarketBalances(morpho, marketParams);
     }
 
-    /// @dev Warning: It does not work for `feeRecipient` because their supply shares increase is not taken into
-    /// account.
+    /// @dev Warning: Wrong for `feeRecipient` because their supply shares increase is not taken into account.
     function expectedSupplyBalance(IMorpho morpho, MarketParams memory marketParams, address user)
         internal
         view
