@@ -8,11 +8,12 @@ import {MathLib} from "./MathLib.sol";
 /// @custom:contact security@morpho.xyz
 /// @notice Shares management library.
 /// @dev This implementation mitigates share price manipulations, using OpenZeppelin's method of virtual shares:
-///      https://docs.openzeppelin.com/contracts/4.x/erc4626#inflation-attack.
+/// https://docs.openzeppelin.com/contracts/4.x/erc4626#inflation-attack.
 library SharesMathLib {
     using MathLib for uint256;
 
-    /// @dev The number of virtual shares has been chosen low enough to prevent overflows, and high enough to ensure high precision computations.
+    /// @dev The number of virtual shares has been chosen low enough to prevent overflows, and high enough to ensure
+    /// high precision computations.
     uint256 internal constant VIRTUAL_SHARES = 1e6;
 
     uint256 internal constant VIRTUAL_ASSETS = 1;
@@ -30,13 +31,15 @@ library SharesMathLib {
     }
 
     /// @dev Calculates the value of the given assets quoted in shares, rounding up.
-    /// @dev Provided that assets <= totalAssets, this function satisfies the invariant: shares <= totalShares + VIRTUAL_SHARES.
+    /// @dev Provided that assets <= totalAssets, this function satisfies the invariant: shares <= totalShares +
+    /// VIRTUAL_SHARES.
     function toSharesUp(uint256 assets, uint256 totalAssets, uint256 totalShares) internal pure returns (uint256) {
         return assets.mulDivUp(totalShares + VIRTUAL_SHARES, totalAssets + VIRTUAL_ASSETS);
     }
 
     /// @dev Calculates the value of the given shares quoted in assets, rounding up.
-    /// @dev Provided that shares <= totalShares, this function satisfies the invariant: assets <= totalAssets + VIRTUAL_SHARES.
+    /// @dev Provided that shares <= totalShares, this function satisfies the invariant: assets <= totalAssets +
+    /// VIRTUAL_SHARES.
     function toAssetsUp(uint256 shares, uint256 totalAssets, uint256 totalShares) internal pure returns (uint256) {
         return shares.mulDivUp(totalAssets + VIRTUAL_ASSETS, totalShares + VIRTUAL_SHARES);
     }

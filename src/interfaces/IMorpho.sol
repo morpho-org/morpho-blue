@@ -20,7 +20,8 @@ struct User {
 
 /// @dev Warning: `totalSupplyAssets` does not contain the accrued interest since the last interest accrual.
 /// @dev Warning: `totalBorrowAssets` does not contain the accrued interest since the last interest accrual.
-/// @dev Warning: `totalSupplyShares` does not contain the additionnal shares accrued by `feeRecipient` since the last interest accrual.
+/// @dev Warning: `totalSupplyShares` does not contain the additionnal shares accrued by `feeRecipient` since the last
+/// interest accrual.
 struct Market {
     uint128 totalSupplyAssets;
     uint128 totalSupplyShares;
@@ -111,13 +112,11 @@ interface IMorpho {
     /// @notice Creates `market`.
     function createMarket(MarketParams memory marketParams) external;
 
-    /// @notice Supplies the given `assets` or `shares` to the given `market` on behalf of `onBehalf`,
-    ///         optionally calling back the caller's `onMorphoSupply` function with the given `data`.
-    /// @dev Either `assets` or `shares` should be zero.
-    ///      Most usecases should rely on `assets` as an input so the caller
-    ///      is guaranteed to have `assets` tokens pulled from their balance,
-    ///      but the possibility to mint a specific amount of shares is given
-    ///      for full compatibility and precision.
+    /// @notice Supplies the given `assets` or `shares` to the given `market` on behalf of `onBehalf`, optionally
+    /// calling back the caller's `onMorphoSupply` function with the given `data`.
+    /// @dev Either `assets` or `shares` should be zero. Most usecases should rely on `assets` as an input so the caller
+    /// is guaranteed to have `assets` tokens pulled from their balance, but the possibility to mint a specific amount
+    /// of shares is given for full compatibility and precision.
     /// @dev Supplying a large amount can overflow and revert without any error message.
     /// @param marketParams The market to supply assets to.
     /// @param assets The amount of assets to supply.
@@ -135,10 +134,11 @@ interface IMorpho {
     ) external returns (uint256 assetsSupplied, uint256 sharesSupplied);
 
     /// @notice Withdraws the given `assets` or `shares` from the given `market` on behalf of `onBehalf` to `receiver`.
-    /// @dev Either `assets` or `shares` should be zero.
-    ///      To withdraw the whole position, pass the `shares`'s balance of `onBehalf`.
+    /// @dev Either `assets` or `shares` should be zero. To withdraw the whole position, pass the `shares`'s balance of
+    /// `onBehalf`.
     /// @dev `msg.sender` must be authorized to manage `onBehalf`'s positions.
-    /// @dev Withdrawing an amount corresponding to more shares than supplied will underflow and revert without any error message.
+    /// @dev Withdrawing an amount corresponding to more shares than supplied will underflow and revert without any
+    /// error message.
     /// @param marketParams The market to withdraw assets from.
     /// @param assets The amount of assets to withdraw.
     /// @param shares The amount of shares to burn.
@@ -155,11 +155,9 @@ interface IMorpho {
     ) external returns (uint256 assetsWithdrawn, uint256 sharesWithdrawn);
 
     /// @notice Borrows the given `assets` or `shares` from the given `market` on behalf of `onBehalf` to `receiver`.
-    /// @dev Either `assets` or `shares` should be zero.
-    ///      Most usecases should rely on `assets` as an input so the caller
-    ///      is guaranteed to borrow `assets` of tokens,
-    ///      but the possibility to mint a specific amount of shares is given
-    ///      for full compatibility and precision.
+    /// @dev Either `assets` or `shares` should be zero. Most usecases should rely on `assets` as an input so the caller
+    /// is guaranteed to borrow `assets` of tokens, but the possibility to mint a specific amount of shares is given for
+    /// full compatibility and precision.
     /// @dev `msg.sender` must be authorized to manage `onBehalf`'s positions.
     /// @dev Borrowing a large amount can overflow and revert without any error message.
     /// @param marketParams The market to borrow assets from.
@@ -177,11 +175,12 @@ interface IMorpho {
         address receiver
     ) external returns (uint256 assetsBorrowed, uint256 sharesBorrowed);
 
-    /// @notice Repays the given `assets` or `shares` to the given `market` on behalf of `onBehalf`,
-    ///         optionally calling back the caller's `onMorphoReplay` function with the given `data`.
-    /// @dev Either `assets` or `shares` should be zero.
-    ///      To repay the whole debt, pass the `shares`'s balance of `onBehalf`.
-    /// @dev Repaying an amount corresponding to more shares than borrowed will underflow and revert without any error message.
+    /// @notice Repays the given `assets` or `shares` to the given `market` on behalf of `onBehalf`, optionally calling
+    /// back the caller's `onMorphoReplay` function with the given `data`.
+    /// @dev Either `assets` or `shares` should be zero. To repay the whole debt, pass the `shares`'s balance of
+    /// `onBehalf`.
+    /// @dev Repaying an amount corresponding to more shares than borrowed will underflow and revert without any error
+    /// message.
     /// @param marketParams The market to repay assets to.
     /// @param assets The amount of assets to repay.
     /// @param shares The amount of shares to burn.
@@ -197,8 +196,8 @@ interface IMorpho {
         bytes memory data
     ) external returns (uint256 assetsRepaid, uint256 sharesRepaid);
 
-    /// @notice Supplies the given `assets` of collateral to the given `market` on behalf of `onBehalf`,
-    ///         optionally calling back the caller's `onMorphoSupplyCollateral` function with the given `data`.
+    /// @notice Supplies the given `assets` of collateral to the given `market` on behalf of `onBehalf`, optionally
+    /// calling back the caller's `onMorphoSupplyCollateral` function with the given `data`.
     /// @dev Interest are not accrued since it's not required and it saves gas.
     /// @dev Supplying a large amount can overflow and revert without any error message.
     /// @param marketParams The market to supply collateral to.
@@ -208,9 +207,11 @@ interface IMorpho {
     function supplyCollateral(MarketParams memory marketParams, uint256 assets, address onBehalf, bytes memory data)
         external;
 
-    /// @notice Withdraws the given `assets` of collateral from the given `market` on behalf of `onBehalf` to `receiver`.
+    /// @notice Withdraws the given `assets` of collateral from the given `market` on behalf of `onBehalf` to
+    /// `receiver`.
     /// @dev `msg.sender` must be authorized to manage `onBehalf`'s positions.
-    /// @dev Withdrawing an amount corresponding to more collateral than supplied will underflow and revert without any error message.
+    /// @dev Withdrawing an amount corresponding to more collateral than supplied will underflow and revert without any
+    /// error message.
     /// @param marketParams The market to withdraw collateral from.
     /// @param assets The amount of collateral to withdraw.
     /// @param onBehalf The address of the owner of the collateral.
@@ -219,7 +220,7 @@ interface IMorpho {
         external;
 
     /// @notice Liquidates the given `seized` assets to the given `market` of the given `borrower`'s position,
-    ///         optionally calling back the caller's `onMorphoLiquidate` function with the given `data`.
+    /// optionally calling back the caller's `onMorphoLiquidate` function with the given `data`.
     /// @dev Seizing more than the collateral balance will underflow and revert without any error message.
     /// @dev Repaying more than the borrow balance will underflow and revert without any error message.
     /// @param marketParams The market of the position.
