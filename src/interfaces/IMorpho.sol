@@ -226,17 +226,17 @@ interface IMorpho {
     /// @param marketParams The market of the position.
     /// @param borrower The owner of the position.
     /// @param seizedAssets The amount of collateral to seize.
-    /// @param shares The amount of shares to repay.
+    /// @param repaidShares The amount of shares to repay.
     /// @param data Arbitrary data to pass to the `onMorphoLiquidate` callback. Pass empty data if not needed.
-    /// @return seizedCollateral The amount of assets repaid.
-    /// @return repaidAssets The amount of repaid asset.
+    /// @return seizedAssets_ The amount of assets repaid.
+    /// @return repaidAssets_ The amount of repaid asset.
     function liquidate(
         MarketParams memory marketParams,
         address borrower,
         uint256 seizedAssets,
-        uint256 shares,
+        uint256 repaidShares,
         bytes memory data
-    ) external returns (uint256 seizedCollateral, uint256 repaidAssets);
+    ) external returns (uint256 seizedAssets_, uint256 repaidAssets_);
 
     /// @notice Executes a flash loan.
     /// @param token The token to flash loan.

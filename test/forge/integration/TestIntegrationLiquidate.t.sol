@@ -22,7 +22,7 @@ contract IntegrationLiquidateTest is BaseTest {
         morpho.liquidate(market, address(this), 0, 0, hex"");
     }
 
-    function testLiquidateZeroAmount(uint256 seized, uint256 sharesRepaid) public {
+    function testLiquidateInconsistentInput(uint256 seized, uint256 sharesRepaid) public {
         seized = bound(seized, 1, MAX_TEST_AMOUNT);
         sharesRepaid = bound(sharesRepaid, 1, MAX_TEST_SHARES);
 
