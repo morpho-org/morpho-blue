@@ -53,9 +53,9 @@ contract IntegrationCreateMarketTest is BaseTest {
         vm.stopPrank();
 
         assertEq(morpho.lastUpdate(marketParamsFuzzId), block.timestamp, "lastUpdate != block.timestamp");
-        assertEq(morpho.totalSupply(marketParamsFuzzId), 0, "totalSupply != 0");
+        assertEq(morpho.totalSupplyAssets(marketParamsFuzzId), 0, "totalSupplyAssets != 0");
         assertEq(morpho.totalSupplyShares(marketParamsFuzzId), 0, "totalSupplyShares != 0");
-        assertEq(morpho.totalBorrow(marketParamsFuzzId), 0, "totalBorrow != 0");
+        assertEq(morpho.totalBorrowAssets(marketParamsFuzzId), 0, "totalBorrowAssets != 0");
         assertEq(morpho.totalBorrowShares(marketParamsFuzzId), 0, "totalBorrowShares != 0");
         assertEq(morpho.fee(marketParamsFuzzId), 0, "fee != 0");
     }

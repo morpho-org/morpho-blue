@@ -72,7 +72,7 @@ contract IntegrationRepayTest is BaseTest {
         assertEq(returnAssets, amountRepaid, "returned asset amount");
         assertEq(returnShares, expectedRepaidShares, "returned shares amount");
         assertEq(morpho.borrowShares(id, ONBEHALF), expectedBorrowShares, "borrow shares");
-        assertEq(morpho.totalBorrow(id), amountBorrowed - amountRepaid, "total borrow");
+        assertEq(morpho.totalBorrowAssets(id), amountBorrowed - amountRepaid, "total borrow");
         assertEq(morpho.totalBorrowShares(id), expectedBorrowShares, "total borrow shares");
         assertEq(borrowableToken.balanceOf(RECEIVER), amountBorrowed, "RECEIVER balance");
         assertEq(
@@ -118,7 +118,7 @@ contract IntegrationRepayTest is BaseTest {
         assertEq(returnAssets, expectedAmountRepaid, "returned asset amount");
         assertEq(returnShares, sharesRepaid, "returned shares amount");
         assertEq(morpho.borrowShares(id, ONBEHALF), expectedBorrowShares, "borrow shares");
-        assertEq(morpho.totalBorrow(id), amountBorrowed - expectedAmountRepaid, "total borrow");
+        assertEq(morpho.totalBorrowAssets(id), amountBorrowed - expectedAmountRepaid, "total borrow");
         assertEq(morpho.totalBorrowShares(id), expectedBorrowShares, "total borrow shares");
         assertEq(borrowableToken.balanceOf(RECEIVER), amountBorrowed, "RECEIVER balance");
         assertEq(

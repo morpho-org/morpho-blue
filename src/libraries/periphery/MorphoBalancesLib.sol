@@ -26,17 +26,17 @@ library MorphoBalancesLib {
     function expectedMarketBalances(IMorpho morpho, MarketParams memory marketParams)
         internal
         view
-        returns (uint256 totalSupply, uint256 toralBorrow, uint256 totalSupplyShares)
+        returns (uint256 totalSupplyAssets, uint256 toralBorrow, uint256 totalSupplyShares)
     {
         Id id = marketParams.id();
 
         bytes32[] memory slots = new bytes32[](3);
-        slots[0] = MorphoStorageLib.marketSlot(id);
-        slots[1] = bytes32(uint256(MorphoStorageLib.marketSlot(id)) + 1);
-        slots[2] = bytes32(uint256(MorphoStorageLib.marketSlot(id)) + 2);
+        slots[0] = MorphoStorageLib.marketTotalSupplyAssetsAndSharesSlot(id);
+        slots[1] = MorphoStorageLib.marketTotalBorrowAssetsAndSharesSlot(id);
+        slots[2] = MorphoStorageLib.marketLastUpdateAndFeeSlot(id);
 
-        bytes32[] memory values = morpho.extsload(slots);
-        totalSupply = uint128(uint256(values[0]));
+        bytes32[] memory values = morpho.extSloads(slots);
+        totalSupplyAssets = uint128(uint256(values[0]));
         totalSupplyShares = uint256(values[0] >> 128);
         toralBorrow = uint128(uint256(values[1]));
         uint256 lastUpdate = uint128(uint256(values[2]));
@@ -44,18 +44,18 @@ library MorphoBalancesLib {
 
         uint256 elapsed = block.timestamp - lastUpdate;
 
-        if (elapsed == 0) return (totalSupply, toralBorrow, totalSupplyShares);
+        if (elapsed == 0) return (totalSupplyAssets, toralBorrow, totalSupplyShares);
 
         if (toralBorrow != 0) {
             uint256 borrowRate = IIrm(marketParams.irm).borrowRateView(id);
             uint256 interest = toralBorrow.wMulDown(borrowRate.wTaylorCompounded(elapsed));
             toralBorrow += interest;
-            totalSupply += interest;
+            totalSupplyAssets += interest;
 
             if (fee != 0) {
                 uint256 feeAmount = interest.wMulDown(fee);
                 // The fee amount is subtracted from the total supply in this calculation to compensate for the fact that total supply is already updated.
-                uint256 feeShares = feeAmount.toSharesDown(totalSupply - feeAmount, totalSupplyShares);
+                uint256 feeShares = feeAmount.toSharesDown(totalSupplyAssets - feeAmount, totalSupplyShares);
 
                 totalSupplyShares += feeShares;
             }
@@ -65,17 +65,17 @@ library MorphoBalancesLib {
     function expectedTotalSupply(IMorpho morpho, MarketParams memory marketParams)
         internal
         view
-        returns (uint256 totalSupply)
+        returns (uint256 totalSupplyAssets)
     {
-        (totalSupply,,) = expectedMarketBalances(morpho, marketParams);
+        (totalSupplyAssets,,) = expectedMarketBalances(morpho, marketParams);
     }
 
     function expectedTotalBorrow(IMorpho morpho, MarketParams memory marketParams)
         internal
         view
-        returns (uint256 totalBorrow)
+        returns (uint256 totalBorrowAssets)
     {
-        (, totalBorrow,) = expectedMarketBalances(morpho, marketParams);
+        (, totalBorrowAssets,) = expectedMarketBalances(morpho, marketParams);
     }
 
     function expectedTotalSupplyShares(IMorpho morpho, MarketParams memory marketParams)
@@ -94,9 +94,9 @@ library MorphoBalancesLib {
     {
         Id id = marketParams.id();
         uint256 supplyShares = morpho.supplyShares(id, user);
-        (uint256 totalSupply,, uint256 totalSupplyShares) = expectedMarketBalances(morpho, marketParams);
+        (uint256 totalSupplyAssets,, uint256 totalSupplyShares) = expectedMarketBalances(morpho, marketParams);
 
-        return supplyShares.toAssetsDown(totalSupply, totalSupplyShares);
+        return supplyShares.toAssetsDown(totalSupplyAssets, totalSupplyShares);
     }
 
     function expectedBorrowBalance(IMorpho morpho, MarketParams memory marketParams, address user)
@@ -107,8 +107,8 @@ library MorphoBalancesLib {
         Id id = marketParams.id();
         uint256 borrowShares = morpho.borrowShares(id, user);
         uint256 totalBorrowShares = morpho.totalBorrowShares(id);
-        (, uint256 totalBorrow,) = expectedMarketBalances(morpho, marketParams);
+        (, uint256 totalBorrowAssets,) = expectedMarketBalances(morpho, marketParams);
 
-        return borrowShares.toAssetsUp(totalBorrow, totalBorrowShares);
+        return borrowShares.toAssetsUp(totalBorrowAssets, totalBorrowShares);
     }
 }
