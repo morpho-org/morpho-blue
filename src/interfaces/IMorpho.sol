@@ -11,16 +11,16 @@ struct MarketParams {
     uint256 lltv;
 }
 
-/// @dev Warning: `supplyShares` does not contain the accrued shares since the last interaction for `feeRecipient`.
+/// @dev Warning: For `feeRecipient, `supplyShares` does not contain the accrued shares since the last interest accrual.
 struct User {
     uint256 supplyShares;
     uint128 borrowShares;
     uint128 collateral;
 }
 
-/// @dev Warning: `totalSupplyAssets` does not contain the accrued interest since the last interaction.
-/// @dev Warning: `totalBorrowAssets` does not contain the accrued interest since the last interaction.
-/// @dev Warning: `totalSupplyShares` does not contain the additionnal shares accrued by `feeRecipient` since the last interaction.
+/// @dev Warning: `totalSupplyAssets` does not contain the accrued interest since the last interest accrual.
+/// @dev Warning: `totalBorrowAssets` does not contain the accrued interest since the last interest accrual.
+/// @dev Warning: `totalSupplyShares` does not contain the additionnal shares accrued by `feeRecipient` since the last interest accrual.
 struct Market {
     uint128 totalSupplyAssets;
     uint128 totalSupplyShares;
@@ -53,10 +53,13 @@ interface IMorpho {
     function DOMAIN_SEPARATOR() external view returns (bytes32);
 
     /// @notice The owner of the contract.
+    /// @dev It has the power to change the owner.
+    /// @dev It has the power to set fees on markets and set the fee recipient.
+    /// @dev It has the power to enable but not disable IRMs and LLTVs.
     function owner() external view returns (address);
 
-    /// @notice The fee recipient.
-    /// @dev The recipient receives the fees through a supply position.
+    /// @notice The fee recipient of all markets.
+    /// @dev The recipient receives the fees of a given market through a supply position on this market.
     function feeRecipient() external view returns (address);
 
     /// @notice Users' storage for market `id`.
@@ -75,8 +78,8 @@ interface IMorpho {
     /// @dev Anyone is authorized to modify their own positions, regardless of this variable.
     function isAuthorized(address authorizer, address authorized) external view returns (bool);
 
-    /// @notice The `user`'s current nonce. Used to prevent replay attacks with EIP-712 signatures.
-    function nonce(address user) external view returns (uint256);
+    /// @notice The `authorizer`'s current nonce. Used to prevent replay attacks with EIP-712 signatures.
+    function nonce(address authorizer) external view returns (uint256);
 
     /// @notice The market params corresponding to `id`.
     function idToMarketParams(Id id)
@@ -255,5 +258,5 @@ interface IMorpho {
     function accrueInterest(MarketParams memory marketParams) external;
 
     /// @notice Returns the data stored on the different `slots`.
-    function extsload(bytes32[] memory slots) external view returns (bytes32[] memory res);
+    function extSloads(bytes32[] memory slots) external view returns (bytes32[] memory res);
 }

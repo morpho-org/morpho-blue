@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.21;
+pragma solidity 0.8.19;
 
 import {Id, IMorpho, MarketParams, User, Market, Authorization, Signature} from "./interfaces/IMorpho.sol";
 import {
@@ -78,6 +78,7 @@ contract Morpho is IMorpho {
     /// @notice Initializes the contract.
     /// @param newOwner The new owner of the contract.
     constructor(address newOwner) {
+        require(newOwner != address(0), ErrorsLib.ZERO_ADDRESS);
         owner = newOwner;
 
         DOMAIN_SEPARATOR = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256("Morpho"), block.chainid, address(this)));
@@ -415,8 +416,9 @@ contract Morpho is IMorpho {
     }
 
     /// @inheritdoc IMorpho
-    /// @dev Warning: reverts if the signature has already been submitted.
+    /// @dev Warning: Reverts if the signature has already been submitted.
     /// @dev The signature is malleable, but it has no impact on the security here.
+    /// @dev The nonce is passed as argument to be able to revert with a different error message.
     function setAuthorizationWithSig(Authorization memory authorization, Signature calldata signature) external {
         require(block.timestamp < authorization.deadline, ErrorsLib.SIGNATURE_EXPIRED);
         require(authorization.nonce == nonce[authorization.authorizer]++, ErrorsLib.INVALID_NONCE);
@@ -511,7 +513,7 @@ contract Morpho is IMorpho {
     /* STORAGE VIEW */
 
     /// @inheritdoc IMorpho
-    function extsload(bytes32[] calldata slots) external view returns (bytes32[] memory res) {
+    function extSloads(bytes32[] calldata slots) external view returns (bytes32[] memory res) {
         uint256 nSlots = slots.length;
 
         res = new bytes32[](nSlots);
