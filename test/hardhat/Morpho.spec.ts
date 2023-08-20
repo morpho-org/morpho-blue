@@ -6,7 +6,7 @@ import { BigNumber, constants, utils } from "ethers";
 import { parseUnits } from "ethers/lib/utils";
 import hre from "hardhat";
 import { Morpho, OracleMock, ERC20Mock, IrmMock } from "types";
-import { MarketStruct } from "types/src/Morpho";
+import { MarketParamsStruct } from "types/src/Morpho";
 import { FlashBorrowerMock } from "types/src/mocks/FlashBorrowerMock";
 
 const closePositions = false;
@@ -21,7 +21,7 @@ const random = () => {
   return (seed - 1) / 2147483646;
 };
 
-const identifier = (market: MarketStruct) => {
+const identifier = (market: MarketParamsStruct) => {
   const encodedMarket = defaultAbiCoder.encode(
     ["address", "address", "address", "address", "uint256"],
     Object.values(market),
@@ -42,12 +42,12 @@ describe("Morpho", () => {
   let irm: IrmMock;
   let flashBorrower: FlashBorrowerMock;
 
-  let market: MarketStruct;
+  let market: MarketParamsStruct;
   let id: Buffer;
 
   let nbLiquidations: number;
 
-  const updateMarket = (newMarket: Partial<MarketStruct>) => {
+  const updateMarket = (newMarket: Partial<MarketParamsStruct>) => {
     market = { ...market, ...newMarket };
     id = identifier(market);
   };

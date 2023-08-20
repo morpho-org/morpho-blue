@@ -57,11 +57,11 @@ contract MorphoStorageLibTest is BaseTest {
         bytes32[] memory slots = new bytes32[](16);
         slots[0] = MorphoStorageLib.ownerSlot();
         slots[1] = MorphoStorageLib.feeRecipientSlot();
-        slots[2] = bytes32(uint256(MorphoStorageLib.userSlot(id, address(this))) + 0);
-        slots[3] = bytes32(uint256(MorphoStorageLib.userSlot(id, BORROWER)) + 1);
-        slots[4] = bytes32(uint256(MorphoStorageLib.marketSlot(id)) + 0);
-        slots[5] = bytes32(uint256(MorphoStorageLib.marketSlot(id)) + 1);
-        slots[6] = bytes32(uint256(MorphoStorageLib.marketSlot(id)) + 2);
+        slots[2] = MorphoStorageLib.userSupplySharesSlot(id, address(this));
+        slots[3] = MorphoStorageLib.userBorrowSharesAndCollateralSlot(id, BORROWER);
+        slots[4] = MorphoStorageLib.marketTotalSupplyAssetsAndSharesSlot(id);
+        slots[5] = MorphoStorageLib.marketTotalBorrowAssetsAndSharesSlot(id);
+        slots[6] = MorphoStorageLib.marketLastUpdateAndFeeSlot(id);
         slots[7] = MorphoStorageLib.isIrmEnabledSlot(address(irm));
         slots[8] = MorphoStorageLib.isLltvEnabledSlot(LLTV);
         slots[9] = MorphoStorageLib.isAuthorizedSlot(authorizer, BORROWER);
@@ -72,13 +72,13 @@ contract MorphoStorageLibTest is BaseTest {
         slots[14] = MorphoStorageLib.idToIrmSlot(id);
         slots[15] = MorphoStorageLib.idToLltvSlot(id);
 
-        bytes32[] memory values = morpho.extsload(slots);
+        bytes32[] memory values = morpho.extSloads(slots);
 
-        assertEq(abi.decode(abi.encode(values[0]), (address)), morpho.owner(), "a");
-        assertEq(abi.decode(abi.encode(values[1]), (address)), morpho.feeRecipient(), "b");
-        assertEq(uint256(values[2]), morpho.supplyShares(id, address(this)), "c");
-        assertEq(uint256(values[3] >> 128), morpho.collateral(id, BORROWER));
+        assertEq(abi.decode(abi.encode(values[0]), (address)), morpho.owner());
+        assertEq(abi.decode(abi.encode(values[1]), (address)), morpho.feeRecipient());
+        assertEq(uint256(values[2]), morpho.supplyShares(id, address(this)));
         assertEq(uint128(uint256(values[3])), morpho.borrowShares(id, BORROWER));
+        assertEq(uint256(values[3] >> 128), morpho.collateral(id, BORROWER));
         assertEq(uint128(uint256(values[4])), morpho.totalSupplyAssets(id));
         assertEq(uint256(values[4] >> 128), morpho.totalSupplyShares(id));
         assertEq(uint128(uint256(values[5])), morpho.totalBorrowAssets(id));
