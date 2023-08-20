@@ -19,7 +19,7 @@ methods {
 }
 
 invariant feeInRange(MorphoHarness.Id id)
-    to_mathint(fee(id)) <= MAX_FEE();
+    fee(id) <= MAX_FEE();
 
 /* This is a simple overapproximative summary, stating that it rounds in the right direction.
  * The summary is checked by the specification in BlueRatioMathSummary.spec.

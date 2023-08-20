@@ -83,8 +83,11 @@ rule setFeeRecipientRevertCondition(env e, address recipient) {
 
 rule createMarketRevertCondition(env e, MorphoHarness.Market market) {
     MorphoHarness.Id id = getMarketId(market);
+    bool irmEnabled = isIrmEnabled(market.irm);
+    bool lltvEnabled = isLltvEnabled(market.lltv);
+    uint256 lastUpdated = lastUpdate(id);
     createMarket@withrevert(e, market);
-    assert lastReverted <=> e.msg.value != 0 || !isIrmEnabled(market.irm) || !isLltvEnabled(market.lltv) || lastUpdate(id) != 0;
+    assert lastReverted <=> e.msg.value != 0 || !irmEnabled || !lltvEnabled || lastUpdated != 0;
 }
 
 rule supplyInputValidation(env e, MorphoHarness.Market market, uint256 assets, uint256 shares, address onBehalf, bytes b) {
