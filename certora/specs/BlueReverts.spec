@@ -37,7 +37,12 @@ definition exactlyOneZero(uint256 assets, uint256 shares) returns bool =
 
 // This invariant catches bugs when not checking that the market is created with lastUpdate.
 invariant notInitializedEmpty(MorphoHarness.Id id)
-    !isCreated(id) => emptyMarket(id);
+    !isCreated(id) => emptyMarket(id)
+{
+    preserved with (env e) {
+        require e.block.timestamp < 2^128;
+    }
+}
 
 invariant zeroDoesNotAuthorize(address authorized)
     !isAuthorized(0, authorized)
@@ -67,11 +72,12 @@ rule enableLltvRevertCondition(env e, uint256 lltv) {
 
 // setFee can also revert if the accrueInterests reverts.
 rule setFeeInputValidation(env e, MorphoHarness.MarketParams marketParams, uint256 newFee) {
-    address oldOwner = owner();
     MorphoHarness.Id id = getMarketId(marketParams);
+    address oldOwner = owner();
+    bool wasCreated = isCreated(id);
     setFee@withrevert(e, marketParams, newFee);
     bool hasReverted = lastReverted;
-    assert e.msg.value != 0 || e.msg.sender != oldOwner || !isCreated(id) || newFee > MAX_FEE() => hasReverted;
+    assert e.msg.value != 0 || e.msg.sender != oldOwner || !wasCreated || newFee > MAX_FEE() => hasReverted;
 }
 
 rule setFeeRecipientRevertCondition(env e, address recipient) {
@@ -82,8 +88,11 @@ rule setFeeRecipientRevertCondition(env e, address recipient) {
 
 rule createMarketRevertCondition(env e, MorphoHarness.MarketParams marketParams) {
     MorphoHarness.Id id = getMarketId(marketParams);
+    bool irmEnabled = isIrmEnabled(marketParams.irm);
+    bool lltvEnabled = isLltvEnabled(marketParams.lltv);
+    uint256 lastUpdated = getLastUpdate(id);
     createMarket@withrevert(e, marketParams);
-    assert lastReverted <=> e.msg.value != 0 || !isIrmEnabled(marketParams.irm) || !isLltvEnabled(marketParams.lltv) || getLastUpdate(id) != 0;
+    assert lastReverted <=> e.msg.value != 0 || !irmEnabled || !lltvEnabled || lastUpdated != 0;
 }
 
 rule supplyInputValidation(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes b) {
