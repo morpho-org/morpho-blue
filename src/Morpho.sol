@@ -211,9 +211,9 @@ contract Morpho is IMorpho {
         market[id].totalSupplyShares -= shares.toUint128();
         market[id].totalSupplyAssets -= assets.toUint128();
 
-        emit EventsLib.Withdraw(id, msg.sender, onBehalf, receiver, assets, shares);
-
         require(market[id].totalBorrowAssets <= market[id].totalSupplyAssets, ErrorsLib.INSUFFICIENT_LIQUIDITY);
+
+        emit EventsLib.Withdraw(id, msg.sender, onBehalf, receiver, assets, shares);
 
         IERC20(marketParams.borrowableToken).safeTransfer(receiver, assets);
 
@@ -246,10 +246,10 @@ contract Morpho is IMorpho {
         market[id].totalBorrowShares += shares.toUint128();
         market[id].totalBorrowAssets += assets.toUint128();
 
-        emit EventsLib.Borrow(id, msg.sender, onBehalf, receiver, assets, shares);
-
         require(_isHealthy(marketParams, id, onBehalf), ErrorsLib.INSUFFICIENT_COLLATERAL);
         require(market[id].totalBorrowAssets <= market[id].totalSupplyAssets, ErrorsLib.INSUFFICIENT_LIQUIDITY);
+
+        emit EventsLib.Borrow(id, msg.sender, onBehalf, receiver, assets, shares);
 
         IERC20(marketParams.borrowableToken).safeTransfer(receiver, assets);
 
@@ -324,9 +324,9 @@ contract Morpho is IMorpho {
 
         user[id][onBehalf].collateral -= assets.toUint128();
 
-        emit EventsLib.WithdrawCollateral(id, msg.sender, onBehalf, receiver, assets);
-
         require(_isHealthy(marketParams, id, onBehalf), ErrorsLib.INSUFFICIENT_COLLATERAL);
+
+        emit EventsLib.WithdrawCollateral(id, msg.sender, onBehalf, receiver, assets);
 
         IERC20(marketParams.collateralToken).safeTransfer(receiver, assets);
     }
