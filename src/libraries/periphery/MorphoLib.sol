@@ -5,47 +5,47 @@ import {IMorpho, Id} from "../../interfaces/IMorpho.sol";
 import {MorphoStorageLib} from "./MorphoStorageLib.sol";
 
 library MorphoLib {
-    function supplyShares(IMorpho morpho, Id id, address user) internal view returns (uint256 res) {
+    function supplyShares(IMorpho morpho, Id id, address user) internal view returns (uint256) {
         bytes32[] memory slot = _array(MorphoStorageLib.userSupplySharesSlot(id, user));
         return uint256(morpho.extSloads(slot)[0]);
     }
 
-    function borrowShares(IMorpho morpho, Id id, address user) internal view returns (uint256 res) {
+    function borrowShares(IMorpho morpho, Id id, address user) internal view returns (uint256) {
         bytes32[] memory slot = _array(MorphoStorageLib.userBorrowSharesAndCollateralSlot(id, user));
         return uint128(uint256(morpho.extSloads(slot)[0]));
     }
 
-    function collateral(IMorpho morpho, Id id, address user) internal view returns (uint256 res) {
+    function collateral(IMorpho morpho, Id id, address user) internal view returns (uint256) {
         bytes32[] memory slot = _array(MorphoStorageLib.userBorrowSharesAndCollateralSlot(id, user));
         return uint256(morpho.extSloads(slot)[0] >> 128);
     }
 
-    function totalSupplyAssets(IMorpho morpho, Id id) internal view returns (uint256 res) {
+    function totalSupplyAssets(IMorpho morpho, Id id) internal view returns (uint256) {
         bytes32[] memory slot = _array(MorphoStorageLib.marketTotalSupplyAssetsAndSharesSlot(id));
         return uint128(uint256(morpho.extSloads(slot)[0]));
     }
 
-    function totalSupplyShares(IMorpho morpho, Id id) internal view returns (uint256 res) {
+    function totalSupplyShares(IMorpho morpho, Id id) internal view returns (uint256) {
         bytes32[] memory slot = _array(MorphoStorageLib.marketTotalSupplyAssetsAndSharesSlot(id));
         return uint256(morpho.extSloads(slot)[0] >> 128);
     }
 
-    function totalBorrowAssets(IMorpho morpho, Id id) internal view returns (uint256 res) {
+    function totalBorrowAssets(IMorpho morpho, Id id) internal view returns (uint256) {
         bytes32[] memory slot = _array(MorphoStorageLib.marketTotalBorrowAssetsAndSharesSlot(id));
         return uint128(uint256(morpho.extSloads(slot)[0]));
     }
 
-    function totalBorrowShares(IMorpho morpho, Id id) internal view returns (uint256 res) {
+    function totalBorrowShares(IMorpho morpho, Id id) internal view returns (uint256) {
         bytes32[] memory slot = _array(MorphoStorageLib.marketTotalBorrowAssetsAndSharesSlot(id));
         return uint256(morpho.extSloads(slot)[0] >> 128);
     }
 
-    function lastUpdate(IMorpho morpho, Id id) internal view returns (uint256 res) {
+    function lastUpdate(IMorpho morpho, Id id) internal view returns (uint256) {
         bytes32[] memory slot = _array(MorphoStorageLib.marketLastUpdateAndFeeSlot(id));
         return uint128(uint256(morpho.extSloads(slot)[0]));
     }
 
-    function fee(IMorpho morpho, Id id) internal view returns (uint256 res) {
+    function fee(IMorpho morpho, Id id) internal view returns (uint256) {
         bytes32[] memory slot = _array(MorphoStorageLib.marketLastUpdateAndFeeSlot(id));
         return uint256(morpho.extSloads(slot)[0] >> 128);
     }
