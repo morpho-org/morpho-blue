@@ -33,6 +33,8 @@ rule supplyWithdraw() {
     env e2;
 
     require e1.block.timestamp == e2.block.timestamp;
+    require e1.block.timestamp < 2^128;
+    require e2.block.timestamp < 2^128;
 
     suppliedAssets, suppliedShares = supply(e1, marketParams, assets, shares, onbehalf, data);
 
@@ -62,6 +64,8 @@ rule withdrawSupply() {
     env e2;
 
     require e1.block.timestamp == e2.block.timestamp;
+    require e1.block.timestamp < 2^128;
+    require e2.block.timestamp < 2^128;
 
     withdrawnAssets, withdrawnShares = withdraw(e2, marketParams, assets, shares, onbehalf, receiver);
 

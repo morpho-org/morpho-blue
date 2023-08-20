@@ -1,5 +1,5 @@
 methods {
-    function _.borrowRate(MorphoHarness.Market market) external => summaryBorrowRate(market) expect uint256;
+    function _.borrowRate(MorphoHarness.MarketParams marketParams) external => summaryBorrowRate(marketParams) expect uint256;
 }
 
 ghost bool hasAccessedStorage;
@@ -9,7 +9,7 @@ ghost bool delegate_call;
 ghost bool static_call;
 ghost bool callIsBorrowRate;
 
-function summaryBorrowRate(MorphoHarness.Market market) returns uint256 {
+function summaryBorrowRate(MorphoHarness.MarketParams marketParams) returns uint256 {
     uint256 result;
     callIsBorrowRate = true;
     return result;
