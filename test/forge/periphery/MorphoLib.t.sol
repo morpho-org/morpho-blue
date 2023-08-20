@@ -5,7 +5,7 @@ import {MorphoBalancesLib} from "src/libraries/periphery/MorphoBalancesLib.sol";
 
 import "../BaseTest.sol";
 
-contract MorphoBalanceLibTest is BaseTest {
+contract MorphoLibTest is BaseTest {
     using MathLib for uint256;
     using MorphoLib for Morpho;
 
