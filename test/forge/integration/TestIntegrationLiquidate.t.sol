@@ -256,8 +256,7 @@ contract IntegrationLiquidateTest is BaseTest {
             amountCollateral,
             params.expectedBadDebt * SharesMathLib.VIRTUAL_SHARES
         );
-        (uint256 returnSeized, uint256 returnRepaid) =
-            morpho.liquidate(market, BORROWER, amountCollateral, 0, hex"");
+        (uint256 returnSeized, uint256 returnRepaid) = morpho.liquidate(market, BORROWER, amountCollateral, 0, hex"");
 
         assertEq(returnSeized, amountCollateral, "returned seized amount");
         assertEq(returnRepaid, params.expectedRepaid, "returned asset amount");
