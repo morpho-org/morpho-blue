@@ -374,7 +374,7 @@ contract Morpho is IMorpho {
 
         user[id][borrower].collateral -= seizedAssets.toUint128();
 
-        // Realize the bad debt if needed.
+        // Realize the bad debt if needed. Note that it saves ~3k gas to do it.
         uint256 badDebtShares;
         if (user[id][borrower].collateral == 0) {
             badDebtShares = user[id][borrower].borrowShares;
