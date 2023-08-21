@@ -229,7 +229,7 @@ interface IMorpho {
     /// @param repaidShares The amount of shares to repay.
     /// @param data Arbitrary data to pass to the `onMorphoLiquidate` callback. Pass empty data if not needed.
     /// @return seizedAssets_ The amount of assets seized.
-    /// @return repaidAssets_ The amount of repaid asset.
+    /// @return repaidAssets_ The amount of assets repaid.
     function liquidate(
         MarketParams memory marketParams,
         address borrower,
