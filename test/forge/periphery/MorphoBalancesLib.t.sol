@@ -5,7 +5,7 @@ import {MorphoBalancesLib} from "src/libraries/periphery/MorphoBalancesLib.sol";
 
 import "../BaseTest.sol";
 
-contract MorphoBalanceLibTest is BaseTest {
+contract MorphoBalancesLibTest is BaseTest {
     using MathLib for uint256;
     using MorphoLib for Morpho;
     using SharesMathLib for uint256;
@@ -16,14 +16,19 @@ contract MorphoBalanceLibTest is BaseTest {
     {
         _generatePendingInterest(amountSupplied, amountBorrowed, timeElapsed, fee);
 
-        (uint256 virtualTotalSupply, uint256 virtualTotalBorrow, uint256 virtualTotalSupplyShares) =
-            morpho.expectedMarketBalances(market);
+        (
+            uint256 virtualTotalSupply,
+            uint256 virtualTotalBorrow,
+            uint256 virtualTotalSupplyShares,
+            uint256 virtualTotalBorrowShares
+        ) = morpho.expectedMarketBalances(market);
 
         morpho.accrueInterest(market);
 
         assertEq(virtualTotalSupply, morpho.totalSupplyAssets(id), "total supply");
         assertEq(virtualTotalBorrow, morpho.totalBorrowAssets(id), "total borrow");
         assertEq(virtualTotalSupplyShares, morpho.totalSupplyShares(id), "total supply shares");
+        assertEq(virtualTotalBorrowShares, morpho.totalBorrowShares(id), "total borrow shares");
     }
 
     function testExpectedTotalSupply(uint256 amountSupplied, uint256 amountBorrowed, uint256 timeElapsed, uint256 fee)
