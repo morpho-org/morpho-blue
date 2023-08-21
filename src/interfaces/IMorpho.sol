@@ -11,7 +11,7 @@ struct MarketParams {
     uint256 lltv;
 }
 
-/// @dev Warning: For `feeRecipient, `supplyShares` does not contain the accrued shares since the last interest accrual.
+/// @dev Warning: For `feeRecipient`, `supplyShares` does not contain the accrued shares since the last interest accrual.
 struct User {
     uint256 supplyShares;
     uint128 borrowShares;
