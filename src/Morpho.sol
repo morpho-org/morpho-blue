@@ -211,9 +211,9 @@ contract Morpho is IMorpho {
         market[id].totalSupplyShares -= shares.toUint128();
         market[id].totalSupplyAssets -= assets.toUint128();
 
-        emit EventsLib.Withdraw(id, msg.sender, onBehalf, receiver, assets, shares);
-
         require(market[id].totalBorrowAssets <= market[id].totalSupplyAssets, ErrorsLib.INSUFFICIENT_LIQUIDITY);
+
+        emit EventsLib.Withdraw(id, msg.sender, onBehalf, receiver, assets, shares);
 
         IERC20(marketParams.borrowableToken).safeTransfer(receiver, assets);
 
@@ -246,10 +246,10 @@ contract Morpho is IMorpho {
         market[id].totalBorrowShares += shares.toUint128();
         market[id].totalBorrowAssets += assets.toUint128();
 
-        emit EventsLib.Borrow(id, msg.sender, onBehalf, receiver, assets, shares);
-
         require(_isHealthy(marketParams, id, onBehalf), ErrorsLib.INSUFFICIENT_COLLATERAL);
         require(market[id].totalBorrowAssets <= market[id].totalSupplyAssets, ErrorsLib.INSUFFICIENT_LIQUIDITY);
+
+        emit EventsLib.Borrow(id, msg.sender, onBehalf, receiver, assets, shares);
 
         IERC20(marketParams.borrowableToken).safeTransfer(receiver, assets);
 
@@ -324,9 +324,9 @@ contract Morpho is IMorpho {
 
         user[id][onBehalf].collateral -= assets.toUint128();
 
-        emit EventsLib.WithdrawCollateral(id, msg.sender, onBehalf, receiver, assets);
-
         require(_isHealthy(marketParams, id, onBehalf), ErrorsLib.INSUFFICIENT_COLLATERAL);
+
+        emit EventsLib.WithdrawCollateral(id, msg.sender, onBehalf, receiver, assets);
 
         IERC20(marketParams.collateralToken).safeTransfer(receiver, assets);
     }
@@ -355,7 +355,8 @@ contract Morpho is IMorpho {
         {
             // The liquidation incentive factor is min(maxIncentiveFactor, 1/(1 - cursor*(1 - lltv))).
             uint256 incentiveFactor = UtilsLib.min(
-                MAX_LIQUIDATION_INCENTIVE_FACTOR, WAD.wDivDown(WAD - LIQUIDATION_CURSOR.wMulDown(WAD - marketParams.lltv))
+                MAX_LIQUIDATION_INCENTIVE_FACTOR,
+                WAD.wDivDown(WAD - LIQUIDATION_CURSOR.wMulDown(WAD - marketParams.lltv))
             );
 
             if (seizedAssets > 0) {
@@ -372,7 +373,7 @@ contract Morpho is IMorpho {
         market[id].totalBorrowAssets -= repaidAssets.toUint128();
 
         user[id][borrower].collateral -= seizedAssets.toUint128();
-        
+
         // Realize the bad debt if needed.
         uint256 badDebtShares;
         if (user[id][borrower].collateral == 0) {
