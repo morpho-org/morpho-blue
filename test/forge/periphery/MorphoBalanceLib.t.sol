@@ -28,7 +28,7 @@ contract MorphoBalanceLibTest is BaseTest {
         assertEq(virtualTotalSupply, morpho.totalSupplyAssets(id), "total supply");
         assertEq(virtualTotalBorrow, morpho.totalBorrowAssets(id), "total borrow");
         assertEq(virtualTotalSupplyShares, morpho.totalSupplyShares(id), "total supply shares");
-        assertEq(virtualTotalBorrowShares, morpho.totalBorrowShares(id), "total borrrow shares");
+        assertEq(virtualTotalBorrowShares, morpho.totalBorrowShares(id), "total borrow shares");
     }
 
     function testExpectedTotalSupply(uint256 amountSupplied, uint256 amountBorrowed, uint256 timeElapsed, uint256 fee)
