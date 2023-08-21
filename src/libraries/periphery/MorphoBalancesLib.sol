@@ -10,14 +10,14 @@ import {MarketLib} from "../MarketLib.sol";
 import {SharesMathLib} from "../SharesMathLib.sol";
 import {MorphoStorageLib} from "./MorphoStorageLib.sol";
 
-/// @title MorphoBalanceLib
+/// @title MorphoBalancesLib
 /// @author Morpho Labs
 /// @custom:contact security@morpho.xyz
 /// @notice Helper library exposing getters with the expected value after interest accrual.
 /// @dev This library is not used in Morpho itself and is intended to be used by integrators.
 /// @dev The getter to retrieve the expected total borrow shares is not exposed because interest accrual does not apply to it.
 ///      The value can be queried directly on Morpho using `totalBorrowShares`.
-library MorphoBalanceLib {
+library MorphoBalancesLib {
     using MathLib for uint256;
     using MorphoLib for IMorpho;
     using SharesMathLib for uint256;

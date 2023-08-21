@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import {MorphoBalanceLib} from "src/libraries/periphery/MorphoBalanceLib.sol";
+import {MorphoBalancesLib} from "src/libraries/periphery/MorphoBalancesLib.sol";
 
 import "../BaseTest.sol";
 

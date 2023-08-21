@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import {MorphoBalanceLib} from "src/libraries/periphery/MorphoBalanceLib.sol";
+import {MorphoBalancesLib} from "src/libraries/periphery/MorphoBalancesLib.sol";
 
 import "../BaseTest.sol";
 
-contract MorphoBalanceLibTest is BaseTest {
+contract MorphoBalancesLibTest is BaseTest {
     using MathLib for uint256;
     using MorphoLib for Morpho;
     using SharesMathLib for uint256;
-    using MorphoBalanceLib for Morpho;
+    using MorphoBalancesLib for Morpho;
 
     function testVirtualAccrueInterest(uint256 amountSupplied, uint256 amountBorrowed, uint256 timeElapsed, uint256 fee)
         public
