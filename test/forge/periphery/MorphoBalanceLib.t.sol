@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import {MorphoBalancesLib} from "src/libraries/periphery/MorphoBalancesLib.sol";
+import {MorphoBalanceLib} from "src/libraries/periphery/MorphoBalanceLib.sol";
 
 import "../BaseTest.sol";
 
@@ -9,21 +9,26 @@ contract MorphoBalanceLibTest is BaseTest {
     using MathLib for uint256;
     using MorphoLib for Morpho;
     using SharesMathLib for uint256;
-    using MorphoBalancesLib for Morpho;
+    using MorphoBalanceLib for Morpho;
 
     function testVirtualAccrueInterest(uint256 amountSupplied, uint256 amountBorrowed, uint256 timeElapsed, uint256 fee)
         public
     {
         _generatePendingInterest(amountSupplied, amountBorrowed, timeElapsed, fee);
 
-        (uint256 virtualTotalSupply, uint256 virtualTotalBorrow, uint256 virtualTotalSupplyShares) =
-            morpho.expectedMarketBalances(market);
+        (
+            uint256 virtualTotalSupply,
+            uint256 virtualTotalBorrow,
+            uint256 virtualTotalSupplyShares,
+            uint256 virtualTotalBorrowShares
+        ) = morpho.expectedMarketBalances(market);
 
         morpho.accrueInterest(market);
 
         assertEq(virtualTotalSupply, morpho.totalSupplyAssets(id), "total supply");
         assertEq(virtualTotalBorrow, morpho.totalBorrowAssets(id), "total borrow");
         assertEq(virtualTotalSupplyShares, morpho.totalSupplyShares(id), "total supply shares");
+        assertEq(virtualTotalBorrowShares, morpho.totalBorrowShares(id), "total borrrow shares");
     }
 
     function testExpectedTotalSupply(uint256 amountSupplied, uint256 amountBorrowed, uint256 timeElapsed, uint256 fee)
