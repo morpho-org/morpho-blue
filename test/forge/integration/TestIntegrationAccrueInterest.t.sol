@@ -32,10 +32,7 @@ contract IntegrationAccrueInterestTest is BaseTest {
         uint256 totalSupplyBeforeAccrued = morpho.totalSupplyAssets(id);
         uint256 totalSupplySharesBeforeAccrued = morpho.totalSupplyShares(id);
 
-        collateralToken.setBalance(address(this), 1);
-        morpho.supplyCollateral(market, 1, address(this), hex"");
-        // Accrues interest.
-        morpho.withdrawCollateral(market, 1, address(this), address(this));
+        _accrueInterest();
 
         assertEq(morpho.totalBorrowAssets(id), totalBorrowBeforeAccrued, "total borrow");
         assertEq(morpho.totalSupplyAssets(id), totalSupplyBeforeAccrued, "total supply");
@@ -62,10 +59,7 @@ contract IntegrationAccrueInterestTest is BaseTest {
         uint256 totalSupplyBeforeAccrued = morpho.totalSupplyAssets(id);
         uint256 totalSupplySharesBeforeAccrued = morpho.totalSupplyShares(id);
 
-        collateralToken.setBalance(address(this), 1);
-        morpho.supplyCollateral(market, 1, address(this), hex"");
-        // Accrues interest.
-        morpho.withdrawCollateral(market, 1, address(this), address(this));
+        _accrueInterest();
 
         assertEq(morpho.totalBorrowAssets(id), totalBorrowBeforeAccrued, "total borrow");
         assertEq(morpho.totalSupplyAssets(id), totalSupplyBeforeAccrued, "total supply");
