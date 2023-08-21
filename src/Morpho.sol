@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.19;
 
-import {
-    Id, IMorpho, MarketParams, User, Market, Authorization, Signature, LiquidateVars
-} from "./interfaces/IMorpho.sol";
+import {Id, IMorpho, MarketParams, User, Market, Authorization, Signature} from "./interfaces/IMorpho.sol";
 import {
     IMorphoLiquidateCallback,
     IMorphoRepayCallback,
@@ -213,9 +211,9 @@ contract Morpho is IMorpho {
         market[id].totalSupplyShares -= shares.toUint128();
         market[id].totalSupplyAssets -= assets.toUint128();
 
-        require(market[id].totalBorrowAssets <= market[id].totalSupplyAssets, ErrorsLib.INSUFFICIENT_LIQUIDITY);
-
         emit EventsLib.Withdraw(id, msg.sender, onBehalf, receiver, assets, shares);
+
+        require(market[id].totalBorrowAssets <= market[id].totalSupplyAssets, ErrorsLib.INSUFFICIENT_LIQUIDITY);
 
         IERC20(marketParams.borrowableToken).safeTransfer(receiver, assets);
 
@@ -248,10 +246,10 @@ contract Morpho is IMorpho {
         market[id].totalBorrowShares += shares.toUint128();
         market[id].totalBorrowAssets += assets.toUint128();
 
+        emit EventsLib.Borrow(id, msg.sender, onBehalf, receiver, assets, shares);
+
         require(_isHealthy(marketParams, id, onBehalf), ErrorsLib.INSUFFICIENT_COLLATERAL);
         require(market[id].totalBorrowAssets <= market[id].totalSupplyAssets, ErrorsLib.INSUFFICIENT_LIQUIDITY);
-
-        emit EventsLib.Borrow(id, msg.sender, onBehalf, receiver, assets, shares);
 
         IERC20(marketParams.borrowableToken).safeTransfer(receiver, assets);
 
@@ -326,9 +324,9 @@ contract Morpho is IMorpho {
 
         user[id][onBehalf].collateral -= assets.toUint128();
 
-        require(_isHealthy(marketParams, id, onBehalf), ErrorsLib.INSUFFICIENT_COLLATERAL);
-
         emit EventsLib.WithdrawCollateral(id, msg.sender, onBehalf, receiver, assets);
+
+        require(_isHealthy(marketParams, id, onBehalf), ErrorsLib.INSUFFICIENT_COLLATERAL);
 
         IERC20(marketParams.collateralToken).safeTransfer(receiver, assets);
     }
@@ -349,56 +347,52 @@ contract Morpho is IMorpho {
 
         _accrueInterest(marketParams, id);
 
-        LiquidateVars memory vars;
-        vars.seizedAssets = seizedAssets;
-        vars.repaidShares = repaidShares;
-        vars.collateralPrice = IOracle(marketParams.oracle).price();
+        uint256 collateralPrice = IOracle(marketParams.oracle).price();
 
-        require(!_isHealthy(marketParams, id, borrower, vars.collateralPrice), ErrorsLib.HEALTHY_POSITION);
+        require(!_isHealthy(marketParams, id, borrower, collateralPrice), ErrorsLib.HEALTHY_POSITION);
+        uint256 repaidAssets;
 
-        // The liquidation incentive factor is min(maxIncentiveFactor, 1/(1 - cursor*(1 - lltv))).
-        vars.incentiveFactor = UtilsLib.min(
-            MAX_LIQUIDATION_INCENTIVE_FACTOR, WAD.wDivDown(WAD - LIQUIDATION_CURSOR.wMulDown(WAD - marketParams.lltv))
-        );
+        {
+            // The liquidation incentive factor is min(maxIncentiveFactor, 1/(1 - cursor*(1 - lltv))).
+            uint256 incentiveFactor = UtilsLib.min(
+                MAX_LIQUIDATION_INCENTIVE_FACTOR, WAD.wDivDown(WAD - LIQUIDATION_CURSOR.wMulDown(WAD - marketParams.lltv))
+            );
 
-        if (seizedAssets > 0) {
-            vars.repaidAssets =
-                vars.seizedAssets.mulDivUp(vars.collateralPrice, ORACLE_PRICE_SCALE).wDivUp(vars.incentiveFactor);
-            vars.repaidShares =
-                vars.repaidAssets.toSharesDown(market[id].totalBorrowAssets, market[id].totalBorrowShares);
-        } else {
-            vars.repaidAssets = vars.repaidShares.toAssetsUp(market[id].totalBorrowAssets, market[id].totalBorrowShares);
-            vars.seizedAssets =
-                vars.repaidAssets.wMulDown(vars.incentiveFactor).mulDivDown(ORACLE_PRICE_SCALE, vars.collateralPrice);
+            if (seizedAssets > 0) {
+                repaidAssets = seizedAssets.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(incentiveFactor);
+                repaidShares = repaidAssets.toSharesDown(market[id].totalBorrowAssets, market[id].totalBorrowShares);
+            } else {
+                repaidAssets = repaidShares.toAssetsUp(market[id].totalBorrowAssets, market[id].totalBorrowShares);
+                seizedAssets = repaidAssets.wMulDown(incentiveFactor).mulDivDown(ORACLE_PRICE_SCALE, collateralPrice);
+            }
         }
 
-        user[id][borrower].borrowShares -= vars.repaidShares.toUint128();
-        market[id].totalBorrowShares -= vars.repaidShares.toUint128();
-        market[id].totalBorrowAssets -= vars.repaidAssets.toUint128();
+        user[id][borrower].borrowShares -= repaidShares.toUint128();
+        market[id].totalBorrowShares -= repaidShares.toUint128();
+        market[id].totalBorrowAssets -= repaidAssets.toUint128();
 
-        user[id][borrower].collateral -= vars.seizedAssets.toUint128();
-
-        // Realize the bad debt if needed. Note that it saves ~3k gas to do it.
+        user[id][borrower].collateral -= seizedAssets.toUint128();
+        
+        // Realize the bad debt if needed.
+        uint256 badDebtShares;
         if (user[id][borrower].collateral == 0) {
-            vars.badDebtShares = user[id][borrower].borrowShares;
-            vars.badDebt = vars.badDebtShares.toAssetsUp(market[id].totalBorrowAssets, market[id].totalBorrowShares);
-            market[id].totalSupplyAssets -= vars.badDebt.toUint128();
-            market[id].totalBorrowAssets -= vars.badDebt.toUint128();
-            market[id].totalBorrowShares -= vars.badDebtShares.toUint128();
+            badDebtShares = user[id][borrower].borrowShares;
+            uint256 badDebt = badDebtShares.toAssetsUp(market[id].totalBorrowAssets, market[id].totalBorrowShares);
+            market[id].totalSupplyAssets -= badDebt.toUint128();
+            market[id].totalBorrowAssets -= badDebt.toUint128();
+            market[id].totalBorrowShares -= badDebtShares.toUint128();
             user[id][borrower].borrowShares = 0;
         }
 
-        IERC20(marketParams.collateralToken).safeTransfer(msg.sender, vars.seizedAssets);
+        IERC20(marketParams.collateralToken).safeTransfer(msg.sender, seizedAssets);
 
-        emit EventsLib.Liquidate(
-            id, msg.sender, borrower, vars.repaidAssets, vars.repaidShares, vars.seizedAssets, vars.badDebtShares
-        );
+        emit EventsLib.Liquidate(id, msg.sender, borrower, repaidAssets, repaidShares, seizedAssets, badDebtShares);
 
-        if (data.length > 0) IMorphoLiquidateCallback(msg.sender).onMorphoLiquidate(vars.repaidAssets, data);
+        if (data.length > 0) IMorphoLiquidateCallback(msg.sender).onMorphoLiquidate(repaidAssets, data);
 
-        IERC20(marketParams.borrowableToken).safeTransferFrom(msg.sender, address(this), vars.repaidAssets);
+        IERC20(marketParams.borrowableToken).safeTransferFrom(msg.sender, address(this), repaidAssets);
 
-        return (vars.seizedAssets, vars.repaidAssets);
+        return (seizedAssets, repaidAssets);
     }
 
     /* FLASH LOANS */

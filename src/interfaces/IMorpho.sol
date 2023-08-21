@@ -44,16 +44,6 @@ struct Signature {
     bytes32 s;
 }
 
-struct LiquidateVars {
-    uint256 seizedAssets;
-    uint256 repaidShares;
-    uint256 collateralPrice;
-    uint256 incentiveFactor;
-    uint256 repaidAssets;
-    uint256 badDebtShares;
-    uint256 badDebt;
-}
-
 /// @title IMorpho
 /// @author Morpho Labs
 /// @custom:contact security@morpho.xyz
