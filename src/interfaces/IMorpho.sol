@@ -11,7 +11,8 @@ struct MarketParams {
     uint256 lltv;
 }
 
-/// @dev Warning: For `feeRecipient`, `supplyShares` does not contain the accrued shares since the last interest accrual.
+/// @dev Warning: For `feeRecipient`, `supplyShares` does not contain the accrued shares since the last interest
+/// accrual.
 struct User {
     uint256 supplyShares;
     uint128 borrowShares;
@@ -242,9 +243,6 @@ interface IMorpho {
     /// @param authorization The `Authorization` struct.
     /// @param signature The signature.
     function setAuthorizationWithSig(Authorization calldata authorization, Signature calldata signature) external;
-
-    /// @notice Accrues interest for `market`.
-    function accrueInterest(MarketParams memory marketParams) external;
 
     /// @notice Returns the data stored on the different `slots`.
     function extSloads(bytes32[] memory slots) external view returns (bytes32[] memory res);

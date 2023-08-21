@@ -23,7 +23,10 @@ contract MorphoBalancesLibTest is BaseTest {
             uint256 virtualTotalBorrowShares
         ) = morpho.expectedMarketBalances(market);
 
-        morpho.accrueInterest(market);
+        // supplyCollateral => withdrawCollateral to accrue interest.
+        collateralToken.setBalance(address(this), 1);
+        morpho.supplyCollateral(market, 1, address(this), hex"");
+        morpho.withdrawCollateral(market, 1, address(this), address(this));
 
         assertEq(virtualTotalSupply, morpho.totalSupplyAssets(id), "total supply");
         assertEq(virtualTotalBorrow, morpho.totalBorrowAssets(id), "total borrow");
@@ -38,7 +41,10 @@ contract MorphoBalancesLibTest is BaseTest {
 
         uint256 expectedTotalSupply = morpho.expectedTotalSupply(market);
 
-        morpho.accrueInterest(market);
+        // supplyCollateral => withdrawCollateral to accrue interest.
+        collateralToken.setBalance(address(this), 1);
+        morpho.supplyCollateral(market, 1, address(this), hex"");
+        morpho.withdrawCollateral(market, 1, address(this), address(this));
 
         assertEq(expectedTotalSupply, morpho.totalSupplyAssets(id));
     }
@@ -50,7 +56,10 @@ contract MorphoBalancesLibTest is BaseTest {
 
         uint256 expectedTotalBorrow = morpho.expectedTotalBorrow(market);
 
-        morpho.accrueInterest(market);
+        // supplyCollateral => withdrawCollateral to accrue interest.
+        collateralToken.setBalance(address(this), 1);
+        morpho.supplyCollateral(market, 1, address(this), hex"");
+        morpho.withdrawCollateral(market, 1, address(this), address(this));
 
         assertEq(expectedTotalBorrow, morpho.totalBorrowAssets(id));
     }
@@ -65,7 +74,10 @@ contract MorphoBalancesLibTest is BaseTest {
 
         uint256 expectedTotalSupplyShares = morpho.expectedTotalSupplyShares(market);
 
-        morpho.accrueInterest(market);
+        // supplyCollateral => withdrawCollateral to accrue interest.
+        collateralToken.setBalance(address(this), 1);
+        morpho.supplyCollateral(market, 1, address(this), hex"");
+        morpho.withdrawCollateral(market, 1, address(this), address(this));
 
         assertEq(expectedTotalSupplyShares, morpho.totalSupplyShares(id));
     }
@@ -77,7 +89,10 @@ contract MorphoBalancesLibTest is BaseTest {
 
         uint256 expectedSupplyBalance = morpho.expectedSupplyBalance(market, address(this));
 
-        morpho.accrueInterest(market);
+        // supplyCollateral => withdrawCollateral to accrue interest.
+        collateralToken.setBalance(address(this), 1);
+        morpho.supplyCollateral(market, 1, address(this), hex"");
+        morpho.withdrawCollateral(market, 1, address(this), address(this));
 
         uint256 actualSupplyBalance = morpho.supplyShares(id, address(this)).toAssetsDown(
             morpho.totalSupplyAssets(id), morpho.totalSupplyShares(id)
@@ -93,7 +108,10 @@ contract MorphoBalancesLibTest is BaseTest {
 
         uint256 expectedBorrowBalance = morpho.expectedBorrowBalance(market, address(this));
 
-        morpho.accrueInterest(market);
+        // supplyCollateral => withdrawCollateral to accrue interest.
+        collateralToken.setBalance(address(this), 1);
+        morpho.supplyCollateral(market, 1, address(this), hex"");
+        morpho.withdrawCollateral(market, 1, address(this), address(this));
 
         uint256 actualBorrowBalance = morpho.borrowShares(id, address(this)).toAssetsUp(
             morpho.totalBorrowAssets(id), morpho.totalBorrowShares(id)
