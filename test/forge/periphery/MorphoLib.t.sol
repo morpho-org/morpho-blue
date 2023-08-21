@@ -20,8 +20,10 @@ contract MorphoLibTest is BaseTest {
         fee = bound(fee, 0, MAX_FEE);
 
         // Set fee parameters.
-        vm.prank(OWNER);
-        morpho.setFee(market, fee);
+        if (fee != morpho.fee(id)) {
+            vm.prank(OWNER);
+            morpho.setFee(market, fee);
+        }
 
         // Set timestamp.
         vm.warp(timestamp);

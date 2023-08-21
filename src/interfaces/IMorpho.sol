@@ -11,7 +11,8 @@ struct MarketParams {
     uint256 lltv;
 }
 
-/// @dev Warning: For `feeRecipient`, `supplyShares` does not contain the accrued shares since the last interest accrual.
+/// @dev Warning: For `feeRecipient`, `supplyShares` does not contain the accrued shares since the last interest
+/// accrual.
 struct User {
     uint256 supplyShares;
     uint128 borrowShares;
@@ -105,9 +106,9 @@ interface IMorpho {
     /// @dev Warning: The recipient can be the zero address.
     function setFee(MarketParams memory marketParams, uint256 newFee) external;
 
-    /// @notice Sets `recipient` as recipient of the fee.
-    /// @dev Warning: The recipient can be set to the zero address.
-    function setFeeRecipient(address recipient) external;
+    /// @notice Sets `newFeeRecipient` as recipient of the fee.
+    /// @dev Warning: The fee recipient can be set to the zero address.
+    function setFeeRecipient(address newFeeRecipient) external;
 
     /// @notice Creates `market`.
     function createMarket(MarketParams memory marketParams) external;
