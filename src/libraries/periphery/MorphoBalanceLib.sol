@@ -50,21 +50,19 @@ library MorphoBalanceLib {
 
         uint256 elapsed = block.timestamp - lastUpdate;
 
-        if (elapsed == 0 || toralBorrowAssets == 0) {
-            return (totalSupplyAssets, toralBorrowAssets, totalSupplyShares, totalBorrowShares);
-        }
+        if (elapsed != 0 && toralBorrowAssets != 0) {
+            uint256 borrowRate = IIrm(marketParams.irm).borrowRateView(marketParams);
+            uint256 interest = toralBorrowAssets.wMulDown(borrowRate.wTaylorCompounded(elapsed));
+            toralBorrowAssets += interest;
+            totalSupplyAssets += interest;
 
-        uint256 borrowRate = IIrm(marketParams.irm).borrowRateView(marketParams);
-        uint256 interest = toralBorrowAssets.wMulDown(borrowRate.wTaylorCompounded(elapsed));
-        toralBorrowAssets += interest;
-        totalSupplyAssets += interest;
+            if (fee != 0) {
+                uint256 feeAmount = interest.wMulDown(fee);
+                // The fee amount is subtracted from the total supply in this calculation to compensate for the fact that total supply is already updated.
+                uint256 feeShares = feeAmount.toSharesDown(totalSupplyAssets - feeAmount, totalSupplyShares);
 
-        if (fee != 0) {
-            uint256 feeAmount = interest.wMulDown(fee);
-            // The fee amount is subtracted from the total supply in this calculation to compensate for the fact that total supply is already updated.
-            uint256 feeShares = feeAmount.toSharesDown(totalSupplyAssets - feeAmount, totalSupplyShares);
-
-            totalSupplyShares += feeShares;
+                totalSupplyShares += feeShares;
+            }
         }
     }
 
