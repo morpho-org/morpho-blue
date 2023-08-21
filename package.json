@@ -52,5 +52,9 @@
     "extends": [
       "@commitlint/config-conventional"
     ]
+  },
+  "prettier": {
+    "printWidth": 120,
+    "plugins": ["@trivago/prettier-plugin-sort-imports"]
   }
 }
