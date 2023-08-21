@@ -140,11 +140,11 @@ contract IntegrationLiquidateTest is BaseTest {
         _supply(amountSupplied);
 
         uint256 expectedBorrowShares = amountBorrowed.toSharesUp(0, 0);
-        uint256 maxRepaidShaires = amountCollateral.mulDivDown(priceCollateral, ORACLE_PRICE_SCALE).wDivDown(
+        uint256 maxRepaidShares = amountCollateral.mulDivDown(priceCollateral, ORACLE_PRICE_SCALE).wDivDown(
             _liquidationIncentive(market.lltv)
         );
-        vm.assume(maxRepaidShaires != 0);
-        sharesRepaid = bound(sharesRepaid, 1, min(maxRepaidShaires, expectedBorrowShares));
+        vm.assume(maxRepaidShares != 0);
+        sharesRepaid = bound(sharesRepaid, 1, min(maxRepaidShares, expectedBorrowShares));
         uint256 expectedRepaid = sharesRepaid.toAssetsUp(amountBorrowed, expectedBorrowShares);
         uint256 expectedSeized =
             expectedRepaid.wMulDown(_liquidationIncentive(market.lltv)).mulDivDown(ORACLE_PRICE_SCALE, priceCollateral);

@@ -221,14 +221,14 @@ interface IMorpho {
     /// @notice Liquidates the given `seized` assets to the given `market` of the given `borrower`'s position,
     ///         optionally calling back the caller's `onMorphoLiquidate` function with the given `data`.
     /// @dev Either `seized` or `repaidShares` should be zero.
-    ///      Seizing more than the collateral balance will underflow and revert without any error message.
+    /// @dev Seizing more than the collateral balance will underflow and revert without any error message.
     /// @dev Repaying more than the borrow balance will underflow and revert without any error message.
     /// @param marketParams The market of the position.
     /// @param borrower The owner of the position.
     /// @param seizedAssets The amount of collateral to seize.
     /// @param repaidShares The amount of shares to repay.
     /// @param data Arbitrary data to pass to the `onMorphoLiquidate` callback. Pass empty data if not needed.
-    /// @return seizedAssets_ The amount of assets repaid.
+    /// @return seizedAssets_ The amount of assets seized.
     /// @return repaidAssets_ The amount of repaid asset.
     function liquidate(
         MarketParams memory marketParams,
