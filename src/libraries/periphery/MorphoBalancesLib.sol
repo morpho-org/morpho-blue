@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import {Id, MarketParams, IMorpho} from "../../interfaces/IMorpho.sol";
+import {Id, MarketParams, Market, IMorpho} from "../../interfaces/IMorpho.sol";
 import {IIrm} from "../../interfaces/IIrm.sol";
 
 import {MathLib} from "../MathLib.sol";
@@ -47,7 +47,17 @@ library MorphoBalancesLib {
         if (elapsed == 0) return (totalSupplyAssets, toralBorrow, totalSupplyShares);
 
         if (toralBorrow != 0) {
-            uint256 borrowRate = IIrm(marketParams.irm).borrowRateView(id);
+            uint256 borrowRate = IIrm(marketParams.irm).borrowRateView(
+                marketParams,
+                Market(
+                    uint128(totalSupplyAssets),
+                    uint128(totalSupplyShares),
+                    uint128(toralBorrow),
+                    0,
+                    uint128(lastUpdate),
+                    uint128(fee)
+                )
+            );
             uint256 interest = toralBorrow.wMulDown(borrowRate.wTaylorCompounded(elapsed));
             toralBorrow += interest;
             totalSupplyAssets += interest;

@@ -68,7 +68,7 @@ contract BaseTest is Test {
 
         oracle.setPrice(1e36);
 
-        irm = new Irm(address(morpho));
+        irm = new Irm();
         vm.label(address(irm), "IRM");
 
         market = MarketParams(address(borrowableToken), address(collateralToken), address(oracle), address(irm), LLTV);
