@@ -26,7 +26,12 @@ library MorphoBalancesLib {
     function expectedMarketBalances(IMorpho morpho, MarketParams memory marketParams)
         internal
         view
-        returns (uint256 totalSupplyAssets, uint256 toralBorrow, uint256 totalSupplyShares)
+        returns (
+            uint256 totalSupplyAssets,
+            uint256 toralBorrowAssets,
+            uint256 totalSupplyShares,
+            uint256 totalBorrowShares
+        )
     {
         Id id = marketParams.id();
 
@@ -38,28 +43,27 @@ library MorphoBalancesLib {
         bytes32[] memory values = morpho.extSloads(slots);
         totalSupplyAssets = uint128(uint256(values[0]));
         totalSupplyShares = uint256(values[0] >> 128);
-        toralBorrow = uint128(uint256(values[1]));
+        toralBorrowAssets = uint128(uint256(values[1]));
+        totalBorrowShares = uint256(values[1] >> 128);
         uint256 lastUpdate = uint128(uint256(values[2]));
         uint256 fee = uint256(values[2] >> 128);
 
         uint256 elapsed = block.timestamp - lastUpdate;
 
-        if (elapsed == 0) return (totalSupplyAssets, toralBorrow, totalSupplyShares);
-
-        if (toralBorrow != 0) {
+        if (elapsed != 0 && toralBorrowAssets != 0) {
             uint256 borrowRate = IIrm(marketParams.irm).borrowRateView(
                 marketParams,
                 Market(
                     uint128(totalSupplyAssets),
                     uint128(totalSupplyShares),
-                    uint128(toralBorrow),
+                    uint128(toralBorrowAssets),
                     0,
                     uint128(lastUpdate),
                     uint128(fee)
                 )
             );
-            uint256 interest = toralBorrow.wMulDown(borrowRate.wTaylorCompounded(elapsed));
-            toralBorrow += interest;
+            uint256 interest = toralBorrowAssets.wMulDown(borrowRate.wTaylorCompounded(elapsed));
+            toralBorrowAssets += interest;
             totalSupplyAssets += interest;
 
             if (fee != 0) {
@@ -77,7 +81,7 @@ library MorphoBalancesLib {
         view
         returns (uint256 totalSupplyAssets)
     {
-        (totalSupplyAssets,,) = expectedMarketBalances(morpho, marketParams);
+        (totalSupplyAssets,,,) = expectedMarketBalances(morpho, marketParams);
     }
 
     function expectedTotalBorrow(IMorpho morpho, MarketParams memory marketParams)
@@ -85,7 +89,7 @@ library MorphoBalancesLib {
         view
         returns (uint256 totalBorrowAssets)
     {
-        (, totalBorrowAssets,) = expectedMarketBalances(morpho, marketParams);
+        (, totalBorrowAssets,,) = expectedMarketBalances(morpho, marketParams);
     }
 
     function expectedTotalSupplyShares(IMorpho morpho, MarketParams memory marketParams)
@@ -93,7 +97,7 @@ library MorphoBalancesLib {
         view
         returns (uint256 totalSupplyShares)
     {
-        (,, totalSupplyShares) = expectedMarketBalances(morpho, marketParams);
+        (,, totalSupplyShares,) = expectedMarketBalances(morpho, marketParams);
     }
 
     /// @dev Warning: It does not work for `feeRecipient` because their supply shares increase is not taken into account.
@@ -104,7 +108,7 @@ library MorphoBalancesLib {
     {
         Id id = marketParams.id();
         uint256 supplyShares = morpho.supplyShares(id, user);
-        (uint256 totalSupplyAssets,, uint256 totalSupplyShares) = expectedMarketBalances(morpho, marketParams);
+        (uint256 totalSupplyAssets,, uint256 totalSupplyShares,) = expectedMarketBalances(morpho, marketParams);
 
         return supplyShares.toAssetsDown(totalSupplyAssets, totalSupplyShares);
     }
@@ -116,8 +120,7 @@ library MorphoBalancesLib {
     {
         Id id = marketParams.id();
         uint256 borrowShares = morpho.borrowShares(id, user);
-        uint256 totalBorrowShares = morpho.totalBorrowShares(id);
-        (, uint256 totalBorrowAssets,) = expectedMarketBalances(morpho, marketParams);
+        (, uint256 totalBorrowAssets,, uint256 totalBorrowShares) = expectedMarketBalances(morpho, marketParams);
 
         return borrowShares.toAssetsUp(totalBorrowAssets, totalBorrowShares);
     }
