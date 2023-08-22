@@ -185,8 +185,8 @@ contract BaseTest is Test {
 
     function _accrueInterest() internal {
         collateralToken.setBalance(address(this), 1);
-        morpho.supplyCollateral(market, 1, address(this), hex"");
-        morpho.withdrawCollateral(market, 1, address(this), address(10));
+        morpho.supplyCollateral(marketParams, 1, address(this), hex"");
+        morpho.withdrawCollateral(marketParams, 1, address(this), address(10));
     }
 
     function neq(MarketParams memory a, MarketParams memory b) internal pure returns (bool) {

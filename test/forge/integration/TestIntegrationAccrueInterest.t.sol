@@ -102,11 +102,11 @@ contract IntegrationAccrueInterestTest is BaseTest {
         uint256 expectedAccruedInterest = totalBorrowBeforeAccrued.wMulDown(borrowRate.wTaylorCompounded(timeElapsed));
 
         collateralToken.setBalance(address(this), 1);
-        morpho.supplyCollateral(market, 1, address(this), hex"");
+        morpho.supplyCollateral(marketParams, 1, address(this), hex"");
         vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.AccrueInterest(id, borrowRate, expectedAccruedInterest, 0);
         // Accrues interest.
-        morpho.withdrawCollateral(market, 1, address(this), address(this));
+        morpho.withdrawCollateral(marketParams, 1, address(this), address(this));
 
         assertEq(morpho.totalBorrowAssets(id), totalBorrowBeforeAccrued + expectedAccruedInterest, "total borrow");
         assertEq(morpho.totalSupplyAssets(id), totalSupplyBeforeAccrued + expectedAccruedInterest, "total supply");
@@ -143,7 +143,7 @@ contract IntegrationAccrueInterestTest is BaseTest {
         // Set fee parameters.
         vm.startPrank(OWNER);
         morpho.setFeeRecipient(OWNER);
-        morpho.setFee(marketParams, fee);
+        if (fee != morpho.fee(id)) morpho.setFee(marketParams, fee);
         vm.stopPrank();
 
         borrowableToken.setBalance(address(this), amountSupplied);
@@ -173,11 +173,11 @@ contract IntegrationAccrueInterestTest is BaseTest {
         );
 
         collateralToken.setBalance(address(this), 1);
-        morpho.supplyCollateral(market, 1, address(this), hex"");
+        morpho.supplyCollateral(marketParams, 1, address(this), hex"");
         vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.AccrueInterest(id, params.borrowRate, params.expectedAccruedInterest, params.feeShares);
         // Accrues interest.
-        morpho.withdrawCollateral(market, 1, address(this), address(this));
+        morpho.withdrawCollateral(marketParams, 1, address(this), address(this));
 
         assertEq(
             morpho.totalSupplyAssets(id),

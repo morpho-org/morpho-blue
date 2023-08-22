@@ -147,7 +147,6 @@ describe("Morpho", () => {
 
       if (!(await morpho.isLltvEnabled(lltv))) {
         await morpho.enableLltv(lltv);
-        await morpho.enableIrm(marketParams.irm);
         await morpho.createMarket({ ...marketParams, lltv });
       }
 

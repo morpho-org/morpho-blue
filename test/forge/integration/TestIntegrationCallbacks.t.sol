@@ -87,7 +87,7 @@ contract IntegrationCallbacksTest is
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
         borrowableToken.setBalance(address(this), amount);
-        morpho.supply(market, amount, 0, address(this), hex"");
+        morpho.supply(marketParams, amount, 0, address(this), hex"");
 
         borrowableToken.approve(address(morpho), 0);
 

@@ -111,7 +111,7 @@ contract MorphoBalancesLibTest is BaseTest {
         // Set fee parameters.
         vm.startPrank(OWNER);
         morpho.setFeeRecipient(OWNER);
-        morpho.setFee(marketParams, fee);
+        if (fee != morpho.fee(id)) morpho.setFee(marketParams, fee);
         vm.stopPrank();
 
         if (amountSupplied > 0) {
