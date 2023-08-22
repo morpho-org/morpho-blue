@@ -92,7 +92,7 @@ contract IntegrationCallbacksTest is
 
         borrowableToken.approve(address(morpho), 0);
 
-        vm.expectRevert();
+        vm.expectRevert(bytes(ErrorsLib.TRANSFER_FROM_FAILED));
         morpho.flashLoan(
             address(borrowableToken), amount, abi.encode(this.testFlashLoanShouldRevertIfNotReimbursed.selector, hex"")
         );
