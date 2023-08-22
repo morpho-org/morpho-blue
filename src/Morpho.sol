@@ -96,6 +96,7 @@ contract Morpho is IMorpho {
 
     /// @inheritdoc IMorpho
     function setOwner(address newOwner) external onlyOwner {
+        require(newOwner != owner, ErrorsLib.ALREADY_SET);
         owner = newOwner;
 
         emit EventsLib.SetOwner(newOwner);
@@ -103,6 +104,7 @@ contract Morpho is IMorpho {
 
     /// @inheritdoc IMorpho
     function enableIrm(address irm) external onlyOwner {
+        require(!isIrmEnabled[irm], ErrorsLib.ALREADY_SET);
         isIrmEnabled[irm] = true;
 
         emit EventsLib.EnableIrm(address(irm));
@@ -110,6 +112,7 @@ contract Morpho is IMorpho {
 
     /// @inheritdoc IMorpho
     function enableLltv(uint256 lltv) external onlyOwner {
+        require(!isLltvEnabled[lltv], ErrorsLib.ALREADY_SET);
         require(lltv < WAD, ErrorsLib.LLTV_TOO_HIGH);
         isLltvEnabled[lltv] = true;
 
@@ -120,6 +123,7 @@ contract Morpho is IMorpho {
     function setFee(MarketParams memory marketParams, uint256 newFee) external onlyOwner {
         Id id = marketParams.id();
         require(market[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
+        require(newFee != market[id].fee, ErrorsLib.ALREADY_SET);
         require(newFee <= MAX_FEE, ErrorsLib.MAX_FEE_EXCEEDED);
 
         // Accrue interest using the previous fee set before changing it.
@@ -132,10 +136,11 @@ contract Morpho is IMorpho {
     }
 
     /// @inheritdoc IMorpho
-    function setFeeRecipient(address recipient) external onlyOwner {
-        feeRecipient = recipient;
+    function setFeeRecipient(address newFeeRecipient) external onlyOwner {
+        require(newFeeRecipient != feeRecipient, ErrorsLib.ALREADY_SET);
+        feeRecipient = newFeeRecipient;
 
-        emit EventsLib.SetFeeRecipient(recipient);
+        emit EventsLib.SetFeeRecipient(newFeeRecipient);
     }
 
     /* MARKET CREATION */

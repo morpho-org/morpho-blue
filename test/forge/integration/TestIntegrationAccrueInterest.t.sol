@@ -143,7 +143,7 @@ contract IntegrationAccrueInterestTest is BaseTest {
         // Set fee parameters.
         vm.startPrank(OWNER);
         morpho.setFeeRecipient(OWNER);
-        morpho.setFee(market, fee);
+        if (fee != morpho.fee(id)) morpho.setFee(market, fee);
         vm.stopPrank();
 
         borrowableToken.setBalance(address(this), amountSupplied);

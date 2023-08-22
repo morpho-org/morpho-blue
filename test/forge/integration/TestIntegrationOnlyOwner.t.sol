@@ -21,6 +21,12 @@ contract IntegrationOnlyOwnerTest is BaseTest {
         morpho.setOwner(addressFuzz);
     }
 
+    function testSetOwnerAlreadySet() public {
+        vm.prank(OWNER);
+        vm.expectRevert(bytes(ErrorsLib.ALREADY_SET));
+        morpho.setOwner(OWNER);
+    }
+
     function testSetOwner(address newOwner) public {
         vm.assume(newOwner != OWNER);
 
@@ -39,6 +45,12 @@ contract IntegrationOnlyOwnerTest is BaseTest {
         vm.prank(addressFuzz);
         vm.expectRevert(bytes(ErrorsLib.NOT_OWNER));
         morpho.enableIrm(irmFuzz);
+    }
+
+    function testEnableIrmAlreadySet() public {
+        vm.prank(OWNER);
+        vm.expectRevert(bytes(ErrorsLib.ALREADY_SET));
+        morpho.enableIrm(address(irm));
     }
 
     function testEnableIrm(address irmFuzz) public {
@@ -61,6 +73,12 @@ contract IntegrationOnlyOwnerTest is BaseTest {
         morpho.enableLltv(lltvFuzz);
     }
 
+    function testEnableLltvAlreadySet() public {
+        vm.prank(OWNER);
+        vm.expectRevert(bytes(ErrorsLib.ALREADY_SET));
+        morpho.enableLltv(LLTV);
+    }
+
     function testEnableTooHighLltv(uint256 lltvFuzz) public {
         lltvFuzz = _boundInvalidLltv(lltvFuzz);
 
@@ -71,6 +89,7 @@ contract IntegrationOnlyOwnerTest is BaseTest {
 
     function testEnableLltv(uint256 lltvFuzz) public {
         lltvFuzz = _boundValidLltv(lltvFuzz);
+        vm.assume(lltvFuzz != LLTV);
 
         vm.prank(OWNER);
         vm.expectEmit(true, true, true, true, address(morpho));
@@ -105,7 +124,7 @@ contract IntegrationOnlyOwnerTest is BaseTest {
     }
 
     function testSetFee(uint256 feeFuzz) public {
-        feeFuzz = bound(feeFuzz, 0, MAX_FEE);
+        feeFuzz = bound(feeFuzz, 1, MAX_FEE);
 
         vm.prank(OWNER);
         vm.expectEmit(true, true, true, true, address(morpho));
@@ -124,7 +143,7 @@ contract IntegrationOnlyOwnerTest is BaseTest {
     }
 
     function testSetFeeRecipient(address newFeeRecipient) public {
-        vm.assume(newFeeRecipient != OWNER);
+        vm.assume(newFeeRecipient != morpho.feeRecipient());
 
         vm.prank(OWNER);
         vm.expectEmit(true, true, true, true, address(morpho));
