@@ -62,4 +62,7 @@ library ErrorsLib {
 
     /// @notice Thrown when a token transferFrom has failed.
     string internal constant TRANSFER_FROM_FAILED = "transferFrom failed";
+
+    /// @notice Thrown when the maximum uint128 is exceeded.
+    string internal constant MAX_UINT128_EXCEEDED = "max uint128 exceeded";
 }
