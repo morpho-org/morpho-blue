@@ -46,15 +46,6 @@ struct Signature {
     bytes32 s;
 }
 
-/// @dev Oracle price scale.
-uint256 constant ORACLE_PRICE_SCALE = 1e36;
-
-/// @dev Liquidation cursor.
-uint256 constant LIQUIDATION_CURSOR = 0.3e18;
-
-/// @dev Max liquidation incentive factor.
-uint256 constant MAX_LIQUIDATION_INCENTIVE_FACTOR = 1.15e18;
-
 /// @title IMorpho
 /// @author Morpho Labs
 /// @custom:contact security@morpho.xyz

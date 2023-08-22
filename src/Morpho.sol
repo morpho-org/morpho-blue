@@ -1,18 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.19;
 
-import {
-    Id,
-    IMorpho,
-    MarketParams,
-    User,
-    Market,
-    Authorization,
-    Signature,
-    ORACLE_PRICE_SCALE,
-    LIQUIDATION_CURSOR,
-    MAX_LIQUIDATION_INCENTIVE_FACTOR
-} from "./interfaces/IMorpho.sol";
+import {Id, IMorpho, MarketParams, User, Market, Authorization, Signature} from "./interfaces/IMorpho.sol";
 import {
     IMorphoLiquidateCallback,
     IMorphoRepayCallback,
@@ -24,6 +13,14 @@ import {IIrm} from "./interfaces/IIrm.sol";
 import {IERC20} from "./interfaces/IERC20.sol";
 import {IOracle} from "./interfaces/IOracle.sol";
 
+import {
+    MAX_FEE,
+    ORACLE_PRICE_SCALE,
+    LIQUIDATION_CURSOR,
+    MAX_LIQUIDATION_INCENTIVE_FACTOR,
+    DOMAIN_TYPEHASH,
+    AUTHORIZATION_TYPEHASH
+} from "./libraries/ConstantsLib.sol";
 import {UtilsLib} from "./libraries/UtilsLib.sol";
 import {EventsLib} from "./libraries/EventsLib.sol";
 import {ErrorsLib} from "./libraries/ErrorsLib.sol";
@@ -31,14 +28,6 @@ import {MarketLib} from "./libraries/MarketLib.sol";
 import {MathLib, WAD} from "./libraries/MathLib.sol";
 import {SharesMathLib} from "./libraries/SharesMathLib.sol";
 import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
-
-/// @dev The maximum fee a market can have (25%).
-uint256 constant MAX_FEE = 0.25e18;
-/// @dev The EIP-712 typeHash for EIP712Domain.
-bytes32 constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
-/// @dev The EIP-712 typeHash for Authorization.
-bytes32 constant AUTHORIZATION_TYPEHASH =
-    keccak256("Authorization(address authorizer,address authorized,bool isAuthorized,uint256 nonce,uint256 deadline)");
 
 /// @title Morpho
 /// @author Morpho Labs
