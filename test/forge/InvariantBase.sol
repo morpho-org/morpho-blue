@@ -69,9 +69,10 @@ contract InvariantBaseTest is BaseTest {
         timestamp += elapsed;
     }
 
-    function setCorrectBlock() internal {
+    modifier setCorrectBlock() {
         vm.roll(blockNumber);
         vm.warp(timestamp);
+        _;
     }
 
     function _randomSenderToWithdrawOnBehalf(address[] memory addresses, address seed, address sender)

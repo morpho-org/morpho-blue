@@ -26,7 +26,7 @@ contract SingleMarketInvariantTest is InvariantBaseTest {
         _weightSelector(this.withdrawOnMorpho.selector, 15);
         _weightSelector(this.supplyCollateralOnMorpho.selector, 20);
         _weightSelector(this.withdrawCollateralOnMorpho.selector, 15);
-        _weightSelector(this.newBlock.selector, 10);
+        _weightSelector(this.newBlock.selector, 20);
 
         blockNumber = block.number;
         timestamp = block.timestamp;
@@ -34,18 +34,14 @@ contract SingleMarketInvariantTest is InvariantBaseTest {
         targetSelector(FuzzSelector({addr: address(this), selectors: selectors}));
     }
 
-    function setMarketFee(uint256 newFee) public {
-        setCorrectBlock();
-
+    function setMarketFee(uint256 newFee) public setCorrectBlock {
         newFee = bound(newFee, 0.1e18, MAX_FEE);
 
         vm.prank(OWNER);
         morpho.setFee(market, newFee);
     }
 
-    function supplyOnMorpho(uint256 amount) public {
-        setCorrectBlock();
-
+    function supplyOnMorpho(uint256 amount) public setCorrectBlock {
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
         borrowableToken.setBalance(msg.sender, amount);
@@ -53,8 +49,7 @@ contract SingleMarketInvariantTest is InvariantBaseTest {
         morpho.supply(market, amount, 0, msg.sender, hex"");
     }
 
-    function withdrawOnMorpho(uint256 amount) public {
-        setCorrectBlock();
+    function withdrawOnMorpho(uint256 amount) public setCorrectBlock {
         morpho.accrueInterest(market);
 
         uint256 availableLiquidity = morpho.totalSupplyAssets(id) - morpho.totalBorrowAssets(id);
@@ -70,8 +65,7 @@ contract SingleMarketInvariantTest is InvariantBaseTest {
         morpho.withdraw(market, amount, 0, msg.sender, msg.sender);
     }
 
-    function borrowOnMorpho(uint256 amount) public {
-        setCorrectBlock();
+    function borrowOnMorpho(uint256 amount) public setCorrectBlock {
         morpho.accrueInterest(market);
 
         uint256 availableLiquidity = morpho.totalSupplyAssets(id) - morpho.totalBorrowAssets(id);
@@ -84,8 +78,7 @@ contract SingleMarketInvariantTest is InvariantBaseTest {
         morpho.borrow(market, amount, 0, msg.sender, msg.sender);
     }
 
-    function repayOnMorpho(uint256 amount) public {
-        setCorrectBlock();
+    function repayOnMorpho(uint256 amount) public setCorrectBlock {
         morpho.accrueInterest(market);
 
         if (morpho.borrowShares(id, msg.sender) == 0) return;
@@ -101,9 +94,7 @@ contract SingleMarketInvariantTest is InvariantBaseTest {
         morpho.repay(market, amount, 0, msg.sender, hex"");
     }
 
-    function supplyCollateralOnMorpho(uint256 amount) public {
-        setCorrectBlock();
-
+    function supplyCollateralOnMorpho(uint256 amount) public setCorrectBlock {
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
         collateralToken.setBalance(msg.sender, amount);
@@ -111,8 +102,7 @@ contract SingleMarketInvariantTest is InvariantBaseTest {
         morpho.supplyCollateral(market, amount, msg.sender, hex"");
     }
 
-    function withdrawCollateralOnMorpho(uint256 amount) public {
-        setCorrectBlock();
+    function withdrawCollateralOnMorpho(uint256 amount) public setCorrectBlock {
         morpho.accrueInterest(market);
 
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
