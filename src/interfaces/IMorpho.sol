@@ -85,7 +85,7 @@ interface IMorpho {
 
     /// @notice The market params corresponding to `id`.
     /// @dev This storage variable is not used in Morpho. It is there to enable reducing the cost associated to calldata
-    /// on layer 2s by creating a wrapper contract which takes only the id as input of functions.
+    /// on layer 2s by creating a wrapper contract with functions that take id as input instead of marketParams.
     function idToMarketParams(Id id)
         external
         view
