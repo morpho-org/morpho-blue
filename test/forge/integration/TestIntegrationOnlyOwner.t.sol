@@ -4,9 +4,9 @@ pragma solidity ^0.8.0;
 import "../BaseTest.sol";
 
 contract IntegrationOnlyOwnerTest is BaseTest {
-    using MarketLib for Market;
     using MathLib for uint256;
     using MorphoLib for Morpho;
+    using MarketParamsLib for Market;
 
     function testDeployWithAddressZero() public {
         vm.expectRevert(bytes(ErrorsLib.ZERO_ADDRESS));
@@ -104,11 +104,11 @@ contract IntegrationOnlyOwnerTest is BaseTest {
 
         vm.prank(addressFuzz);
         vm.expectRevert(bytes(ErrorsLib.NOT_OWNER));
-        morpho.setFee(market, feeFuzz);
+        morpho.setFee(marketParams, feeFuzz);
     }
 
     function testSetFeeWhenMarketNotCreated(MarketParams memory marketParamsFuzz, uint256 feeFuzz) public {
-        vm.assume(neq(marketParamsFuzz, market));
+        vm.assume(neq(marketParamsFuzz, marketParams));
 
         vm.prank(OWNER);
         vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
@@ -120,7 +120,7 @@ contract IntegrationOnlyOwnerTest is BaseTest {
 
         vm.prank(OWNER);
         vm.expectRevert(bytes(ErrorsLib.MAX_FEE_EXCEEDED));
-        morpho.setFee(market, feeFuzz);
+        morpho.setFee(marketParams, feeFuzz);
     }
 
     function testSetFee(uint256 feeFuzz) public {
@@ -129,7 +129,7 @@ contract IntegrationOnlyOwnerTest is BaseTest {
         vm.prank(OWNER);
         vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.SetFee(id, feeFuzz);
-        morpho.setFee(market, feeFuzz);
+        morpho.setFee(marketParams, feeFuzz);
 
         assertEq(morpho.fee(id), feeFuzz);
     }
