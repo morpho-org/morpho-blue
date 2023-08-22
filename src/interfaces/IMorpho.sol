@@ -111,6 +111,16 @@ interface IMorpho {
     function setFeeRecipient(address newFeeRecipient) external;
 
     /// @notice Creates `market`.
+    /// @dev Here is the list of requirements on the dependencies of the market (tokens, IRM and oracle):
+    /// - The token should be ERC-20 compliant, except that it can omit return values on `transfer` and `transferFrom`.
+    /// - The token balance of Morpho should decrease on `transfer` and `transferFrom`. In particular, burn functions
+    /// can break our invariants.
+    /// - The token should not re-enter Morpho on `transfer` nor `transferFrom`.
+    /// - The token balance of the sender (resp. receiver) should decrease (resp. increase) by exactly the given amount
+    /// on `transfer` and `transferFrom`. In particular, fees on transfer can break our invariants.
+    /// - The IRM should not re-enter Morpho.
+    /// @dev Warning: rebasing tokens whose balance go only up are technically supported, but using them direclty
+    /// probably does not make sense from an economic perspective.
     function createMarket(MarketParams memory marketParams) external;
 
     /// @notice Supplies `assets` or `shares` to `market` on behalf of `onBehalf`, optionally calling back the caller's
