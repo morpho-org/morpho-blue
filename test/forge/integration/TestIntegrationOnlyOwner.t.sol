@@ -6,7 +6,6 @@ import "../BaseTest.sol";
 contract IntegrationOnlyOwnerTest is BaseTest {
     using MathLib for uint256;
     using MorphoLib for Morpho;
-    using MarketParamsLib for Market;
 
     function testDeployWithAddressZero() public {
         vm.expectRevert(bytes(ErrorsLib.ZERO_ADDRESS));
