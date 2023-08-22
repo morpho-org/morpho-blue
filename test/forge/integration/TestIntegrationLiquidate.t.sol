@@ -15,11 +15,32 @@ contract IntegrationLiquidateTest is BaseTest {
         morpho.liquidate(marketParamsFuzz, address(this), 1, hex"");
     }
 
-    function testLiquidateZeroAmount() public {
-        vm.prank(BORROWER);
+    function testLiquidateZeroAmount(
+        uint256 amountSupplied,
+        uint256 amountCollateral,
+        uint256 amountBorrowed,
+        uint256 priceCollateral
+    ) public {
+        (amountCollateral, amountBorrowed, priceCollateral) =
+            _boundHealthyPosition(amountCollateral, amountBorrowed, priceCollateral);
 
-        vm.expectRevert(bytes(ErrorsLib.ZERO_ASSETS));
-        morpho.liquidate(market, address(this), 0, hex"");
+        vm.assume(amountCollateral > 1);
+
+        amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
+        _supply(amountSupplied);
+
+        oracle.setPrice(priceCollateral);
+
+        collateralToken.setBalance(BORROWER, amountCollateral);
+
+        vm.startPrank(BORROWER);
+        morpho.supplyCollateral(market, amountCollateral, BORROWER, hex"");
+        morpho.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
+        vm.stopPrank();
+
+        oracle.setPrice(0);
+
+        morpho.liquidate(market, BORROWER, 0, hex"");
     }
 
     function testLiquidateHealthyPosition(

@@ -9,10 +9,10 @@ import {ErrorsLib} from "../libraries/ErrorsLib.sol";
 /// @notice Library exposing helpers.
 /// @dev Inspired by https://github.com/morpho-org/morpho-utils.
 library UtilsLib {
-    /// @dev Returns true if there is exactly one zero.
-    function exactlyOneZero(uint256 x, uint256 y) internal pure returns (bool z) {
+    /// @dev Returns true if there at least one zero.
+    function maxOneNonZero(uint256 x, uint256 y) internal pure returns (bool z) {
         assembly {
-            z := xor(iszero(x), iszero(y))
+            z := or(iszero(x), iszero(y))
         }
     }
 

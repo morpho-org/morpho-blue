@@ -16,8 +16,8 @@ contract IntegrationRepayTest is BaseTest {
     }
 
     function testRepayZeroAmount() public {
-        vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
         morpho.repay(market, 0, 0, address(this), hex"");
+        assertEq(morpho.borrowShares(id, address(this)), 0);
     }
 
     function testRepayInconsistentInput(uint256 amount, uint256 shares) public {

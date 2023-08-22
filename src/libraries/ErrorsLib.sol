@@ -30,9 +30,6 @@ library ErrorsLib {
     /// @notice Thrown when not exactly one of the input amount is zero.
     string internal constant INCONSISTENT_INPUT = "inconsistent input";
 
-    /// @notice Thrown when zero assets is passed as input.
-    string internal constant ZERO_ASSETS = "zero assets";
-
     /// @notice Thrown when a zero address is passed as input.
     string internal constant ZERO_ADDRESS = "zero address";
 

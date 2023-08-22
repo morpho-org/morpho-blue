@@ -23,10 +23,9 @@ contract IntegrationWithdrawCollateralTest is BaseTest {
         vm.startPrank(SUPPLIER);
         collateralToken.approve(address(morpho), amount);
         morpho.supplyCollateral(market, amount, SUPPLIER, hex"");
-
-        vm.expectRevert(bytes(ErrorsLib.ZERO_ASSETS));
         morpho.withdrawCollateral(market, 0, SUPPLIER, RECEIVER);
         vm.stopPrank();
+        assertEq(morpho.collateral(id, SUPPLIER), amount);
     }
 
     function testWithdrawCollateralToZeroAddress(uint256 amount) public {

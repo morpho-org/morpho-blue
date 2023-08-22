@@ -20,9 +20,9 @@ contract IntegrationWithdrawTest is BaseTest {
 
         borrowableToken.setBalance(address(this), amount);
         morpho.supply(market, amount, 0, address(this), hex"");
-
-        vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
+        uint256 supplySharesBefore = morpho.supplyShares(id, address(this));
         morpho.withdraw(market, 0, 0, address(this), address(this));
+        assertEq(morpho.supplyShares(id, address(this)), supplySharesBefore);
     }
 
     function testWithdrawInconsistentInput(uint256 amount, uint256 shares) public {
