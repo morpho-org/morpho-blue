@@ -15,6 +15,9 @@ library ErrorsLib {
     /// @notice Thrown when the fee to set exceeds the maximum fee.
     string internal constant MAX_FEE_EXCEEDED = "MAX_FEE exceeded";
 
+    /// @notice Thrown when the value is already set.
+    string internal constant ALREADY_SET = "already set";
+
     /// @notice Thrown when the IRM is not enabled at market creation.
     string internal constant IRM_NOT_ENABLED = "IRM not enabled";
 

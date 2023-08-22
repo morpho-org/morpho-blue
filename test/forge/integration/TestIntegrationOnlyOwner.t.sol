@@ -4,9 +4,9 @@ pragma solidity ^0.8.0;
 import "../BaseTest.sol";
 
 contract IntegrationOnlyOwnerTest is BaseTest {
-    using MarketLib for Market;
     using MathLib for uint256;
     using MorphoLib for Morpho;
+    using MarketParamsLib for Market;
 
     function testDeployWithAddressZero() public {
         vm.expectRevert(bytes(ErrorsLib.ZERO_ADDRESS));
@@ -19,6 +19,12 @@ contract IntegrationOnlyOwnerTest is BaseTest {
         vm.prank(addressFuzz);
         vm.expectRevert(bytes(ErrorsLib.NOT_OWNER));
         morpho.setOwner(addressFuzz);
+    }
+
+    function testSetOwnerAlreadySet() public {
+        vm.prank(OWNER);
+        vm.expectRevert(bytes(ErrorsLib.ALREADY_SET));
+        morpho.setOwner(OWNER);
     }
 
     function testSetOwner(address newOwner) public {
@@ -41,6 +47,12 @@ contract IntegrationOnlyOwnerTest is BaseTest {
         morpho.enableIrm(irmFuzz);
     }
 
+    function testEnableIrmAlreadySet() public {
+        vm.prank(OWNER);
+        vm.expectRevert(bytes(ErrorsLib.ALREADY_SET));
+        morpho.enableIrm(address(irm));
+    }
+
     function testEnableIrm(address irmFuzz) public {
         vm.assume(irmFuzz != address(irm));
 
@@ -61,6 +73,12 @@ contract IntegrationOnlyOwnerTest is BaseTest {
         morpho.enableLltv(lltvFuzz);
     }
 
+    function testEnableLltvAlreadySet() public {
+        vm.prank(OWNER);
+        vm.expectRevert(bytes(ErrorsLib.ALREADY_SET));
+        morpho.enableLltv(LLTV);
+    }
+
     function testEnableTooHighLltv(uint256 lltvFuzz) public {
         lltvFuzz = _boundInvalidLltv(lltvFuzz);
 
@@ -71,6 +89,7 @@ contract IntegrationOnlyOwnerTest is BaseTest {
 
     function testEnableLltv(uint256 lltvFuzz) public {
         lltvFuzz = _boundValidLltv(lltvFuzz);
+        vm.assume(lltvFuzz != LLTV);
 
         vm.prank(OWNER);
         vm.expectEmit(true, true, true, true, address(morpho));
@@ -85,11 +104,11 @@ contract IntegrationOnlyOwnerTest is BaseTest {
 
         vm.prank(addressFuzz);
         vm.expectRevert(bytes(ErrorsLib.NOT_OWNER));
-        morpho.setFee(market, feeFuzz);
+        morpho.setFee(marketParams, feeFuzz);
     }
 
     function testSetFeeWhenMarketNotCreated(MarketParams memory marketParamsFuzz, uint256 feeFuzz) public {
-        vm.assume(neq(marketParamsFuzz, market));
+        vm.assume(neq(marketParamsFuzz, marketParams));
 
         vm.prank(OWNER);
         vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
@@ -101,16 +120,16 @@ contract IntegrationOnlyOwnerTest is BaseTest {
 
         vm.prank(OWNER);
         vm.expectRevert(bytes(ErrorsLib.MAX_FEE_EXCEEDED));
-        morpho.setFee(market, feeFuzz);
+        morpho.setFee(marketParams, feeFuzz);
     }
 
     function testSetFee(uint256 feeFuzz) public {
-        feeFuzz = bound(feeFuzz, 0, MAX_FEE);
+        feeFuzz = bound(feeFuzz, 1, MAX_FEE);
 
         vm.prank(OWNER);
         vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.SetFee(id, feeFuzz);
-        morpho.setFee(market, feeFuzz);
+        morpho.setFee(marketParams, feeFuzz);
 
         assertEq(morpho.fee(id), feeFuzz);
     }
@@ -124,7 +143,7 @@ contract IntegrationOnlyOwnerTest is BaseTest {
     }
 
     function testSetFeeRecipient(address newFeeRecipient) public {
-        vm.assume(newFeeRecipient != OWNER);
+        vm.assume(newFeeRecipient != morpho.feeRecipient());
 
         vm.prank(OWNER);
         vm.expectEmit(true, true, true, true, address(morpho));
