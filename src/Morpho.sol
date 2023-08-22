@@ -437,8 +437,8 @@ contract Morpho is IMorpho {
 
     /* INTEREST MANAGEMENT */
 
-    /// @dev Accrues interest for market `marketParams`.
-    /// @dev Assumes the given `marketParams` and `id` match.
+    /// @dev Accrues interest for the given market `marketParams`.
+    /// @dev Assumes that the inputs `marketParams` and `id` match.
     function _accrueInterest(MarketParams memory marketParams, Id id) internal {
         uint256 elapsed = block.timestamp - market[id].lastUpdate;
 
@@ -470,7 +470,7 @@ contract Morpho is IMorpho {
 
     /* HEALTH CHECK */
 
-    /// @dev Returns whether the position of `user` in the given `market` is healthy.
+    /// @dev Returns whether the position of `user` in the given market `marketParams` is healthy.
     /// @dev Assumes the given `marketParams` and `id` match.
     function _isHealthy(MarketParams memory marketParams, Id id, address borrower) internal view returns (bool) {
         if (user[id][borrower].borrowShares == 0) return true;
@@ -480,8 +480,9 @@ contract Morpho is IMorpho {
         return _isHealthy(marketParams, id, borrower, collateralPrice);
     }
 
-    /// @dev Returns whether the position of `user` in the given `market` with the given `collateralPrice` is healthy.
-    /// @dev Assumes the given `marketParams` and `id` match.
+    /// @dev Returns whether the position of `user` in the given market `marketParams` with the given `collateralPrice`
+    /// is healthy.
+    /// @dev Assumes that the inputs `marketParams` and `id` match.
     function _isHealthy(MarketParams memory marketParams, Id id, address borrower, uint256 collateralPrice)
         internal
         view

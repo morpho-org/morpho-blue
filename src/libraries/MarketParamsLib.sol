@@ -8,7 +8,7 @@ import {Id, MarketParams} from "../interfaces/IMorpho.sol";
 /// @custom:contact security@morpho.xyz
 /// @notice Library to convert a market to its id.
 library MarketParamsLib {
-    /// @notice Returns the id of a `market`.
+    /// @notice Returns the id of the market `marketParams`.
     function id(MarketParams memory marketParams) internal pure returns (Id) {
         return Id.wrap(keccak256(abi.encode(marketParams)));
     }
