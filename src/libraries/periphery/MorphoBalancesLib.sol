@@ -6,8 +6,8 @@ import {IIrm} from "../../interfaces/IIrm.sol";
 
 import {MathLib} from "../MathLib.sol";
 import {MorphoLib} from "./MorphoLib.sol";
-import {MarketLib} from "../MarketLib.sol";
 import {SharesMathLib} from "../SharesMathLib.sol";
+import {MarketParamsLib} from "../MarketParamsLib.sol";
 import {MorphoStorageLib} from "./MorphoStorageLib.sol";
 
 /// @title MorphoBalancesLib
@@ -21,7 +21,7 @@ library MorphoBalancesLib {
     using MathLib for uint256;
     using MorphoLib for IMorpho;
     using SharesMathLib for uint256;
-    using MarketLib for MarketParams;
+    using MarketParamsLib for MarketParams;
 
     function expectedMarketBalances(IMorpho morpho, MarketParams memory marketParams)
         internal

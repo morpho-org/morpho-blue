@@ -4,9 +4,9 @@ pragma solidity ^0.8.0;
 import "../BaseTest.sol";
 
 contract IntegrationOnlyOwnerTest is BaseTest {
-    using MarketLib for Market;
     using MathLib for uint256;
     using MorphoLib for Morpho;
+    using MarketParamsLib for Market;
 
     function testDeployWithAddressZero() public {
         vm.expectRevert(bytes(ErrorsLib.ZERO_ADDRESS));

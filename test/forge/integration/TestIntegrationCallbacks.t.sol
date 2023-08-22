@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 import "../BaseTest.sol";
-import "src/interfaces/IMorphoCallbacks.sol";
 
 contract IntegrationCallbacksTest is
     BaseTest,
@@ -12,9 +11,9 @@ contract IntegrationCallbacksTest is
     IMorphoSupplyCollateralCallback,
     IMorphoFlashLoanCallback
 {
-    using MarketLib for MarketParams;
     using MathLib for uint256;
     using MorphoLib for Morpho;
+    using MarketParamsLib for MarketParams;
 
     // Callback functions.
 

@@ -4,9 +4,9 @@ pragma solidity ^0.8.0;
 import "../BaseTest.sol";
 
 contract IntegrationCreateMarketTest is BaseTest {
-    using MorphoLib for Morpho;
-    using MarketLib for MarketParams;
     using MathLib for uint256;
+    using MorphoLib for Morpho;
+    using MarketParamsLib for MarketParams;
 
     function testCreateMarketWithNotEnabledIrmAndNotEnabledLltv(MarketParams memory marketParamsFuzz) public {
         vm.assume(marketParamsFuzz.irm != address(irm) && marketParamsFuzz.lltv != LLTV);

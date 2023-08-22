@@ -4,17 +4,20 @@ pragma solidity ^0.8.0;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
-import {SigUtils} from "test/forge/helpers/SigUtils.sol";
-import {MorphoLib} from "src/libraries/periphery/MorphoLib.sol";
-import "src/Morpho.sol";
+import "src/interfaces/IMorphoCallbacks.sol";
+import {IrmMock as Irm} from "src/mocks/IrmMock.sol";
 import {ERC20Mock as ERC20} from "src/mocks/ERC20Mock.sol";
 import {OracleMock as Oracle} from "src/mocks/OracleMock.sol";
-import {IrmMock as Irm} from "src/mocks/IrmMock.sol";
+
+import "src/Morpho.sol";
+import {SigUtils} from "test/forge/helpers/SigUtils.sol";
+import {MorphoLib} from "src/libraries/periphery/MorphoLib.sol";
+import {MorphoBalancesLib} from "src/libraries/periphery/MorphoBalancesLib.sol";
 
 contract BaseTest is Test {
-    using MarketLib for MarketParams;
     using MathLib for uint256;
     using MorphoLib for Morpho;
+    using MarketParamsLib for MarketParams;
 
     uint256 internal constant HIGH_COLLATERAL_AMOUNT = 1e35;
     uint256 internal constant MIN_TEST_AMOUNT = 100;
