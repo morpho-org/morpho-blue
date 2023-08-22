@@ -22,20 +22,20 @@ contract MorphoStorageLibTest is BaseTest {
         // Set fee parameters.
         vm.startPrank(OWNER);
         morpho.setFeeRecipient(OWNER);
-        morpho.setFee(market, fee);
+        morpho.setFee(marketParams, fee);
         vm.stopPrank();
 
         borrowableToken.setBalance(address(this), amountSupplied);
-        morpho.supply(market, amountSupplied, 0, address(this), hex"");
+        morpho.supply(marketParams, amountSupplied, 0, address(this), hex"");
 
-        uint256 collateralPrice = IOracle(market.oracle).price();
+        uint256 collateralPrice = IOracle(marketParams.oracle).price();
         collateralToken.setBalance(BORROWER, amountBorrowed.wDivUp(LLTV).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice));
 
         vm.startPrank(BORROWER);
         morpho.supplyCollateral(
-            market, amountBorrowed.wDivUp(LLTV).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice), BORROWER, hex""
+            marketParams, amountBorrowed.wDivUp(LLTV).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice), BORROWER, hex""
         );
-        morpho.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
+        morpho.borrow(marketParams, amountBorrowed, 0, BORROWER, BORROWER);
         vm.stopPrank();
 
         uint256 privateKey = 1;

@@ -9,14 +9,14 @@ contract IntegrationAccrueInterestTest is BaseTest {
     using SharesMathLib for uint256;
 
     function testAccrueInterestMarketNotCreated(MarketParams memory marketParamsFuzz) public {
-        vm.assume(neq(market, marketParamsFuzz));
+        vm.assume(neq(marketParams, marketParamsFuzz));
 
         vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
         morpho.accrueInterest(marketParamsFuzz);
     }
 
     function testAccrueInterestNoTimeElapsed(uint256 amountSupplied, uint256 amountBorrowed) public {
-        uint256 collateralPrice = IOracle(market.oracle).price();
+        uint256 collateralPrice = IOracle(marketParams.oracle).price();
         uint256 amountCollateral;
         (amountCollateral, amountBorrowed,) = _boundHealthyPosition(amountCollateral, amountBorrowed, collateralPrice);
         amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
@@ -26,20 +26,20 @@ contract IntegrationAccrueInterestTest is BaseTest {
         morpho.setFeeRecipient(OWNER);
 
         borrowableToken.setBalance(address(this), amountSupplied);
-        morpho.supply(market, amountSupplied, 0, address(this), hex"");
+        morpho.supply(marketParams, amountSupplied, 0, address(this), hex"");
 
         collateralToken.setBalance(BORROWER, amountCollateral);
 
         vm.startPrank(BORROWER);
-        morpho.supplyCollateral(market, amountCollateral, BORROWER, hex"");
-        morpho.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
+        morpho.supplyCollateral(marketParams, amountCollateral, BORROWER, hex"");
+        morpho.borrow(marketParams, amountBorrowed, 0, BORROWER, BORROWER);
         vm.stopPrank();
 
         uint256 totalBorrowBeforeAccrued = morpho.totalBorrowAssets(id);
         uint256 totalSupplyBeforeAccrued = morpho.totalSupplyAssets(id);
         uint256 totalSupplySharesBeforeAccrued = morpho.totalSupplyShares(id);
 
-        morpho.accrueInterest(market);
+        morpho.accrueInterest(marketParams);
 
         assertEq(morpho.totalBorrowAssets(id), totalBorrowBeforeAccrued, "total borrow");
         assertEq(morpho.totalSupplyAssets(id), totalSupplyBeforeAccrued, "total supply");
@@ -56,7 +56,7 @@ contract IntegrationAccrueInterestTest is BaseTest {
         morpho.setFeeRecipient(OWNER);
 
         borrowableToken.setBalance(address(this), amountSupplied);
-        morpho.supply(market, amountSupplied, 0, address(this), hex"");
+        morpho.supply(marketParams, amountSupplied, 0, address(this), hex"");
 
         // New block.
         vm.roll(block.number + 1);
@@ -66,7 +66,7 @@ contract IntegrationAccrueInterestTest is BaseTest {
         uint256 totalSupplyBeforeAccrued = morpho.totalSupplyAssets(id);
         uint256 totalSupplySharesBeforeAccrued = morpho.totalSupplyShares(id);
 
-        morpho.accrueInterest(market);
+        morpho.accrueInterest(marketParams);
 
         assertEq(morpho.totalBorrowAssets(id), totalBorrowBeforeAccrued, "total borrow");
         assertEq(morpho.totalSupplyAssets(id), totalSupplyBeforeAccrued, "total supply");
@@ -76,7 +76,7 @@ contract IntegrationAccrueInterestTest is BaseTest {
     }
 
     function testAccrueInterestNoFee(uint256 amountSupplied, uint256 amountBorrowed, uint256 timeElapsed) public {
-        uint256 collateralPrice = IOracle(market.oracle).price();
+        uint256 collateralPrice = IOracle(marketParams.oracle).price();
         uint256 amountCollateral;
         (amountCollateral, amountBorrowed,) = _boundHealthyPosition(amountCollateral, amountBorrowed, collateralPrice);
         amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
@@ -88,14 +88,14 @@ contract IntegrationAccrueInterestTest is BaseTest {
 
         borrowableToken.setBalance(address(this), amountSupplied);
         borrowableToken.setBalance(address(this), amountSupplied);
-        morpho.supply(market, amountSupplied, 0, address(this), hex"");
+        morpho.supply(marketParams, amountSupplied, 0, address(this), hex"");
 
         collateralToken.setBalance(BORROWER, amountCollateral);
 
         vm.startPrank(BORROWER);
-        morpho.supplyCollateral(market, amountCollateral, BORROWER, hex"");
+        morpho.supplyCollateral(marketParams, amountCollateral, BORROWER, hex"");
 
-        morpho.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
+        morpho.borrow(marketParams, amountBorrowed, 0, BORROWER, BORROWER);
         vm.stopPrank();
 
         // New block.
@@ -110,7 +110,7 @@ contract IntegrationAccrueInterestTest is BaseTest {
 
         vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.AccrueInterest(id, borrowRate, expectedAccruedInterest, 0);
-        morpho.accrueInterest(market);
+        morpho.accrueInterest(marketParams);
 
         assertEq(morpho.totalBorrowAssets(id), totalBorrowBeforeAccrued + expectedAccruedInterest, "total borrow");
         assertEq(morpho.totalSupplyAssets(id), totalSupplyBeforeAccrued + expectedAccruedInterest, "total supply");
@@ -137,7 +137,7 @@ contract IntegrationAccrueInterestTest is BaseTest {
     ) public {
         AccrueInterestWithFeesTestParams memory params;
 
-        uint256 collateralPrice = IOracle(market.oracle).price();
+        uint256 collateralPrice = IOracle(marketParams.oracle).price();
         uint256 amountCollateral;
         (amountCollateral, amountBorrowed,) = _boundHealthyPosition(amountCollateral, amountBorrowed, collateralPrice);
         amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
@@ -147,17 +147,17 @@ contract IntegrationAccrueInterestTest is BaseTest {
         // Set fee parameters.
         vm.startPrank(OWNER);
         morpho.setFeeRecipient(OWNER);
-        morpho.setFee(market, fee);
+        morpho.setFee(marketParams, fee);
         vm.stopPrank();
 
         borrowableToken.setBalance(address(this), amountSupplied);
-        morpho.supply(market, amountSupplied, 0, address(this), hex"");
+        morpho.supply(marketParams, amountSupplied, 0, address(this), hex"");
 
         collateralToken.setBalance(BORROWER, amountCollateral);
 
         vm.startPrank(BORROWER);
-        morpho.supplyCollateral(market, amountCollateral, BORROWER, hex"");
-        morpho.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
+        morpho.supplyCollateral(marketParams, amountCollateral, BORROWER, hex"");
+        morpho.borrow(marketParams, amountBorrowed, 0, BORROWER, BORROWER);
         vm.stopPrank();
 
         // New block.
@@ -178,7 +178,7 @@ contract IntegrationAccrueInterestTest is BaseTest {
 
         vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.AccrueInterest(id, params.borrowRate, params.expectedAccruedInterest, params.feeShares);
-        morpho.accrueInterest(market);
+        morpho.accrueInterest(marketParams);
 
         assertEq(
             morpho.totalSupplyAssets(id),

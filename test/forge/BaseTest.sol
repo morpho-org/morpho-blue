@@ -40,7 +40,7 @@ contract BaseTest is Test {
     ERC20 internal collateralToken;
     Oracle internal oracle;
     Irm internal irm;
-    MarketParams internal market;
+    MarketParams internal marketParams;
     Id internal id;
 
     function setUp() public {
@@ -71,13 +71,14 @@ contract BaseTest is Test {
         irm = new Irm(morpho);
         vm.label(address(irm), "IRM");
 
-        market = MarketParams(address(borrowableToken), address(collateralToken), address(oracle), address(irm), LLTV);
-        id = market.id();
+        marketParams =
+            MarketParams(address(borrowableToken), address(collateralToken), address(oracle), address(irm), LLTV);
+        id = marketParams.id();
 
         vm.startPrank(OWNER);
         morpho.enableIrm(address(irm));
         morpho.enableLltv(LLTV);
-        morpho.createMarket(market);
+        morpho.createMarket(marketParams);
         vm.stopPrank();
 
         borrowableToken.approve(address(morpho), type(uint256).max);
@@ -114,14 +115,14 @@ contract BaseTest is Test {
 
     function _supply(uint256 amount) internal {
         borrowableToken.setBalance(address(this), amount);
-        morpho.supply(market, amount, 0, address(this), hex"");
+        morpho.supply(marketParams, amount, 0, address(this), hex"");
     }
 
     function _supplyCollateralForBorrower(address borrower) internal {
         collateralToken.setBalance(borrower, HIGH_COLLATERAL_AMOUNT);
         vm.startPrank(borrower);
         collateralToken.approve(address(morpho), type(uint256).max);
-        morpho.supplyCollateral(market, HIGH_COLLATERAL_AMOUNT, borrower, hex"");
+        morpho.supplyCollateral(marketParams, HIGH_COLLATERAL_AMOUNT, borrower, hex"");
         vm.stopPrank();
     }
 
@@ -133,14 +134,15 @@ contract BaseTest is Test {
         priceCollateral = bound(priceCollateral, MIN_COLLATERAL_PRICE, MAX_COLLATERAL_PRICE);
         amountBorrowed = bound(amountBorrowed, MIN_TEST_AMOUNT, MAX_TEST_AMOUNT);
 
-        uint256 minCollateral = amountBorrowed.wDivUp(market.lltv).mulDivUp(ORACLE_PRICE_SCALE, priceCollateral);
+        uint256 minCollateral = amountBorrowed.wDivUp(marketParams.lltv).mulDivUp(ORACLE_PRICE_SCALE, priceCollateral);
 
         if (minCollateral <= MAX_COLLATERAL_ASSETS) {
             amountCollateral = bound(amountCollateral, minCollateral, MAX_COLLATERAL_ASSETS);
         } else {
             amountCollateral = MAX_COLLATERAL_ASSETS;
             amountBorrowed = min(
-                amountBorrowed.wMulDown(market.lltv).mulDivDown(priceCollateral, ORACLE_PRICE_SCALE), MAX_TEST_AMOUNT
+                amountBorrowed.wMulDown(marketParams.lltv).mulDivDown(priceCollateral, ORACLE_PRICE_SCALE),
+                MAX_TEST_AMOUNT
             );
         }
 
@@ -157,7 +159,8 @@ contract BaseTest is Test {
         priceCollateral = bound(priceCollateral, MIN_COLLATERAL_PRICE, MAX_COLLATERAL_PRICE);
         amountBorrowed = bound(amountBorrowed, MIN_TEST_AMOUNT, MAX_TEST_AMOUNT);
 
-        uint256 maxCollateral = amountBorrowed.wDivDown(market.lltv).mulDivDown(ORACLE_PRICE_SCALE, priceCollateral);
+        uint256 maxCollateral =
+            amountBorrowed.wDivDown(marketParams.lltv).mulDivDown(ORACLE_PRICE_SCALE, priceCollateral);
         amountCollateral = bound(amountBorrowed, 0, min(maxCollateral, MAX_COLLATERAL_ASSETS));
 
         vm.assume(amountCollateral > 0);
