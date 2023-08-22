@@ -177,6 +177,12 @@ contract BaseTest is Test {
             UtilsLib.min(MAX_LIQUIDATION_INCENTIVE_FACTOR, WAD.wDivDown(WAD - LIQUIDATION_CURSOR.wMulDown(WAD - lltv)));
     }
 
+    function _accrueInterest() internal {
+        collateralToken.setBalance(address(this), 1);
+        morpho.supplyCollateral(market, 1, address(this), hex"");
+        morpho.withdrawCollateral(market, 1, address(this), address(10));
+    }
+
     function neq(MarketParams memory a, MarketParams memory b) internal pure returns (bool) {
         return (Id.unwrap(a.id()) != Id.unwrap(b.id()));
     }
