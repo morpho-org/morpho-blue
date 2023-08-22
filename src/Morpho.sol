@@ -113,7 +113,7 @@ contract Morpho is IMorpho {
     /// @inheritdoc IMorpho
     function enableLltv(uint256 lltv) external onlyOwner {
         require(!isLltvEnabled[lltv], ErrorsLib.ALREADY_SET);
-        require(lltv < WAD, ErrorsLib.LLTV_TOO_HIGH);
+        require(lltv < WAD, ErrorsLib.MAX_LLTV_EXCEEDED);
         isLltvEnabled[lltv] = true;
 
         emit EventsLib.EnableLltv(lltv);
