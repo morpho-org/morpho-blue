@@ -106,8 +106,8 @@ contract SingleMarketChangingPriceInvariantTest is InvariantBaseTest {
         }
         uint256 collateralPrice = IOracle(marketParams.oracle).price();
 
-        uint256 totalBorrowPower =
-            morpho.collateral(id, msg.sender).mulDivDown(collateralPrice, ORACLE_PRICE_SCALE).wMulDown(marketParams.lltv);
+        uint256 totalBorrowPower = morpho.collateral(id, msg.sender).mulDivDown(collateralPrice, ORACLE_PRICE_SCALE)
+            .wMulDown(marketParams.lltv);
         uint256 borrowed =
             morpho.borrowShares(id, msg.sender).toAssetsUp(morpho.totalBorrowAssets(id), morpho.totalBorrowShares(id));
         uint256 currentBorrowPower = totalBorrowPower - borrowed;
@@ -192,8 +192,9 @@ contract SingleMarketChangingPriceInvariantTest is InvariantBaseTest {
 
         uint256 collateralPrice = IOracle(marketParams.oracle).price();
 
-        uint256 borrowPower =
-            morpho.collateral(id, msg.sender).mulDivDown(collateralPrice, ORACLE_PRICE_SCALE).wMulDown(marketParams.lltv);
+        uint256 borrowPower = morpho.collateral(id, msg.sender).mulDivDown(collateralPrice, ORACLE_PRICE_SCALE).wMulDown(
+            marketParams.lltv
+        );
         uint256 borrowed =
             morpho.borrowShares(id, msg.sender).toAssetsUp(morpho.totalBorrowAssets(id), morpho.totalBorrowShares(id));
         uint256 withdrawableCollateral =
