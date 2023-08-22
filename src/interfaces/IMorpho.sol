@@ -214,8 +214,10 @@ interface IMorpho {
     function withdrawCollateral(MarketParams memory marketParams, uint256 assets, address onBehalf, address receiver)
         external;
 
-    /// @notice Liquidates the given `repaidShares` of debt asset or seize the given `seized` of collateral on the given `market` of the
-    ///         given `borrower`'s position, optionally calling back the caller's `onMorphoLiquidate` function with the given `data`.
+    /// @notice Liquidates the given `repaidShares` of debt asset or seize the given `seized` of collateral on the given
+    /// `market` of the
+    ///         given `borrower`'s position, optionally calling back the caller's `onMorphoLiquidate` function with the
+    /// given `data`.
     /// @dev Either `seized` or `repaidShares` should be zero.
     /// @dev Seizing more than the collateral balance will underflow and revert without any error message.
     /// @dev Repaying more than the borrow balance will underflow and revert without any error message.
