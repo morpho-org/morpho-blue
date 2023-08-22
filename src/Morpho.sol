@@ -16,9 +16,9 @@ import {IOracle} from "./interfaces/IOracle.sol";
 import {UtilsLib} from "./libraries/UtilsLib.sol";
 import {EventsLib} from "./libraries/EventsLib.sol";
 import {ErrorsLib} from "./libraries/ErrorsLib.sol";
-import {MarketLib} from "./libraries/MarketLib.sol";
 import {MathLib, WAD} from "./libraries/MathLib.sol";
 import {SharesMathLib} from "./libraries/SharesMathLib.sol";
+import {MarketParamsLib} from "./libraries/MarketParamsLib.sol";
 import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
 
 /// @dev The maximum fee a market can have (25%).
@@ -45,7 +45,7 @@ contract Morpho is IMorpho {
     using UtilsLib for uint256;
     using SharesMathLib for uint256;
     using SafeTransferLib for IERC20;
-    using MarketLib for MarketParams;
+    using MarketParamsLib for MarketParams;
 
     /* IMMUTABLES */
 
@@ -96,6 +96,7 @@ contract Morpho is IMorpho {
 
     /// @inheritdoc IMorpho
     function setOwner(address newOwner) external onlyOwner {
+        require(newOwner != owner, ErrorsLib.ALREADY_SET);
         owner = newOwner;
 
         emit EventsLib.SetOwner(newOwner);
@@ -103,6 +104,7 @@ contract Morpho is IMorpho {
 
     /// @inheritdoc IMorpho
     function enableIrm(address irm) external onlyOwner {
+        require(!isIrmEnabled[irm], ErrorsLib.ALREADY_SET);
         isIrmEnabled[irm] = true;
 
         emit EventsLib.EnableIrm(address(irm));
@@ -110,6 +112,7 @@ contract Morpho is IMorpho {
 
     /// @inheritdoc IMorpho
     function enableLltv(uint256 lltv) external onlyOwner {
+        require(!isLltvEnabled[lltv], ErrorsLib.ALREADY_SET);
         require(lltv < WAD, ErrorsLib.LLTV_TOO_HIGH);
         isLltvEnabled[lltv] = true;
 
@@ -120,6 +123,7 @@ contract Morpho is IMorpho {
     function setFee(MarketParams memory marketParams, uint256 newFee) external onlyOwner {
         Id id = marketParams.id();
         require(market[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
+        require(newFee != market[id].fee, ErrorsLib.ALREADY_SET);
         require(newFee <= MAX_FEE, ErrorsLib.MAX_FEE_EXCEEDED);
 
         // Accrue interest using the previous fee set before changing it.
@@ -132,10 +136,11 @@ contract Morpho is IMorpho {
     }
 
     /// @inheritdoc IMorpho
-    function setFeeRecipient(address recipient) external onlyOwner {
-        feeRecipient = recipient;
+    function setFeeRecipient(address newFeeRecipient) external onlyOwner {
+        require(newFeeRecipient != feeRecipient, ErrorsLib.ALREADY_SET);
+        feeRecipient = newFeeRecipient;
 
-        emit EventsLib.SetFeeRecipient(recipient);
+        emit EventsLib.SetFeeRecipient(newFeeRecipient);
     }
 
     /* MARKET CREATION */
@@ -432,14 +437,6 @@ contract Morpho is IMorpho {
 
     /* INTEREST MANAGEMENT */
 
-    /// @inheritdoc IMorpho
-    function accrueInterest(MarketParams memory marketParams) external {
-        Id id = marketParams.id();
-        require(market[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
-
-        _accrueInterest(marketParams, id);
-    }
-
     /// @dev Accrues interest for market `marketParams`.
     /// @dev Assumes the given `marketParams` and `id` match.
     function _accrueInterest(MarketParams memory marketParams, Id id) internal {
@@ -456,7 +453,8 @@ contract Morpho is IMorpho {
             uint256 feeShares;
             if (market[id].fee != 0) {
                 uint256 feeAmount = interest.wMulDown(market[id].fee);
-                // The fee amount is subtracted from the total supply in this calculation to compensate for the fact that total supply is already updated.
+                // The fee amount is subtracted from the total supply in this calculation to compensate for the fact
+                // that total supply is already updated.
                 feeShares =
                     feeAmount.toSharesDown(market[id].totalSupplyAssets - feeAmount, market[id].totalSupplyShares);
                 user[id][feeRecipient].supplyShares += feeShares;

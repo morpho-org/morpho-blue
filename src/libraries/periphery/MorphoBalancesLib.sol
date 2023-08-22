@@ -6,8 +6,8 @@ import {IIrm} from "../../interfaces/IIrm.sol";
 
 import {MathLib} from "../MathLib.sol";
 import {MorphoLib} from "./MorphoLib.sol";
-import {MarketLib} from "../MarketLib.sol";
 import {SharesMathLib} from "../SharesMathLib.sol";
+import {MarketParamsLib} from "../MarketParamsLib.sol";
 import {MorphoStorageLib} from "./MorphoStorageLib.sol";
 
 /// @title MorphoBalancesLib
@@ -15,13 +15,13 @@ import {MorphoStorageLib} from "./MorphoStorageLib.sol";
 /// @custom:contact security@morpho.xyz
 /// @notice Helper library exposing getters with the expected value after interest accrual.
 /// @dev This library is not used in Morpho itself and is intended to be used by integrators.
-/// @dev The getter to retrieve the expected total borrow shares is not exposed because interest accrual does not apply to it.
-///      The value can be queried directly on Morpho using `totalBorrowShares`.
+/// @dev The getter to retrieve the expected total borrow shares is not exposed because interest accrual does not apply
+/// to it. The value can be queried directly on Morpho using `totalBorrowShares`.
 library MorphoBalancesLib {
     using MathLib for uint256;
     using MorphoLib for IMorpho;
     using SharesMathLib for uint256;
-    using MarketLib for MarketParams;
+    using MarketParamsLib for MarketParams;
 
     function expectedMarketBalances(IMorpho morpho, MarketParams memory marketParams)
         internal
@@ -58,7 +58,8 @@ library MorphoBalancesLib {
 
             if (fee != 0) {
                 uint256 feeAmount = interest.wMulDown(fee);
-                // The fee amount is subtracted from the total supply in this calculation to compensate for the fact that total supply is already updated.
+                // The fee amount is subtracted from the total supply in this calculation to compensate for the fact
+                // that total supply is already updated.
                 uint256 feeShares = feeAmount.toSharesDown(totalSupplyAssets - feeAmount, totalSupplyShares);
 
                 totalSupplyShares += feeShares;
@@ -90,7 +91,7 @@ library MorphoBalancesLib {
         (,, totalSupplyShares,) = expectedMarketBalances(morpho, marketParams);
     }
 
-    /// @dev Warning: It does not work for `feeRecipient` because their supply shares increase is not taken into account.
+    /// @dev Warning: Wrong for `feeRecipient` because their supply shares increase is not taken into account.
     function expectedSupplyBalance(IMorpho morpho, MarketParams memory marketParams, address user)
         internal
         view

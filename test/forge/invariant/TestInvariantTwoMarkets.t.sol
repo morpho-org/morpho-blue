@@ -7,10 +7,10 @@ contract TwoMarketsInvariantTest is InvariantTest {
     using MathLib for uint256;
     using MorphoLib for Morpho;
     using SharesMathLib for uint256;
-    using MarketLib for MarketParams;
+    using MarketParamsLib for MarketParams;
 
     Irm internal irm2;
-    MarketParams public market2;
+    MarketParams public marketParams2;
     Id public id2;
 
     function setUp() public virtual override {
@@ -19,21 +19,21 @@ contract TwoMarketsInvariantTest is InvariantTest {
         irm2 = new Irm(morpho);
         vm.label(address(irm2), "IRM2");
 
-        market2 =
+        marketParams2 =
             MarketParams(address(borrowableToken), address(collateralToken), address(oracle), address(irm2), LLTV + 1);
-        id2 = market2.id();
+        id2 = marketParams2.id();
 
         vm.startPrank(OWNER);
         morpho.enableIrm(address(irm2));
         morpho.enableLltv(LLTV + 1);
-        morpho.createMarket(market2);
+        morpho.createMarket(marketParams2);
         vm.stopPrank();
 
         _targetDefaultSenders();
 
         _approveSendersTransfers(targetSenders());
-        _supplyHighAmountOfCollateralForAllSenders(targetSenders(), market);
-        _supplyHighAmountOfCollateralForAllSenders(targetSenders(), market2);
+        _supplyHighAmountOfCollateralForAllSenders(targetSenders(), marketParams);
+        _supplyHighAmountOfCollateralForAllSenders(targetSenders(), marketParams2);
 
         // High price because of the 1e36 price scale
         oracle.setPrice(1e40);
@@ -52,10 +52,10 @@ contract TwoMarketsInvariantTest is InvariantTest {
 
     function chooseMarket(bool changeMarket) internal view returns (MarketParams memory chosenMarket, Id chosenId) {
         if (!changeMarket) {
-            chosenMarket = market;
+            chosenMarket = marketParams;
             chosenId = id;
         } else {
-            chosenMarket = market2;
+            chosenMarket = marketParams2;
             chosenId = id2;
         }
     }
@@ -80,7 +80,7 @@ contract TwoMarketsInvariantTest is InvariantTest {
     }
 
     function withdrawOnMorpho(uint256 amount, bool changeMarket) public setCorrectBlock {
-        morpho.accrueInterest(market);
+        _accrueInterest(marketParams);
 
         (MarketParams memory chosenMarket, Id chosenId) = chooseMarket(changeMarket);
 
@@ -88,7 +88,7 @@ contract TwoMarketsInvariantTest is InvariantTest {
         if (morpho.supplyShares(chosenId, msg.sender) == 0) return;
         if (availableLiquidity == 0) return;
 
-        morpho.accrueInterest(market);
+        _accrueInterest(marketParams);
         uint256 supplierBalance = morpho.supplyShares(chosenId, msg.sender).toAssetsDown(
             morpho.totalSupplyAssets(chosenId), morpho.totalSupplyShares(chosenId)
         );
@@ -99,14 +99,14 @@ contract TwoMarketsInvariantTest is InvariantTest {
     }
 
     function borrowOnMorpho(uint256 amount, bool changeMarket) public setCorrectBlock {
-        morpho.accrueInterest(market);
+        _accrueInterest(marketParams);
 
         (MarketParams memory chosenMarket, Id chosenId) = chooseMarket(changeMarket);
 
         uint256 availableLiquidity = morpho.totalSupplyAssets(chosenId) - morpho.totalBorrowAssets(chosenId);
         if (availableLiquidity == 0) return;
 
-        morpho.accrueInterest(market);
+        _accrueInterest(marketParams);
         amount = bound(amount, 1, availableLiquidity);
 
         vm.prank(msg.sender);
@@ -114,13 +114,13 @@ contract TwoMarketsInvariantTest is InvariantTest {
     }
 
     function repayOnMorpho(uint256 amount, bool changeMarket) public setCorrectBlock {
-        morpho.accrueInterest(market);
+        _accrueInterest(marketParams);
 
         (MarketParams memory chosenMarket, Id chosenId) = chooseMarket(changeMarket);
 
         if (morpho.borrowShares(chosenId, msg.sender) == 0) return;
 
-        morpho.accrueInterest(market);
+        _accrueInterest(marketParams);
         amount = bound(
             amount,
             1,
@@ -145,7 +145,7 @@ contract TwoMarketsInvariantTest is InvariantTest {
     }
 
     function withdrawCollateralOnMorpho(uint256 amount, bool changeMarket) public setCorrectBlock {
-        morpho.accrueInterest(market);
+        _accrueInterest(marketParams);
 
         (MarketParams memory chosenMarket,) = chooseMarket(changeMarket);
 

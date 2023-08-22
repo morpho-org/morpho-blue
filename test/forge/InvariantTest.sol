@@ -200,12 +200,12 @@ contract InvariantTest is BaseTest {
     }
 
     function isHealthy(Id id, address user) public view returns (bool) {
-        uint256 collateralPrice = IOracle(market.oracle).price();
+        uint256 collateralPrice = IOracle(marketParams.oracle).price();
 
         uint256 borrowed =
             morpho.borrowShares(id, user).toAssetsUp(morpho.totalBorrowAssets(id), morpho.totalBorrowShares(id));
         uint256 maxBorrow =
-            morpho.collateral(id, user).mulDivDown(collateralPrice, ORACLE_PRICE_SCALE).wMulDown(market.lltv);
+            morpho.collateral(id, user).mulDivDown(collateralPrice, ORACLE_PRICE_SCALE).wMulDown(marketParams.lltv);
 
         return maxBorrow >= borrowed;
     }

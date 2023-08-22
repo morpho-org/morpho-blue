@@ -23,7 +23,7 @@
             ├── it should set isLltvEnabled[lltv] to true
             └── it should emit EnableLltv(lltv)
 .
-└── setFee(Market memory market, uint256 newFee) external
+└── setFee(Market memory marketParams, uint256 newFee) external
     ├── when msg.sender not owner
     │   └── revert with NOT_OWNER
     └── when msg.sender is owner
