@@ -471,7 +471,7 @@ contract Morpho is IMorpho {
     /* HEALTH CHECK */
 
     /// @dev Returns whether the position of `user` in the given market `marketParams` is healthy.
-    /// @dev Assumes the given `marketParams` and `id` match.
+    /// @dev Assumes that the inputs `marketParams` and `id` match.
     function _isHealthy(MarketParams memory marketParams, Id id, address borrower) internal view returns (bool) {
         if (user[id][borrower].borrowShares == 0) return true;
 
