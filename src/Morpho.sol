@@ -13,14 +13,7 @@ import {IIrm} from "./interfaces/IIrm.sol";
 import {IERC20} from "./interfaces/IERC20.sol";
 import {IOracle} from "./interfaces/IOracle.sol";
 
-import {
-    MAX_FEE,
-    ORACLE_PRICE_SCALE,
-    LIQUIDATION_CURSOR,
-    MAX_LIQUIDATION_INCENTIVE_FACTOR,
-    DOMAIN_TYPEHASH,
-    AUTHORIZATION_TYPEHASH
-} from "./libraries/ConstantsLib.sol";
+import "./libraries/ConstantsLib.sol";
 import {UtilsLib} from "./libraries/UtilsLib.sol";
 import {EventsLib} from "./libraries/EventsLib.sol";
 import {ErrorsLib} from "./libraries/ErrorsLib.sol";
