@@ -8,13 +8,6 @@ contract IntegrationAccrueInterestTest is BaseTest {
     using MorphoLib for Morpho;
     using SharesMathLib for uint256;
 
-    function testAccrueInterestMarketNotCreated(MarketParams memory marketParamsFuzz) public {
-        vm.assume(neq(marketParams, marketParamsFuzz));
-
-        vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
-        morpho.accrueInterest(marketParamsFuzz);
-    }
-
     function testAccrueInterestNoTimeElapsed(uint256 amountSupplied, uint256 amountBorrowed) public {
         uint256 collateralPrice = IOracle(marketParams.oracle).price();
         uint256 amountCollateral;
@@ -39,7 +32,7 @@ contract IntegrationAccrueInterestTest is BaseTest {
         uint256 totalSupplyBeforeAccrued = morpho.totalSupplyAssets(id);
         uint256 totalSupplySharesBeforeAccrued = morpho.totalSupplyShares(id);
 
-        morpho.accrueInterest(marketParams);
+        _accrueInterest();
 
         assertEq(morpho.totalBorrowAssets(id), totalBorrowBeforeAccrued, "total borrow");
         assertEq(morpho.totalSupplyAssets(id), totalSupplyBeforeAccrued, "total supply");
@@ -66,7 +59,7 @@ contract IntegrationAccrueInterestTest is BaseTest {
         uint256 totalSupplyBeforeAccrued = morpho.totalSupplyAssets(id);
         uint256 totalSupplySharesBeforeAccrued = morpho.totalSupplyShares(id);
 
-        morpho.accrueInterest(marketParams);
+        _accrueInterest();
 
         assertEq(morpho.totalBorrowAssets(id), totalBorrowBeforeAccrued, "total borrow");
         assertEq(morpho.totalSupplyAssets(id), totalSupplyBeforeAccrued, "total supply");
@@ -108,9 +101,12 @@ contract IntegrationAccrueInterestTest is BaseTest {
         uint256 totalSupplySharesBeforeAccrued = morpho.totalSupplyShares(id);
         uint256 expectedAccruedInterest = totalBorrowBeforeAccrued.wMulDown(borrowRate.wTaylorCompounded(timeElapsed));
 
+        collateralToken.setBalance(address(this), 1);
+        morpho.supplyCollateral(market, 1, address(this), hex"");
         vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.AccrueInterest(id, borrowRate, expectedAccruedInterest, 0);
-        morpho.accrueInterest(marketParams);
+        // Accrues interest.
+        morpho.withdrawCollateral(market, 1, address(this), address(this));
 
         assertEq(morpho.totalBorrowAssets(id), totalBorrowBeforeAccrued + expectedAccruedInterest, "total borrow");
         assertEq(morpho.totalSupplyAssets(id), totalSupplyBeforeAccrued + expectedAccruedInterest, "total supply");
@@ -176,9 +172,12 @@ contract IntegrationAccrueInterestTest is BaseTest {
             params.totalSupplySharesBeforeAccrued
         );
 
+        collateralToken.setBalance(address(this), 1);
+        morpho.supplyCollateral(market, 1, address(this), hex"");
         vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.AccrueInterest(id, params.borrowRate, params.expectedAccruedInterest, params.feeShares);
-        morpho.accrueInterest(marketParams);
+        // Accrues interest.
+        morpho.withdrawCollateral(market, 1, address(this), address(this));
 
         assertEq(
             morpho.totalSupplyAssets(id),

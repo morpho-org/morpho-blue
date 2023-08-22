@@ -21,7 +21,7 @@ contract MorphoBalancesLibTest is BaseTest {
             uint256 virtualTotalBorrowShares
         ) = morpho.expectedMarketBalances(marketParams);
 
-        morpho.accrueInterest(marketParams);
+        _accrueInterest();
 
         assertEq(virtualTotalSupply, morpho.totalSupplyAssets(id), "total supply");
         assertEq(virtualTotalBorrow, morpho.totalBorrowAssets(id), "total borrow");
@@ -36,7 +36,7 @@ contract MorphoBalancesLibTest is BaseTest {
 
         uint256 expectedTotalSupply = morpho.expectedTotalSupply(marketParams);
 
-        morpho.accrueInterest(marketParams);
+        _accrueInterest();
 
         assertEq(expectedTotalSupply, morpho.totalSupplyAssets(id));
     }
@@ -48,7 +48,7 @@ contract MorphoBalancesLibTest is BaseTest {
 
         uint256 expectedTotalBorrow = morpho.expectedTotalBorrow(marketParams);
 
-        morpho.accrueInterest(marketParams);
+        _accrueInterest();
 
         assertEq(expectedTotalBorrow, morpho.totalBorrowAssets(id));
     }
@@ -63,7 +63,7 @@ contract MorphoBalancesLibTest is BaseTest {
 
         uint256 expectedTotalSupplyShares = morpho.expectedTotalSupplyShares(marketParams);
 
-        morpho.accrueInterest(marketParams);
+        _accrueInterest();
 
         assertEq(expectedTotalSupplyShares, morpho.totalSupplyShares(id));
     }
@@ -75,7 +75,7 @@ contract MorphoBalancesLibTest is BaseTest {
 
         uint256 expectedSupplyBalance = morpho.expectedSupplyBalance(marketParams, address(this));
 
-        morpho.accrueInterest(marketParams);
+        _accrueInterest();
 
         uint256 actualSupplyBalance = morpho.supplyShares(id, address(this)).toAssetsDown(
             morpho.totalSupplyAssets(id), morpho.totalSupplyShares(id)
@@ -91,7 +91,7 @@ contract MorphoBalancesLibTest is BaseTest {
 
         uint256 expectedBorrowBalance = morpho.expectedBorrowBalance(marketParams, address(this));
 
-        morpho.accrueInterest(marketParams);
+        _accrueInterest();
 
         uint256 actualBorrowBalance = morpho.borrowShares(id, address(this)).toAssetsUp(
             morpho.totalBorrowAssets(id), morpho.totalBorrowShares(id)
