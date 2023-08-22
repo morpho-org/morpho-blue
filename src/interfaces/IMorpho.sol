@@ -102,12 +102,14 @@ interface IMorpho {
     /// @dev Warning: It is not possible to disable a LLTV.
     function enableLltv(uint256 lltv) external;
 
-    /// @notice Sets the `newFee` for `market`.
+    /// @notice Sets the `newFee` for `marketParams`.
     /// @dev Warning: The recipient can be the zero address.
     function setFee(MarketParams memory marketParams, uint256 newFee) external;
 
     /// @notice Sets `newFeeRecipient` as recipient of the fee.
     /// @dev Warning: The fee recipient can be set to the zero address.
+    /// @dev Warning: The fee accrued since the last update in a market will be transferred to the new fee recipient if
+    /// any.
     function setFeeRecipient(address newFeeRecipient) external;
 
     /// @notice Creates `market`.
@@ -240,6 +242,9 @@ interface IMorpho {
     function setAuthorization(address authorized, bool newIsAuthorized) external;
 
     /// @notice Sets the authorization for `authorization.authorized` to manage `authorization.authorizer`'s positions.
+    /// @dev Warning: Reverts if the signature has already been submitted.
+    /// @dev The signature is malleable, but it has no impact on the security here.
+    /// @dev The nonce is passed as argument to be able to revert with a different error message.
     /// @param authorization The `Authorization` struct.
     /// @param signature The signature.
     function setAuthorizationWithSig(Authorization calldata authorization, Signature calldata signature) external;
