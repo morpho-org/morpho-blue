@@ -11,7 +11,8 @@ struct MarketParams {
     uint256 lltv;
 }
 
-/// @dev Warning: For `feeRecipient`, `supplyShares` does not contain the accrued shares since the last interest accrual.
+/// @dev Warning: For `feeRecipient`, `supplyShares` does not contain the accrued shares since the last interest
+/// accrual.
 struct User {
     uint256 supplyShares;
     uint128 borrowShares;
@@ -20,7 +21,8 @@ struct User {
 
 /// @dev Warning: `totalSupplyAssets` does not contain the accrued interest since the last interest accrual.
 /// @dev Warning: `totalBorrowAssets` does not contain the accrued interest since the last interest accrual.
-/// @dev Warning: `totalSupplyShares` does not contain the additionnal shares accrued by `feeRecipient` since the last interest accrual.
+/// @dev Warning: `totalSupplyShares` does not contain the additionnal shares accrued by `feeRecipient` since the last
+/// interest accrual.
 struct Market {
     uint128 totalSupplyAssets;
     uint128 totalSupplyShares;
@@ -65,7 +67,7 @@ interface IMorpho {
     /// @notice Users' storage for market `id`.
     function user(Id id, address user) external view returns (uint256, uint128, uint128);
 
-    /// @notice Market storage for market `id`.
+    /// @notice Market' storage for market `id`.
     function market(Id id) external view returns (uint128, uint128, uint128, uint128, uint128, uint128);
 
     /// @notice Whether the `irm` is enabled.
@@ -85,7 +87,7 @@ interface IMorpho {
     function idToMarketParams(Id id)
         external
         view
-        returns (address borrowableAsset, address collateralAsset, address oracle, address irm, uint256 lltv);
+        returns (address borrowableToken, address collateralToken, address oracle, address irm, uint256 lltv);
 
     /// @notice Sets `newOwner` as owner of the contract.
     /// @dev Warning: No two-step transfer ownership.
@@ -111,14 +113,12 @@ interface IMorpho {
     /// @notice Creates `market`.
     function createMarket(MarketParams memory marketParams) external;
 
-    /// @notice Supplies the given `assets` or `shares` to the given `market` on behalf of `onBehalf`,
-    ///         optionally calling back the caller's `onMorphoSupply` function with the given `data`.
-    /// @dev Either `assets` or `shares` should be zero.
-    ///      Most usecases should rely on `assets` as an input so the caller
-    ///      is guaranteed to have `assets` tokens pulled from their balance,
-    ///      but the possibility to mint a specific amount of shares is given
-    ///      for full compatibility and precision.
-    /// @dev Supplying a large amount can overflow and revert without any error message.
+    /// @notice Supplies `assets` or `shares` to `market` on behalf of `onBehalf`, optionally calling back the caller's
+    /// `onMorphoSupply` function with the given `data`.
+    /// @dev Either `assets` or `shares` should be zero. Most usecases should rely on `assets` as an input so the caller
+    /// is guaranteed to have `assets` tokens pulled from their balance, but the possibility to mint a specific amount
+    /// of shares is given for full compatibility and precision.
+    /// @dev Supplying a large amount can revert for overflow.
     /// @param marketParams The market to supply assets to.
     /// @param assets The amount of assets to supply.
     /// @param shares The amount of shares to mint.
@@ -134,11 +134,10 @@ interface IMorpho {
         bytes memory data
     ) external returns (uint256 assetsSupplied, uint256 sharesSupplied);
 
-    /// @notice Withdraws the given `assets` or `shares` from the given `market` on behalf of `onBehalf` to `receiver`.
-    /// @dev Either `assets` or `shares` should be zero.
-    ///      To withdraw the whole position, pass the `shares`'s balance of `onBehalf`.
+    /// @notice Withdraws `assets` or `shares` from `market` on behalf of `onBehalf` to `receiver`.
+    /// @dev Either `assets` or `shares` should be zero. To withdraw max, pass the `shares`'s balance of `onBehalf`.
     /// @dev `msg.sender` must be authorized to manage `onBehalf`'s positions.
-    /// @dev Withdrawing an amount corresponding to more shares than supplied will underflow and revert without any error message.
+    /// @dev Withdrawing an amount corresponding to more shares than supplied will revert for underflow.
     /// @param marketParams The market to withdraw assets from.
     /// @param assets The amount of assets to withdraw.
     /// @param shares The amount of shares to burn.
@@ -154,14 +153,12 @@ interface IMorpho {
         address receiver
     ) external returns (uint256 assetsWithdrawn, uint256 sharesWithdrawn);
 
-    /// @notice Borrows the given `assets` or `shares` from the given `market` on behalf of `onBehalf` to `receiver`.
-    /// @dev Either `assets` or `shares` should be zero.
-    ///      Most usecases should rely on `assets` as an input so the caller
-    ///      is guaranteed to borrow `assets` of tokens,
-    ///      but the possibility to mint a specific amount of shares is given
-    ///      for full compatibility and precision.
+    /// @notice Borrows `assets` or `shares` from `market` on behalf of `onBehalf` to `receiver`.
+    /// @dev Either `assets` or `shares` should be zero. Most usecases should rely on `assets` as an input so the caller
+    /// is guaranteed to borrow `assets` of tokens, but the possibility to mint a specific amount of shares is given for
+    /// full compatibility and precision.
     /// @dev `msg.sender` must be authorized to manage `onBehalf`'s positions.
-    /// @dev Borrowing a large amount can overflow and revert without any error message.
+    /// @dev Borrowing a large amount can revert for overflow.
     /// @param marketParams The market to borrow assets from.
     /// @param assets The amount of assets to borrow.
     /// @param shares The amount of shares to mint.
@@ -177,11 +174,10 @@ interface IMorpho {
         address receiver
     ) external returns (uint256 assetsBorrowed, uint256 sharesBorrowed);
 
-    /// @notice Repays the given `assets` or `shares` to the given `market` on behalf of `onBehalf`,
-    ///         optionally calling back the caller's `onMorphoReplay` function with the given `data`.
-    /// @dev Either `assets` or `shares` should be zero.
-    ///      To repay the whole debt, pass the `shares`'s balance of `onBehalf`.
-    /// @dev Repaying an amount corresponding to more shares than borrowed will underflow and revert without any error message.
+    /// @notice Repays `assets` or `shares` to `market` on behalf of `onBehalf`, optionally calling back the caller's
+    /// `onMorphoReplay` function with the given `data`.
+    /// @dev Either `assets` or `shares` should be zero. To repay max, pass the `shares`'s balance of `onBehalf`.
+    /// @dev Repaying an amount corresponding to more shares than borrowed will revert for underflow.
     /// @param marketParams The market to repay assets to.
     /// @param assets The amount of assets to repay.
     /// @param shares The amount of shares to burn.
@@ -197,10 +193,10 @@ interface IMorpho {
         bytes memory data
     ) external returns (uint256 assetsRepaid, uint256 sharesRepaid);
 
-    /// @notice Supplies the given `assets` of collateral to the given `market` on behalf of `onBehalf`,
-    ///         optionally calling back the caller's `onMorphoSupplyCollateral` function with the given `data`.
+    /// @notice Supplies `assets` of collateral to `market` on behalf of `onBehalf`, optionally calling back the
+    /// caller's `onMorphoSupplyCollateral` function with the given `data`.
     /// @dev Interest are not accrued since it's not required and it saves gas.
-    /// @dev Supplying a large amount can overflow and revert without any error message.
+    /// @dev Supplying a large amount can revert for overflow.
     /// @param marketParams The market to supply collateral to.
     /// @param assets The amount of collateral to supply.
     /// @param onBehalf The address that will receive the collateral.
@@ -208,9 +204,9 @@ interface IMorpho {
     function supplyCollateral(MarketParams memory marketParams, uint256 assets, address onBehalf, bytes memory data)
         external;
 
-    /// @notice Withdraws the given `assets` of collateral from the given `market` on behalf of `onBehalf` to `receiver`.
+    /// @notice Withdraws `assets` of collateral from `market` on behalf of `onBehalf` to `receiver`.
     /// @dev `msg.sender` must be authorized to manage `onBehalf`'s positions.
-    /// @dev Withdrawing an amount corresponding to more collateral than supplied will underflow and revert without any error message.
+    /// @dev Withdrawing an amount corresponding to more collateral than supplied will revert for underflow.
     /// @param marketParams The market to withdraw collateral from.
     /// @param assets The amount of collateral to withdraw.
     /// @param onBehalf The address of the owner of the collateral.
@@ -218,8 +214,8 @@ interface IMorpho {
     function withdrawCollateral(MarketParams memory marketParams, uint256 assets, address onBehalf, address receiver)
         external;
 
-    /// @notice Liquidates the given `seized` assets to the given `market` of the given `borrower`'s position,
-    ///         optionally calling back the caller's `onMorphoLiquidate` function with the given `data`.
+    /// @notice Liquidates `seized` of collateral to `market` of `borrower`'s position, optionally calling back the
+    /// caller's `onMorphoLiquidate` function with the given `data`.
     /// @dev Seizing more than the collateral balance will underflow and revert without any error message.
     /// @dev Repaying more than the borrow balance will underflow and revert without any error message.
     /// @param marketParams The market of the position.
