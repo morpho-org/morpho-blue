@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "test/forge/BaseTest.sol";
 
-contract InvariantBaseTest is BaseTest {
+contract InvariantTest is BaseTest {
     using MathLib for uint256;
     using MorphoLib for Morpho;
     using SharesMathLib for uint256;
