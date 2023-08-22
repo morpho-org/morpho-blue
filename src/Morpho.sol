@@ -79,8 +79,8 @@ contract Morpho is IMorpho {
     /// @param newOwner The new owner of the contract.
     constructor(address newOwner) {
         require(newOwner != address(0), ErrorsLib.ZERO_ADDRESS);
-        owner = newOwner;
 
+        owner = newOwner;
         DOMAIN_SEPARATOR = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256("Morpho"), block.chainid, address(this)));
     }
 
@@ -97,6 +97,7 @@ contract Morpho is IMorpho {
     /// @inheritdoc IMorpho
     function setOwner(address newOwner) external onlyOwner {
         require(newOwner != owner, ErrorsLib.ALREADY_SET);
+
         owner = newOwner;
 
         emit EventsLib.SetOwner(newOwner);
@@ -105,6 +106,7 @@ contract Morpho is IMorpho {
     /// @inheritdoc IMorpho
     function enableIrm(address irm) external onlyOwner {
         require(!isIrmEnabled[irm], ErrorsLib.ALREADY_SET);
+
         isIrmEnabled[irm] = true;
 
         emit EventsLib.EnableIrm(address(irm));
@@ -114,6 +116,7 @@ contract Morpho is IMorpho {
     function enableLltv(uint256 lltv) external onlyOwner {
         require(!isLltvEnabled[lltv], ErrorsLib.ALREADY_SET);
         require(lltv < WAD, ErrorsLib.MAX_LLTV_EXCEEDED);
+
         isLltvEnabled[lltv] = true;
 
         emit EventsLib.EnableLltv(lltv);
@@ -138,6 +141,7 @@ contract Morpho is IMorpho {
     /// @inheritdoc IMorpho
     function setFeeRecipient(address newFeeRecipient) external onlyOwner {
         require(newFeeRecipient != feeRecipient, ErrorsLib.ALREADY_SET);
+
         feeRecipient = newFeeRecipient;
 
         emit EventsLib.SetFeeRecipient(newFeeRecipient);
