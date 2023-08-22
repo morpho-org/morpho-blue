@@ -31,13 +31,12 @@ contract SingleMarketChangingPriceInvariantTest is InvariantTest {
         _weightSelector(this.changePrice.selector, 5);
         _weightSelector(this.setMarketFee.selector, 2);
 
-        blockNumber = block.number;
-        timestamp = block.timestamp;
-
         targetSelector(FuzzSelector({addr: address(this), selectors: selectors}));
 
         oracle.setPrice(1e36);
     }
+
+    /* ACTIONS */
 
     function changePrice(uint256 variation) public {
         // price variation bounded between -20% and +20%
@@ -248,6 +247,8 @@ contract SingleMarketChangingPriceInvariantTest is InvariantTest {
         vm.prank(msg.sender);
         morpho.liquidate(market, user, seized, hex"");
     }
+
+    /* INVARIANTS */
 
     function invariantSupplyShares() public {
         assertEq(sumUsersSupplyShares(targetSenders()), morpho.totalSupplyShares(id));

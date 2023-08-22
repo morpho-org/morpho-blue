@@ -28,11 +28,10 @@ contract SingleMarketInvariantTest is InvariantTest {
         _weightSelector(this.withdrawCollateralOnMorpho.selector, 15);
         _weightSelector(this.newBlock.selector, 20);
 
-        blockNumber = block.number;
-        timestamp = block.timestamp;
-
         targetSelector(FuzzSelector({addr: address(this), selectors: selectors}));
     }
+
+    /* ACTIONS */
 
     function setMarketFee(uint256 newFee) public setCorrectBlock {
         newFee = bound(newFee, 0.1e18, MAX_FEE);
@@ -110,6 +109,8 @@ contract SingleMarketInvariantTest is InvariantTest {
         vm.prank(msg.sender);
         morpho.withdrawCollateral(market, amount, msg.sender, msg.sender);
     }
+
+    /* INVARIANTS */
 
     function invariantSupplyShares() public {
         assertEq(sumUsersSupplyShares(targetSenders()), morpho.totalSupplyShares(id));

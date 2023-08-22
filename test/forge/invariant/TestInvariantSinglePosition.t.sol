@@ -36,6 +36,8 @@ contract SinglePositionInvariantTest is InvariantTest {
         targetSelector(FuzzSelector({addr: address(this), selectors: selectors}));
     }
 
+    /* ACTIONS */
+
     function supplyOnMorpho(uint256 amount) public {
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
@@ -95,6 +97,8 @@ contract SinglePositionInvariantTest is InvariantTest {
         vm.prank(msg.sender);
         morpho.withdrawCollateral(market, amount, msg.sender, msg.sender);
     }
+
+    /* INVARIANTS */
 
     function invariantSupplyShares() public {
         assertEq(morpho.supplyShares(id, user), morpho.totalSupplyShares(id));

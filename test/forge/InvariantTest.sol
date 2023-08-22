@@ -19,6 +19,9 @@ contract InvariantTest is BaseTest {
         super.setUp();
 
         targetContract(address(this));
+
+        blockNumber = block.number;
+        timestamp = block.timestamp;
     }
 
     function _targetDefaultSenders() internal {
@@ -153,7 +156,7 @@ contract InvariantTest is BaseTest {
         returns (address randomSenderToLiquidate)
     {
         for (uint256 i; i < addresses.length; ++i) {
-            if (morpho.borrowShares(id, addresses[i]) != 0 && !isHealthy(id, addresses[i])) {
+            if (!isHealthy(id, addresses[i])) {
                 addressArray.push(addresses[i]);
             }
         }

@@ -47,9 +47,6 @@ contract TwoMarketsInvariantTest is InvariantTest {
         _weightSelector(this.withdrawCollateralOnMorpho.selector, 15);
         _weightSelector(this.newBlock.selector, 20);
 
-        blockNumber = block.number;
-        timestamp = block.timestamp;
-
         targetSelector(FuzzSelector({addr: address(this), selectors: selectors}));
     }
 
