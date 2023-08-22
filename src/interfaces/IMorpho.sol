@@ -119,7 +119,7 @@ interface IMorpho {
     /// - The token balance of the sender (resp. receiver) should decrease (resp. increase) by exactly the given amount
     /// on `transfer` and `transferFrom`. In particular, fees on transfer can break our invariants.
     /// - The IRM should not re-enter Morpho.
-    /// @dev Warning: rebasing tokens whose balance go only up are technically supported, but using them direclty
+    /// @dev Warning: rebasing tokens whose balance go only up are technically supported, but using them directly
     /// probably does not make sense from an economic perspective.
     function createMarket(MarketParams memory marketParams) external;
 
