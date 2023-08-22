@@ -20,7 +20,7 @@ contract SinglePositionInvariantTest is InvariantBaseTest {
         vm.startPrank(user);
         borrowableToken.approve(address(morpho), type(uint256).max);
         collateralToken.approve(address(morpho), type(uint256).max);
-        morpho.supplyCollateral(market, 1e30, user, hex"");
+        morpho.supplyCollateral(marketParams, 1e30, user, hex"");
         vm.stopPrank();
 
         // High price because of the 1e36 price scale
@@ -41,7 +41,7 @@ contract SinglePositionInvariantTest is InvariantBaseTest {
 
         borrowableToken.setBalance(msg.sender, amount);
         vm.prank(msg.sender);
-        morpho.supply(market, amount, 0, msg.sender, hex"");
+        morpho.supply(marketParams, amount, 0, msg.sender, hex"");
     }
 
     function withdrawOnMorpho(uint256 amount) public {
@@ -55,7 +55,7 @@ contract SinglePositionInvariantTest is InvariantBaseTest {
         amount = bound(amount, 1, min(supplierBalance, availableLiquidity));
 
         vm.prank(msg.sender);
-        morpho.withdraw(market, amount, 0, msg.sender, msg.sender);
+        morpho.withdraw(marketParams, amount, 0, msg.sender, msg.sender);
     }
 
     function borrowOnMorpho(uint256 amount) public {
@@ -65,7 +65,7 @@ contract SinglePositionInvariantTest is InvariantBaseTest {
         amount = bound(amount, 1, availableLiquidity);
 
         vm.prank(msg.sender);
-        morpho.borrow(market, amount, 0, msg.sender, msg.sender);
+        morpho.borrow(marketParams, amount, 0, msg.sender, msg.sender);
     }
 
     function repayOnMorpho(uint256 amount) public {
@@ -78,7 +78,7 @@ contract SinglePositionInvariantTest is InvariantBaseTest {
 
         borrowableToken.setBalance(msg.sender, amount);
         vm.prank(msg.sender);
-        morpho.repay(market, amount, 0, msg.sender, hex"");
+        morpho.repay(marketParams, amount, 0, msg.sender, hex"");
     }
 
     function supplyCollateralOnMorpho(uint256 amount) public {
@@ -86,14 +86,14 @@ contract SinglePositionInvariantTest is InvariantBaseTest {
 
         collateralToken.setBalance(msg.sender, amount);
         vm.prank(msg.sender);
-        morpho.supplyCollateral(market, amount, msg.sender, hex"");
+        morpho.supplyCollateral(marketParams, amount, msg.sender, hex"");
     }
 
     function withdrawCollateralOnMorpho(uint256 amount) public {
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
         vm.prank(msg.sender);
-        morpho.withdrawCollateral(market, amount, msg.sender, msg.sender);
+        morpho.withdrawCollateral(marketParams, amount, msg.sender, msg.sender);
     }
 
     function invariantSupplyShares() public {

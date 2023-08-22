@@ -32,7 +32,7 @@ contract IntegrationAccrueInterestTest is BaseTest {
         uint256 totalSupplyBeforeAccrued = morpho.totalSupplyAssets(id);
         uint256 totalSupplySharesBeforeAccrued = morpho.totalSupplyShares(id);
 
-        _accrueInterest();
+        _accrueInterest(marketParams);
 
         assertEq(morpho.totalBorrowAssets(id), totalBorrowBeforeAccrued, "total borrow");
         assertEq(morpho.totalSupplyAssets(id), totalSupplyBeforeAccrued, "total supply");
@@ -59,7 +59,7 @@ contract IntegrationAccrueInterestTest is BaseTest {
         uint256 totalSupplyBeforeAccrued = morpho.totalSupplyAssets(id);
         uint256 totalSupplySharesBeforeAccrued = morpho.totalSupplyShares(id);
 
-        _accrueInterest();
+        _accrueInterest(marketParams);
 
         assertEq(morpho.totalBorrowAssets(id), totalBorrowBeforeAccrued, "total borrow");
         assertEq(morpho.totalSupplyAssets(id), totalSupplyBeforeAccrued, "total supply");
