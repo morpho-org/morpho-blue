@@ -4,10 +4,12 @@ methods {
     function getTotalBorrowAssets(MorphoHarness.Id) external returns uint256 envfree;
     function getTotalSupplyShares(MorphoHarness.Id) external returns uint256 envfree;
     function getTotalBorrowShares(MorphoHarness.Id) external returns uint256 envfree;
-    function isAuthorized(address, address) external returns bool envfree;
     function getLastUpdate(MorphoHarness.Id) external returns uint256 envfree;
+
+    function feeRecipient() external returns address envfree;
     function isLltvEnabled(uint256) external returns bool envfree;
     function isIrmEnabled(address) external returns bool envfree;
+    function isAuthorized(address, address) external returns bool envfree;
 
     function getMarketId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
     function MAX_FEE() external returns uint256 envfree;
@@ -55,19 +57,21 @@ invariant zeroDoesNotAuthorize(address authorized)
 rule setOwnerRevertCondition(env e, address newOwner) {
     address oldOwner = owner();
     setOwner@withrevert(e, newOwner);
-    assert lastReverted <=> e.msg.value != 0 || e.msg.sender != oldOwner;
+    assert lastReverted <=> e.msg.value != 0 || e.msg.sender != oldOwner || newOwner == oldOwner;
 }
 
 rule enableIrmRevertCondition(env e, address irm) {
     address oldOwner = owner();
+    bool oldIsIrmEnabled = isIrmEnabled(irm);
     enableIrm@withrevert(e, irm);
-    assert lastReverted <=> e.msg.value != 0 || e.msg.sender != oldOwner;
+    assert lastReverted <=> e.msg.value != 0 || e.msg.sender != oldOwner || oldIsIrmEnabled;
 }
 
 rule enableLltvRevertCondition(env e, uint256 lltv) {
     address oldOwner = owner();
+    bool oldIsLltvEnabled = isLltvEnabled(lltv);
     enableLltv@withrevert(e, lltv);
-    assert lastReverted <=> e.msg.value != 0 || e.msg.sender != oldOwner || lltv >= WAD();
+    assert lastReverted <=> e.msg.value != 0 || e.msg.sender != oldOwner || lltv >= WAD() || oldIsLltvEnabled;
 }
 
 // setFee can also revert if the accrueInterests reverts.
@@ -80,10 +84,11 @@ rule setFeeInputValidation(env e, MorphoHarness.MarketParams marketParams, uint2
     assert e.msg.value != 0 || e.msg.sender != oldOwner || !wasCreated || newFee > MAX_FEE() => hasReverted;
 }
 
-rule setFeeRecipientRevertCondition(env e, address recipient) {
+rule setFeeRecipientRevertCondition(env e, address newFeeRecipient) {
     address oldOwner = owner();
-    setFeeRecipient@withrevert(e, recipient);
-    assert lastReverted <=> e.msg.value != 0 || e.msg.sender != oldOwner;
+    address oldFeeRecipient = feeRecipient();
+    setFeeRecipient@withrevert(e, newFeeRecipient);
+    assert lastReverted <=> e.msg.value != 0 || e.msg.sender != oldOwner || newFeeRecipient == oldFeeRecipient;
 }
 
 rule createMarketRevertCondition(env e, MorphoHarness.MarketParams marketParams) {
