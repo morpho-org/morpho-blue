@@ -1,11 +1,11 @@
-pragma solidity 0.8.21;
+pragma solidity 0.8.19;
 
 import "../../src/Morpho.sol";
 import "../../src/libraries/SharesMathLib.sol";
-import "../../src/libraries/MarketLib.sol";
+import "../../src/libraries/MarketParamsLib.sol";
 
 contract MorphoHarness is Morpho {
-    using MarketLib for MarketParams;
+    using MarketParamsLib for MarketParams;
 
     constructor(address newOwner) Morpho(newOwner) {}
 
