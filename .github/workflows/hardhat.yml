@@ -40,4 +40,4 @@ jobs:
           key: ${{ github.ref_name }}-hardhat
 
       - name: Run Hardhat tests
-        run: yarn test
+        run: yarn test:hardhat
