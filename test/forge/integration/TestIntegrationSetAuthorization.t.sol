@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import {SigUtils} from "test/forge/helpers/SigUtils.sol";
-
 import "../BaseTest.sol";
 
 contract IntegrationAuthorization is BaseTest {

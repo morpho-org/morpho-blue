@@ -9,7 +9,7 @@ contract IntegrationRepayTest is BaseTest {
     using SharesMathLib for uint256;
 
     function testRepayMarketNotCreated(MarketParams memory marketParamsFuzz) public {
-        vm.assume(neq(marketParamsFuzz, market));
+        vm.assume(neq(marketParamsFuzz, marketParams));
 
         vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
         morpho.repay(marketParamsFuzz, 1, 0, address(this), hex"");
@@ -17,7 +17,7 @@ contract IntegrationRepayTest is BaseTest {
 
     function testRepayZeroAmount() public {
         vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
-        morpho.repay(market, 0, 0, address(this), hex"");
+        morpho.repay(marketParams, 0, 0, address(this), hex"");
     }
 
     function testRepayInconsistentInput(uint256 amount, uint256 shares) public {
@@ -25,13 +25,13 @@ contract IntegrationRepayTest is BaseTest {
         shares = bound(shares, 1, MAX_TEST_SHARES);
 
         vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
-        morpho.repay(market, amount, shares, address(this), hex"");
+        morpho.repay(marketParams, amount, shares, address(this), hex"");
     }
 
     function testRepayOnBehalfZeroAddress(uint256 input, bool isAmount) public {
         input = bound(input, 1, type(uint256).max);
         vm.expectRevert(bytes(ErrorsLib.ZERO_ADDRESS));
-        morpho.repay(market, isAmount ? input : 0, isAmount ? 0 : input, address(0), hex"");
+        morpho.repay(marketParams, isAmount ? input : 0, isAmount ? 0 : input, address(0), hex"");
     }
 
     function testRepayAssets(
@@ -57,15 +57,15 @@ contract IntegrationRepayTest is BaseTest {
         borrowableToken.setBalance(REPAYER, amountRepaid);
 
         vm.startPrank(ONBEHALF);
-        morpho.supplyCollateral(market, amountCollateral, ONBEHALF, hex"");
-        morpho.borrow(market, amountBorrowed, 0, ONBEHALF, RECEIVER);
+        morpho.supplyCollateral(marketParams, amountCollateral, ONBEHALF, hex"");
+        morpho.borrow(marketParams, amountBorrowed, 0, ONBEHALF, RECEIVER);
         vm.stopPrank();
 
         vm.prank(REPAYER);
 
         vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.Repay(id, REPAYER, ONBEHALF, amountRepaid, expectedRepaidShares);
-        (uint256 returnAssets, uint256 returnShares) = morpho.repay(market, amountRepaid, 0, ONBEHALF, hex"");
+        (uint256 returnAssets, uint256 returnShares) = morpho.repay(marketParams, amountRepaid, 0, ONBEHALF, hex"");
 
         expectedBorrowShares -= expectedRepaidShares;
 
@@ -103,15 +103,15 @@ contract IntegrationRepayTest is BaseTest {
         borrowableToken.setBalance(REPAYER, expectedAmountRepaid);
 
         vm.startPrank(ONBEHALF);
-        morpho.supplyCollateral(market, amountCollateral, ONBEHALF, hex"");
-        morpho.borrow(market, amountBorrowed, 0, ONBEHALF, RECEIVER);
+        morpho.supplyCollateral(marketParams, amountCollateral, ONBEHALF, hex"");
+        morpho.borrow(marketParams, amountBorrowed, 0, ONBEHALF, RECEIVER);
         vm.stopPrank();
 
         vm.prank(REPAYER);
 
         vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.Repay(id, REPAYER, ONBEHALF, expectedAmountRepaid, sharesRepaid);
-        (uint256 returnAssets, uint256 returnShares) = morpho.repay(market, 0, sharesRepaid, ONBEHALF, hex"");
+        (uint256 returnAssets, uint256 returnShares) = morpho.repay(marketParams, 0, sharesRepaid, ONBEHALF, hex"");
 
         expectedBorrowShares -= sharesRepaid;
 
