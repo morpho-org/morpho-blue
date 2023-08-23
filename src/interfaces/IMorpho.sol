@@ -245,4 +245,7 @@ interface IMorpho {
     /// @param authorization The `Authorization` struct.
     /// @param signature The signature.
     function setAuthorizationWithSig(Authorization calldata authorization, Signature calldata signature) external;
+
+    /// @notice Returns the data stored on the different `slots`.
+    function extSloads(bytes32[] memory slots) external pure returns (bytes32[] memory res);
 }

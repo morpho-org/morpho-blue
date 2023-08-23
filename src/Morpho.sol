@@ -483,4 +483,11 @@ contract Morpho is IMorpho {
 
         return maxBorrow >= borrowed;
     }
+
+    /* STORAGE VIEW */
+
+    /// @inheritdoc IMorpho
+    function extSloads(bytes32[] calldata slots) external pure returns (bytes32[] memory res) {
+        return slots;
+    }
 }
