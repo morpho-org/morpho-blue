@@ -6,10 +6,10 @@
     "test:forge": "FOUNDRY_PROFILE=test forge test",
     "test:forge:invariant": "FOUNDRY_MATCH_CONTRACT=InvariantTest yarn test:forge",
     "test:hardhat": "npx hardhat test",
-    "lint": "yarn lint:forge && lint:hardhat",
+    "lint": "yarn lint:forge && yarn lint:hardhat",
     "lint:forge": "forge fmt --check",
     "lint:hardhat": "prettier --check test/hardhat",
-    "lint:fix": "yarn lint:forge:fix && lint:hardhat:fix",
+    "lint:fix": "yarn lint:forge:fix && yarn lint:hardhat:fix",
     "lint:forge:fix": "forge fmt",
     "lint:hardhat:fix": "prettier --write test/hardhat",
     "clean": "npx hardhat clean && forge clean"
