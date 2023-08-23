@@ -66,8 +66,8 @@ contract Morpho is IMorpho {
     /// @param newOwner The new owner of the contract.
     constructor(address newOwner) {
         require(newOwner != address(0), ErrorsLib.ZERO_ADDRESS);
-        owner = newOwner;
 
+        owner = newOwner;
         DOMAIN_SEPARATOR = keccak256(abi.encode(DOMAIN_TYPEHASH, block.chainid, address(this)));
     }
 
@@ -84,6 +84,7 @@ contract Morpho is IMorpho {
     /// @inheritdoc IMorpho
     function setOwner(address newOwner) external onlyOwner {
         require(newOwner != owner, ErrorsLib.ALREADY_SET);
+
         owner = newOwner;
 
         emit EventsLib.SetOwner(newOwner);
@@ -92,6 +93,7 @@ contract Morpho is IMorpho {
     /// @inheritdoc IMorpho
     function enableIrm(address irm) external onlyOwner {
         require(!isIrmEnabled[irm], ErrorsLib.ALREADY_SET);
+
         isIrmEnabled[irm] = true;
 
         emit EventsLib.EnableIrm(address(irm));
@@ -100,7 +102,8 @@ contract Morpho is IMorpho {
     /// @inheritdoc IMorpho
     function enableLltv(uint256 lltv) external onlyOwner {
         require(!isLltvEnabled[lltv], ErrorsLib.ALREADY_SET);
-        require(lltv < WAD, ErrorsLib.LLTV_TOO_HIGH);
+        require(lltv < WAD, ErrorsLib.MAX_LLTV_EXCEEDED);
+
         isLltvEnabled[lltv] = true;
 
         emit EventsLib.EnableLltv(lltv);
@@ -125,6 +128,7 @@ contract Morpho is IMorpho {
     /// @inheritdoc IMorpho
     function setFeeRecipient(address newFeeRecipient) external onlyOwner {
         require(newFeeRecipient != feeRecipient, ErrorsLib.ALREADY_SET);
+
         feeRecipient = newFeeRecipient;
 
         emit EventsLib.SetFeeRecipient(newFeeRecipient);
@@ -408,9 +412,6 @@ contract Morpho is IMorpho {
     }
 
     /// @inheritdoc IMorpho
-    /// @dev Warning: Reverts if the signature has already been submitted.
-    /// @dev The signature is malleable, but it has no impact on the security here.
-    /// @dev The nonce is passed as argument to be able to revert with a different error message.
     function setAuthorizationWithSig(Authorization memory authorization, Signature calldata signature) external {
         require(block.timestamp < authorization.deadline, ErrorsLib.SIGNATURE_EXPIRED);
         require(authorization.nonce == nonce[authorization.authorizer]++, ErrorsLib.INVALID_NONCE);
@@ -443,6 +444,9 @@ contract Morpho is IMorpho {
 
         if (elapsed == 0) return;
 
+        // Safe "unchecked" cast.
+        market[id].lastUpdate = uint128(block.timestamp);
+
         if (market[id].totalBorrowAssets != 0) {
             uint256 borrowRate = IIrm(marketParams.irm).borrowRate(marketParams, market[id]);
             uint256 interest = market[id].totalBorrowAssets.wMulDown(borrowRate.wTaylorCompounded(elapsed));
@@ -462,9 +466,6 @@ contract Morpho is IMorpho {
 
             emit EventsLib.AccrueInterest(id, borrowRate, interest, feeShares);
         }
-
-        // Safe "unchecked" cast.
-        market[id].lastUpdate = uint128(block.timestamp);
     }
 
     /* HEALTH CHECK */
