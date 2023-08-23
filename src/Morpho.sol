@@ -470,7 +470,7 @@ contract Morpho is IMorpho {
 
     /* HEALTH CHECK */
 
-    /// @dev Returns whether the position of `position` in the given market `marketParams` is healthy.
+    /// @dev Returns whether the position of `borrower` in the given market `marketParams` is healthy.
     /// @dev Assumes that the inputs `marketParams` and `id` match.
     function _isHealthy(MarketParams memory marketParams, Id id, address borrower) internal view returns (bool) {
         if (position[id][borrower].borrowShares == 0) return true;
@@ -480,7 +480,7 @@ contract Morpho is IMorpho {
         return _isHealthy(marketParams, id, borrower, collateralPrice);
     }
 
-    /// @dev Returns whether the position of `position` in the given market `marketParams` with the given
+    /// @dev Returns whether the position of `borrower` in the given market `marketParams` with the given
     /// `collateralPrice`
     /// is healthy.
     /// @dev Assumes that the inputs `marketParams` and `id` match.
