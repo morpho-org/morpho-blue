@@ -82,7 +82,7 @@ contract IntegrationOnlyOwnerTest is BaseTest {
         lltvFuzz = _boundInvalidLltv(lltvFuzz);
 
         vm.prank(OWNER);
-        vm.expectRevert(bytes(ErrorsLib.LLTV_TOO_HIGH));
+        vm.expectRevert(bytes(ErrorsLib.MAX_LLTV_EXCEEDED));
         morpho.enableLltv(lltvFuzz);
     }
 

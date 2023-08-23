@@ -9,11 +9,11 @@ library ErrorsLib {
     /// @notice Thrown when the caller is not the owner.
     string internal constant NOT_OWNER = "not owner";
 
-    /// @notice Thrown when the LLTV to enable is too high.
-    string internal constant LLTV_TOO_HIGH = "LLTV too high";
+    /// @notice Thrown when the LLTV to enable exceeds the maximum LLTV.
+    string internal constant MAX_LLTV_EXCEEDED = "max LLTV exceeded";
 
     /// @notice Thrown when the fee to set exceeds the maximum fee.
-    string internal constant MAX_FEE_EXCEEDED = "MAX_FEE exceeded";
+    string internal constant MAX_FEE_EXCEEDED = "max fee exceeded";
 
     /// @notice Thrown when the value is already set.
     string internal constant ALREADY_SET = "already set";

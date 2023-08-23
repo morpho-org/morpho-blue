@@ -18,7 +18,7 @@
     │   └── revert with NOT_OWNER
     └── when msg.sender is owner
         ├── when lltv >= WAD
-        │   └── revert with LLTV_TOO_HIGH
+        │   └── revert with MAX_LLTV_EXCEEDED
         └── when lltv < WAD
             ├── it should set isLltvEnabled[lltv] to true
             └── it should emit EnableLltv(lltv)
