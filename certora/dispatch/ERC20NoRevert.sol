@@ -44,8 +44,6 @@ contract ERC20NoRevert {
     }
 
     function approve(address _spender, uint256 _amount) public {
-        require(!((_amount != 0) && (allowed[msg.sender][_spender] != 0)));
-
         allowed[msg.sender][_spender] = _amount;
     }
 
