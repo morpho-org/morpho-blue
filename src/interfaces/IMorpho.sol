@@ -110,8 +110,8 @@ interface IMorpho {
 
     /// @notice Sets `newFeeRecipient` as recipient of the fee.
     /// @dev Warning: The fee recipient can be set to the zero address.
-    /// @dev Warning: The fee accrued since the last update in a market will be transferred to the new fee recipient if
-    /// any.
+    /// @dev Warning: The fee to be accrued on each market won't belong to the old fee recipient after calling this
+    /// function.
     function setFeeRecipient(address newFeeRecipient) external;
 
     /// @notice Creates the market `marketParams`.

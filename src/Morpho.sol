@@ -156,8 +156,6 @@ contract Morpho is IMorpho {
         require(isLltvEnabled[marketParams.lltv], ErrorsLib.LLTV_NOT_ENABLED);
         require(market[id].lastUpdate == 0, ErrorsLib.MARKET_ALREADY_CREATED);
 
-        // No need to accrue interest since there is no borrow.
-
         // Safe "unchecked" cast.
         market[id].lastUpdate = uint128(block.timestamp);
         idToMarketParams[id] = marketParams;
