@@ -247,7 +247,7 @@ contract SingleMarketChangingPriceInvariantTest is InvariantBaseTest {
         borrowableToken.setBalance(msg.sender, repaid);
 
         vm.prank(msg.sender);
-        morpho.liquidate(marketParams, user, seized, hex"");
+        morpho.liquidate(marketParams, user, seized, 0, hex"");
     }
 
     function invariantSupplyShares() public {

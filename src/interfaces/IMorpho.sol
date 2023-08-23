@@ -216,19 +216,26 @@ interface IMorpho {
     function withdrawCollateral(MarketParams memory marketParams, uint256 assets, address onBehalf, address receiver)
         external;
 
-    /// @notice Liquidates `seized` of collateral of `borrower`'s position, optionally calling back the caller's
-    /// `onMorphoLiquidate` function with the given `data`.
+    /// @notice Liquidates the given `repaidShares` of debt asset or seize the given `seized` of collateral on the given
+    /// `market` of the given `borrower`'s position, optionally calling back the caller's `onMorphoLiquidate` function
+    /// with the given `data`.
+    /// @dev Either `seized` or `repaidShares` should be zero.
     /// @dev Seizing more than the collateral balance will underflow and revert without any error message.
     /// @dev Repaying more than the borrow balance will underflow and revert without any error message.
     /// @param marketParams The market of the position.
     /// @param borrower The owner of the position.
-    /// @param seized The amount of collateral to seize.
+    /// @param seizedAssets The amount of collateral to seize.
+    /// @param repaidShares The amount of shares to repay.
     /// @param data Arbitrary data to pass to the `onMorphoLiquidate` callback. Pass empty data if not needed.
-    /// @return assetsRepaid The amount of assets repaid.
-    /// @return sharesRepaid The amount of shares burned.
-    function liquidate(MarketParams memory marketParams, address borrower, uint256 seized, bytes memory data)
-        external
-        returns (uint256 assetsRepaid, uint256 sharesRepaid);
+    /// @return The amount of assets seized.
+    /// @return The amount of assets repaid.
+    function liquidate(
+        MarketParams memory marketParams,
+        address borrower,
+        uint256 seizedAssets,
+        uint256 repaidShares,
+        bytes memory data
+    ) external returns (uint256, uint256);
 
     /// @notice Executes a flash loan.
     /// @param token The token to flash loan.

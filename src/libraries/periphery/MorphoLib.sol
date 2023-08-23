@@ -6,17 +6,17 @@ import {MorphoStorageLib} from "./MorphoStorageLib.sol";
 
 library MorphoLib {
     function supplyShares(IMorpho morpho, Id id, address user) internal view returns (uint256) {
-        bytes32[] memory slot = _array(MorphoStorageLib.userSupplySharesSlot(id, user));
+        bytes32[] memory slot = _array(MorphoStorageLib.positionSupplySharesSlot(id, user));
         return uint256(morpho.extSloads(slot)[0]);
     }
 
     function borrowShares(IMorpho morpho, Id id, address user) internal view returns (uint256) {
-        bytes32[] memory slot = _array(MorphoStorageLib.userBorrowSharesAndCollateralSlot(id, user));
+        bytes32[] memory slot = _array(MorphoStorageLib.positionBorrowSharesAndCollateralSlot(id, user));
         return uint128(uint256(morpho.extSloads(slot)[0]));
     }
 
     function collateral(IMorpho morpho, Id id, address user) internal view returns (uint256) {
-        bytes32[] memory slot = _array(MorphoStorageLib.userBorrowSharesAndCollateralSlot(id, user));
+        bytes32[] memory slot = _array(MorphoStorageLib.positionBorrowSharesAndCollateralSlot(id, user));
         return uint256(morpho.extSloads(slot)[0] >> 128);
     }
 
