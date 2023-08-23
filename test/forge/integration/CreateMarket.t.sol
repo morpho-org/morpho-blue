@@ -5,7 +5,7 @@ import "../BaseTest.sol";
 
 contract CreateMarketIntegrationTest is BaseTest {
     using MathLib for uint256;
-    using MorphoLib for Morpho;
+    using MorphoLib for IMorpho;
     using MarketParamsLib for MarketParams;
 
     function testCreateMarketWithNotEnabledIrmAndNotEnabledLltv(MarketParams memory marketParamsFuzz) public {

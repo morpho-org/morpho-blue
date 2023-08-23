@@ -5,8 +5,9 @@ import "test/forge/InvariantTest.sol";
 
 contract SingleMarketChangingPriceInvariantTest is InvariantTest {
     using MathLib for uint256;
-    using MorphoLib for Morpho;
     using SharesMathLib for uint256;
+    using MorphoLib for IMorpho;
+    using MorphoBalancesLib for IMorpho;
 
     address user;
 
@@ -64,13 +65,11 @@ contract SingleMarketChangingPriceInvariantTest is InvariantTest {
         _accrueInterest(marketParams);
 
         uint256 availableLiquidity = morpho.totalSupplyAssets(id) - morpho.totalBorrowAssets(id);
-        if (morpho.supplyShares(id, msg.sender) == 0) return;
         if (availableLiquidity == 0) return;
 
-        uint256 supplierBalance =
-            morpho.supplyShares(id, msg.sender).toAssetsDown(morpho.totalSupplyAssets(id), morpho.totalSupplyShares(id));
-
+        uint256 supplierBalance = morpho.expectedSupplyBalance(marketParams, msg.sender);
         if (supplierBalance == 0) return;
+
         amount = bound(amount, 1, min(supplierBalance, availableLiquidity));
 
         vm.prank(msg.sender);
@@ -85,11 +84,10 @@ contract SingleMarketChangingPriceInvariantTest is InvariantTest {
 
         address onBehalf = _randomSenderToWithdrawOnBehalf(targetSenders(), seed, msg.sender);
         if (onBehalf == address(0)) return;
-        if (morpho.supplyShares(id, onBehalf) != 0) return;
-        uint256 supplierBalance =
-            morpho.supplyShares(id, onBehalf).toAssetsDown(morpho.totalSupplyAssets(id), morpho.totalSupplyShares(id));
 
+        uint256 supplierBalance = morpho.expectedSupplyBalance(marketParams, onBehalf);
         if (supplierBalance == 0) return;
+
         amount = bound(amount, 1, min(supplierBalance, availableLiquidity));
 
         vm.prank(msg.sender);

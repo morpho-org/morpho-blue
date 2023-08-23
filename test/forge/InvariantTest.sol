@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import "test/forge/BaseTest.sol";
+import "./BaseTest.sol";
 
 contract InvariantTest is BaseTest {
     using MathLib for uint256;
-    using MorphoLib for Morpho;
+    using MorphoLib for IMorpho;
+    using MorphoBalancesLib for IMorpho;
     using SharesMathLib for uint256;
 
     uint256 blockNumber;
@@ -25,14 +26,14 @@ contract InvariantTest is BaseTest {
     }
 
     function _targetDefaultSenders() internal {
-        targetSender(_addrFromHashedString("Morpho address1"));
-        targetSender(_addrFromHashedString("Morpho address2"));
-        targetSender(_addrFromHashedString("Morpho address3"));
-        targetSender(_addrFromHashedString("Morpho address4"));
-        targetSender(_addrFromHashedString("Morpho address5"));
-        targetSender(_addrFromHashedString("Morpho address6"));
-        targetSender(_addrFromHashedString("Morpho address7"));
-        targetSender(_addrFromHashedString("Morpho address8"));
+        targetSender(_addrFromHashedString("Sender1"));
+        targetSender(_addrFromHashedString("Sender2"));
+        targetSender(_addrFromHashedString("Sender3"));
+        targetSender(_addrFromHashedString("Sender4"));
+        targetSender(_addrFromHashedString("Sender5"));
+        targetSender(_addrFromHashedString("Sender6"));
+        targetSender(_addrFromHashedString("Sender7"));
+        targetSender(_addrFromHashedString("Sender8"));
     }
 
     function _weightSelector(bytes4 selector, uint256 weight) internal {
@@ -182,20 +183,15 @@ contract InvariantTest is BaseTest {
 
     function sumUsersSuppliedAmounts(address[] memory addresses) internal view returns (uint256 sum) {
         for (uint256 i; i < addresses.length; ++i) {
-            sum += morpho.supplyShares(id, addresses[i]).toAssetsDown(
-                morpho.totalSupplyAssets(id), morpho.totalSupplyShares(id)
-            );
+            sum += morpho.expectedSupplyBalance(marketParams, addresses[i]);
         }
-        sum += morpho.supplyShares(id, morpho.feeRecipient()).toAssetsDown(
-            morpho.totalSupplyAssets(id), morpho.totalSupplyShares(id)
-        );
+
+        sum += morpho.expectedSupplyBalance(marketParams, morpho.feeRecipient());
     }
 
     function sumUsersBorrowedAmounts(address[] memory addresses) internal view returns (uint256 sum) {
         for (uint256 i; i < addresses.length; ++i) {
-            sum += morpho.borrowShares(id, addresses[i]).toAssetsUp(
-                morpho.totalBorrowAssets(id), morpho.totalBorrowShares(id)
-            );
+            sum += morpho.expectedBorrowBalance(marketParams, addresses[i]);
         }
     }
 

@@ -5,7 +5,7 @@ import "../BaseTest.sol";
 
 contract AccrueInterestIntegrationTest is BaseTest {
     using MathLib for uint256;
-    using MorphoLib for Morpho;
+    using MorphoLib for IMorpho;
     using SharesMathLib for uint256;
 
     function testAccrueInterestNoTimeElapsed(uint256 amountSupplied, uint256 amountBorrowed) public {

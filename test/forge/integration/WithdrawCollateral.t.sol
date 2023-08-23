@@ -5,7 +5,7 @@ import "../BaseTest.sol";
 
 contract WithdrawCollateralIntegrationTest is BaseTest {
     using MathLib for uint256;
-    using MorphoLib for Morpho;
+    using MorphoLib for IMorpho;
 
     function testWithdrawCollateralMarketNotCreated(MarketParams memory marketParamsFuzz) public {
         vm.assume(neq(marketParamsFuzz, marketParams));

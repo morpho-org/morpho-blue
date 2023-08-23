@@ -5,7 +5,7 @@ import "../BaseTest.sol";
 
 contract WithdrawIntegrationTest is BaseTest {
     using MathLib for uint256;
-    using MorphoLib for Morpho;
+    using MorphoLib for IMorpho;
     using SharesMathLib for uint256;
 
     function testWithdrawMarketNotCreated(MarketParams memory marketParamsParamsFuzz) public {

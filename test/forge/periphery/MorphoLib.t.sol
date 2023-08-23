@@ -7,7 +7,7 @@ import "../BaseTest.sol";
 
 contract MorphoLibTest is BaseTest {
     using MathLib for uint256;
-    using MorphoLib for Morpho;
+    using MorphoLib for IMorpho;
 
     function _testMorphoLibCommon(uint256 amountSupplied, uint256 amountBorrowed, uint256 timestamp, uint256 fee)
         private

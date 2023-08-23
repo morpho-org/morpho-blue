@@ -5,18 +5,20 @@ import "test/forge/InvariantTest.sol";
 
 contract TwoMarketsInvariantTest is InvariantTest {
     using MathLib for uint256;
-    using MorphoLib for Morpho;
     using SharesMathLib for uint256;
+    using MorphoLib for IMorpho;
+    using MorphoBalancesLib for IMorpho;
     using MarketParamsLib for MarketParams;
 
-    Irm internal irm2;
+    IrmMock internal irm2;
+
     MarketParams public marketParams2;
     Id public id2;
 
     function setUp() public virtual override {
         super.setUp();
 
-        irm2 = new Irm();
+        irm2 = new IrmMock();
         vm.label(address(irm2), "IRM2");
 
         marketParams2 =
@@ -75,61 +77,44 @@ contract TwoMarketsInvariantTest is InvariantTest {
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
         borrowableToken.setBalance(msg.sender, amount);
+
         vm.prank(msg.sender);
         morpho.supply(chosenMarket, amount, 0, msg.sender, hex"");
     }
 
     function withdrawOnMorpho(uint256 amount, bool changeMarket) public setCorrectBlock {
-        _accrueInterest(marketParams);
-
         (MarketParams memory chosenMarket, Id chosenId) = chooseMarket(changeMarket);
 
+        uint256 supplierBalance = morpho.expectedSupplyBalance(chosenMarket, msg.sender);
         uint256 availableLiquidity = morpho.totalSupplyAssets(chosenId) - morpho.totalBorrowAssets(chosenId);
-        if (morpho.supplyShares(chosenId, msg.sender) == 0) return;
-        if (availableLiquidity == 0) return;
 
-        _accrueInterest(marketParams);
-        uint256 supplierBalance = morpho.supplyShares(chosenId, msg.sender).toAssetsDown(
-            morpho.totalSupplyAssets(chosenId), morpho.totalSupplyShares(chosenId)
-        );
-        amount = bound(amount, 1, min(supplierBalance, availableLiquidity));
+        amount = bound(amount, 0, min(supplierBalance, availableLiquidity));
+        if (amount == 0) return;
 
         vm.prank(msg.sender);
         morpho.withdraw(chosenMarket, amount, 0, msg.sender, msg.sender);
     }
 
     function borrowOnMorpho(uint256 amount, bool changeMarket) public setCorrectBlock {
-        _accrueInterest(marketParams);
-
         (MarketParams memory chosenMarket, Id chosenId) = chooseMarket(changeMarket);
 
         uint256 availableLiquidity = morpho.totalSupplyAssets(chosenId) - morpho.totalBorrowAssets(chosenId);
-        if (availableLiquidity == 0) return;
 
-        _accrueInterest(marketParams);
-        amount = bound(amount, 1, availableLiquidity);
+        amount = bound(amount, 0, availableLiquidity);
+        if (amount == 0) return;
 
         vm.prank(msg.sender);
         morpho.borrow(chosenMarket, amount, 0, msg.sender, msg.sender);
     }
 
     function repayOnMorpho(uint256 amount, bool changeMarket) public setCorrectBlock {
-        _accrueInterest(marketParams);
-
         (MarketParams memory chosenMarket, Id chosenId) = chooseMarket(changeMarket);
 
-        if (morpho.borrowShares(chosenId, msg.sender) == 0) return;
-
-        _accrueInterest(marketParams);
-        amount = bound(
-            amount,
-            1,
-            morpho.borrowShares(chosenId, msg.sender).toAssetsDown(
-                morpho.totalBorrowAssets(chosenId), morpho.totalBorrowShares(chosenId)
-            )
-        );
+        amount = bound(amount, 0, morpho.expectedBorrowBalance(chosenMarket, msg.sender));
+        if (amount == 0) return;
 
         borrowableToken.setBalance(msg.sender, amount);
+
         vm.prank(msg.sender);
         morpho.repay(chosenMarket, amount, 0, msg.sender, hex"");
     }
@@ -138,6 +123,7 @@ contract TwoMarketsInvariantTest is InvariantTest {
         (MarketParams memory chosenMarket,) = chooseMarket(changeMarket);
 
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
+
         collateralToken.setBalance(msg.sender, amount);
 
         vm.prank(msg.sender);
@@ -145,11 +131,10 @@ contract TwoMarketsInvariantTest is InvariantTest {
     }
 
     function withdrawCollateralOnMorpho(uint256 amount, bool changeMarket) public setCorrectBlock {
-        _accrueInterest(marketParams);
+        (MarketParams memory chosenMarket, Id chosenId) = chooseMarket(changeMarket);
 
-        (MarketParams memory chosenMarket,) = chooseMarket(changeMarket);
-
-        amount = bound(amount, 1, MAX_TEST_AMOUNT);
+        amount = bound(amount, 0, morpho.collateral(chosenId, msg.sender));
+        if (amount == 0) return;
 
         vm.prank(msg.sender);
         morpho.withdrawCollateral(chosenMarket, amount, msg.sender, msg.sender);

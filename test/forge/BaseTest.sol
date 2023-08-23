@@ -5,9 +5,9 @@ import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
 import "src/interfaces/IMorphoCallbacks.sol";
-import {IrmMock as Irm} from "src/mocks/IrmMock.sol";
-import {ERC20Mock as ERC20} from "src/mocks/ERC20Mock.sol";
-import {OracleMock as Oracle} from "src/mocks/OracleMock.sol";
+import {IrmMock} from "src/mocks/IrmMock.sol";
+import {ERC20Mock} from "src/mocks/ERC20Mock.sol";
+import {OracleMock} from "src/mocks/OracleMock.sol";
 
 import "src/Morpho.sol";
 import {SigUtils} from "test/forge/helpers/SigUtils.sol";
@@ -16,7 +16,7 @@ import {MorphoBalancesLib} from "src/libraries/periphery/MorphoBalancesLib.sol";
 
 contract BaseTest is Test {
     using MathLib for uint256;
-    using MorphoLib for Morpho;
+    using MorphoLib for IMorpho;
     using MarketParamsLib for MarketParams;
 
     uint256 internal constant HIGH_COLLATERAL_AMOUNT = 1e35;
@@ -28,51 +28,47 @@ contract BaseTest is Test {
     uint256 internal constant MAX_COLLATERAL_PRICE = 1e40;
     uint256 internal constant MAX_COLLATERAL_ASSETS = type(uint128).max;
 
-    address internal SUPPLIER = _addrFromHashedString("Morpho Supplier");
-    address internal BORROWER = _addrFromHashedString("Morpho Borrower");
-    address internal REPAYER = _addrFromHashedString("Morpho Repayer");
-    address internal ONBEHALF = _addrFromHashedString("Morpho On Behalf");
-    address internal RECEIVER = _addrFromHashedString("Morpho Receiver");
-    address internal LIQUIDATOR = _addrFromHashedString("Morpho Liquidator");
-    address internal OWNER = _addrFromHashedString("Morpho Owner");
+    address internal SUPPLIER;
+    address internal BORROWER;
+    address internal REPAYER;
+    address internal ONBEHALF;
+    address internal RECEIVER;
+    address internal LIQUIDATOR;
+    address internal OWNER;
 
     uint256 internal constant LLTV = 0.8 ether;
 
-    Morpho internal morpho;
-    ERC20 internal borrowableToken;
-    ERC20 internal collateralToken;
-    Oracle internal oracle;
-    Irm internal irm;
+    IMorpho internal morpho;
+    ERC20Mock internal borrowableToken;
+    ERC20Mock internal collateralToken;
+    OracleMock internal oracle;
+    IrmMock internal irm;
+
     MarketParams internal marketParams;
     Id internal id;
 
     function setUp() public virtual {
-        vm.label(OWNER, "Owner");
-        vm.label(SUPPLIER, "Supplier");
-        vm.label(BORROWER, "Borrower");
-        vm.label(REPAYER, "Repayer");
-        vm.label(ONBEHALF, "OnBehalf");
-        vm.label(RECEIVER, "Receiver");
-        vm.label(LIQUIDATOR, "Liquidator");
+        SUPPLIER = _addrFromHashedString("Supplier");
+        BORROWER = _addrFromHashedString("Borrower");
+        REPAYER = _addrFromHashedString("Repayer");
+        ONBEHALF = _addrFromHashedString("OnBehalf");
+        RECEIVER = _addrFromHashedString("Receiver");
+        LIQUIDATOR = _addrFromHashedString("Liquidator");
+        OWNER = _addrFromHashedString("Owner");
 
-        // Create Morpho.
         morpho = new Morpho(OWNER);
-        vm.label(address(morpho), "Morpho");
 
-        // List a market.
-        borrowableToken = new ERC20("borrowable", "B");
-        vm.label(address(borrowableToken), "Borrowable asset");
+        borrowableToken = new ERC20Mock("borrowable", "B");
+        vm.label(address(borrowableToken), "Borrowable");
 
-        collateralToken = new ERC20("collateral", "C");
-        vm.label(address(collateralToken), "Collateral asset");
+        collateralToken = new ERC20Mock("collateral", "C");
+        vm.label(address(collateralToken), "Collateral");
 
-        oracle = new Oracle();
-        vm.label(address(oracle), "Oracle");
+        oracle = new OracleMock();
 
         oracle.setPrice(1e36);
 
-        irm = new Irm();
-        vm.label(address(irm), "IRM");
+        irm = new IrmMock();
 
         marketParams =
             MarketParams(address(borrowableToken), address(collateralToken), address(oracle), address(irm), LLTV);
@@ -112,8 +108,9 @@ contract BaseTest is Test {
         vm.warp(block.timestamp + 1 days);
     }
 
-    function _addrFromHashedString(string memory str) internal pure returns (address) {
-        return address(uint160(uint256(keccak256(bytes(str)))));
+    function _addrFromHashedString(string memory name) internal returns (address addr) {
+        addr = address(uint160(uint256(keccak256(bytes(name)))));
+        vm.label(addr, name);
     }
 
     function _supply(uint256 amount) internal {

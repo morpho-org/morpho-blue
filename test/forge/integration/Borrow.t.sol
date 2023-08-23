@@ -5,7 +5,7 @@ import "../BaseTest.sol";
 
 contract BorrowIntegrationTest is BaseTest {
     using MathLib for uint256;
-    using MorphoLib for Morpho;
+    using MorphoLib for IMorpho;
     using SharesMathLib for uint256;
 
     function testBorrowMarketNotCreated(MarketParams memory marketParamsFuzz, address borrowerFuzz, uint256 amount)

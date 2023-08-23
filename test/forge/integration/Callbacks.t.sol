@@ -12,7 +12,7 @@ contract CallbacksIntegrationTest is
     IMorphoFlashLoanCallback
 {
     using MathLib for uint256;
-    using MorphoLib for Morpho;
+    using MorphoLib for IMorpho;
     using MarketParamsLib for MarketParams;
 
     // Callback functions.

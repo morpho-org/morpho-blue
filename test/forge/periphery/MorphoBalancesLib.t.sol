@@ -5,9 +5,9 @@ import "../BaseTest.sol";
 
 contract MorphoBalancesLibTest is BaseTest {
     using MathLib for uint256;
-    using MorphoLib for Morpho;
     using SharesMathLib for uint256;
-    using MorphoBalancesLib for Morpho;
+    using MorphoLib for IMorpho;
+    using MorphoBalancesLib for IMorpho;
 
     function testVirtualAccrueInterest(uint256 amountSupplied, uint256 amountBorrowed, uint256 timeElapsed, uint256 fee)
         public
