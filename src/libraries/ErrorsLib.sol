@@ -15,6 +15,9 @@ library ErrorsLib {
     /// @notice Thrown when the fee to set exceeds the maximum fee.
     string internal constant MAX_FEE_EXCEEDED = "MAX_FEE exceeded";
 
+    /// @notice Thrown when the value is already set.
+    string internal constant ALREADY_SET = "already set";
+
     /// @notice Thrown when the IRM is not enabled at market creation.
     string internal constant IRM_NOT_ENABLED = "IRM not enabled";
 
@@ -62,4 +65,7 @@ library ErrorsLib {
 
     /// @notice Thrown when a token transferFrom has failed.
     string internal constant TRANSFER_FROM_FAILED = "transferFrom failed";
+
+    /// @notice Thrown when the maximum uint128 is exceeded.
+    string internal constant MAX_UINT128_EXCEEDED = "max uint128 exceeded";
 }

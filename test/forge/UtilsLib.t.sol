@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import "forge-std/Test.sol";
 
+import "src/libraries/ErrorsLib.sol";
 import "src/libraries/UtilsLib.sol";
 
 contract UtilsLibTest is Test {
@@ -23,7 +24,7 @@ contract UtilsLibTest is Test {
 
     function testToUint128Revert(uint256 x) public {
         vm.assume(x > type(uint128).max);
-        vm.expectRevert();
+        vm.expectRevert(bytes(ErrorsLib.MAX_UINT128_EXCEEDED));
         x.toUint128();
     }
 }

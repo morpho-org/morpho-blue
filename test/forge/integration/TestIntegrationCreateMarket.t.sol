@@ -4,9 +4,9 @@ pragma solidity ^0.8.0;
 import "../BaseTest.sol";
 
 contract IntegrationCreateMarketTest is BaseTest {
-    using MorphoLib for Morpho;
-    using MarketLib for MarketParams;
     using MathLib for uint256;
+    using MorphoLib for Morpho;
+    using MarketParamsLib for MarketParams;
 
     function testCreateMarketWithNotEnabledIrmAndNotEnabledLltv(MarketParams memory marketParamsFuzz) public {
         vm.assume(marketParamsFuzz.irm != address(irm) && marketParamsFuzz.lltv != LLTV);
@@ -32,7 +32,7 @@ contract IntegrationCreateMarketTest is BaseTest {
         vm.assume(marketParamsFuzz.lltv != LLTV);
 
         vm.startPrank(OWNER);
-        if (marketParamsFuzz.irm != market.irm) morpho.enableIrm(marketParamsFuzz.irm);
+        if (marketParamsFuzz.irm != marketParams.irm) morpho.enableIrm(marketParamsFuzz.irm);
 
         vm.expectRevert(bytes(ErrorsLib.LLTV_NOT_ENABLED));
         morpho.createMarket(marketParamsFuzz);
@@ -44,7 +44,7 @@ contract IntegrationCreateMarketTest is BaseTest {
         Id marketParamsFuzzId = marketParamsFuzz.id();
 
         vm.startPrank(OWNER);
-        if (marketParamsFuzz.irm != market.irm) morpho.enableIrm(marketParamsFuzz.irm);
+        if (marketParamsFuzz.irm != marketParams.irm) morpho.enableIrm(marketParamsFuzz.irm);
         if (marketParamsFuzz.lltv != LLTV) morpho.enableLltv(marketParamsFuzz.lltv);
 
         vm.expectEmit(true, true, true, true, address(morpho));
@@ -64,7 +64,7 @@ contract IntegrationCreateMarketTest is BaseTest {
         marketParamsFuzz.lltv = _boundValidLltv(marketParamsFuzz.lltv);
 
         vm.startPrank(OWNER);
-        if (marketParamsFuzz.irm != market.irm) morpho.enableIrm(marketParamsFuzz.irm);
+        if (marketParamsFuzz.irm != marketParams.irm) morpho.enableIrm(marketParamsFuzz.irm);
         if (marketParamsFuzz.lltv != LLTV) morpho.enableLltv(marketParamsFuzz.lltv);
         morpho.createMarket(marketParamsFuzz);
 
