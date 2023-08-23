@@ -8,8 +8,8 @@ methods {
     // always the same value (and do not depend on msg.origin), so we use ghost functions for them.
     function _.borrowRate(MorphoHarness.Market market) external with (env e) => ghostBorrowRate(market.irm, e.block.timestamp) expect uint256;
     function _.price() external with (env e) => ghostOraclePrice(e.block.timestamp) expect uint256;
-    function _.transfer(address, uint256) external => NONDET;
-    function _.transferFrom(address, address, uint256) external => NONDET;
+    function _.transfer(address to, uint256 amount) external => ghostTransfer(to, amount) expect bool;
+    function _.transferFrom(address from, address to, uint256 amount) external => ghostTransferFrom(from, to, amount) expect bool;
     function _.onMorphoLiquidate(uint256, bytes) external => NONDET;
     function _.onMorphoRepay(uint256, bytes) external => NONDET;
     function _.onMorphoSupply(uint256, bytes) external => NONDET;
@@ -26,6 +26,8 @@ ghost ghostMulDivDown(uint256, uint256, uint256) returns uint256;
 ghost ghostTaylorCompounded(uint256, uint256) returns uint256;
 ghost ghostBorrowRate(address, uint256) returns uint256;
 ghost ghostOraclePrice(uint256) returns uint256;
+ghost ghostTransfer(address, uint256) returns bool;
+ghost ghostTransferFrom(address, address, uint256) returns bool;
 
 rule supplyAccruesInterests()
 {
@@ -152,15 +154,18 @@ filtered {
     // check that accrueInterests commutes with every other function.
 
     accrueInterests(e1, market);
-    f(e2, args);
+    f@withrevert(e2, args);
+    bool revert1 = lastReverted;
 
     storage store1 = lastStorage;
 
 
-    f(e2, args) at init;
+    f@withrevert(e2, args) at init;
+    bool revert2 = lastReverted;
     accrueInterests(e1, market);
 
     storage store2 = lastStorage;
 
+    assert revert1 <=> revert2;
     assert store1 == store2;
 }
