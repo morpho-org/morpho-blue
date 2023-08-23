@@ -1,4 +1,8 @@
 {
+  "name": "morpho-blue",
+  "description": "Morpho Blue Protocol",
+  "license": "BUSL-1.1",
+  "version": "1.0.0",
   "scripts": {
     "postinstall": "husky install",
     "compile": "npx hardhat compile --force",
