@@ -61,7 +61,7 @@ interface IMorpho {
     function owner() external view returns (address);
 
     /// @notice The fee recipient of all markets.
-    /// @dev The recipient receives the fees of a given market through a supply position on this market.
+    /// @dev The recipient receives the fees of a given market through a supply position on that market.
     function feeRecipient() external view returns (address);
 
     /// @notice Users' storage for market `id`.
@@ -84,6 +84,8 @@ interface IMorpho {
     function nonce(address authorizer) external view returns (uint256);
 
     /// @notice The market params corresponding to `id`.
+    /// @dev This mapping is not used in Morpho. It is there to enable reducing the cost associated to calldata on layer
+    /// 2s by creating a wrapper contract with functions that take `id` as input instead of `marketParams`.
     function idToMarketParams(Id id)
         external
         view
@@ -102,18 +104,18 @@ interface IMorpho {
     /// @dev Warning: It is not possible to disable a LLTV.
     function enableLltv(uint256 lltv) external;
 
-    /// @notice Sets the `newFee` for `market`.
+    /// @notice Sets the `newFee` for the given market `marketParams`.
     /// @dev Warning: The recipient can be the zero address.
     function setFee(MarketParams memory marketParams, uint256 newFee) external;
 
-    /// @notice Sets `recipient` as recipient of the fee.
-    /// @dev Warning: The recipient can be set to the zero address.
-    function setFeeRecipient(address recipient) external;
+    /// @notice Sets `newFeeRecipient` as recipient of the fee.
+    /// @dev Warning: The fee recipient can be set to the zero address.
+    function setFeeRecipient(address newFeeRecipient) external;
 
-    /// @notice Creates `market`.
+    /// @notice Creates the market `marketParams`.
     function createMarket(MarketParams memory marketParams) external;
 
-    /// @notice Supplies `assets` or `shares` to `market` on behalf of `onBehalf`, optionally calling back the caller's
+    /// @notice Supplies `assets` or `shares` on behalf of `onBehalf`, optionally calling back the caller's
     /// `onMorphoSupply` function with the given `data`.
     /// @dev Either `assets` or `shares` should be zero. Most usecases should rely on `assets` as an input so the caller
     /// is guaranteed to have `assets` tokens pulled from their balance, but the possibility to mint a specific amount
@@ -134,7 +136,7 @@ interface IMorpho {
         bytes memory data
     ) external returns (uint256 assetsSupplied, uint256 sharesSupplied);
 
-    /// @notice Withdraws `assets` or `shares` from `market` on behalf of `onBehalf` to `receiver`.
+    /// @notice Withdraws `assets` or `shares` on behalf of `onBehalf` to `receiver`.
     /// @dev Either `assets` or `shares` should be zero. To withdraw max, pass the `shares`'s balance of `onBehalf`.
     /// @dev `msg.sender` must be authorized to manage `onBehalf`'s positions.
     /// @dev Withdrawing an amount corresponding to more shares than supplied will revert for underflow.
@@ -153,7 +155,7 @@ interface IMorpho {
         address receiver
     ) external returns (uint256 assetsWithdrawn, uint256 sharesWithdrawn);
 
-    /// @notice Borrows `assets` or `shares` from `market` on behalf of `onBehalf` to `receiver`.
+    /// @notice Borrows `assets` or `shares` on behalf of `onBehalf` to `receiver`.
     /// @dev Either `assets` or `shares` should be zero. Most usecases should rely on `assets` as an input so the caller
     /// is guaranteed to borrow `assets` of tokens, but the possibility to mint a specific amount of shares is given for
     /// full compatibility and precision.
@@ -174,7 +176,7 @@ interface IMorpho {
         address receiver
     ) external returns (uint256 assetsBorrowed, uint256 sharesBorrowed);
 
-    /// @notice Repays `assets` or `shares` to `market` on behalf of `onBehalf`, optionally calling back the caller's
+    /// @notice Repays `assets` or `shares` on behalf of `onBehalf`, optionally calling back the caller's
     /// `onMorphoReplay` function with the given `data`.
     /// @dev Either `assets` or `shares` should be zero. To repay max, pass the `shares`'s balance of `onBehalf`.
     /// @dev Repaying an amount corresponding to more shares than borrowed will revert for underflow.
@@ -193,8 +195,8 @@ interface IMorpho {
         bytes memory data
     ) external returns (uint256 assetsRepaid, uint256 sharesRepaid);
 
-    /// @notice Supplies `assets` of collateral to `market` on behalf of `onBehalf`, optionally calling back the
-    /// caller's `onMorphoSupplyCollateral` function with the given `data`.
+    /// @notice Supplies `assets` of collateral on behalf of `onBehalf`, optionally calling back the caller's
+    /// `onMorphoSupplyCollateral` function with the given `data`.
     /// @dev Interest are not accrued since it's not required and it saves gas.
     /// @dev Supplying a large amount can revert for overflow.
     /// @param marketParams The market to supply collateral to.
@@ -204,7 +206,7 @@ interface IMorpho {
     function supplyCollateral(MarketParams memory marketParams, uint256 assets, address onBehalf, bytes memory data)
         external;
 
-    /// @notice Withdraws `assets` of collateral from `market` on behalf of `onBehalf` to `receiver`.
+    /// @notice Withdraws `assets` of collateral on behalf of `onBehalf` to `receiver`.
     /// @dev `msg.sender` must be authorized to manage `onBehalf`'s positions.
     /// @dev Withdrawing an amount corresponding to more collateral than supplied will revert for underflow.
     /// @param marketParams The market to withdraw collateral from.
@@ -250,9 +252,6 @@ interface IMorpho {
     /// @param authorization The `Authorization` struct.
     /// @param signature The signature.
     function setAuthorizationWithSig(Authorization calldata authorization, Signature calldata signature) external;
-
-    /// @notice Accrues interest for `market`.
-    function accrueInterest(MarketParams memory marketParams) external;
 
     /// @notice Returns the data stored on the different `slots`.
     function extSloads(bytes32[] memory slots) external view returns (bytes32[] memory res);

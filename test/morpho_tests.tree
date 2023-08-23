@@ -23,7 +23,7 @@
             ├── it should set isLltvEnabled[lltv] to true
             └── it should emit EnableLltv(lltv)
 .
-└── setFee(Market memory market, uint256 newFee) external
+└── setFee(MarketParams memory marketParams, uint256 newFee) external
     ├── when msg.sender not owner
     │   └── revert with NOT_OWNER
     └── when msg.sender is owner
@@ -34,8 +34,8 @@
             │   └── revert with MAX_FEE_EXCEEDED
             └── when newFee <= MAX_FEE
                 ├── it should accrue the interest
-                ├── it should set fee[market.id] to newFee
-                └── it should emit SetFee(market.id, newFee)
+                ├── it should set fee[marketParams.id] to newFee
+                └── it should emit SetFee(marketParams.id, newFee)
 .
 └── setFeeRecipient(address recipient) external
     ├── when msg.sender not owner
@@ -44,21 +44,21 @@
         ├── it should set feeRecipient to recipient
         └── it should emit SetFeeRecipient(recipient)
 .
-└── createMarket(Market memory market) external
+└── createMarket(MarketParams memory marketParams) external
     ├── when irm is not enabled
     │   └── revert with IRM_NOT_ENABLED
     └── when irm is enabled
-        ├── when market.lltv is not enabled
+        ├── when marketParams.lltv is not enabled
         │   └── revert with LLTV_NOT_ENABLED
-        └── when market.lltv is enabled
+        └── when marketParams.lltv is enabled
             ├── when market is already created
             │   └── revert with MARKET_ALREADY_CREATED
             └── when market is not already created
-                ├── it should set lastUpdate[market.id] to block.timestamp
-                ├── it should set idToMarket[id] to market
-                └── it should emit CreateMarket(market.id, market)
+                ├── it should set lastUpdate[marketParams.id] to block.timestamp
+                ├── it should set idToMarket[id] to marketParams
+                └── it should emit CreateMarket(marketParams.id, marketParams)
 .
-└── supply(Market memory market, uint256 assets, uint256 shares, address onBehalf, bytes calldata data) external
+└── supply(MarketParams memory marketParams, uint256 assets, uint256 shares, address onBehalf, bytes calldata data) external
     ├── when market is not created
     │   └── revert with MARKET_NOT_CREATED
     └── when market is created
@@ -70,19 +70,19 @@
             └── when onBehalf is not the zero address
                 ├── it should accrue the interest
                 ├── when assets is not zero
-                │   └── it should set shares to assets.toSharesUp(totalSupplyAssets[market.id], totalSupplyShares[market.id])
+                │   └── it should set shares to assets.toSharesUp(totalSupplyAssets[marketParams.id], totalSupplyShares[marketParams.id])
                 ├── when assets is zero
                 │   └── it should set assets to shares.toAssetsDown(totalSupplyAssets[id], totalSupplyShares[id])
-                ├── it should add shares to supplyShares[market.id][onBehalf] 
-                ├── it should add shares to totalSupplyShares[market.id]
-                ├── it should add assets to totalSupplyAssets[market.id]
-                ├── it should emit Supply(market.id, msg.sender, onBehalf, assets, shares)
+                ├── it should add shares to supplyShares[marketParams.id][onBehalf]
+                ├── it should add shares to totalSupplyShares[marketParams.id]
+                ├── it should add assets to totalSupplyAssets[marketParams.id]
+                ├── it should emit Supply(marketParams.id, msg.sender, onBehalf, assets, shares)
                 ├── if data.length > 0
                 │   └── it should call sender's onMorphoSupply callback
                 ├── it should transfer assets of the borrowable asset from the sender to Morpho
                 └── it should return the assets and the shares supplied
 .
-└── withdraw(Market memory market, uint256 assets, uint256 shares, address onBehalf, address receiver) external
+└── withdraw(MarketParams memory marketParams, uint256 assets, uint256 shares, address onBehalf, address receiver) external
     ├── when market is not created
     │   └── revert with MARKET_NOT_CREATED
     └── when market is created
@@ -97,20 +97,20 @@
                 └── when sender or approved
                     ├── it should accrue the interest
                     ├── when assets is not zero
-                    │   └── it should set shares to assets.toSharesUp(totalSupplyAssets[market.id], totalSupplyShares[market.id])
+                    │   └── it should set shares to assets.toSharesUp(totalSupplyAssets[marketParams.id], totalSupplyShares[marketParams.id])
                     ├── when assets is zero
                     │   └── it should set assets to shares.toAssetsDown(totalSupplyAssets[id], totalSupplyShares[id])
-                    ├── it should remove shares from supplyShares[market.id][onBehalf] 
-                    ├── it should remove shares from totalSupplyShares[market.id]
-                    ├── it should remove assets from totalSupplyAssets[market.id]
-                    ├── it should emit Withdraw(market.id, msg.sender, onBehalf, receiver, assets, shares)
+                    ├── it should remove shares from supplyShares[marketParams.id][onBehalf]
+                    ├── it should remove shares from totalSupplyShares[marketParams.id]
+                    ├── it should remove assets from totalSupplyAssets[marketParams.id]
+                    ├── it should emit Withdraw(marketParams.id, msg.sender, onBehalf, receiver, assets, shares)
                     ├── it should transfer assets of the borrowable asset to the receiver
-                    ├── when totalBorrowAssets[market.id] > totalSupplyAssets[market.id]
+                    ├── when totalBorrowAssets[marketParams.id] > totalSupplyAssets[marketParams.id]
                     │   └── revert with INSUFFICIENT_LIQUIDITY
-                    └── when totalBorrowAssets[market.id] <= totalSupplyAssets[market.id]
+                    └── when totalBorrowAssets[marketParams.id] <= totalSupplyAssets[marketParams.id]
                         └── it should return the assets and the shares withdrawn
 .
-└── borrow(Market memory market, uint256 assets, uint256 shares, address onBehalf, address receiver) external
+└── borrow(MarketParams memory marketParams, uint256 assets, uint256 shares, address onBehalf, address receiver) external
     ├── when market is not created
     │   └── revert with MARKET_NOT_CREATED
     └── when market is created
@@ -125,24 +125,24 @@
                 └── when sender or approved
                     ├── it should accrue the interest
                     ├── when assets is not zero
-                    │   └── it should set shares to assets.toSharesUp(totalSupplyAssets[market.id], totalSupplyShares[market.id])
+                    │   └── it should set shares to assets.toSharesUp(totalSupplyAssets[marketParams.id], totalSupplyShares[marketParams.id])
                     ├── when assets is zero
                     │   └── it should set assets to shares.toAssetsDown(totalSupplyAssets[id], totalSupplyShares[id])
-                    ├── it should add shares to borrowShares[market.id][onBehalf] 
-                    ├── it should add shares to totalBorrowShares[market.id]
-                    ├── it should add assets to totalBorrowAssets[market.id]
-                    ├── it should emit Borrow(market.id, msg.sender, onBehalf, receiver, assets, shares)
+                    ├── it should add shares to borrowShares[marketParams.id][onBehalf]
+                    ├── it should add shares to totalBorrowShares[marketParams.id]
+                    ├── it should add assets to totalBorrowAssets[marketParams.id]
+                    ├── it should emit Borrow(marketParams.id, msg.sender, onBehalf, receiver, assets, shares)
                     ├── it should transfer assets of the borrowable asset to the receiver
                     ├── when position is not healthy
                     │   └── revert with INSUFFICIENT_COLLATERAL
                     └── when position is healthy
-                        ├── when totalBorrowAssets[market.id] > totalSupplyAssets[market.id]
+                        ├── when totalBorrowAssets[marketParams.id] > totalSupplyAssets[marketParams.id]
                         │   └── revert with INSUFFICIENT_LIQUIDITY
-                        └── when totalBorrowAssets[market.id] <= totalSupplyAssets[market.id]  
+                        └── when totalBorrowAssets[marketParams.id] <= totalSupplyAssets[marketParams.id]
                             └── it should return the assets and the shares borrowed
-                        
+
 .
-└── repay(Market memory market, uint256 assets, uint256 shares, address onBehalf, bytes calldata data) external
+└── repay(MarketParams memory marketParams, uint256 assets, uint256 shares, address onBehalf, bytes calldata data) external
     ├── when market is not created
     │   └── revert with MARKET_NOT_CREATED
     └── when market is created
@@ -154,19 +154,19 @@
             └── when onBehalf is not the zero address
                 ├── it should accrue the interest
                 ├── when assets is not zero
-                │   └── it should set shares to assets.toSharesUp(totalSupplyAssets[market.id], totalSupplyShares[market.id])
+                │   └── it should set shares to assets.toSharesUp(totalSupplyAssets[marketParams.id], totalSupplyShares[marketParams.id])
                 ├── when assets is zero
                 │   └── it should set assets to shares.toAssetsDown(totalSupplyAssets[id], totalSupplyShares[id])
-                ├── it should remove shares from borrowShares[market.id][onBehalf]
-                ├── it should remove shares from totalBorrowShares[market.id]
-                ├── it should remove assets from totalBorrowAssets[market.id]
-                ├── it should emit Repay(market.id, msg.sender, onBehalf, assets, shares)
+                ├── it should remove shares from borrowShares[marketParams.id][onBehalf]
+                ├── it should remove shares from totalBorrowShares[marketParams.id]
+                ├── it should remove assets from totalBorrowAssets[marketParams.id]
+                ├── it should emit Repay(marketParams.id, msg.sender, onBehalf, assets, shares)
                 ├── if data.length > 0
                 │   └── it should call sender's onMorphoRepay callback
                 ├── it should transfer assets of the borrowable asset from the sender to Morpho
                 └── it should return the assets and the shares repaid
 .
-└── supplyCollateral(Market memory market, uint256 assets, address onBehalf, bytes calldata data) external
+└── supplyCollateral(MarketParams memory marketParams, uint256 assets, address onBehalf, bytes calldata data) external
     ├── when market is not created
     │   └── revert with MARKET_NOT_CREATED
     └── when market is created
@@ -176,13 +176,13 @@
             ├── when onBehalf is the zero address
             │   └── revert with ZERO_ADDRESS
             └── when onBehalf is not the zero address
-                ├── it should add assets to collateral[market.id][onBehalf]
-                ├── it should emit SupplyCollateral(market.id, msg.sender, onBehalf, assets)
+                ├── it should add assets to collateral[marketParams.id][onBehalf]
+                ├── it should emit SupplyCollateral(marketParams.id, msg.sender, onBehalf, assets)
                 ├── if data.length > 0
                 │   └── it should call sender's onMorphoSupplyCollateral callback
                 └── it should transfer assets of the collateral asset from the sender to Morpho
 .
-└── withdrawCollateral(Market memory market, uint256 assets, address onBehalf, address receiver) external
+└── withdrawCollateral(MarketParams memory marketParams, uint256 assets, address onBehalf, address receiver) external
     ├── when market is not created
     │   └── revert with MARKET_NOT_CREATED
     └── when market is created
@@ -196,13 +196,13 @@
                 │   └── revert with MANAGER_NOT_APPROVED
                 └── when sender or approved
                     ├── it should accrue the interest
-                    ├── it should remove assets from collateral[market.id][onBehalf]
-                    ├── it should emit WithdrawCollateral(market.id, msg.sender, onBehalf, receiver, assets)
+                    ├── it should remove assets from collateral[marketParams.id][onBehalf]
+                    ├── it should emit WithdrawCollateral(marketParams.id, msg.sender, onBehalf, receiver, assets)
                     ├── it should transfer assets of the collateral asset to the receiver
                     └── when position is not healthy
                         └── revert with INSUFFICIENT_COLLATERAL
 .
-└── liquidate(Market memory market, address borrower, uint256 seizedAssets, uint256 repaidShares, bytes calldata data) external
+└── liquidate(MarketParams memory marketParams, address borrower, uint256 seizedAssets, uint256 repaidShares, bytes calldata data) external
     ├── when market is not created
     │   └── revert with MARKET_NOT_CREATED
     └── when market is created
@@ -214,23 +214,23 @@
             │   └── revert with HEALTHY_POSITION
             └── when the position is not healthy
                 ├── when seizedAssets is not zero
-                │    ├── it should compute assetsRepaid = seizedAssets.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(liquidationIncentiveFactor(market.lltv))
-                │    └── it should compute repaidShares = assetsRepaid.toSharesDown(totalBorrow[market.id], totalBorrowShares[market.id])
+                │    ├── it should compute assetsRepaid = seizedAssets.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(liquidationIncentiveFactor(marketParams.lltv))
+                │    └── it should compute repaidShares = assetsRepaid.toSharesDown(totalBorrow[marketParams.id], totalBorrowShares[market.id])
                 ├── when repaidShares is not zero
-                │    ├── it should compute assetsRepaid = repaidShares.toAssetsUp(totalBorrow[market.id], totalBorrowShares[market.id])
+                │    ├── it should compute assetsRepaid = repaidShares.toAssetsUp(totalBorrow[marketParams.id], totalBorrowShares[marketParams.id])
                 │    └── it should compute seizedAssets = assetsRepaid.wMulDown(incentiveFactor).mulDivDown(ORACLE_PRICE_SCALE, collateralPrice)
-                ├── it should remove repaidShares from totalBorrowShares[market.id]
-                ├── it should remove assetsRepaid from totalBorrow[market.id]
-                ├── it should remove repaidShares from collateral[market.id][borrower]
+                ├── it should remove repaidShares from totalBorrowShares[marketParams.id]
+                ├── it should remove assetsRepaid from totalBorrow[marketParams.id]
+                ├── it should remove repaidShares from collateral[marketParams.id][borrower]
                 ├── if after the liquidation the borrower's collateral is 0
                 │   └── it should realize bad debt
-                │       ├── it should compute badDebt = borrowShares[market.id][borrower].toAssetsUp(totalBorrow[market.id], totalBorrowShares[market.id])
-                │       ├── it should remove badDebt from totalSupplyAssets[market.id]
-                │       ├── it should remove badDebt from totalBorrowAssets[market.id]
-                │       ├── it should remove borrowShares[market.id][borrower] from totalBorrowShares[market.id]
-                │       └── it should set borrowShares[market.id][borrower] to 0
+                │       ├── it should compute badDebt = borrowShares[marketParams.id][borrower].toAssetsUp(totalBorrow[marketParams.id], totalBorrowShares[marketParams.id])
+                │       ├── it should remove badDebt from totalSupplyAssets[marketParams.id]
+                │       ├── it should remove badDebt from totalBorrowAssets[marketParams.id]
+                │       ├── it should remove borrowShares[marketParams.id][borrower] from totalBorrowShares[marketParams.id]
+                │       └── it should set borrowShares[marketParams.id][borrower] to 0
                 ├── it should transfer repaidShares of collateral asset to the sender
-                ├── it should emit Liquidate(market.id, msg.sender, borrower, assetsRepaid, repaidShares, seizedAssets, badDebtShares)
+                ├── it should emit Liquidate(marketParams.id, msg.sender, borrower, assetsRepaid, repaidShares, seizedAssets, badDebtShares)
                 ├── if data.length > 0
                 │   └── it should call sender's onMorphoLiquidate callback
                 └── it should transfer assetsRepaid of borrowable asset from the sender to Morpho
@@ -260,13 +260,13 @@
     ├── should set isApproved[msg.sender][authorized] to newIsAuthorized
     └── it should emit SetAuthorization(msg.sender, msg.sender, authorized, newIsAuthorized)
 .
-└── accrueInterest(Market memory market) external
+└── accrueInterest(MarketParams memory marketParams) external
     ├── when market is not created
     │   └── revert with MARKET_NOT_CREATED
     └── when market is created
         └── it should accrue the interest
 .
-└── _accrueInterest(Market memory market, Id id) internal
+└── _accrueInterest(MarketParams memory marketParams, Id id) internal
     └── when interest not already accrued in the block
         ├── it should set lastUpdate to block.timestamp
         └── when marketTotalBorrow is not 0
@@ -279,9 +279,9 @@
             │   └── it should add feeAmount.mulDivDown(totalSupplyShares[id], totalSupplyAssets[id] - feeAmount) to totalSupplyShares[id]
             └── it should emit AccrueInterest(id, borrowRate, accruedInterest, feeShares)
 .
-└── _isHealthy(Market memory market, Id id, address user, uint256 collateralPrice) internal
+└── _isHealthy(MarketParams memory marketParams, Id id, address user, uint256 collateralPrice) internal
     ├── it should compute borrowed = borrowShares[id][user].toAssetsUp(totalBorrowAssets[id], totalBorrowShares[id])
-    ├── it should compute maxBorrow = collateral[id][user].mulDivDown(collateralPrice, ORACLE_PRICE_SCALE).wMulDown(market.lltv)
+    ├── it should compute maxBorrow = collateral[id][user].mulDivDown(collateralPrice, ORACLE_PRICE_SCALE).wMulDown(marketParams.lltv)
     └── it should return maxBorrow >= borrowed
 .
 └── liquidationIncentiveFactor(uint256 lltv) internal

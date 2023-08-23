@@ -1,14 +1,19 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import {Id, MarketParams, IMorpho} from "../../interfaces/IMorpho.sol";
+import {Id, MarketParams, Market, IMorpho} from "../../interfaces/IMorpho.sol";
 import {IIrm} from "../../interfaces/IIrm.sol";
 
 import {MathLib} from "../MathLib.sol";
+import {UtilsLib} from "../UtilsLib.sol";
 import {MorphoLib} from "./MorphoLib.sol";
-import {MarketLib} from "../MarketLib.sol";
 import {SharesMathLib} from "../SharesMathLib.sol";
+import {MarketParamsLib} from "../MarketParamsLib.sol";
 import {MorphoStorageLib} from "./MorphoStorageLib.sol";
+
+interface IMorphoMarketStruct {
+    function market(Id id) external view returns (Market memory);
+}
 
 /// @title MorphoBalancesLib
 /// @author Morpho Labs
@@ -19,52 +24,40 @@ import {MorphoStorageLib} from "./MorphoStorageLib.sol";
 /// to it. The value can be queried directly on Morpho using `totalBorrowShares`.
 library MorphoBalancesLib {
     using MathLib for uint256;
+    using MathLib for uint128;
+    using UtilsLib for uint256;
     using MorphoLib for IMorpho;
     using SharesMathLib for uint256;
-    using MarketLib for MarketParams;
+    using MarketParamsLib for MarketParams;
 
     function expectedMarketBalances(IMorpho morpho, MarketParams memory marketParams)
         internal
         view
-        returns (
-            uint256 totalSupplyAssets,
-            uint256 toralBorrowAssets,
-            uint256 totalSupplyShares,
-            uint256 totalBorrowShares
-        )
+        returns (uint256, uint256, uint256, uint256)
     {
         Id id = marketParams.id();
 
-        bytes32[] memory slots = new bytes32[](3);
-        slots[0] = MorphoStorageLib.marketTotalSupplyAssetsAndSharesSlot(id);
-        slots[1] = MorphoStorageLib.marketTotalBorrowAssetsAndSharesSlot(id);
-        slots[2] = MorphoStorageLib.marketLastUpdateAndFeeSlot(id);
+        Market memory market = IMorphoMarketStruct(address(morpho)).market(id);
 
-        bytes32[] memory values = morpho.extSloads(slots);
-        totalSupplyAssets = uint128(uint256(values[0]));
-        totalSupplyShares = uint256(values[0] >> 128);
-        toralBorrowAssets = uint128(uint256(values[1]));
-        totalBorrowShares = uint256(values[1] >> 128);
-        uint256 lastUpdate = uint128(uint256(values[2]));
-        uint256 fee = uint256(values[2] >> 128);
+        uint256 elapsed = block.timestamp - market.lastUpdate;
 
-        uint256 elapsed = block.timestamp - lastUpdate;
+        if (elapsed != 0 && market.totalBorrowAssets != 0) {
+            uint256 borrowRate = IIrm(marketParams.irm).borrowRateView(marketParams, market);
+            uint256 interest = market.totalBorrowAssets.wMulDown(borrowRate.wTaylorCompounded(elapsed));
+            market.totalBorrowAssets += interest.toUint128();
+            market.totalSupplyAssets += interest.toUint128();
 
-        if (elapsed != 0 && toralBorrowAssets != 0) {
-            uint256 borrowRate = IIrm(marketParams.irm).borrowRateView(marketParams);
-            uint256 interest = toralBorrowAssets.wMulDown(borrowRate.wTaylorCompounded(elapsed));
-            toralBorrowAssets += interest;
-            totalSupplyAssets += interest;
-
-            if (fee != 0) {
-                uint256 feeAmount = interest.wMulDown(fee);
+            if (market.fee != 0) {
+                uint256 feeAmount = interest.wMulDown(market.fee);
                 // The fee amount is subtracted from the total supply in this calculation to compensate for the fact
                 // that total supply is already updated.
-                uint256 feeShares = feeAmount.toSharesDown(totalSupplyAssets - feeAmount, totalSupplyShares);
-
-                totalSupplyShares += feeShares;
+                uint256 feeShares =
+                    feeAmount.toSharesDown(market.totalSupplyAssets - feeAmount, market.totalSupplyShares);
+                market.totalSupplyShares += feeShares.toUint128();
             }
         }
+
+        return (market.totalSupplyAssets, market.totalSupplyShares, market.totalBorrowAssets, market.totalBorrowShares);
     }
 
     function expectedTotalSupply(IMorpho morpho, MarketParams memory marketParams)
@@ -80,7 +73,7 @@ library MorphoBalancesLib {
         view
         returns (uint256 totalBorrowAssets)
     {
-        (, totalBorrowAssets,,) = expectedMarketBalances(morpho, marketParams);
+        (,, totalBorrowAssets,) = expectedMarketBalances(morpho, marketParams);
     }
 
     function expectedTotalSupplyShares(IMorpho morpho, MarketParams memory marketParams)
@@ -88,7 +81,7 @@ library MorphoBalancesLib {
         view
         returns (uint256 totalSupplyShares)
     {
-        (,, totalSupplyShares,) = expectedMarketBalances(morpho, marketParams);
+        (, totalSupplyShares,,) = expectedMarketBalances(morpho, marketParams);
     }
 
     /// @dev Warning: Wrong for `feeRecipient` because their supply shares increase is not taken into account.
@@ -99,7 +92,7 @@ library MorphoBalancesLib {
     {
         Id id = marketParams.id();
         uint256 supplyShares = morpho.supplyShares(id, user);
-        (uint256 totalSupplyAssets,, uint256 totalSupplyShares,) = expectedMarketBalances(morpho, marketParams);
+        (uint256 totalSupplyAssets, uint256 totalSupplyShares,,) = expectedMarketBalances(morpho, marketParams);
 
         return supplyShares.toAssetsDown(totalSupplyAssets, totalSupplyShares);
     }
@@ -111,7 +104,7 @@ library MorphoBalancesLib {
     {
         Id id = marketParams.id();
         uint256 borrowShares = morpho.borrowShares(id, user);
-        (, uint256 totalBorrowAssets,, uint256 totalBorrowShares) = expectedMarketBalances(morpho, marketParams);
+        (,, uint256 totalBorrowAssets, uint256 totalBorrowShares) = expectedMarketBalances(morpho, marketParams);
 
         return borrowShares.toAssetsUp(totalBorrowAssets, totalBorrowShares);
     }

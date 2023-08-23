@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 import "../BaseTest.sol";
-import "src/interfaces/IMorphoCallbacks.sol";
 
 contract IntegrationCallbacksTest is
     BaseTest,
@@ -12,9 +11,9 @@ contract IntegrationCallbacksTest is
     IMorphoSupplyCollateralCallback,
     IMorphoFlashLoanCallback
 {
-    using MarketLib for MarketParams;
     using MathLib for uint256;
     using MorphoLib for Morpho;
+    using MarketParamsLib for MarketParams;
 
     // Callback functions.
 
@@ -36,7 +35,7 @@ contract IntegrationCallbacksTest is
         } else if (selector == this.testFlashActions.selector) {
             uint256 toBorrow = abi.decode(data, (uint256));
             collateralToken.setBalance(address(this), amount);
-            morpho.borrow(market, toBorrow, 0, address(this), address(this));
+            morpho.borrow(marketParams, toBorrow, 0, address(this), address(this));
         }
     }
 
@@ -48,7 +47,7 @@ contract IntegrationCallbacksTest is
             borrowableToken.approve(address(morpho), amount);
         } else if (selector == this.testFlashActions.selector) {
             uint256 toWithdraw = abi.decode(data, (uint256));
-            morpho.withdrawCollateral(market, toWithdraw, address(this), address(this));
+            morpho.withdrawCollateral(marketParams, toWithdraw, address(this), address(this));
         }
     }
 
@@ -77,7 +76,7 @@ contract IntegrationCallbacksTest is
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
         borrowableToken.setBalance(address(this), amount);
-        morpho.supply(market, amount, 0, address(this), hex"");
+        morpho.supply(marketParams, amount, 0, address(this), hex"");
 
         morpho.flashLoan(address(borrowableToken), amount, abi.encode(this.testFlashLoan.selector, hex""));
 
@@ -88,7 +87,7 @@ contract IntegrationCallbacksTest is
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
         borrowableToken.setBalance(address(this), amount);
-        morpho.supply(market, amount, 0, address(this), hex"");
+        morpho.supply(marketParams, amount, 0, address(this), hex"");
 
         borrowableToken.approve(address(morpho), 0);
 
@@ -105,8 +104,8 @@ contract IntegrationCallbacksTest is
         borrowableToken.approve(address(morpho), 0);
 
         vm.expectRevert();
-        morpho.supply(market, amount, 0, address(this), hex"");
-        morpho.supply(market, amount, 0, address(this), abi.encode(this.testSupplyCallback.selector, hex""));
+        morpho.supply(marketParams, amount, 0, address(this), hex"");
+        morpho.supply(marketParams, amount, 0, address(this), abi.encode(this.testSupplyCallback.selector, hex""));
     }
 
     function testSupplyCollateralCallback(uint256 amount) public {
@@ -116,9 +115,9 @@ contract IntegrationCallbacksTest is
         collateralToken.approve(address(morpho), 0);
 
         vm.expectRevert();
-        morpho.supplyCollateral(market, amount, address(this), hex"");
+        morpho.supplyCollateral(marketParams, amount, address(this), hex"");
         morpho.supplyCollateral(
-            market, amount, address(this), abi.encode(this.testSupplyCollateralCallback.selector, hex"")
+            marketParams, amount, address(this), abi.encode(this.testSupplyCollateralCallback.selector, hex"")
         );
     }
 
@@ -126,38 +125,40 @@ contract IntegrationCallbacksTest is
         borrowableAmount = bound(borrowableAmount, MIN_TEST_AMOUNT, MAX_TEST_AMOUNT);
         uint256 collateralAmount;
         (collateralAmount, borrowableAmount,) =
-            _boundHealthyPosition(0, borrowableAmount, IOracle(market.oracle).price());
+            _boundHealthyPosition(0, borrowableAmount, IOracle(marketParams.oracle).price());
 
         oracle.setPrice(ORACLE_PRICE_SCALE);
 
         borrowableToken.setBalance(address(this), borrowableAmount);
         collateralToken.setBalance(address(this), collateralAmount);
 
-        morpho.supply(market, borrowableAmount, 0, address(this), hex"");
-        morpho.supplyCollateral(market, collateralAmount, address(this), hex"");
-        morpho.borrow(market, borrowableAmount, 0, address(this), address(this));
+        morpho.supply(marketParams, borrowableAmount, 0, address(this), hex"");
+        morpho.supplyCollateral(marketParams, collateralAmount, address(this), hex"");
+        morpho.borrow(marketParams, borrowableAmount, 0, address(this), address(this));
 
         borrowableToken.approve(address(morpho), 0);
 
         vm.expectRevert();
-        morpho.repay(market, borrowableAmount, 0, address(this), hex"");
-        morpho.repay(market, borrowableAmount, 0, address(this), abi.encode(this.testRepayCallback.selector, hex""));
+        morpho.repay(marketParams, borrowableAmount, 0, address(this), hex"");
+        morpho.repay(
+            marketParams, borrowableAmount, 0, address(this), abi.encode(this.testRepayCallback.selector, hex"")
+        );
     }
 
     function testLiquidateCallback(uint256 borrowableAmount) public {
         borrowableAmount = bound(borrowableAmount, MIN_TEST_AMOUNT, MAX_TEST_AMOUNT);
         uint256 collateralAmount;
         (collateralAmount, borrowableAmount,) =
-            _boundHealthyPosition(0, borrowableAmount, IOracle(market.oracle).price());
+            _boundHealthyPosition(0, borrowableAmount, IOracle(marketParams.oracle).price());
 
         oracle.setPrice(ORACLE_PRICE_SCALE);
 
         borrowableToken.setBalance(address(this), borrowableAmount);
         collateralToken.setBalance(address(this), collateralAmount);
 
-        morpho.supply(market, borrowableAmount, 0, address(this), hex"");
-        morpho.supplyCollateral(market, collateralAmount, address(this), hex"");
-        morpho.borrow(market, borrowableAmount, 0, address(this), address(this));
+        morpho.supply(marketParams, borrowableAmount, 0, address(this), hex"");
+        morpho.supplyCollateral(marketParams, collateralAmount, address(this), hex"");
+        morpho.borrow(marketParams, borrowableAmount, 0, address(this), address(this));
 
         oracle.setPrice(0.99e18);
 
@@ -165,9 +166,9 @@ contract IntegrationCallbacksTest is
         borrowableToken.approve(address(morpho), 0);
 
         vm.expectRevert();
-        morpho.liquidate(market, address(this), collateralAmount, 0, hex"");
+        morpho.liquidate(marketParams, address(this), collateralAmount, 0, hex"");
         morpho.liquidate(
-            market, address(this), collateralAmount, 0, abi.encode(this.testLiquidateCallback.selector, hex"")
+            marketParams, address(this), collateralAmount, 0, abi.encode(this.testLiquidateCallback.selector, hex"")
         );
     }
 
@@ -175,28 +176,28 @@ contract IntegrationCallbacksTest is
         borrowableAmount = bound(borrowableAmount, MIN_TEST_AMOUNT, MAX_TEST_AMOUNT);
         uint256 collateralAmount;
         (collateralAmount, borrowableAmount,) =
-            _boundHealthyPosition(0, borrowableAmount, IOracle(market.oracle).price());
+            _boundHealthyPosition(0, borrowableAmount, IOracle(marketParams.oracle).price());
 
         oracle.setPrice(ORACLE_PRICE_SCALE);
 
         borrowableToken.setBalance(address(this), borrowableAmount);
-        morpho.supply(market, borrowableAmount, 0, address(this), hex"");
+        morpho.supply(marketParams, borrowableAmount, 0, address(this), hex"");
 
         morpho.supplyCollateral(
-            market,
+            marketParams,
             collateralAmount,
             address(this),
             abi.encode(this.testFlashActions.selector, abi.encode(borrowableAmount))
         );
-        assertGt(morpho.borrowShares(market.id(), address(this)), 0, "no borrow");
+        assertGt(morpho.borrowShares(marketParams.id(), address(this)), 0, "no borrow");
 
         morpho.repay(
-            market,
+            marketParams,
             borrowableAmount,
             0,
             address(this),
             abi.encode(this.testFlashActions.selector, abi.encode(collateralAmount))
         );
-        assertEq(morpho.collateral(market.id(), address(this)), 0, "no withdraw collateral");
+        assertEq(morpho.collateral(marketParams.id(), address(this)), 0, "no withdraw collateral");
     }
 }
