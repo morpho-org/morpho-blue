@@ -4,7 +4,6 @@ sizes = true
 via-ir = true
 optimizer_runs = 4294967295
 extra_output_files = ["irOptimized"]
-force = true
 
 [profile.default.invariant]
 runs = 16
@@ -23,6 +22,7 @@ force = true
 
 [profile.test]
 via-ir = false
+extra_output_files = []
 
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/crates/config
