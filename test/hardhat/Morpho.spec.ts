@@ -77,7 +77,7 @@ describe("Morpho", () => {
 
     const IrmMockFactory = await hre.ethers.getContractFactory("IrmMock", admin);
 
-    irm = await IrmMockFactory.deploy(morpho.address);
+    irm = await IrmMockFactory.deploy();
 
     updateMarket({
       borrowableToken: borrowable.address,

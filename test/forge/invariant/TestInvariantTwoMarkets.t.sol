@@ -16,7 +16,7 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
     function setUp() public virtual override {
         super.setUp();
 
-        irm2 = new Irm(morpho);
+        irm2 = new Irm();
         vm.label(address(irm2), "IRM2");
 
         marketParams2 =

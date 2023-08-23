@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import {Authorization, AUTHORIZATION_TYPEHASH} from "src/Morpho.sol";
+import {AUTHORIZATION_TYPEHASH} from "src/libraries/ConstantsLib.sol";
+
+import {Authorization} from "src/interfaces/IMorpho.sol";
 
 library SigUtils {
     /// @dev Computes the hash of the EIP-712 encoded data.
