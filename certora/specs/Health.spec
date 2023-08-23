@@ -1,5 +1,6 @@
 methods {
     function getLastUpdate(MorphoHarness.Id) external returns uint256 envfree;
+    function getBorrowShares(MorphoHarness.Id, address) external returns uint256 envfree;
     function getCollateral(MorphoHarness.Id, address) external returns uint256 envfree;
     function isHealthy(MorphoHarness.MarketParams, address user) external returns bool envfree;
     function isAuthorized(address, address user) external returns bool envfree;
@@ -82,3 +83,6 @@ filtered {
     mathint collateralAfter = getCollateral(id, user);
     assert collateralAfter >= collateralBefore;
 }
+
+invariant alwaysCollateralized(MorphoHarness.Id id, address borrower)
+    getBorrowShares(id, borrower) != 0 => getCollateral(id, borrower) != 0;
