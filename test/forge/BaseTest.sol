@@ -71,7 +71,7 @@ contract BaseTest is Test {
 
         oracle.setPrice(1e36);
 
-        irm = new Irm(morpho);
+        irm = new Irm();
         vm.label(address(irm), "IRM");
 
         marketParams =
