@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.21;
+pragma solidity 0.8.19;
 
 import {Id, IMorpho, MarketParams, User, Market, Authorization, Signature} from "./interfaces/IMorpho.sol";
 import {
@@ -16,9 +16,9 @@ import {IOracle} from "./interfaces/IOracle.sol";
 import {UtilsLib} from "./libraries/UtilsLib.sol";
 import {EventsLib} from "./libraries/EventsLib.sol";
 import {ErrorsLib} from "./libraries/ErrorsLib.sol";
-import {MarketLib} from "./libraries/MarketLib.sol";
 import {MathLib, WAD} from "./libraries/MathLib.sol";
 import {SharesMathLib} from "./libraries/SharesMathLib.sol";
+import {MarketParamsLib} from "./libraries/MarketParamsLib.sol";
 import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
 
 /// @dev The maximum fee a market can have (25%).
@@ -45,7 +45,7 @@ contract Morpho is IMorpho {
     using UtilsLib for uint256;
     using SharesMathLib for uint256;
     using SafeTransferLib for IERC20;
-    using MarketLib for MarketParams;
+    using MarketParamsLib for MarketParams;
 
     /* IMMUTABLES */
 
@@ -96,6 +96,7 @@ contract Morpho is IMorpho {
 
     /// @inheritdoc IMorpho
     function setOwner(address newOwner) external onlyOwner {
+        require(newOwner != owner, ErrorsLib.ALREADY_SET);
         owner = newOwner;
 
         emit EventsLib.SetOwner(newOwner);
@@ -103,6 +104,7 @@ contract Morpho is IMorpho {
 
     /// @inheritdoc IMorpho
     function enableIrm(address irm) external onlyOwner {
+        require(!isIrmEnabled[irm], ErrorsLib.ALREADY_SET);
         isIrmEnabled[irm] = true;
 
         emit EventsLib.EnableIrm(address(irm));
@@ -110,6 +112,7 @@ contract Morpho is IMorpho {
 
     /// @inheritdoc IMorpho
     function enableLltv(uint256 lltv) external onlyOwner {
+        require(!isLltvEnabled[lltv], ErrorsLib.ALREADY_SET);
         require(lltv < WAD, ErrorsLib.LLTV_TOO_HIGH);
         isLltvEnabled[lltv] = true;
 
@@ -120,6 +123,7 @@ contract Morpho is IMorpho {
     function setFee(MarketParams memory marketParams, uint256 newFee) external onlyOwner {
         Id id = marketParams.id();
         require(market[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
+        require(newFee != market[id].fee, ErrorsLib.ALREADY_SET);
         require(newFee <= MAX_FEE, ErrorsLib.MAX_FEE_EXCEEDED);
 
         // Accrue interest using the previous fee set before changing it.
@@ -132,10 +136,11 @@ contract Morpho is IMorpho {
     }
 
     /// @inheritdoc IMorpho
-    function setFeeRecipient(address recipient) external onlyOwner {
-        feeRecipient = recipient;
+    function setFeeRecipient(address newFeeRecipient) external onlyOwner {
+        require(newFeeRecipient != feeRecipient, ErrorsLib.ALREADY_SET);
+        feeRecipient = newFeeRecipient;
 
-        emit EventsLib.SetFeeRecipient(recipient);
+        emit EventsLib.SetFeeRecipient(newFeeRecipient);
     }
 
     /* MARKET CREATION */
@@ -211,9 +216,9 @@ contract Morpho is IMorpho {
         market[id].totalSupplyShares -= shares.toUint128();
         market[id].totalSupplyAssets -= assets.toUint128();
 
-        emit EventsLib.Withdraw(id, msg.sender, onBehalf, receiver, assets, shares);
-
         require(market[id].totalBorrowAssets <= market[id].totalSupplyAssets, ErrorsLib.INSUFFICIENT_LIQUIDITY);
+
+        emit EventsLib.Withdraw(id, msg.sender, onBehalf, receiver, assets, shares);
 
         IERC20(marketParams.borrowableToken).safeTransfer(receiver, assets);
 
@@ -246,10 +251,10 @@ contract Morpho is IMorpho {
         market[id].totalBorrowShares += shares.toUint128();
         market[id].totalBorrowAssets += assets.toUint128();
 
-        emit EventsLib.Borrow(id, msg.sender, onBehalf, receiver, assets, shares);
-
         require(_isHealthy(marketParams, id, onBehalf), ErrorsLib.INSUFFICIENT_COLLATERAL);
         require(market[id].totalBorrowAssets <= market[id].totalSupplyAssets, ErrorsLib.INSUFFICIENT_LIQUIDITY);
+
+        emit EventsLib.Borrow(id, msg.sender, onBehalf, receiver, assets, shares);
 
         IERC20(marketParams.borrowableToken).safeTransfer(receiver, assets);
 
@@ -324,9 +329,9 @@ contract Morpho is IMorpho {
 
         user[id][onBehalf].collateral -= assets.toUint128();
 
-        emit EventsLib.WithdrawCollateral(id, msg.sender, onBehalf, receiver, assets);
-
         require(_isHealthy(marketParams, id, onBehalf), ErrorsLib.INSUFFICIENT_COLLATERAL);
+
+        emit EventsLib.WithdrawCollateral(id, msg.sender, onBehalf, receiver, assets);
 
         IERC20(marketParams.collateralToken).safeTransfer(receiver, assets);
     }
@@ -361,7 +366,7 @@ contract Morpho is IMorpho {
 
         user[id][borrower].collateral -= seized.toUint128();
 
-        // Realize the bad debt if needed.
+        // Realize the bad debt if needed. Note that it saves ~3k gas to do it.
         uint256 badDebtShares;
         if (user[id][borrower].collateral == 0) {
             badDebtShares = user[id][borrower].borrowShares;
@@ -432,16 +437,8 @@ contract Morpho is IMorpho {
 
     /* INTEREST MANAGEMENT */
 
-    /// @inheritdoc IMorpho
-    function accrueInterest(MarketParams memory marketParams) external {
-        Id id = marketParams.id();
-        require(market[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
-
-        _accrueInterest(marketParams, id);
-    }
-
-    /// @dev Accrues interest for market `marketParams`.
-    /// @dev Assumes the given `marketParams` and `id` match.
+    /// @dev Accrues interest for the given market `marketParams`.
+    /// @dev Assumes that the inputs `marketParams` and `id` match.
     function _accrueInterest(MarketParams memory marketParams, Id id) internal {
         uint256 elapsed = block.timestamp - market[id].lastUpdate;
 
@@ -456,7 +453,8 @@ contract Morpho is IMorpho {
             uint256 feeShares;
             if (market[id].fee != 0) {
                 uint256 feeAmount = interest.wMulDown(market[id].fee);
-                // The fee amount is subtracted from the total supply in this calculation to compensate for the fact that total supply is already updated.
+                // The fee amount is subtracted from the total supply in this calculation to compensate for the fact
+                // that total supply is already updated.
                 feeShares =
                     feeAmount.toSharesDown(market[id].totalSupplyAssets - feeAmount, market[id].totalSupplyShares);
                 user[id][feeRecipient].supplyShares += feeShares;
@@ -472,8 +470,8 @@ contract Morpho is IMorpho {
 
     /* HEALTH CHECK */
 
-    /// @dev Returns whether the position of `user` in the given `market` is healthy.
-    /// @dev Assumes the given `marketParams` and `id` match.
+    /// @dev Returns whether the position of `user` in the given market `marketParams` is healthy.
+    /// @dev Assumes that the inputs `marketParams` and `id` match.
     function _isHealthy(MarketParams memory marketParams, Id id, address borrower) internal view returns (bool) {
         if (user[id][borrower].borrowShares == 0) return true;
 
@@ -482,8 +480,9 @@ contract Morpho is IMorpho {
         return _isHealthy(marketParams, id, borrower, collateralPrice);
     }
 
-    /// @dev Returns whether the position of `user` in the given `market` with the given `collateralPrice` is healthy.
-    /// @dev Assumes the given `marketParams` and `id` match.
+    /// @dev Returns whether the position of `user` in the given market `marketParams` with the given `collateralPrice`
+    /// is healthy.
+    /// @dev Assumes that the inputs `marketParams` and `id` match.
     function _isHealthy(MarketParams memory marketParams, Id id, address borrower, uint256 collateralPrice)
         internal
         view
@@ -496,5 +495,23 @@ contract Morpho is IMorpho {
             .wMulDown(marketParams.lltv);
 
         return maxBorrow >= borrowed;
+    }
+
+    /* STORAGE VIEW */
+
+    /// @inheritdoc IMorpho
+    function extSloads(bytes32[] calldata slots) external view returns (bytes32[] memory res) {
+        uint256 nSlots = slots.length;
+
+        res = new bytes32[](nSlots);
+
+        for (uint256 i; i < nSlots;) {
+            bytes32 slot = slots[i++];
+
+            /// @solidity memory-safe-assembly
+            assembly {
+                mstore(add(res, mul(i, 32)), sload(slot))
+            }
+        }
     }
 }

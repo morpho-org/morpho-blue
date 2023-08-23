@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import {Id} from "../MarketLib.sol";
+import {Id} from "../../interfaces/IMorpho.sol";
 
 /// @title MorphoStorageLib
 /// @author Morpho Labs

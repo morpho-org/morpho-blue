@@ -21,10 +21,10 @@ const random = () => {
   return (seed - 1) / 2147483646;
 };
 
-const identifier = (market: MarketParamsStruct) => {
+const identifier = (marketParams: MarketParamsStruct) => {
   const encodedMarket = defaultAbiCoder.encode(
     ["address", "address", "address", "address", "uint256"],
-    Object.values(market),
+    Object.values(marketParams),
   );
 
   return Buffer.from(utils.keccak256(encodedMarket).slice(2), "hex");
@@ -42,14 +42,14 @@ describe("Morpho", () => {
   let irm: IrmMock;
   let flashBorrower: FlashBorrowerMock;
 
-  let market: MarketParamsStruct;
+  let marketParams: MarketParamsStruct;
   let id: Buffer;
 
   let nbLiquidations: number;
 
   const updateMarket = (newMarket: Partial<MarketParamsStruct>) => {
-    market = { ...market, ...newMarket };
-    id = identifier(market);
+    marketParams = { ...marketParams, ...newMarket };
+    id = identifier(marketParams);
   };
 
   beforeEach(async () => {
@@ -87,9 +87,9 @@ describe("Morpho", () => {
       lltv: BigNumber.WAD.div(2).add(1),
     });
 
-    await morpho.enableLltv(market.lltv);
-    await morpho.enableIrm(market.irm);
-    await morpho.createMarket(market);
+    await morpho.enableLltv(marketParams.lltv);
+    await morpho.enableIrm(marketParams.irm);
+    await morpho.createMarket(marketParams);
 
     for (const signer of signers) {
       await borrowable.setBalance(signer.address, initBalance);
@@ -117,18 +117,18 @@ describe("Morpho", () => {
 
       let assets = BigNumber.WAD.mul(1 + Math.floor(random() * 100));
 
-      await morpho.connect(user).supply(market, assets, 0, user.address, []);
-      await morpho.connect(user).withdraw(market, assets.div(2), 0, user.address, user.address);
+      await morpho.connect(user).supply(marketParams, assets, 0, user.address, []);
+      await morpho.connect(user).withdraw(marketParams, assets.div(2), 0, user.address, user.address);
       const totalSupplyAssets = (await morpho.market(id)).totalSupplyAssets;
       const totalBorrowAssets = (await morpho.market(id)).totalBorrowAssets;
       const liquidity = BigNumber.from(totalSupplyAssets).sub(BigNumber.from(totalBorrowAssets));
 
       assets = BigNumber.min(assets, BigNumber.from(liquidity).div(2));
 
-      await morpho.connect(user).supplyCollateral(market, assets, user.address, []);
-      await morpho.connect(user).borrow(market, assets.div(2), 0, user.address, user.address);
-      await morpho.connect(user).repay(market, assets.div(4), 0, user.address, []);
-      await morpho.connect(user).withdrawCollateral(market, assets.div(8), user.address, user.address);
+      await morpho.connect(user).supplyCollateral(marketParams, assets, user.address, []);
+      await morpho.connect(user).borrow(marketParams, assets.div(2), 0, user.address, user.address);
+      await morpho.connect(user).repay(marketParams, assets.div(4), 0, user.address, []);
+      await morpho.connect(user).withdrawCollateral(marketParams, assets.div(8), user.address, user.address);
     }
 
     await hre.network.provider.send("evm_setAutomine", [true]);
@@ -147,26 +147,25 @@ describe("Morpho", () => {
 
       if (!(await morpho.isLltvEnabled(lltv))) {
         await morpho.enableLltv(lltv);
-        await morpho.enableIrm(market.irm);
-        await morpho.createMarket({ ...market, lltv });
+        await morpho.createMarket({ ...marketParams, lltv });
       }
 
       updateMarket({ lltv });
 
-      // We use 2 different users to borrow from a market so that liquidations do not put the borrow storage back to 0 on that market.
-      await morpho.connect(user).supply(market, assets, 0, user.address, "0x");
-      await morpho.connect(user).supplyCollateral(market, assets, user.address, "0x");
-      await morpho.connect(user).borrow(market, borrowedAmount, 0, user.address, user.address);
+      // We use 2 different users to borrow from a marketParams so that liquidations do not put the borrow storage back to 0 on that marketParams.
+      await morpho.connect(user).supply(marketParams, assets, 0, user.address, "0x");
+      await morpho.connect(user).supplyCollateral(marketParams, assets, user.address, "0x");
+      await morpho.connect(user).borrow(marketParams, borrowedAmount, 0, user.address, user.address);
 
-      await morpho.connect(borrower).supply(market, assets, 0, borrower.address, "0x");
-      await morpho.connect(borrower).supplyCollateral(market, assets, borrower.address, "0x");
-      await morpho.connect(borrower).borrow(market, borrowedAmount, 0, borrower.address, user.address);
+      await morpho.connect(borrower).supply(marketParams, assets, 0, borrower.address, "0x");
+      await morpho.connect(borrower).supplyCollateral(marketParams, assets, borrower.address, "0x");
+      await morpho.connect(borrower).borrow(marketParams, borrowedAmount, 0, borrower.address, user.address);
 
-      await oracle.setPrice(oraclePriceScale.div(100));
+      await oracle.setPrice(oraclePriceScale.div(1000));
 
       const seized = closePositions ? assets : assets.div(2);
 
-      await morpho.connect(liquidator).liquidate(market, borrower.address, seized, "0x");
+      await morpho.connect(liquidator).liquidate(marketParams, borrower.address, seized, "0x");
 
       const remainingCollateral = (await morpho.user(id, borrower.address)).collateral;
 
@@ -182,7 +181,7 @@ describe("Morpho", () => {
     const user = signers[0];
     const assets = BigNumber.WAD;
 
-    await morpho.connect(user).supply(market, assets, 0, user.address, "0x");
+    await morpho.connect(user).supply(marketParams, assets, 0, user.address, "0x");
 
     const data = defaultAbiCoder.encode(["address"], [borrowable.address]);
     await flashBorrower.flashLoan(borrowable.address, assets.div(2), data);
