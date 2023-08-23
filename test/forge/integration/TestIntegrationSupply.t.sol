@@ -9,7 +9,7 @@ contract IntegrationSupplyTest is BaseTest {
     using SharesMathLib for uint256;
 
     function testSupplyMarketNotCreated(MarketParams memory marketParamsFuzz, uint256 amount) public {
-        vm.assume(neq(marketParamsFuzz, market));
+        vm.assume(neq(marketParamsFuzz, marketParams));
 
         vm.prank(SUPPLIER);
         vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
@@ -21,7 +21,7 @@ contract IntegrationSupplyTest is BaseTest {
 
         vm.prank(SUPPLIER);
         vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
-        morpho.supply(market, 0, 0, SUPPLIER, hex"");
+        morpho.supply(marketParams, 0, 0, SUPPLIER, hex"");
     }
 
     function testSupplyOnBehalfZeroAddress(uint256 amount) public {
@@ -29,7 +29,7 @@ contract IntegrationSupplyTest is BaseTest {
 
         vm.prank(SUPPLIER);
         vm.expectRevert(bytes(ErrorsLib.ZERO_ADDRESS));
-        morpho.supply(market, amount, 0, address(0), hex"");
+        morpho.supply(marketParams, amount, 0, address(0), hex"");
     }
 
     function testSupplyInconsistantInput(uint256 amount, uint256 shares) public {
@@ -38,7 +38,7 @@ contract IntegrationSupplyTest is BaseTest {
 
         vm.prank(SUPPLIER);
         vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
-        morpho.supply(market, amount, shares, address(0), hex"");
+        morpho.supply(marketParams, amount, shares, address(0), hex"");
     }
 
     function testSupplyAssets(uint256 amount) public {
@@ -52,7 +52,7 @@ contract IntegrationSupplyTest is BaseTest {
 
         vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.Supply(id, SUPPLIER, ONBEHALF, amount, expectedSupplyShares);
-        (uint256 returnAssets, uint256 returnShares) = morpho.supply(market, amount, 0, ONBEHALF, hex"");
+        (uint256 returnAssets, uint256 returnShares) = morpho.supply(marketParams, amount, 0, ONBEHALF, hex"");
 
         assertEq(returnAssets, amount, "returned asset amount");
         assertEq(returnShares, expectedSupplyShares, "returned shares amount");
@@ -74,7 +74,7 @@ contract IntegrationSupplyTest is BaseTest {
 
         vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.Supply(id, SUPPLIER, ONBEHALF, expectedSuppliedAmount, shares);
-        (uint256 returnAssets, uint256 returnShares) = morpho.supply(market, 0, shares, ONBEHALF, hex"");
+        (uint256 returnAssets, uint256 returnShares) = morpho.supply(marketParams, 0, shares, ONBEHALF, hex"");
 
         assertEq(returnAssets, expectedSuppliedAmount, "returned asset amount");
         assertEq(returnShares, shares, "returned shares amount");
