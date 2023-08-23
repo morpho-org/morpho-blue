@@ -61,7 +61,7 @@ interface IMorpho {
     function owner() external view returns (address);
 
     /// @notice The fee recipient of all markets.
-    /// @dev The recipient receives the fees of a given market through a supply position on this market.
+    /// @dev The recipient receives the fees of a given market through a supply position on that market.
     function feeRecipient() external view returns (address);
 
     /// @notice Users' storage for market `id`.
@@ -84,6 +84,8 @@ interface IMorpho {
     function nonce(address authorizer) external view returns (uint256);
 
     /// @notice The market params corresponding to `id`.
+    /// @dev This mapping is not used in Morpho. It is there to enable reducing the cost associated to calldata on layer
+    /// 2s by creating a wrapper contract with functions that take `id` as input instead of `marketParams`.
     function idToMarketParams(Id id)
         external
         view
@@ -102,18 +104,20 @@ interface IMorpho {
     /// @dev Warning: It is not possible to disable a LLTV.
     function enableLltv(uint256 lltv) external;
 
-    /// @notice Sets the `newFee` for `market`.
+    /// @notice Sets the `newFee` for the given market `marketParams`.
     /// @dev Warning: The recipient can be the zero address.
     function setFee(MarketParams memory marketParams, uint256 newFee) external;
 
     /// @notice Sets `newFeeRecipient` as recipient of the fee.
     /// @dev Warning: The fee recipient can be set to the zero address.
+    /// @dev Warning: The fee to be accrued on each market won't belong to the old fee recipient after calling this
+    /// function.
     function setFeeRecipient(address newFeeRecipient) external;
 
-    /// @notice Creates `market`.
+    /// @notice Creates the market `marketParams`.
     function createMarket(MarketParams memory marketParams) external;
 
-    /// @notice Supplies `assets` or `shares` to `market` on behalf of `onBehalf`, optionally calling back the caller's
+    /// @notice Supplies `assets` or `shares` on behalf of `onBehalf`, optionally calling back the caller's
     /// `onMorphoSupply` function with the given `data`.
     /// @dev Either `assets` or `shares` should be zero. Most usecases should rely on `assets` as an input so the caller
     /// is guaranteed to have `assets` tokens pulled from their balance, but the possibility to mint a specific amount
@@ -134,7 +138,7 @@ interface IMorpho {
         bytes memory data
     ) external returns (uint256 assetsSupplied, uint256 sharesSupplied);
 
-    /// @notice Withdraws `assets` or `shares` from `market` on behalf of `onBehalf` to `receiver`.
+    /// @notice Withdraws `assets` or `shares` on behalf of `onBehalf` to `receiver`.
     /// @dev Either `assets` or `shares` should be zero. To withdraw max, pass the `shares`'s balance of `onBehalf`.
     /// @dev `msg.sender` must be authorized to manage `onBehalf`'s positions.
     /// @dev Withdrawing an amount corresponding to more shares than supplied will revert for underflow.
@@ -153,7 +157,7 @@ interface IMorpho {
         address receiver
     ) external returns (uint256 assetsWithdrawn, uint256 sharesWithdrawn);
 
-    /// @notice Borrows `assets` or `shares` from `market` on behalf of `onBehalf` to `receiver`.
+    /// @notice Borrows `assets` or `shares` on behalf of `onBehalf` to `receiver`.
     /// @dev Either `assets` or `shares` should be zero. Most usecases should rely on `assets` as an input so the caller
     /// is guaranteed to borrow `assets` of tokens, but the possibility to mint a specific amount of shares is given for
     /// full compatibility and precision.
@@ -174,7 +178,7 @@ interface IMorpho {
         address receiver
     ) external returns (uint256 assetsBorrowed, uint256 sharesBorrowed);
 
-    /// @notice Repays `assets` or `shares` to `market` on behalf of `onBehalf`, optionally calling back the caller's
+    /// @notice Repays `assets` or `shares` on behalf of `onBehalf`, optionally calling back the caller's
     /// `onMorphoReplay` function with the given `data`.
     /// @dev Either `assets` or `shares` should be zero. To repay max, pass the `shares`'s balance of `onBehalf`.
     /// @dev Repaying an amount corresponding to more shares than borrowed will revert for underflow.
@@ -193,8 +197,8 @@ interface IMorpho {
         bytes memory data
     ) external returns (uint256 assetsRepaid, uint256 sharesRepaid);
 
-    /// @notice Supplies `assets` of collateral to `market` on behalf of `onBehalf`, optionally calling back the
-    /// caller's `onMorphoSupplyCollateral` function with the given `data`.
+    /// @notice Supplies `assets` of collateral on behalf of `onBehalf`, optionally calling back the caller's
+    /// `onMorphoSupplyCollateral` function with the given `data`.
     /// @dev Interest are not accrued since it's not required and it saves gas.
     /// @dev Supplying a large amount can revert for overflow.
     /// @param marketParams The market to supply collateral to.
@@ -204,7 +208,7 @@ interface IMorpho {
     function supplyCollateral(MarketParams memory marketParams, uint256 assets, address onBehalf, bytes memory data)
         external;
 
-    /// @notice Withdraws `assets` of collateral from `market` on behalf of `onBehalf` to `receiver`.
+    /// @notice Withdraws `assets` of collateral on behalf of `onBehalf` to `receiver`.
     /// @dev `msg.sender` must be authorized to manage `onBehalf`'s positions.
     /// @dev Withdrawing an amount corresponding to more collateral than supplied will revert for underflow.
     /// @param marketParams The market to withdraw collateral from.
@@ -214,19 +218,26 @@ interface IMorpho {
     function withdrawCollateral(MarketParams memory marketParams, uint256 assets, address onBehalf, address receiver)
         external;
 
-    /// @notice Liquidates `seized` of collateral to `market` of `borrower`'s position, optionally calling back the
-    /// caller's `onMorphoLiquidate` function with the given `data`.
+    /// @notice Liquidates the given `repaidShares` of debt asset or seize the given `seized` of collateral on the given
+    /// `market` of the given `borrower`'s position, optionally calling back the caller's `onMorphoLiquidate` function
+    /// with the given `data`.
+    /// @dev Either `seized` or `repaidShares` should be zero.
     /// @dev Seizing more than the collateral balance will underflow and revert without any error message.
     /// @dev Repaying more than the borrow balance will underflow and revert without any error message.
     /// @param marketParams The market of the position.
     /// @param borrower The owner of the position.
-    /// @param seized The amount of collateral to seize.
+    /// @param seizedAssets The amount of collateral to seize.
+    /// @param repaidShares The amount of shares to repay.
     /// @param data Arbitrary data to pass to the `onMorphoLiquidate` callback. Pass empty data if not needed.
-    /// @return assetsRepaid The amount of assets repaid.
-    /// @return sharesRepaid The amount of shares burned.
-    function liquidate(MarketParams memory marketParams, address borrower, uint256 seized, bytes memory data)
-        external
-        returns (uint256 assetsRepaid, uint256 sharesRepaid);
+    /// @return The amount of assets seized.
+    /// @return The amount of assets repaid.
+    function liquidate(
+        MarketParams memory marketParams,
+        address borrower,
+        uint256 seizedAssets,
+        uint256 repaidShares,
+        bytes memory data
+    ) external returns (uint256, uint256);
 
     /// @notice Executes a flash loan.
     /// @param token The token to flash loan.
@@ -240,6 +251,9 @@ interface IMorpho {
     function setAuthorization(address authorized, bool newIsAuthorized) external;
 
     /// @notice Sets the authorization for `authorization.authorized` to manage `authorization.authorizer`'s positions.
+    /// @dev Warning: Reverts if the signature has already been submitted.
+    /// @dev The signature is malleable, but it has no impact on the security here.
+    /// @dev The nonce is passed as argument to be able to revert with a different error message.
     /// @param authorization The `Authorization` struct.
     /// @param signature The signature.
     function setAuthorizationWithSig(Authorization calldata authorization, Signature calldata signature) external;

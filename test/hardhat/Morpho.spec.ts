@@ -77,7 +77,7 @@ describe("Morpho", () => {
 
     const IrmMockFactory = await hre.ethers.getContractFactory("IrmMock", admin);
 
-    irm = await IrmMockFactory.deploy(morpho.address);
+    irm = await IrmMockFactory.deploy();
 
     updateMarket({
       borrowableToken: borrowable.address,
@@ -165,7 +165,7 @@ describe("Morpho", () => {
 
       const seized = closePositions ? assets : assets.div(2);
 
-      await morpho.connect(liquidator).liquidate(marketParams, borrower.address, seized, "0x");
+      await morpho.connect(liquidator).liquidate(marketParams, borrower.address, seized, 0, "0x");
 
       const remainingCollateral = (await morpho.user(id, borrower.address)).collateral;
 

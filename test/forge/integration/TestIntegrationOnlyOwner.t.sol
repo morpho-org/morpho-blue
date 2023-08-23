@@ -6,7 +6,6 @@ import "../BaseTest.sol";
 contract IntegrationOnlyOwnerTest is BaseTest {
     using MathLib for uint256;
     using MorphoLib for Morpho;
-    using MarketParamsLib for Market;
 
     function testDeployWithAddressZero() public {
         vm.expectRevert(bytes(ErrorsLib.ZERO_ADDRESS));
@@ -83,7 +82,7 @@ contract IntegrationOnlyOwnerTest is BaseTest {
         lltvFuzz = _boundInvalidLltv(lltvFuzz);
 
         vm.prank(OWNER);
-        vm.expectRevert(bytes(ErrorsLib.LLTV_TOO_HIGH));
+        vm.expectRevert(bytes(ErrorsLib.MAX_LLTV_EXCEEDED));
         morpho.enableLltv(lltvFuzz);
     }
 
