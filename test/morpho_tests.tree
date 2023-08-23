@@ -202,35 +202,38 @@
                     └── when position is not healthy
                         └── revert with INSUFFICIENT_COLLATERAL
 .
-└── liquidate(MarketParams memory marketParams, address borrower, uint256 seized, bytes calldata data) external
+└── liquidate(MarketParams memory marketParams, address borrower, uint256 seizedAssets, uint256 repaidShares, bytes calldata data) external
     ├── when market is not created
     │   └── revert with MARKET_NOT_CREATED
     └── when market is created
-        ├── when the assets to seized is zero
-        │   └── revert with ZERO_ASSETS
-        └── when the assets to seized is not zero
-            ├── it should accrue the interest
+        ├── when both seizedAssets and repaidShares are null or both seizedAssets and repaidShares are not null
+        │   └─  revert with INCONSISTENT_INPUT
+        └── when one of seizedAssets or repaidShares is null and one of seizedAssets or repaidShares is not null
+            ├── it should accrue the interests
             ├── when position is healthy
             │   └── revert with HEALTHY_POSITION
             └── when the position is not healthy
-                ├── it should compute repaid = seized.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(incentive)
-                ├── it should compute repaidShares = repaid.toSharesDown(totalBorrowAssets[marketParams.id], totalBorrowShares[marketParams.id]);
-                ├── it should remove repaidShares from borrowShares[market.id][borrower]
+                ├── when seizedAssets is not zero
+                │    ├── it should compute assetsRepaid = seizedAssets.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(liquidationIncentiveFactor(marketParams.lltv))
+                │    └── it should compute repaidShares = assetsRepaid.toSharesDown(totalBorrow[marketParams.id], totalBorrowShares[market.id])
+                ├── when repaidShares is not zero
+                │    ├── it should compute assetsRepaid = repaidShares.toAssetsUp(totalBorrow[marketParams.id], totalBorrowShares[marketParams.id])
+                │    └── it should compute seizedAssets = assetsRepaid.wMulDown(incentiveFactor).mulDivDown(ORACLE_PRICE_SCALE, collateralPrice)
                 ├── it should remove repaidShares from totalBorrowShares[marketParams.id]
-                ├── it should remove repaid from totalBorrowAssets[marketParams.id]
-                ├── it should remove seized from collateral[marketParams.id][borrower]
+                ├── it should remove assetsRepaid from totalBorrow[marketParams.id]
+                ├── it should remove repaidShares from collateral[marketParams.id][borrower]
                 ├── if after the liquidation the borrower's collateral is 0
                 │   └── it should realize bad debt
-                │       ├── it should compute badDebt = borrowShares[marketParams.id][borrower].toAssetsUp(totalBorrowAssets[marketParams.id], totalBorrowShares[marketParams.id])
+                │       ├── it should compute badDebt = borrowShares[marketParams.id][borrower].toAssetsUp(totalBorrow[marketParams.id], totalBorrowShares[marketParams.id])
                 │       ├── it should remove badDebt from totalSupplyAssets[marketParams.id]
                 │       ├── it should remove badDebt from totalBorrowAssets[marketParams.id]
                 │       ├── it should remove borrowShares[marketParams.id][borrower] from totalBorrowShares[marketParams.id]
                 │       └── it should set borrowShares[marketParams.id][borrower] to 0
-                ├── it should transfer seized of collateral asset to the sender
-                ├── it should emit Liquidate(marketParams.id, msg.sender, borrower, repaid, repaidShares, seized, badDebtShares)
+                ├── it should transfer repaidShares of collateral asset to the sender
+                ├── it should emit Liquidate(marketParams.id, msg.sender, borrower, assetsRepaid, repaidShares, seizedAssets, badDebtShares)
                 ├── if data.length > 0
                 │   └── it should call sender's onMorphoLiquidate callback
-                └── it should transfer repaid of borrowable asset from the sender the Morpho
+                └── it should transfer assetsRepaid of borrowable asset from the sender to Morpho
 .
 └── flashLoan(address token, uint256 assets, bytes calldata data) external
     ├── it should transfer assets of token from Morpho to the sender

@@ -15,16 +15,16 @@ contract MorphoBalancesLibTest is BaseTest {
         _generatePendingInterest(amountSupplied, amountBorrowed, timeElapsed, fee);
 
         (
-            uint256 virtualTotalSupply,
-            uint256 virtualTotalBorrow,
+            uint256 virtualTotalSupplyAssets,
             uint256 virtualTotalSupplyShares,
+            uint256 virtualTotalBorrowAssets,
             uint256 virtualTotalBorrowShares
         ) = morpho.expectedMarketBalances(marketParams);
 
         _accrueInterest(marketParams);
 
-        assertEq(virtualTotalSupply, morpho.totalSupplyAssets(id), "total supply");
-        assertEq(virtualTotalBorrow, morpho.totalBorrowAssets(id), "total borrow");
+        assertEq(virtualTotalSupplyAssets, morpho.totalSupplyAssets(id), "total supply assets");
+        assertEq(virtualTotalBorrowAssets, morpho.totalBorrowAssets(id), "total borrow assets");
         assertEq(virtualTotalSupplyShares, morpho.totalSupplyShares(id), "total supply shares");
         assertEq(virtualTotalBorrowShares, morpho.totalBorrowShares(id), "total borrow shares");
     }
