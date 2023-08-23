@@ -111,16 +111,23 @@ interface IMorpho {
     function setFeeRecipient(address newFeeRecipient) external;
 
     /// @notice Creates `market`.
-    /// @dev Here is the list of requirements on the dependencies of the market (tokens, IRM and oracle):
+    /// @dev Here is the list of assumptions on the market's dependencies (tokens, IRM and oracle) that guarantees
+    /// Morpho behaves as expected:
     /// - The token should be ERC-20 compliant, except that it can omit return values on `transfer` and `transferFrom`.
-    /// - The token balance of Morpho should decrease on `transfer` and `transferFrom`. In particular, burn functions
-    /// can break our invariants.
+    /// - The token balance of Morpho should only decrease on `transfer` and `transferFrom`. In particular, tokens with
+    /// burn functions are not supported.
     /// - The token should not re-enter Morpho on `transfer` nor `transferFrom`.
     /// - The token balance of the sender (resp. receiver) should decrease (resp. increase) by exactly the given amount
-    /// on `transfer` and `transferFrom`. In particular, fees on transfer can break our invariants.
+    /// on `transfer` and `transferFrom`. In particular, tokens with fees on transfer are not supported.
     /// - The IRM should not re-enter Morpho.
-    /// @dev Warning: rebasing tokens whose balance go only up are technically supported, but using them directly
-    /// probably does not make sense from an economic perspective.
+    /// @dev Here is a list of properties on these markete dependencies that could break Morpho's liveness properties:
+    /// - The token can revert on `transfer` and `transferFrom` for an other reason than an approval or balance issue.
+    /// - The IRM can revert on `borrowRate`.
+    /// - If the IRM returns a high borrow rate such that the computation of `interest` in `_accrueInterest` overflows,
+    /// - The oracle can revert on `price`. Note that this can be used to prevent `borrow`, `withdrawCollateral` and
+    /// `liquidate` of being used in certain market conditions.
+    /// - If the oracle returns a high price such that the computation of `maxBorrow` in `_inHealthy` overflows, then
+    /// `borrow`, `withdrawCollateral` and `liquidate` revert.
     function createMarket(MarketParams memory marketParams) external;
 
     /// @notice Supplies `assets` or `shares` to `market` on behalf of `onBehalf`, optionally calling back the caller's
