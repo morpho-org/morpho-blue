@@ -89,6 +89,13 @@ contract MorphoHarness is Morpho {
         return MathLib.mulDivDown(x, y, d);
     }
 
+    function accrueInterest(MarketParams memory marketParams) external {
+        Id id = marketParams.id();
+        require(market[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
+
+        _accrueInterest(marketParams, id);
+    }
+
     function isHealthy(MarketParams memory marketParams, address user) external view returns (bool) {
         return _isHealthy(marketParams, marketParams.id(), user);
     }
