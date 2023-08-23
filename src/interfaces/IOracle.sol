@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity >=0.5.0;
+pragma solidity >=0.6.2;
 
 /// @title IOracle
 /// @author Morpho Labs
