@@ -267,8 +267,14 @@ contract Morpho is IMorpho {
 
         _accrueInterest(marketParams, id);
 
-        if (assets > 0) shares = assets.toSharesDown(market[id].totalBorrowAssets, market[id].totalBorrowShares);
-        else assets = shares.toAssetsUp(market[id].totalBorrowAssets, market[id].totalBorrowShares);
+        if (assets > 0) {
+            shares = assets.toSharesDown(market[id].totalBorrowAssets, market[id].totalBorrowShares);
+        } else {
+            assets = UtilsLib.min(
+                market[id].totalBorrowAssets,
+                shares.toAssetsUp(market[id].totalBorrowAssets, market[id].totalBorrowShares)
+            );
+        }
 
         user[id][onBehalf].borrowShares -= shares.toUint128();
         market[id].totalBorrowShares -= shares.toUint128();
