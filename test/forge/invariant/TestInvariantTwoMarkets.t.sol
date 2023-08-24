@@ -38,13 +38,13 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
         // High price because of the 1e36 price scale
         oracle.setPrice(1e40);
 
-        _weightSelector(this.setMarketFee.selector, 5);
-        _weightSelector(this.supplyOnMorpho.selector, 20);
-        _weightSelector(this.borrowOnMorpho.selector, 15);
-        _weightSelector(this.repayOnMorpho.selector, 10);
-        _weightSelector(this.withdrawOnMorpho.selector, 15);
-        _weightSelector(this.supplyCollateralOnMorpho.selector, 20);
-        _weightSelector(this.withdrawCollateralOnMorpho.selector, 15);
+        _weightSelector(this.setFee.selector, 5);
+        _weightSelector(this.supply.selector, 20);
+        _weightSelector(this.withdraw.selector, 15);
+        _weightSelector(this.borrow.selector, 15);
+        _weightSelector(this.repay.selector, 10);
+        _weightSelector(this.supplyCollateral.selector, 20);
+        _weightSelector(this.withdrawCollateral.selector, 15);
         _weightSelector(this.newBlock.selector, 20);
 
         blockNumber = block.number;
@@ -63,7 +63,7 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
         }
     }
 
-    function setMarketFee(uint256 newFee, bool changeMarket) public setCorrectBlock {
+    function setFee(uint256 newFee, bool changeMarket) public setCorrectBlock {
         (MarketParams memory chosenMarket,) = chooseMarket(changeMarket);
 
         newFee = bound(newFee, 0.1e18, MAX_FEE);
@@ -72,7 +72,7 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
         morpho.setFee(chosenMarket, newFee);
     }
 
-    function supplyOnMorpho(uint256 amount, bool changeMarket) public setCorrectBlock {
+    function supply(uint256 amount, bool changeMarket) public setCorrectBlock {
         (MarketParams memory chosenMarket,) = chooseMarket(changeMarket);
 
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
@@ -82,7 +82,7 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
         morpho.supply(chosenMarket, amount, 0, msg.sender, hex"");
     }
 
-    function withdrawOnMorpho(uint256 amount, bool changeMarket) public setCorrectBlock {
+    function withdraw(uint256 amount, bool changeMarket) public setCorrectBlock {
         _accrueInterest(marketParams);
 
         (MarketParams memory chosenMarket, Id chosenId) = chooseMarket(changeMarket);
@@ -101,7 +101,7 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
         morpho.withdraw(chosenMarket, amount, 0, msg.sender, msg.sender);
     }
 
-    function borrowOnMorpho(uint256 amount, bool changeMarket) public setCorrectBlock {
+    function borrow(uint256 amount, bool changeMarket) public setCorrectBlock {
         _accrueInterest(marketParams);
 
         (MarketParams memory chosenMarket, Id chosenId) = chooseMarket(changeMarket);
@@ -116,7 +116,7 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
         morpho.borrow(chosenMarket, amount, 0, msg.sender, msg.sender);
     }
 
-    function repayOnMorpho(uint256 amount, bool changeMarket) public setCorrectBlock {
+    function repay(uint256 amount, bool changeMarket) public setCorrectBlock {
         _accrueInterest(marketParams);
 
         (MarketParams memory chosenMarket, Id chosenId) = chooseMarket(changeMarket);
@@ -137,7 +137,7 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
         morpho.repay(chosenMarket, amount, 0, msg.sender, hex"");
     }
 
-    function supplyCollateralOnMorpho(uint256 amount, bool changeMarket) public setCorrectBlock {
+    function supplyCollateral(uint256 amount, bool changeMarket) public setCorrectBlock {
         (MarketParams memory chosenMarket,) = chooseMarket(changeMarket);
 
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
@@ -147,7 +147,7 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
         morpho.supplyCollateral(chosenMarket, amount, msg.sender, hex"");
     }
 
-    function withdrawCollateralOnMorpho(uint256 amount, bool changeMarket) public setCorrectBlock {
+    function withdrawCollateral(uint256 amount, bool changeMarket) public setCorrectBlock {
         _accrueInterest(marketParams);
 
         (MarketParams memory chosenMarket,) = chooseMarket(changeMarket);
