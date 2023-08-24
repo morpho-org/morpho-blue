@@ -249,7 +249,7 @@ interface IMorpho {
         uint256 seizedAssets,
         uint256 repaidShares,
         bytes memory data
-    ) external returns (uint256 seizedAssets, uint256 repaidAssets);
+    ) external returns (uint256, uint256);
 
     /// @notice Executes a flash loan.
     /// @param token The token to flash loan.

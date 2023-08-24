@@ -103,9 +103,9 @@ library EventsLib {
     /// @param id The market id.
     /// @param caller The caller.
     /// @param borrower The borrower of the position.
-    /// @param repaid The amount of assets repaid.
+    /// @param repaidAssets The amount of assets repaid.
     /// @param repaidShares The amount of shares burned.
-    /// @param seized The amount of collateral seized.
+    /// @param seizedAssets The amount of collateral seized.
     /// @param badDebtShares The amount of shares minted as bad debt.
     event Liquidate(
         Id indexed id,
