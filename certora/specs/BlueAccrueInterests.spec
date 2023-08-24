@@ -6,7 +6,7 @@ methods {
     // we assume here that all external functions will not access storage, since we cannot show
     // commutativity otherwise.  We also need to assume that the price and borrow rate return
     // always the same value (and do not depend on msg.origin), so we use ghost functions for them.
-    function _.borrowRate(MorphoHarness.Market market) external with (env e) => ghostBorrowRate(market.irm, e.block.timestamp) expect uint256;
+    function _.borrowRate(MorphoHarness.MarketParams marketParams) external with (env e) => ghostBorrowRate(marketParams.irm, e.block.timestamp) expect uint256;
     function _.price() external with (env e) => ghostOraclePrice(e.block.timestamp) expect uint256;
     function _.transfer(address to, uint256 amount) external => ghostTransfer(to, amount) expect bool;
     function _.transferFrom(address from, address to, uint256 amount) external => ghostTransferFrom(from, to, amount) expect bool;
@@ -32,7 +32,7 @@ ghost ghostTransferFrom(address, address, uint256) returns bool;
 rule supplyAccruesInterests()
 {
     env e;
-    MorphoHarness.Market market;
+    MorphoHarness.MarketParams marketParams;
     uint256 assets;
     uint256 shares;
     address onbehalf;
@@ -43,11 +43,11 @@ rule supplyAccruesInterests()
     // check that calling accrueInterests first has no effect.
     // this is because supply should call accrueInterests itself.
 
-    accrueInterests(e, market);
-    supply(e, market, assets, shares, onbehalf, data);
+    accrueInterests(e, marketParams);
+    supply(e, marketParams, assets, shares, onbehalf, data);
     storage afterBoth = lastStorage;
 
-    supply(e, market, assets, shares, onbehalf, data) at init;
+    supply(e, marketParams, assets, shares, onbehalf, data) at init;
 
     storage afterOne = lastStorage;
 
@@ -57,7 +57,7 @@ rule supplyAccruesInterests()
 rule withdrawAccruesInterests()
 {
     env e;
-    MorphoHarness.Market market;
+    MorphoHarness.MarketParams marketParams;
     uint256 assets;
     uint256 shares;
     address onbehalf;
@@ -68,11 +68,11 @@ rule withdrawAccruesInterests()
     // check that calling accrueInterests first has no effect.
     // this is because withdraw should call accrueInterests itself.
 
-    accrueInterests(e, market);
-    withdraw(e, market, assets, shares, onbehalf, receiver);
+    accrueInterests(e, marketParams);
+    withdraw(e, marketParams, assets, shares, onbehalf, receiver);
     storage afterBoth = lastStorage;
 
-    withdraw(e, market, assets, shares, onbehalf, receiver) at init;
+    withdraw(e, marketParams, assets, shares, onbehalf, receiver) at init;
 
     storage afterOne = lastStorage;
 
@@ -82,7 +82,7 @@ rule withdrawAccruesInterests()
 rule borrowAccruesInterests()
 {
     env e;
-    MorphoHarness.Market market;
+    MorphoHarness.MarketParams marketParams;
     uint256 assets;
     uint256 shares;
     address onbehalf;
@@ -93,11 +93,11 @@ rule borrowAccruesInterests()
     // check that calling accrueInterests first has no effect.
     // this is because borrow should call accrueInterests itself.
 
-    accrueInterests(e, market);
-    borrow(e, market, assets, shares, onbehalf, receiver);
+    accrueInterests(e, marketParams);
+    borrow(e, marketParams, assets, shares, onbehalf, receiver);
     storage afterBoth = lastStorage;
 
-    borrow(e, market, assets, shares, onbehalf, receiver) at init;
+    borrow(e, marketParams, assets, shares, onbehalf, receiver) at init;
 
     storage afterOne = lastStorage;
 
@@ -107,7 +107,7 @@ rule borrowAccruesInterests()
 rule repayAccruesInterests()
 {
     env e;
-    MorphoHarness.Market market;
+    MorphoHarness.MarketParams marketParams;
     uint256 assets;
     uint256 shares;
     address onbehalf;
@@ -118,11 +118,11 @@ rule repayAccruesInterests()
     // check that calling accrueInterests first has no effect.
     // this is because repay should call accrueInterests itself.
 
-    accrueInterests(e, market);
-    repay(e, market, assets, shares, onbehalf, data);
+    accrueInterests(e, marketParams);
+    repay(e, marketParams, assets, shares, onbehalf, data);
     storage afterBoth = lastStorage;
 
-    repay(e, market, assets, shares, onbehalf, data) at init;
+    repay(e, marketParams, assets, shares, onbehalf, data) at init;
 
     storage afterOne = lastStorage;
 
@@ -145,7 +145,7 @@ filtered {
 {
     env e1;
     env e2;
-    MorphoHarness.Market market;
+    MorphoHarness.MarketParams marketParams;
 
     require e1.block.timestamp == e2.block.timestamp;
 
@@ -153,7 +153,7 @@ filtered {
 
     // check that accrueInterests commutes with every other function.
 
-    accrueInterests(e1, market);
+    accrueInterests(e1, marketParams);
     f@withrevert(e2, args);
     bool revert1 = lastReverted;
 
@@ -162,7 +162,7 @@ filtered {
 
     f@withrevert(e2, args) at init;
     bool revert2 = lastReverted;
-    accrueInterests(e1, market);
+    accrueInterests(e1, marketParams);
 
     storage store2 = lastStorage;
 
