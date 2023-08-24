@@ -267,18 +267,12 @@ contract Morpho is IMorpho {
 
         _accrueInterest(marketParams, id);
 
-        if (assets > 0) {
-            shares = assets.toSharesDown(market[id].totalBorrowAssets, market[id].totalBorrowShares);
-        } else {
-            assets = MathLib.min(
-                market[id].totalBorrowAssets,
-                shares.toAssetsUp(market[id].totalBorrowAssets, market[id].totalBorrowShares)
-            );
-        }
+        if (assets > 0) shares = assets.toSharesDown(market[id].totalBorrowAssets, market[id].totalBorrowShares);
+        else assets = shares.toAssetsUp(market[id].totalBorrowAssets, market[id].totalBorrowShares);
 
         user[id][onBehalf].borrowShares -= shares.toUint128();
         market[id].totalBorrowShares -= shares.toUint128();
-        market[id].totalBorrowAssets -= UtilsLib.min(market[id].totalBorrowAssets, assets).toUint128();
+        market[id].totalBorrowAssets = MathLib.zeroFloorSub(market[id].totalBorrowAssets, assets).toUint128();
 
         // `assets` may be greater than `totalBorrowAssets` by 1.
         emit EventsLib.Repay(id, msg.sender, onBehalf, assets, shares);
@@ -353,8 +347,8 @@ contract Morpho is IMorpho {
         uint256 collateralPrice = IOracle(marketParams.oracle).price();
 
         require(!_isHealthy(marketParams, id, borrower, collateralPrice), ErrorsLib.HEALTHY_POSITION);
-        uint256 repaidAssets;
 
+        uint256 repaidAssets;
         {
             // The liquidation incentive factor is min(maxIncentiveFactor, 1/(1 - cursor*(1 - lltv))).
             uint256 incentiveFactor = MathLib.min(
@@ -373,7 +367,7 @@ contract Morpho is IMorpho {
 
         user[id][borrower].borrowShares -= repaidShares.toUint128();
         market[id].totalBorrowShares -= repaidShares.toUint128();
-        market[id].totalBorrowAssets -= UtilsLib.min(market[id].totalBorrowAssets, repaidAssets).toUint128();
+        market[id].totalBorrowAssets = MathLib.zeroFloorSub(market[id].totalBorrowAssets, repaidAssets).toUint128();
 
         user[id][borrower].collateral -= seizedAssets.toUint128();
 

@@ -88,4 +88,8 @@ contract MathLibTest is Test {
     function testMin(uint256 x, uint256 y) public {
         assertEq(MathLib.min(x, y), x < y ? x : y);
     }
+
+    function testZeroFloorSub(uint256 x, uint256 y) public {
+        assertEq(MathLib.zeroFloorSub(x, y), x < y ? 0 : x - y);
+    }
 }

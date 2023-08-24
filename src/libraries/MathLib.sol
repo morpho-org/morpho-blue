@@ -15,6 +15,13 @@ library MathLib {
         }
     }
 
+    /// @dev Returns max(x - y, 0).
+    function zeroFloorSub(uint256 x, uint256 y) internal pure returns (uint256 z) {
+        assembly {
+            z := mul(gt(x, y), sub(x, y))
+        }
+    }
+
     /// @dev (x * y) / WAD rounded down.
     function wMulDown(uint256 x, uint256 y) internal pure returns (uint256) {
         return mulDivDown(x, y, WAD);
