@@ -26,17 +26,17 @@ contract SinglePositionInvariantTest is InvariantBaseTest {
         // High price because of the 1e36 price scale
         oracle.setPrice(1e40);
 
-        _weightSelector(this.supply.selector, 20);
-        _weightSelector(this.borrow.selector, 15);
-        _weightSelector(this.withdraw.selector, 15);
-        _weightSelector(this.repay.selector, 10);
-        _weightSelector(this.supplyCollateral.selector, 20);
-        _weightSelector(this.withdrawCollateral.selector, 15);
+        _weightSelector(this.supplyNoRevert.selector, 20);
+        _weightSelector(this.withdrawNoRevert.selector, 15);
+        _weightSelector(this.borrowNoRevert.selector, 15);
+        _weightSelector(this.repayNoRevert.selector, 10);
+        _weightSelector(this.supplyCollateralNoRevert.selector, 20);
+        _weightSelector(this.withdrawCollateralNoRevert.selector, 15);
 
         targetSelector(FuzzSelector({addr: address(this), selectors: selectors}));
     }
 
-    function supply(uint256 amount) public {
+    function supplyNoRevert(uint256 amount) public {
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
         borrowableToken.setBalance(msg.sender, amount);
@@ -44,7 +44,7 @@ contract SinglePositionInvariantTest is InvariantBaseTest {
         morpho.supply(marketParams, amount, 0, msg.sender, hex"");
     }
 
-    function withdraw(uint256 amount) public {
+    function withdrawNoRevert(uint256 amount) public {
         uint256 availableLiquidity = morpho.totalSupplyAssets(id) - morpho.totalBorrowAssets(id);
         if (morpho.supplyShares(id, msg.sender) == 0) return;
         if (availableLiquidity == 0) return;
@@ -58,7 +58,7 @@ contract SinglePositionInvariantTest is InvariantBaseTest {
         morpho.withdraw(marketParams, amount, 0, msg.sender, msg.sender);
     }
 
-    function borrow(uint256 amount) public {
+    function borrowNoRevert(uint256 amount) public {
         uint256 availableLiquidity = morpho.totalSupplyAssets(id) - morpho.totalBorrowAssets(id);
         if (availableLiquidity == 0) return;
 
@@ -68,7 +68,7 @@ contract SinglePositionInvariantTest is InvariantBaseTest {
         morpho.borrow(marketParams, amount, 0, msg.sender, msg.sender);
     }
 
-    function repay(uint256 amount) public {
+    function repayNoRevert(uint256 amount) public {
         if (morpho.borrowShares(id, msg.sender) == 0) return;
 
         uint256 borrowerBalance =
@@ -81,7 +81,7 @@ contract SinglePositionInvariantTest is InvariantBaseTest {
         morpho.repay(marketParams, amount, 0, msg.sender, hex"");
     }
 
-    function supplyCollateral(uint256 amount) public {
+    function supplyCollateralNoRevert(uint256 amount) public {
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
         collateralToken.setBalance(msg.sender, amount);
@@ -89,7 +89,7 @@ contract SinglePositionInvariantTest is InvariantBaseTest {
         morpho.supplyCollateral(marketParams, amount, msg.sender, hex"");
     }
 
-    function withdrawCollateral(uint256 amount) public {
+    function withdrawCollateralNoRevert(uint256 amount) public {
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
         vm.prank(msg.sender);
