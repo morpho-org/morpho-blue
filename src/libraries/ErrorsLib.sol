@@ -9,11 +9,14 @@ library ErrorsLib {
     /// @notice Thrown when the caller is not the owner.
     string internal constant NOT_OWNER = "not owner";
 
-    /// @notice Thrown when the LLTV to enable is too high.
-    string internal constant LLTV_TOO_HIGH = "LLTV too high";
+    /// @notice Thrown when the LLTV to enable exceeds the maximum LLTV.
+    string internal constant MAX_LLTV_EXCEEDED = "max LLTV exceeded";
 
     /// @notice Thrown when the fee to set exceeds the maximum fee.
-    string internal constant MAX_FEE_EXCEEDED = "MAX_FEE exceeded";
+    string internal constant MAX_FEE_EXCEEDED = "max fee exceeded";
+
+    /// @notice Thrown when the value is already set.
+    string internal constant ALREADY_SET = "already set";
 
     /// @notice Thrown when the IRM is not enabled at market creation.
     string internal constant IRM_NOT_ENABLED = "IRM not enabled";
@@ -22,13 +25,13 @@ library ErrorsLib {
     string internal constant LLTV_NOT_ENABLED = "LLTV not enabled";
 
     /// @notice Thrown when the market is already created.
-    string internal constant MARKET_CREATED = "market created";
+    string internal constant MARKET_ALREADY_CREATED = "market already created";
 
     /// @notice Thrown when the market is not created.
     string internal constant MARKET_NOT_CREATED = "market not created";
 
     /// @notice Thrown when not exactly one of the input amount is zero.
-    string constant INCONSISTENT_INPUT = "inconsistent input";
+    string internal constant INCONSISTENT_INPUT = "inconsistent input";
 
     /// @notice Thrown when zero assets is passed as input.
     string internal constant ZERO_ASSETS = "zero assets";
@@ -62,4 +65,7 @@ library ErrorsLib {
 
     /// @notice Thrown when a token transferFrom has failed.
     string internal constant TRANSFER_FROM_FAILED = "transferFrom failed";
+
+    /// @notice Thrown when the maximum uint128 is exceeded.
+    string internal constant MAX_UINT128_EXCEEDED = "max uint128 exceeded";
 }

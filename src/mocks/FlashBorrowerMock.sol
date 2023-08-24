@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import {IFlashLender} from "../interfaces/IFlashLender.sol";
+import {IMorpho} from "../interfaces/IMorpho.sol";
 import {IMorphoFlashLoanCallback} from "../interfaces/IMorphoCallbacks.sol";
 
 import {ERC20} from "openzeppelin-contracts/token/ERC20/ERC20.sol";
 
 contract FlashBorrowerMock is IMorphoFlashLoanCallback {
-    IFlashLender private immutable MORPHO;
+    IMorpho private immutable MORPHO;
 
-    constructor(IFlashLender newMorpho) {
+    constructor(IMorpho newMorpho) {
         MORPHO = newMorpho;
     }
 

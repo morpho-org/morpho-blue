@@ -5,20 +5,31 @@ import "../BaseTest.sol";
 
 contract IntegrationLiquidateTest is BaseTest {
     using MathLib for uint256;
+    using MorphoLib for Morpho;
     using SharesMathLib for uint256;
 
-    function testLiquidateNotCreatedMarket(Market memory marketFuzz) public {
-        vm.assume(neq(marketFuzz, market));
+    function testLiquidateNotCreatedMarket(MarketParams memory marketParamsFuzz) public {
+        vm.assume(neq(marketParamsFuzz, marketParams));
 
         vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
-        morpho.liquidate(marketFuzz, address(this), 1, hex"");
+        morpho.liquidate(marketParamsFuzz, address(this), 1, 0, hex"");
     }
 
     function testLiquidateZeroAmount() public {
         vm.prank(BORROWER);
 
-        vm.expectRevert(bytes(ErrorsLib.ZERO_ASSETS));
-        morpho.liquidate(market, address(this), 0, hex"");
+        vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
+        morpho.liquidate(marketParams, address(this), 0, 0, hex"");
+    }
+
+    function testLiquidateInconsistentInput(uint256 seized, uint256 sharesRepaid) public {
+        seized = bound(seized, 1, MAX_TEST_AMOUNT);
+        sharesRepaid = bound(sharesRepaid, 1, MAX_TEST_SHARES);
+
+        vm.prank(BORROWER);
+
+        vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
+        morpho.liquidate(marketParams, address(this), seized, sharesRepaid, hex"");
     }
 
     function testLiquidateHealthyPosition(
@@ -42,16 +53,16 @@ contract IntegrationLiquidateTest is BaseTest {
         collateralToken.setBalance(BORROWER, amountCollateral);
 
         vm.startPrank(BORROWER);
-        morpho.supplyCollateral(market, amountCollateral, BORROWER, hex"");
-        morpho.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
+        morpho.supplyCollateral(marketParams, amountCollateral, BORROWER, hex"");
+        morpho.borrow(marketParams, amountBorrowed, 0, BORROWER, BORROWER);
         vm.stopPrank();
 
         vm.prank(LIQUIDATOR);
         vm.expectRevert(bytes(ErrorsLib.HEALTHY_POSITION));
-        morpho.liquidate(market, BORROWER, amountSeized, hex"");
+        morpho.liquidate(marketParams, BORROWER, amountSeized, 0, hex"");
     }
 
-    function testLiquidateNoBadDebt(
+    function testLiquidateSeizedInputNoBadDebt(
         uint256 amountCollateral,
         uint256 amountSupplied,
         uint256 amountBorrowed,
@@ -66,7 +77,7 @@ contract IntegrationLiquidateTest is BaseTest {
         amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
         _supply(amountSupplied);
 
-        uint256 incentive = _liquidationIncentive(market.lltv);
+        uint256 incentive = _liquidationIncentive(marketParams.lltv);
         uint256 maxSeized = amountBorrowed.wMulDown(incentive).mulDivDown(ORACLE_PRICE_SCALE, priceCollateral);
         amountSeized = bound(amountSeized, 1, min(maxSeized, amountCollateral - 1));
         uint256 expectedRepaid = amountSeized.mulDivUp(priceCollateral, ORACLE_PRICE_SCALE).wDivUp(incentive);
@@ -77,26 +88,27 @@ contract IntegrationLiquidateTest is BaseTest {
         oracle.setPrice(type(uint256).max / amountCollateral);
 
         vm.startPrank(BORROWER);
-        morpho.supplyCollateral(market, amountCollateral, BORROWER, hex"");
-        morpho.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
+        morpho.supplyCollateral(marketParams, amountCollateral, BORROWER, hex"");
+        morpho.borrow(marketParams, amountBorrowed, 0, BORROWER, BORROWER);
         vm.stopPrank();
 
         oracle.setPrice(priceCollateral);
 
-        uint256 expectedRepaidShares = expectedRepaid.toSharesDown(morpho.totalBorrow(id), morpho.totalBorrowShares(id));
+        uint256 expectedRepaidShares =
+            expectedRepaid.toSharesDown(morpho.totalBorrowAssets(id), morpho.totalBorrowShares(id));
 
         vm.prank(LIQUIDATOR);
 
         vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.Liquidate(id, LIQUIDATOR, BORROWER, expectedRepaid, expectedRepaidShares, amountSeized, 0);
-        (uint256 returnRepaid, uint256 returnRepaidShares) = morpho.liquidate(market, BORROWER, amountSeized, hex"");
+        (uint256 returnSeized, uint256 returnRepaid) = morpho.liquidate(marketParams, BORROWER, amountSeized, 0, hex"");
 
         uint256 expectedBorrowShares = amountBorrowed.toSharesUp(0, 0) - expectedRepaidShares;
 
+        assertEq(returnSeized, amountSeized, "returned seized amount");
         assertEq(returnRepaid, expectedRepaid, "returned asset amount");
-        assertEq(returnRepaidShares, expectedRepaidShares, "returned shares amount");
         assertEq(morpho.borrowShares(id, BORROWER), expectedBorrowShares, "borrow shares");
-        assertEq(morpho.totalBorrow(id), amountBorrowed - expectedRepaid, "total borrow");
+        assertEq(morpho.totalBorrowAssets(id), amountBorrowed - expectedRepaid, "total borrow");
         assertEq(morpho.totalBorrowShares(id), expectedBorrowShares, "total borrow shares");
         assertEq(morpho.collateral(id, BORROWER), amountCollateral - amountSeized, "collateral");
         assertEq(borrowableToken.balanceOf(BORROWER), amountBorrowed, "borrower balance");
@@ -110,6 +122,71 @@ contract IntegrationLiquidateTest is BaseTest {
             collateralToken.balanceOf(address(morpho)), amountCollateral - amountSeized, "morpho collateral balance"
         );
         assertEq(collateralToken.balanceOf(LIQUIDATOR), amountSeized, "liquidator collateral balance");
+    }
+
+    function testLiquidateSharesInputNoBadDebt(
+        uint256 amountCollateral,
+        uint256 amountSupplied,
+        uint256 amountBorrowed,
+        uint256 sharesRepaid,
+        uint256 priceCollateral
+    ) public {
+        (amountCollateral, amountBorrowed, priceCollateral) =
+            _boundUnhealthyPosition(amountCollateral, amountBorrowed, priceCollateral);
+
+        vm.assume(amountCollateral > 1);
+
+        amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
+        _supply(amountSupplied);
+
+        uint256 expectedBorrowShares = amountBorrowed.toSharesUp(0, 0);
+        uint256 maxRepaidShares = amountCollateral.mulDivDown(priceCollateral, ORACLE_PRICE_SCALE).wDivDown(
+            _liquidationIncentive(marketParams.lltv)
+        );
+        vm.assume(maxRepaidShares != 0);
+        sharesRepaid = bound(sharesRepaid, 1, min(maxRepaidShares, expectedBorrowShares));
+        uint256 expectedRepaid = sharesRepaid.toAssetsUp(amountBorrowed, expectedBorrowShares);
+        uint256 expectedSeized = expectedRepaid.wMulDown(_liquidationIncentive(marketParams.lltv)).mulDivDown(
+            ORACLE_PRICE_SCALE, priceCollateral
+        );
+
+        borrowableToken.setBalance(LIQUIDATOR, amountBorrowed);
+        collateralToken.setBalance(BORROWER, amountCollateral);
+
+        oracle.setPrice(type(uint256).max / amountCollateral);
+
+        vm.startPrank(BORROWER);
+        morpho.supplyCollateral(marketParams, amountCollateral, BORROWER, hex"");
+        morpho.borrow(marketParams, amountBorrowed, 0, BORROWER, BORROWER);
+        vm.stopPrank();
+
+        oracle.setPrice(priceCollateral);
+
+        vm.prank(LIQUIDATOR);
+
+        vm.expectEmit(true, true, true, true, address(morpho));
+        emit EventsLib.Liquidate(id, LIQUIDATOR, BORROWER, expectedRepaid, sharesRepaid, expectedSeized, 0);
+        (uint256 returnSeized, uint256 returnRepaid) = morpho.liquidate(marketParams, BORROWER, 0, sharesRepaid, hex"");
+
+        expectedBorrowShares = amountBorrowed.toSharesUp(0, 0) - sharesRepaid;
+
+        assertEq(returnSeized, expectedSeized, "returned seized amount");
+        assertEq(returnRepaid, expectedRepaid, "returned asset amount");
+        assertEq(morpho.borrowShares(id, BORROWER), expectedBorrowShares, "borrow shares");
+        assertEq(morpho.totalBorrowAssets(id), amountBorrowed - expectedRepaid, "total borrow");
+        assertEq(morpho.totalBorrowShares(id), expectedBorrowShares, "total borrow shares");
+        assertEq(morpho.collateral(id, BORROWER), amountCollateral - expectedSeized, "collateral");
+        assertEq(borrowableToken.balanceOf(BORROWER), amountBorrowed, "borrower balance");
+        assertEq(borrowableToken.balanceOf(LIQUIDATOR), amountBorrowed - expectedRepaid, "liquidator balance");
+        assertEq(
+            borrowableToken.balanceOf(address(morpho)),
+            amountSupplied - amountBorrowed + expectedRepaid,
+            "morpho balance"
+        );
+        assertEq(
+            collateralToken.balanceOf(address(morpho)), amountCollateral - expectedSeized, "morpho collateral balance"
+        );
+        assertEq(collateralToken.balanceOf(LIQUIDATOR), expectedSeized, "liquidator collateral balance");
     }
 
     struct LiquidateBadDebtTestParams {
@@ -136,7 +213,7 @@ contract IntegrationLiquidateTest is BaseTest {
 
         vm.assume(amountCollateral > 1);
 
-        params.incentive = _liquidationIncentive(market.lltv);
+        params.incentive = _liquidationIncentive(marketParams.lltv);
         params.expectedRepaid = amountCollateral.mulDivUp(priceCollateral, ORACLE_PRICE_SCALE).wDivUp(params.incentive);
 
         uint256 minBorrowed = max(params.expectedRepaid, amountBorrowed);
@@ -151,18 +228,18 @@ contract IntegrationLiquidateTest is BaseTest {
         oracle.setPrice(type(uint256).max / amountCollateral);
 
         vm.startPrank(BORROWER);
-        morpho.supplyCollateral(market, amountCollateral, BORROWER, hex"");
-        morpho.borrow(market, amountBorrowed, 0, BORROWER, BORROWER);
+        morpho.supplyCollateral(marketParams, amountCollateral, BORROWER, hex"");
+        morpho.borrow(marketParams, amountBorrowed, 0, BORROWER, BORROWER);
         vm.stopPrank();
 
         oracle.setPrice(priceCollateral);
 
         params.expectedRepaidShares =
-            params.expectedRepaid.toSharesDown(morpho.totalBorrow(id), morpho.totalBorrowShares(id));
+            params.expectedRepaid.toSharesDown(morpho.totalBorrowAssets(id), morpho.totalBorrowShares(id));
         params.borrowSharesBeforeLiquidation = morpho.borrowShares(id, BORROWER);
         params.totalBorrowSharesBeforeLiquidation = morpho.totalBorrowShares(id);
-        params.totalBorrowBeforeLiquidation = morpho.totalBorrow(id);
-        params.totalSupplyBeforeLiquidation = morpho.totalSupply(id);
+        params.totalBorrowBeforeLiquidation = morpho.totalBorrowAssets(id);
+        params.totalSupplyBeforeLiquidation = morpho.totalSupplyAssets(id);
         params.expectedBadDebt = (params.borrowSharesBeforeLiquidation - params.expectedRepaidShares).toAssetsUp(
             params.totalBorrowBeforeLiquidation - params.expectedRepaid,
             params.totalBorrowSharesBeforeLiquidation - params.expectedRepaidShares
@@ -180,10 +257,11 @@ contract IntegrationLiquidateTest is BaseTest {
             amountCollateral,
             params.expectedBadDebt * SharesMathLib.VIRTUAL_SHARES
         );
-        (uint256 returnRepaid, uint256 returnRepaidShares) = morpho.liquidate(market, BORROWER, amountCollateral, hex"");
+        (uint256 returnSeized, uint256 returnRepaid) =
+            morpho.liquidate(marketParams, BORROWER, amountCollateral, 0, hex"");
 
+        assertEq(returnSeized, amountCollateral, "returned seized amount");
         assertEq(returnRepaid, params.expectedRepaid, "returned asset amount");
-        assertEq(returnRepaidShares, params.expectedRepaidShares, "returned shares amount");
         assertEq(morpho.collateral(id, BORROWER), 0, "collateral");
         assertEq(borrowableToken.balanceOf(BORROWER), amountBorrowed, "borrower balance");
         assertEq(borrowableToken.balanceOf(LIQUIDATOR), amountBorrowed - params.expectedRepaid, "liquidator balance");
@@ -199,10 +277,12 @@ contract IntegrationLiquidateTest is BaseTest {
         assertEq(morpho.borrowShares(id, BORROWER), 0, "borrow shares");
         assertEq(morpho.totalBorrowShares(id), 0, "total borrow shares");
         assertEq(
-            morpho.totalBorrow(id),
+            morpho.totalBorrowAssets(id),
             params.totalBorrowBeforeLiquidation - params.expectedRepaid - params.expectedBadDebt,
             "total borrow"
         );
-        assertEq(morpho.totalSupply(id), params.totalSupplyBeforeLiquidation - params.expectedBadDebt, "total supply");
+        assertEq(
+            morpho.totalSupplyAssets(id), params.totalSupplyBeforeLiquidation - params.expectedBadDebt, "total supply"
+        );
     }
 }

@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity >=0.5.0;
+pragma solidity >=0.6.2;
 
 /// @title IERC20
 /// @author Morpho Labs
 /// @custom:contact security@morpho.xyz
-interface IERC20 {
-    function transfer(address to, uint256 value) external returns (bool);
-    function transferFrom(address from, address to, uint256 value) external returns (bool);
-}
+/// @dev Empty because we only call library functions. It prevents calling transfer (transferFrom) instead of
+/// safeTransfer (safeTransferFrom).
+interface IERC20 {}

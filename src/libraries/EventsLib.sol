@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import {Id, Market} from "../interfaces/IMorpho.sol";
+import {Id, MarketParams} from "../interfaces/IMorpho.sol";
 
 /// @title EventsLib
 /// @author Morpho Labs
@@ -31,8 +31,8 @@ library EventsLib {
 
     /// @notice Emitted when creating a market.
     /// @param id The market id.
-    /// @param market The market that was created.
-    event CreateMarket(Id indexed id, Market market);
+    /// @param marketParams The market that was created.
+    event CreateMarket(Id indexed id, MarketParams marketParams);
 
     /// @notice Emitted on supply of assets.
     /// @param id The market id.
@@ -138,10 +138,10 @@ library EventsLib {
     /// @param usedNonce The nonce that was used.
     event IncrementNonce(address indexed caller, address indexed authorizer, uint256 usedNonce);
 
-    /// @notice Emitted when accruing interests.
+    /// @notice Emitted when accruing interest.
     /// @param id The market id.
     /// @param prevBorrowRate The previous borrow rate.
-    /// @param accruedInterests The amount of interest accrued.
+    /// @param interest The amount of interest accrued.
     /// @param feeShares The amount of shares minted as fee.
-    event AccrueInterests(Id indexed id, uint256 prevBorrowRate, uint256 accruedInterests, uint256 feeShares);
+    event AccrueInterest(Id indexed id, uint256 prevBorrowRate, uint256 interest, uint256 feeShares);
 }
