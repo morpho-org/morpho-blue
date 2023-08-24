@@ -447,9 +447,6 @@ contract Morpho is IMorpho {
 
         if (elapsed == 0) return;
 
-        // Safe "unchecked" cast.
-        market[id].lastUpdate = uint128(block.timestamp);
-
         if (market[id].totalBorrowAssets != 0) {
             uint256 borrowRate = IIrm(marketParams.irm).borrowRate(marketParams, market[id]);
             uint256 interest = market[id].totalBorrowAssets.wMulDown(borrowRate.wTaylorCompounded(elapsed));
@@ -469,6 +466,9 @@ contract Morpho is IMorpho {
 
             emit EventsLib.AccrueInterest(id, borrowRate, interest, feeShares);
         }
+
+        // Safe "unchecked" cast.
+        market[id].lastUpdate = uint128(block.timestamp);
     }
 
     /* HEALTH CHECK */
