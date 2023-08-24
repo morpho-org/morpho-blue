@@ -100,8 +100,8 @@ rule createMarketRevertCondition(env e, MorphoHarness.MarketParams marketParams)
     assert lastReverted <=> e.msg.value != 0 || !irmEnabled || !lltvEnabled || lastUpdated != 0;
 }
 
-rule supplyInputValidation(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes b) {
-    supply@withrevert(e, marketParams, assets, shares, onBehalf, b);
+rule supplyInputValidation(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data) {
+    supply@withrevert(e, marketParams, assets, shares, onBehalf, data);
     assert !exactlyOneZero(assets, shares) || onBehalf == 0 => lastReverted;
 }
 
@@ -119,13 +119,13 @@ rule borrowInputValidation(env e, MorphoHarness.MarketParams marketParams, uint2
     assert !exactlyOneZero(assets, shares) || onBehalf == 0 => lastReverted;
 }
 
-rule repayInputValidation(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes b) {
-    repay@withrevert(e, marketParams, assets, shares, onBehalf, b);
+rule repayInputValidation(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data) {
+    repay@withrevert(e, marketParams, assets, shares, onBehalf, data);
     assert !exactlyOneZero(assets, shares) || onBehalf == 0 => lastReverted;
 }
 
-rule supplyCollateralInputValidation(env e, MorphoHarness.MarketParams marketParams, uint256 assets, address onBehalf, bytes b) {
-    supplyCollateral@withrevert(e, marketParams, assets, onBehalf, b);
+rule supplyCollateralInputValidation(env e, MorphoHarness.MarketParams marketParams, uint256 assets, address onBehalf, bytes data) {
+    supplyCollateral@withrevert(e, marketParams, assets, onBehalf, data);
     assert assets == 0 || onBehalf == 0 => lastReverted;
 }
 
@@ -136,7 +136,7 @@ rule withdrawCollateralInputValidation(env e, MorphoHarness.MarketParams marketP
     assert assets == 0 || onBehalf == 0 => lastReverted;
 }
 
-rule liquidateInputValidation(env e, MorphoHarness.MarketParams marketParams, address borrower, uint256 seized, bytes b) {
-    liquidate@withrevert(e, marketParams, borrower, seized, b);
+rule liquidateInputValidation(env e, MorphoHarness.MarketParams marketParams, address borrower, uint256 seizedAssets, uint256 repaidShares, bytes data) {
+    liquidate@withrevert(e, marketParams, borrower, seizedAssets, repaidShares, data);
     assert seized == 0 => lastReverted;
 }

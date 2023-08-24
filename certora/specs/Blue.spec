@@ -131,7 +131,7 @@ invariant isLiquid(address token)
         requireInvariant marketInvariant(marketParams);
         require e.msg.sender != currentContract;
     }
-    preserved liquidate(MorphoHarness.MarketParams marketParams, address _b, uint256 _s, bytes _d) with (env e) {
+    preserved liquidate(MorphoHarness.MarketParams marketParams, address _b, uint256 _s, uint256 _r, bytes _d) with (env e) {
         requireInvariant marketInvariant(marketParams);
         require e.msg.sender != currentContract;
     }

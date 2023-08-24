@@ -78,7 +78,7 @@ rule accrueInterestsIncreasesBorrowRatio() {
 
 rule onlyLiquidateCanDecreaseSupplyRatio(env e, method f, calldataarg args)
 filtered {
-    f -> !f.isView && f.selector != sig:liquidate(MorphoHarness.MarketParams, address, uint256, bytes).selector
+    f -> !f.isView && f.selector != sig:liquidate(MorphoHarness.MarketParams, address, uint256, uint256, bytes).selector
 }
 {
     MorphoHarness.Id id;
