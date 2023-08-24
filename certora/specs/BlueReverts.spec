@@ -138,5 +138,5 @@ rule withdrawCollateralInputValidation(env e, MorphoHarness.MarketParams marketP
 
 rule liquidateInputValidation(env e, MorphoHarness.MarketParams marketParams, address borrower, uint256 seizedAssets, uint256 repaidShares, bytes data) {
     liquidate@withrevert(e, marketParams, borrower, seizedAssets, repaidShares, data);
-    assert seized == 0 => lastReverted;
+    assert seizedAssets == 0 => lastReverted;
 }
