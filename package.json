@@ -15,30 +15,30 @@
     "lodash": "^4.17.21"
   },
   "devDependencies": {
-    "@commitlint/cli": "^17.6.7",
-    "@commitlint/config-conventional": "^17.6.7",
+    "@commitlint/cli": "^17.7.1",
+    "@commitlint/config-conventional": "^17.7.0",
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.6",
-    "@nomicfoundation/hardhat-foundry": "^1.0.2",
+    "@nomicfoundation/hardhat-foundry": "^1.0.3",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.8",
     "@nomiclabs/hardhat-ethers": "^2.2.3",
-    "@trivago/prettier-plugin-sort-imports": "^4.1.1",
-    "@typechain/ethers-v5": "^11.1.0",
-    "@typechain/hardhat": "^8.0.2",
+    "@trivago/prettier-plugin-sort-imports": "^4.2.0",
+    "@typechain/ethers-v5": "^11.1.1",
+    "@typechain/hardhat": "^9.0.0",
     "@types/chai": "^4.3.5",
-    "@types/lodash": "^4.14.195",
+    "@types/lodash": "^4.14.197",
     "@types/mocha": "^10.0.1",
-    "@types/node": "^20.4.2",
-    "chai": "^4.3.7",
+    "@types/node": "^20.5.4",
+    "chai": "^4.3.8",
     "dotenv": "^16.3.1",
-    "hardhat": "^2.17.0",
+    "hardhat": "^2.17.1",
     "hardhat-gas-reporter": "^1.0.9",
-    "hardhat-tracer": "^2.5.1",
+    "hardhat-tracer": "^2.6.0",
     "husky": "^8.0.3",
-    "lint-staged": "^13.2.3",
-    "prettier": "^3.0.0",
+    "lint-staged": "^14.0.1",
+    "prettier": "^3.0.2",
     "solidity-coverage": "^0.8.4",
     "ts-node": "^10.9.1",
-    "typechain": "^8.3.0",
+    "typechain": "^8.3.1",
     "typescript": "^5.1.6"
   },
   "lint-staged": {
@@ -55,6 +55,8 @@
   },
   "prettier": {
     "printWidth": 120,
-    "plugins": ["@trivago/prettier-plugin-sort-imports"]
+    "plugins": [
+      "@trivago/prettier-plugin-sort-imports"
+    ]
   }
 }
