@@ -65,10 +65,23 @@ interface IMorpho {
     function feeRecipient() external view returns (address);
 
     /// @notice The state of the position of `user` on the market corresponding to `id`.
-    function position(Id id, address user) external view returns (uint256, uint128, uint128);
+    function user(Id id, address user)
+        external
+        view
+        returns (uint256 supplyShares, uint128 borrowShares, uint128 collateral);
 
     /// @notice The state of the market corresponding to `id`.
-    function market(Id id) external view returns (uint128, uint128, uint128, uint128, uint128, uint128);
+    function market(Id id)
+        external
+        view
+        returns (
+            uint128 totalSupplyAssets,
+            uint128 totalSupplyShares,
+            uint128 totalBorrowAssets,
+            uint128 totalBorrowShares,
+            uint128 lastUpdate,
+            uint128 fee
+        );
 
     /// @notice Whether the `irm` is enabled.
     function isIrmEnabled(address irm) external view returns (bool);
@@ -93,14 +106,13 @@ interface IMorpho {
 
     /// @notice Sets `newOwner` as owner of the contract.
     /// @dev Warning: No two-step transfer ownership.
-    /// @dev Warning: The owner can be set to the zero address.
     function setOwner(address newOwner) external;
 
-    /// @notice Enables `irm` as possible IRM for market creation.
+    /// @notice Enables `irm` as a possible IRM for market creation.
     /// @dev Warning: It is not possible to disable an IRM.
     function enableIrm(address irm) external;
 
-    /// @notice Enables `lltv` as possible LLTV for market creation.
+    /// @notice Enables `lltv` as a possible LLTV for market creation.
     /// @dev Warning: It is not possible to disable a LLTV.
     function enableLltv(uint256 lltv) external;
 
@@ -126,7 +138,7 @@ interface IMorpho {
     /// @param marketParams The market to supply assets to.
     /// @param assets The amount of assets to supply.
     /// @param shares The amount of shares to mint.
-    /// @param onBehalf The address that will receive the position.
+    /// @param onBehalf The address that will own the increased supply position.
     /// @param data Arbitrary data to pass to the `onMorphoSupply` callback. Pass empty data if not needed.
     /// @return assetsSupplied The amount of assets supplied.
     /// @return sharesSupplied The amount of shares minted.
@@ -145,7 +157,7 @@ interface IMorpho {
     /// @param marketParams The market to withdraw assets from.
     /// @param assets The amount of assets to withdraw.
     /// @param shares The amount of shares to burn.
-    /// @param onBehalf The address of the owner of the withdrawn assets.
+    /// @param onBehalf The address of the owner of the supply position.
     /// @param receiver The address that will receive the withdrawn assets.
     /// @return assetsWithdrawn The amount of assets withdrawn.
     /// @return sharesWithdrawn The amount of shares burned.
@@ -166,8 +178,8 @@ interface IMorpho {
     /// @param marketParams The market to borrow assets from.
     /// @param assets The amount of assets to borrow.
     /// @param shares The amount of shares to mint.
-    /// @param onBehalf The address of the owner of the debt.
-    /// @param receiver The address that will receive the debt.
+    /// @param onBehalf The address that will own the increased borrow position.
+    /// @param receiver The address that will receive the borrowed assets.
     /// @return assetsBorrowed The amount of assets borrowed.
     /// @return sharesBorrowed The amount of shares minted.
     function borrow(
@@ -185,7 +197,7 @@ interface IMorpho {
     /// @param marketParams The market to repay assets to.
     /// @param assets The amount of assets to repay.
     /// @param shares The amount of shares to burn.
-    /// @param onBehalf The address of the owner of the debt.
+    /// @param onBehalf The address of the owner of the debt position.
     /// @param data Arbitrary data to pass to the `onMorphoRepay` callback. Pass empty data if not needed.
     /// @return assetsRepaid The amount of assets repaid.
     /// @return sharesRepaid The amount of shares burned.
@@ -203,7 +215,7 @@ interface IMorpho {
     /// @dev Supplying a large amount can revert for overflow.
     /// @param marketParams The market to supply collateral to.
     /// @param assets The amount of collateral to supply.
-    /// @param onBehalf The address that will receive the collateral.
+    /// @param onBehalf The address that will own the increased collateral position.
     /// @param data Arbitrary data to pass to the `onMorphoSupplyCollateral` callback. Pass empty data if not needed.
     function supplyCollateral(MarketParams memory marketParams, uint256 assets, address onBehalf, bytes memory data)
         external;
@@ -213,15 +225,15 @@ interface IMorpho {
     /// @dev Withdrawing an amount corresponding to more collateral than supplied will revert for underflow.
     /// @param marketParams The market to withdraw collateral from.
     /// @param assets The amount of collateral to withdraw.
-    /// @param onBehalf The address of the owner of the collateral.
-    /// @param receiver The address that will receive the withdrawn collateral.
+    /// @param onBehalf The address of the owner of the collateral position.
+    /// @param receiver The address that will receive the collateral assets.
     function withdrawCollateral(MarketParams memory marketParams, uint256 assets, address onBehalf, address receiver)
         external;
 
-    /// @notice Liquidates the given `repaidShares` of debt asset or seize the given `seized` of collateral on the given
-    /// `market` of the given `borrower`'s position, optionally calling back the caller's `onMorphoLiquidate` function
-    /// with the given `data`.
-    /// @dev Either `seized` or `repaidShares` should be zero.
+    /// @notice Liquidates the given `repaidShares` of debt asset or seize the given `seizedAssets` of collateral on the
+    /// given market `marketParams` of the given `borrower`'s position, optionally calling back the caller's
+    /// `onMorphoLiquidate` function with the given `data`.
+    /// @dev Either `seizedAssets` or `repaidShares` should be zero.
     /// @dev Seizing more than the collateral balance will underflow and revert without any error message.
     /// @dev Repaying more than the borrow balance will underflow and revert without any error message.
     /// @param marketParams The market of the position.
@@ -237,7 +249,7 @@ interface IMorpho {
         uint256 seizedAssets,
         uint256 repaidShares,
         bytes memory data
-    ) external returns (uint256, uint256);
+    ) external returns (uint256 seizedAssets, uint256 repaidAssets);
 
     /// @notice Executes a flash loan.
     /// @param token The token to flash loan.
@@ -259,5 +271,5 @@ interface IMorpho {
     function setAuthorizationWithSig(Authorization calldata authorization, Signature calldata signature) external;
 
     /// @notice Returns the data stored on the different `slots`.
-    function extSloads(bytes32[] memory slots) external view returns (bytes32[] memory res);
+    function extSloads(bytes32[] memory slots) external view returns (bytes32[] memory);
 }

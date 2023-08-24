@@ -14,12 +14,12 @@ library EventsLib {
 
     /// @notice Emitted when setting a new fee.
     /// @param id The market id.
-    /// @param fee The new fee.
-    event SetFee(Id indexed id, uint256 fee);
+    /// @param newFee The new fee.
+    event SetFee(Id indexed id, uint256 newFee);
 
     /// @notice Emitted when setting a new fee recipient.
-    /// @param feeRecipient The new fee recipient.
-    event SetFeeRecipient(address indexed feeRecipient);
+    /// @param newFeeRecipient The new fee recipient.
+    event SetFeeRecipient(address indexed newFeeRecipient);
 
     /// @notice Emitted when enabling an IRM.
     /// @param irm The IRM that was enabled.
@@ -111,9 +111,9 @@ library EventsLib {
         Id indexed id,
         address indexed caller,
         address indexed borrower,
-        uint256 repaid,
+        uint256 repaidAssets,
         uint256 repaidShares,
-        uint256 seized,
+        uint256 seizedAssets,
         uint256 badDebtShares
     );
 
