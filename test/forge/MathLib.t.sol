@@ -84,4 +84,8 @@ contract MathLibTest is Test {
         vm.expectRevert();
         MathLib.mulDivUp(x, y, 0);
     }
+
+    function testMin(uint256 x, uint256 y) public {
+        assertEq(MathLib.min(x, y), x < y ? x : y);
+    }
 }

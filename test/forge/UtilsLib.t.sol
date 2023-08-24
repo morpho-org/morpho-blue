@@ -13,10 +13,6 @@ contract UtilsLibTest is Test {
         assertEq(UtilsLib.exactlyOneZero(x, y), (x > 0 && y == 0) || (x == 0 && y > 0));
     }
 
-    function testMin(uint256 x, uint256 y) public {
-        assertEq(UtilsLib.min(x, y), x < y ? x : y);
-    }
-
     function testToUint128(uint256 x) public {
         vm.assume(x <= type(uint128).max);
         assertEq(uint256(x.toUint128()), x);

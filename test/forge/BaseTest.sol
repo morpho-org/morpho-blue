@@ -180,7 +180,7 @@ contract BaseTest is Test {
 
     function _liquidationIncentive(uint256 lltv) internal pure returns (uint256) {
         return
-            UtilsLib.min(MAX_LIQUIDATION_INCENTIVE_FACTOR, WAD.wDivDown(WAD - LIQUIDATION_CURSOR.wMulDown(WAD - lltv)));
+            MathLib.min(MAX_LIQUIDATION_INCENTIVE_FACTOR, WAD.wDivDown(WAD - LIQUIDATION_CURSOR.wMulDown(WAD - lltv)));
     }
 
     function _accrueInterest(MarketParams memory market) internal {

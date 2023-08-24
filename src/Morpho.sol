@@ -270,7 +270,7 @@ contract Morpho is IMorpho {
         if (assets > 0) {
             shares = assets.toSharesDown(market[id].totalBorrowAssets, market[id].totalBorrowShares);
         } else {
-            assets = UtilsLib.min(
+            assets = MathLib.min(
                 market[id].totalBorrowAssets,
                 shares.toAssetsUp(market[id].totalBorrowAssets, market[id].totalBorrowShares)
             );
@@ -356,7 +356,7 @@ contract Morpho is IMorpho {
 
         {
             // The liquidation incentive factor is min(maxIncentiveFactor, 1/(1 - cursor*(1 - lltv))).
-            uint256 incentiveFactor = UtilsLib.min(
+            uint256 incentiveFactor = MathLib.min(
                 MAX_LIQUIDATION_INCENTIVE_FACTOR,
                 WAD.wDivDown(WAD - LIQUIDATION_CURSOR.wMulDown(WAD - marketParams.lltv))
             );

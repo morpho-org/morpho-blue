@@ -238,7 +238,7 @@ contract SingleMarketChangingPriceInvariantTest is InvariantBaseTest {
         uint256 collateralPrice = IOracle(marketParams.oracle).price();
 
         uint256 repaid =
-            seized.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(_liquidationIncentiveFactor(marketParams.lltv));
+            seized.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(_liquidationIncentive(marketParams.lltv));
         uint256 repaidShares = repaid.toSharesDown(morpho.totalBorrowAssets(id), morpho.totalBorrowShares(id));
 
         if (repaidShares > morpho.borrowShares(id, user)) {

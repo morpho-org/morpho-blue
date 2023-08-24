@@ -8,6 +8,13 @@ uint256 constant WAD = 1e18;
 /// @custom:contact security@morpho.xyz
 /// @notice Library to manage fixed-point arithmetic.
 library MathLib {
+    /// @dev Returns the min of x and y.
+    function min(uint256 x, uint256 y) internal pure returns (uint256 z) {
+        assembly {
+            z := xor(x, mul(xor(x, y), lt(y, x)))
+        }
+    }
+
     /// @dev (x * y) / WAD rounded down.
     function wMulDown(uint256 x, uint256 y) internal pure returns (uint256) {
         return mulDivDown(x, y, WAD);

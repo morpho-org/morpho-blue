@@ -206,9 +206,4 @@ contract InvariantBaseTest is BaseTest {
 
         return maxBorrow >= borrowed;
     }
-
-    function _liquidationIncentiveFactor(uint256 lltv) internal pure returns (uint256) {
-        return
-            UtilsLib.min(MAX_LIQUIDATION_INCENTIVE_FACTOR, WAD.wDivDown(WAD - LIQUIDATION_CURSOR.wMulDown(WAD - lltv)));
-    }
 }
