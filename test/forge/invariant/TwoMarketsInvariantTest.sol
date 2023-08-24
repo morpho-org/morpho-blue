@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import "test/forge/InvariantTest.sol";
+import "../InvariantTest.sol";
 
 contract TwoMarketsInvariantTest is InvariantTest {
     using MathLib for uint256;
