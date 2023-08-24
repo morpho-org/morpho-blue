@@ -3,7 +3,6 @@ names = true
 sizes = true
 via-ir = true
 optimizer_runs = 4294967295
-extra_output_files = ["irOptimized"]
 
 [profile.default.invariant]
 runs = 16

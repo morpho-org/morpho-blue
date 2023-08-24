@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import {MorphoStorageLib} from "../../../src/libraries/periphery/MorphoStorageLib.sol";
-import {SigUtils} from "test/forge/helpers/SigUtils.sol";
+import {MorphoStorageLib} from "src/libraries/periphery/MorphoStorageLib.sol";
+import {SigUtils} from "../../helpers/SigUtils.sol";
 
-import "../BaseTest.sol";
+import "../../BaseTest.sol";
 
 contract MorphoStorageLibTest is BaseTest {
     using MathLib for uint256;
@@ -57,8 +57,8 @@ contract MorphoStorageLibTest is BaseTest {
         bytes32[] memory slots = new bytes32[](16);
         slots[0] = MorphoStorageLib.ownerSlot();
         slots[1] = MorphoStorageLib.feeRecipientSlot();
-        slots[2] = MorphoStorageLib.userSupplySharesSlot(id, address(this));
-        slots[3] = MorphoStorageLib.userBorrowSharesAndCollateralSlot(id, BORROWER);
+        slots[2] = MorphoStorageLib.positionSupplySharesSlot(id, address(this));
+        slots[3] = MorphoStorageLib.positionBorrowSharesAndCollateralSlot(id, BORROWER);
         slots[4] = MorphoStorageLib.marketTotalSupplyAssetsAndSharesSlot(id);
         slots[5] = MorphoStorageLib.marketTotalBorrowAssetsAndSharesSlot(id);
         slots[6] = MorphoStorageLib.marketLastUpdateAndFeeSlot(id);
