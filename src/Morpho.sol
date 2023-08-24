@@ -272,7 +272,7 @@ contract Morpho is IMorpho {
 
         user[id][onBehalf].borrowShares -= shares.toUint128();
         market[id].totalBorrowShares -= shares.toUint128();
-        market[id].totalBorrowAssets -= UtilsLib.min(market[id].totalBorrowAssets, assets).toUint128();
+        market[id].totalBorrowAssets = UtilsLib.zeroFloorSub(market[id].totalBorrowAssets, assets).toUint128();
 
         // `assets` may be greater than `totalBorrowAssets` by 1.
         emit EventsLib.Repay(id, msg.sender, onBehalf, assets, shares);
@@ -367,7 +367,7 @@ contract Morpho is IMorpho {
 
         user[id][borrower].borrowShares -= repaidShares.toUint128();
         market[id].totalBorrowShares -= repaidShares.toUint128();
-        market[id].totalBorrowAssets -= UtilsLib.min(market[id].totalBorrowAssets, repaidAssets).toUint128();
+        market[id].totalBorrowAssets = UtilsLib.zeroFloorSub(market[id].totalBorrowAssets, repaidAssets).toUint128();
 
         user[id][borrower].collateral -= seizedAssets.toUint128();
 
