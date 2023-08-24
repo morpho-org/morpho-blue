@@ -447,27 +447,28 @@ contract Morpho is IMorpho {
 
         if (elapsed == 0) return;
 
-        // Safe "unchecked" cast.
-        market[id].lastUpdate = uint128(block.timestamp);
+        if (market[id].totalBorrowAssets != 0) {
+            uint256 borrowRate = IIrm(marketParams.irm).borrowRate(marketParams, market[id]);
+            uint256 interest = market[id].totalBorrowAssets.wMulDown(borrowRate.wTaylorCompounded(elapsed));
+            market[id].totalBorrowAssets += interest.toUint128();
+            market[id].totalSupplyAssets += interest.toUint128();
 
-        if (market[id].totalBorrowAssets == 0) return;
+            uint256 feeShares;
+            if (market[id].fee != 0) {
+                uint256 feeAmount = interest.wMulDown(market[id].fee);
+                // The fee amount is subtracted from the total supply in this calculation to compensate for the fact
+                // that total supply is already increased by the full interest (including the fee amount).
+                feeShares =
+                    feeAmount.toSharesDown(market[id].totalSupplyAssets - feeAmount, market[id].totalSupplyShares);
+                position[id][feeRecipient].supplyShares += feeShares;
+                market[id].totalSupplyShares += feeShares.toUint128();
+            }
 
-        uint256 borrowRate = IIrm(marketParams.irm).borrowRate(marketParams, market[id]);
-        uint256 interest = market[id].totalBorrowAssets.wMulDown(borrowRate.wTaylorCompounded(elapsed));
-        market[id].totalBorrowAssets += interest.toUint128();
-        market[id].totalSupplyAssets += interest.toUint128();
-
-        uint256 feeShares;
-        if (market[id].fee != 0) {
-            uint256 feeAmount = interest.wMulDown(market[id].fee);
-            // The fee amount is subtracted from the total supply in this calculation to compensate for the fact
-            // that total supply is already increased by the full interest (including the fee amount).
-            feeShares = feeAmount.toSharesDown(market[id].totalSupplyAssets - feeAmount, market[id].totalSupplyShares);
-            position[id][feeRecipient].supplyShares += feeShares;
-            market[id].totalSupplyShares += feeShares.toUint128();
+            emit EventsLib.AccrueInterest(id, borrowRate, interest, feeShares);
         }
 
-        emit EventsLib.AccrueInterest(id, borrowRate, interest, feeShares);
+        // Safe "unchecked" cast.
+        market[id].lastUpdate = uint128(block.timestamp);
     }
 
     /* HEALTH CHECK */
@@ -511,8 +512,7 @@ contract Morpho is IMorpho {
         for (uint256 i; i < nSlots;) {
             bytes32 slot = slots[i++];
 
-            /// @solidity memory-safe-assembly
-            assembly {
+            assembly ("memory-safe") {
                 mstore(add(res, mul(i, 32)), sload(slot))
             }
         }
