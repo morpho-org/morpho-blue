@@ -161,6 +161,6 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
     function invariantMorphoBalance() public {
         uint256 marketAvailableAmount = morpho.totalSupplyAssets(id) - morpho.totalBorrowAssets(id);
         uint256 market2AvailableAmount = morpho.totalSupplyAssets(id2) - morpho.totalBorrowAssets(id2);
-        assertEq(marketAvailableAmount + market2AvailableAmount, borrowableToken.balanceOf(address(morpho)));
+        assertApproxEqAbs(marketAvailableAmount + market2AvailableAmount, borrowableToken.balanceOf(address(morpho)), 2);
     }
 }

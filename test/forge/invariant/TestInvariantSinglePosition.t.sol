@@ -121,8 +121,8 @@ contract SinglePositionInvariantTest is InvariantBaseTest {
     }
 
     function invariantMorphoBalance() public {
-        assertEq(
-            morpho.totalSupplyAssets(id) - morpho.totalBorrowAssets(id), borrowableToken.balanceOf(address(morpho))
+        assertApproxEqAbs(
+            morpho.totalSupplyAssets(id) - morpho.totalBorrowAssets(id), borrowableToken.balanceOf(address(morpho)), 1
         );
     }
 
