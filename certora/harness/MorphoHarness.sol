@@ -42,15 +42,15 @@ contract MorphoHarness is Morpho {
     }
 
     function getSupplyShares(Id id, address account) external view returns (uint256) {
-        return user[id][account].supplyShares;
+        return position[id][account].supplyShares;
     }
 
     function getBorrowShares(Id id, address account) external view returns (uint256) {
-        return user[id][account].borrowShares;
+        return position[id][account].borrowShares;
     }
 
     function getCollateral(Id id, address account) external view returns (uint256) {
-        return user[id][account].collateral;
+        return position[id][account].collateral;
     }
 
     function getLastUpdate(Id id) external view returns (uint256) {

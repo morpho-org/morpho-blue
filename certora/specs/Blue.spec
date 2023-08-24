@@ -54,15 +54,15 @@ hook Sstore idToMarketParams[KEY MorphoHarness.Id id].collateralToken address to
     idToCollateral[id] = token;
 }
 
-hook Sstore user[KEY MorphoHarness.Id id][KEY address owner].supplyShares uint256 newShares (uint256 oldShares) STORAGE {
+hook Sstore position[KEY MorphoHarness.Id id][KEY address owner].supplyShares uint256 newShares (uint256 oldShares) STORAGE {
     sumSupplyShares[id] = sumSupplyShares[id] - oldShares + newShares;
 }
 
-hook Sstore user[KEY MorphoHarness.Id id][KEY address owner].borrowShares uint128 newShares (uint128 oldShares) STORAGE {
+hook Sstore position[KEY MorphoHarness.Id id][KEY address owner].borrowShares uint128 newShares (uint128 oldShares) STORAGE {
     sumBorrowShares[id] = sumBorrowShares[id] - oldShares + newShares;
 }
 
-hook Sstore user[KEY MorphoHarness.Id id][KEY address owner].collateral uint128 newAmount (uint128 oldAmount) STORAGE {
+hook Sstore position[KEY MorphoHarness.Id id][KEY address owner].collateral uint128 newAmount (uint128 oldAmount) STORAGE {
     sumCollateral[id] = sumCollateral[id] - oldAmount + newAmount;
     expectedAmount[idToCollateral[id]] = expectedAmount[idToCollateral[id]] - oldAmount + newAmount;
 }

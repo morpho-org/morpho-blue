@@ -23,7 +23,7 @@ ghost mapping(MorphoHarness.Id => mathint) sumCollateral
 {
     init_state axiom (forall MorphoHarness.Id id. sumCollateral[id] == 0);
 }
-hook Sstore user[KEY MorphoHarness.Id id][KEY address owner].collateral uint128 newAmount (uint128 oldAmount) STORAGE {
+hook Sstore position[KEY MorphoHarness.Id id][KEY address owner].collateral uint128 newAmount (uint128 oldAmount) STORAGE {
     sumCollateral[id] = sumCollateral[id] - oldAmount + newAmount;
 }
 
