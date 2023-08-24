@@ -140,7 +140,7 @@ describe("Morpho", () => {
       const user = signers[i];
       const borrower = signers[nbLiquidations + i];
 
-      const lltv = BigInt.WAD * toBigInt((i + 1) / (nbLiquidations + 1));
+      const lltv = (BigInt.WAD * toBigInt(i + 1)) / toBigInt(nbLiquidations + 1);
       const assets = BigInt.WAD * toBigInt(1 + Math.floor(random() * 100));
       const borrowedAmount = assets.wadMulDown(lltv - 1n);
 
@@ -169,8 +169,8 @@ describe("Morpho", () => {
       const remainingCollateral = (await morpho.position(id, borrower.address)).collateral;
 
       if (closePositions)
-        expect(remainingCollateral == 0n, "did not take the whole collateral when closing the position").to.be.true;
-      else expect(remainingCollateral != 0n, "unexpectedly closed the position").to.be.true;
+        expect(remainingCollateral === 0n, "did not take the whole collateral when closing the position").to.be.true;
+      else expect(remainingCollateral !== 0n, "unexpectedly closed the position").to.be.true;
 
       await oracle.setPrice(oraclePriceScale);
     }
