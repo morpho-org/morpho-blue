@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.12;
 
 import {ErrorsLib} from "../libraries/ErrorsLib.sol";
 
