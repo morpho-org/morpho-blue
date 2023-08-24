@@ -45,21 +45,21 @@ contract MorphoLibTest is BaseTest {
     function testSupplyShares(uint256 amountSupplied, uint256 amountBorrowed, uint256 timestamp, uint256 fee) public {
         _testMorphoLibCommon(amountSupplied, amountBorrowed, timestamp, fee);
 
-        (uint256 expectedSupplyShares,,) = morpho.user(id, address(this));
+        (uint256 expectedSupplyShares,,) = morpho.position(id, address(this));
         assertEq(morpho.supplyShares(id, address(this)), expectedSupplyShares);
     }
 
     function testBorrowShares(uint256 amountSupplied, uint256 amountBorrowed, uint256 timestamp, uint256 fee) public {
         _testMorphoLibCommon(amountSupplied, amountBorrowed, timestamp, fee);
 
-        (, uint256 expectedBorrowShares,) = morpho.user(id, BORROWER);
+        (, uint256 expectedBorrowShares,) = morpho.position(id, BORROWER);
         assertEq(morpho.borrowShares(id, BORROWER), expectedBorrowShares);
     }
 
     function testCollateral(uint256 amountSupplied, uint256 amountBorrowed, uint256 timestamp, uint256 fee) public {
         _testMorphoLibCommon(amountSupplied, amountBorrowed, timestamp, fee);
 
-        (,, uint256 expectedCollateral) = morpho.user(id, BORROWER);
+        (,, uint256 expectedCollateral) = morpho.position(id, BORROWER);
         assertEq(morpho.collateral(id, BORROWER), expectedCollateral);
     }
 
