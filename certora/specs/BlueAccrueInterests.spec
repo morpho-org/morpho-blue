@@ -40,10 +40,10 @@ rule supplyAccruesInterests()
 
     storage init = lastStorage;
 
-    // check that calling accrueInterests first has no effect.
-    // this is because supply should call accrueInterests itself.
+    // check that calling accrueInterest first has no effect.
+    // this is because supply should call accrueInterest itself.
 
-    accrueInterests(e, marketParams);
+    accrueInterest(e, marketParams);
     supply(e, marketParams, assets, shares, onbehalf, data);
     storage afterBoth = lastStorage;
 
@@ -65,10 +65,10 @@ rule withdrawAccruesInterests()
 
     storage init = lastStorage;
 
-    // check that calling accrueInterests first has no effect.
-    // this is because withdraw should call accrueInterests itself.
+    // check that calling accrueInterest first has no effect.
+    // this is because withdraw should call accrueInterest itself.
 
-    accrueInterests(e, marketParams);
+    accrueInterest(e, marketParams);
     withdraw(e, marketParams, assets, shares, onbehalf, receiver);
     storage afterBoth = lastStorage;
 
@@ -90,10 +90,10 @@ rule borrowAccruesInterests()
 
     storage init = lastStorage;
 
-    // check that calling accrueInterests first has no effect.
-    // this is because borrow should call accrueInterests itself.
+    // check that calling accrueInterest first has no effect.
+    // this is because borrow should call accrueInterest itself.
 
-    accrueInterests(e, marketParams);
+    accrueInterest(e, marketParams);
     borrow(e, marketParams, assets, shares, onbehalf, receiver);
     storage afterBoth = lastStorage;
 
@@ -115,10 +115,10 @@ rule repayAccruesInterests()
 
     storage init = lastStorage;
 
-    // check that calling accrueInterests first has no effect.
-    // this is because repay should call accrueInterests itself.
+    // check that calling accrueInterest first has no effect.
+    // this is because repay should call accrueInterest itself.
 
-    accrueInterests(e, marketParams);
+    accrueInterest(e, marketParams);
     repay(e, marketParams, assets, shares, onbehalf, data);
     storage afterBoth = lastStorage;
 
@@ -131,11 +131,11 @@ rule repayAccruesInterests()
 
 
 /**
- * Show that accrueInterests commutes with other state changing rules.
+ * Show that accrueInterest commutes with other state changing rules.
  * We exclude view functions, because (a) we cannot check the return
  * value and for storage commutativity is trivial and (b) most view
  * functions, e.g. totalSupplyShares, are not commutative, i.e. they return
- * a different value if called before accrueInterests is called.
+ * a different value if called before accrueInterest is called.
  * We also exclude setFeeRecipient, as it is known to be not commutative.
  */
 rule accrueInterestsCommutesExceptForSetFeeRecipient(method f, env e, calldataarg args)
@@ -151,9 +151,9 @@ filtered {
 
     storage init = lastStorage;
 
-    // check that accrueInterests commutes with every other function.
+    // check that accrueInterest commutes with every other function.
 
-    accrueInterests(e1, marketParams);
+    accrueInterest(e1, marketParams);
     f@withrevert(e2, args);
     bool revert1 = lastReverted;
 
@@ -162,7 +162,7 @@ filtered {
 
     f@withrevert(e2, args) at init;
     bool revert2 = lastReverted;
-    accrueInterests(e1, marketParams);
+    accrueInterest(e1, marketParams);
 
     storage store2 = lastStorage;
 
