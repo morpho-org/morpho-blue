@@ -352,8 +352,8 @@ contract Morpho is IMorpho {
         uint256 collateralPrice = IOracle(marketParams.oracle).price();
 
         require(!_isHealthy(marketParams, id, borrower, collateralPrice), ErrorsLib.HEALTHY_POSITION);
-        uint256 repaidAssets;
 
+        uint256 repaidAssets;
         {
             // The liquidation incentive factor is min(maxIncentiveFactor, 1/(1 - cursor*(1 - lltv))).
             uint256 incentiveFactor = UtilsLib.min(
@@ -365,7 +365,10 @@ contract Morpho is IMorpho {
                 repaidAssets = seizedAssets.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(incentiveFactor);
                 repaidShares = repaidAssets.toSharesDown(market[id].totalBorrowAssets, market[id].totalBorrowShares);
             } else {
-                repaidAssets = repaidShares.toAssetsUp(market[id].totalBorrowAssets, market[id].totalBorrowShares);
+                repaidAssets = UtilsLib.min(
+                    market[id].totalBorrowAssets,
+                    repaidShares.toAssetsUp(market[id].totalBorrowAssets, market[id].totalBorrowShares)
+                );
                 seizedAssets = repaidAssets.wMulDown(incentiveFactor).mulDivDown(ORACLE_PRICE_SCALE, collateralPrice);
             }
         }
