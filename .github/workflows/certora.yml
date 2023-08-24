@@ -44,6 +44,8 @@ jobs:
       matrix:
         script:
           - verifyBlue.sh
+          - verifyBlueAccrueInterests.sh
+          - verifyBlueRatioMathSummary.sh
           - verifyBlueExitLiquidity.sh
           - verifyBlueRatioMath.sh
           - verifyBlueRatioMathSummary.sh

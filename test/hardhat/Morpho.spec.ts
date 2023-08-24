@@ -167,7 +167,7 @@ describe("Morpho", () => {
 
       await morpho.connect(liquidator).liquidate(marketParams, borrower.address, seized, 0, "0x");
 
-      const remainingCollateral = (await morpho.user(id, borrower.address)).collateral;
+      const remainingCollateral = (await morpho.position(id, borrower.address)).collateral;
 
       if (closePositions)
         expect(remainingCollateral.isZero(), "did not take the whole collateral when closing the position").to.be.true;

@@ -13,7 +13,7 @@ struct MarketParams {
 
 /// @dev Warning: For `feeRecipient`, `supplyShares` does not contain the accrued shares since the last interest
 /// accrual.
-struct User {
+struct Position {
     uint256 supplyShares;
     uint128 borrowShares;
     uint128 collateral;
@@ -64,10 +64,10 @@ interface IMorpho {
     /// @dev The recipient receives the fees of a given market through a supply position on that market.
     function feeRecipient() external view returns (address);
 
-    /// @notice Users' storage for market `id`.
-    function user(Id id, address user) external view returns (uint256, uint128, uint128);
+    /// @notice The state of the position of `user` on the market corresponding to `id`.
+    function position(Id id, address user) external view returns (uint256, uint128, uint128);
 
-    /// @notice Market' storage for market `id`.
+    /// @notice The state of the market corresponding to `id`.
     function market(Id id) external view returns (uint128, uint128, uint128, uint128, uint128, uint128);
 
     /// @notice Whether the `irm` is enabled.
