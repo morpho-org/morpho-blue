@@ -11,7 +11,7 @@ methods {
     function MathLib.mulDivUp(uint256 a, uint256 b, uint256 c) internal returns uint256 => summaryMulDivUp(a,b,c);
     function MathLib.wTaylorCompounded(uint256, uint256) internal returns uint256 => NONDET;
 
-    function _.borrowRate(MorphoHarness.MarketParams) external => HAVOC_ECF;
+    function _.borrowRate(MorphoHarness.MarketParams, MorphoHarness.Market) external => HAVOC_ECF;
 
     function VIRTUAL_ASSETS() external returns uint256 envfree;
     function VIRTUAL_SHARES() external returns uint256 envfree;

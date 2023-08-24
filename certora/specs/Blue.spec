@@ -14,7 +14,7 @@ methods {
     function isLltvEnabled(uint256) external returns bool envfree;
     function isIrmEnabled(address) external returns bool envfree;
 
-    function _.borrowRate(MorphoHarness.MarketParams) external => HAVOC_ECF;
+    function _.borrowRate(MorphoHarness.MarketParams, MorphoHarness.Market) external => HAVOC_ECF;
 
     function MAX_FEE() external returns uint256 envfree;
 
