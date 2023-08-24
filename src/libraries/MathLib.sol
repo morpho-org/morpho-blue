@@ -6,7 +6,7 @@ uint256 constant WAD = 1e18;
 /// @title MathLib
 /// @author Morpho Labs
 /// @custom:contact security@morpho.xyz
-/// @notice Library to manage fixed-point arithmetic.
+/// @notice Library to manage math-related operations and fixed-point arithmetic.
 library MathLib {
     /// @dev Returns the min of x and y.
     function min(uint256 x, uint256 y) internal pure returns (uint256 z) {
