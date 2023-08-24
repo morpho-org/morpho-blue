@@ -267,19 +267,14 @@ contract Morpho is IMorpho {
 
         _accrueInterest(marketParams, id);
 
-        if (assets > 0) {
-            shares = assets.toSharesDown(market[id].totalBorrowAssets, market[id].totalBorrowShares);
-        } else {
-            assets = UtilsLib.min(
-                market[id].totalBorrowAssets,
-                shares.toAssetsUp(market[id].totalBorrowAssets, market[id].totalBorrowShares)
-            );
-        }
+        if (assets > 0) shares = assets.toSharesDown(market[id].totalBorrowAssets, market[id].totalBorrowShares);
+        else assets = shares.toAssetsUp(market[id].totalBorrowAssets, market[id].totalBorrowShares);
 
         user[id][onBehalf].borrowShares -= shares.toUint128();
         market[id].totalBorrowShares -= shares.toUint128();
-        market[id].totalBorrowAssets -= assets.toUint128();
+        market[id].totalBorrowAssets -= UtilsLib.min(market[id].totalBorrowAssets, assets).toUint128();
 
+        // `assets` may be greater than `totalBorrowAssets` by 1.
         emit EventsLib.Repay(id, msg.sender, onBehalf, assets, shares);
 
         if (data.length > 0) IMorphoRepayCallback(msg.sender).onMorphoRepay(assets, data);
@@ -365,17 +360,14 @@ contract Morpho is IMorpho {
                 repaidAssets = seizedAssets.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(incentiveFactor);
                 repaidShares = repaidAssets.toSharesDown(market[id].totalBorrowAssets, market[id].totalBorrowShares);
             } else {
-                repaidAssets = UtilsLib.min(
-                    market[id].totalBorrowAssets,
-                    repaidShares.toAssetsUp(market[id].totalBorrowAssets, market[id].totalBorrowShares)
-                );
+                repaidAssets = repaidShares.toAssetsUp(market[id].totalBorrowAssets, market[id].totalBorrowShares);
                 seizedAssets = repaidAssets.wMulDown(incentiveFactor).mulDivDown(ORACLE_PRICE_SCALE, collateralPrice);
             }
         }
 
         user[id][borrower].borrowShares -= repaidShares.toUint128();
         market[id].totalBorrowShares -= repaidShares.toUint128();
-        market[id].totalBorrowAssets -= repaidAssets.toUint128();
+        market[id].totalBorrowAssets -= UtilsLib.min(market[id].totalBorrowAssets, repaidAssets).toUint128();
 
         user[id][borrower].collateral -= seizedAssets.toUint128();
 
@@ -392,6 +384,7 @@ contract Morpho is IMorpho {
 
         IERC20(marketParams.collateralToken).safeTransfer(msg.sender, seizedAssets);
 
+        // `repaidAssets` may be greater than `totalBorrowAssets` by 1.
         emit EventsLib.Liquidate(id, msg.sender, borrower, repaidAssets, repaidShares, seizedAssets, badDebtShares);
 
         if (data.length > 0) IMorphoLiquidateCallback(msg.sender).onMorphoLiquidate(repaidAssets, data);
