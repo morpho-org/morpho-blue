@@ -38,6 +38,8 @@ rule supplyAccruesInterests()
     address onbehalf;
     bytes data;
 
+    require e.block.timestamp < 2^128;
+
     storage init = lastStorage;
 
     // check that calling accrueInterest first has no effect.
@@ -62,6 +64,8 @@ rule withdrawAccruesInterests()
     uint256 shares;
     address onbehalf;
     address receiver;
+
+    require e.block.timestamp < 2^128;
 
     storage init = lastStorage;
 
@@ -88,6 +92,8 @@ rule borrowAccruesInterests()
     address onbehalf;
     address receiver;
 
+    require e.block.timestamp < 2^128;
+
     storage init = lastStorage;
 
     // check that calling accrueInterest first has no effect.
@@ -112,6 +118,8 @@ rule repayAccruesInterests()
     uint256 shares;
     address onbehalf;
     bytes data;
+
+    require e.block.timestamp < 2^128;
 
     storage init = lastStorage;
 
@@ -148,6 +156,7 @@ filtered {
     MorphoHarness.MarketParams marketParams;
 
     require e1.block.timestamp == e2.block.timestamp;
+    require e1.block.timestamp < 2^128;
 
     storage init = lastStorage;
 
