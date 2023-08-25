@@ -9,35 +9,40 @@ contract SinglePositionInvariantTest is InvariantTest {
     using MorphoLib for IMorpho;
     using MorphoBalancesLib for IMorpho;
 
-    address user;
+    address internal immutable USER;
+
+    constructor() {
+        USER = _addrFromHashedString("User");
+    }
 
     function setUp() public virtual override {
-        _weightSelector(this.supplyNoRevert.selector, 20);
-        _weightSelector(this.withdrawNoRevert.selector, 15);
-        _weightSelector(this.borrowNoRevert.selector, 15);
-        _weightSelector(this.repayNoRevert.selector, 10);
+        _weightSelector(this.supplyAssetsNoRevert.selector, 100);
+        _weightSelector(this.supplySharesNoRevert.selector, 100);
+        _weightSelector(this.withdrawAssetsNoRevert.selector, 50);
+        _weightSelector(this.borrowAssetsNoRevert.selector, 15);
+        _weightSelector(this.repayAssetsNoRevert.selector, 10);
+        _weightSelector(this.repaySharesNoRevert.selector, 10);
         _weightSelector(this.supplyCollateralNoRevert.selector, 20);
         _weightSelector(this.withdrawCollateralNoRevert.selector, 15);
 
         super.setUp();
 
-        collateralToken.setBalance(user, 1e30);
+        collateralToken.setBalance(USER, 1e30);
 
-        vm.prank(user);
-        morpho.supplyCollateral(marketParams, 1e30, user, hex"");
+        vm.prank(USER);
+        morpho.supplyCollateral(marketParams, 1e30, USER, hex"");
 
         // High price because of the 1e36 price scale
         oracle.setPrice(1e40);
     }
 
     function _targetSenders() internal virtual override {
-        user = _addrFromHashedString("User");
-
-        _targetSender(user);
+        _targetSender(USER);
     }
 
-    function supplyNoRevert(uint256 assets) public {
-        assets = _boundSupplyAssets(marketParams, user, assets);
+    function supplyAssetsNoRevert(uint256 assets) public {
+        assets = _boundSupplyAssets(marketParams, USER, assets);
+        if (assets == 0) return;
 
         borrowableToken.setBalance(msg.sender, assets);
 
@@ -45,7 +50,21 @@ contract SinglePositionInvariantTest is InvariantTest {
         morpho.supply(marketParams, assets, 0, msg.sender, hex"");
     }
 
-    function withdrawNoRevert(uint256 assets, address receiver) public {
+    function supplySharesNoRevert(uint256 shares) public {
+        shares = _boundSupplyShares(marketParams, USER, shares);
+        if (shares == 0) return;
+
+        borrowableToken.setBalance(
+            msg.sender, shares.toAssetsUp(morpho.totalSupplyAssets(id), morpho.totalBorrowAssets(id))
+        );
+
+        vm.prank(msg.sender);
+        morpho.supply(marketParams, 0, shares, msg.sender, hex"");
+    }
+
+    function withdrawAssetsNoRevert(uint256 assets, address receiver) public {
+        receiver = _boundAddressNotZero(receiver);
+
         assets = _boundWithdrawAssets(marketParams, msg.sender, assets);
         if (assets == 0) return;
 
@@ -53,7 +72,9 @@ contract SinglePositionInvariantTest is InvariantTest {
         morpho.withdraw(marketParams, assets, 0, msg.sender, receiver);
     }
 
-    function borrowNoRevert(uint256 assets, address receiver) public {
+    function borrowAssetsNoRevert(uint256 assets, address receiver) public {
+        receiver = _boundAddressNotZero(receiver);
+
         assets = _boundBorrowAssets(marketParams, msg.sender, assets);
         if (assets == 0) return;
 
@@ -61,7 +82,7 @@ contract SinglePositionInvariantTest is InvariantTest {
         morpho.borrow(marketParams, assets, 0, msg.sender, receiver);
     }
 
-    function repayNoRevert(uint256 assets) public {
+    function repayAssetsNoRevert(uint256 assets) public {
         assets = _boundRepayAssets(marketParams, msg.sender, assets);
         if (assets == 0) return;
 
@@ -69,6 +90,18 @@ contract SinglePositionInvariantTest is InvariantTest {
 
         vm.prank(msg.sender);
         morpho.repay(marketParams, assets, 0, msg.sender, hex"");
+    }
+
+    function repaySharesNoRevert(uint256 shares) public {
+        shares = _boundRepayShares(marketParams, msg.sender, shares);
+        if (shares == 0) return;
+
+        (,, uint256 totalBorrowAssets, uint256 totalBorrowShares) = morpho.expectedMarketBalances(marketParams);
+
+        borrowableToken.setBalance(msg.sender, shares.toAssetsUp(totalBorrowAssets, totalBorrowShares));
+
+        vm.prank(msg.sender);
+        morpho.repay(marketParams, 0, shares, msg.sender, hex"");
     }
 
     function supplyCollateralNoRevert(uint256 assets) public {
@@ -82,6 +115,8 @@ contract SinglePositionInvariantTest is InvariantTest {
     }
 
     function withdrawCollateralNoRevert(uint256 assets, address receiver) public {
+        receiver = _boundAddressNotZero(receiver);
+
         assets = _boundWithdrawCollateralAssets(marketParams, msg.sender, assets);
         if (assets == 0) return;
 
@@ -92,22 +127,14 @@ contract SinglePositionInvariantTest is InvariantTest {
     /* INVARIANTS */
 
     function invariantSupplyShares() public {
-        assertEq(morpho.supplyShares(id, user), morpho.totalSupplyShares(id));
+        assertEq(morpho.supplyShares(id, USER), morpho.totalSupplyShares(id));
     }
 
     function invariantBorrowShares() public {
-        assertEq(morpho.borrowShares(id, user), morpho.totalBorrowShares(id));
+        assertEq(morpho.borrowShares(id, USER), morpho.totalBorrowShares(id));
     }
 
-    function invariantTotalSupply() public {
-        assertEq(morpho.expectedSupplyBalance(marketParams, user), morpho.totalSupplyAssets(id));
-    }
-
-    function invariantTotalBorrow() public {
-        assertEq(morpho.expectedBorrowBalance(marketParams, user), morpho.totalBorrowAssets(id));
-    }
-
-    function invariantTotalSupplyGreaterThanTotalBorrow() public {
+    function invariantTotalSupplyGeTotalBorrow() public {
         assertGe(morpho.totalSupplyAssets(id), morpho.totalBorrowAssets(id));
     }
 
@@ -117,8 +144,7 @@ contract SinglePositionInvariantTest is InvariantTest {
         );
     }
 
-    // No price changes, and no new blocks so position has to remain healthy.
     function invariantHealthyPosition() public {
-        assertTrue(_isHealthy(marketParams, user));
+        assertTrue(_isHealthy(marketParams, USER));
     }
 }

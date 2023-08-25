@@ -19,7 +19,7 @@ contract InvariantTest is BaseTest {
 
         _supplyCollateralMax(targetSenders(), marketParams);
 
-        _weightSelector(this.warp.selector, 20);
+        _weightSelector(this.mine.selector, 100);
 
         targetContract(address(this));
         targetSelector(FuzzSelector({addr: address(this), selectors: selectors}));
@@ -62,11 +62,10 @@ contract InvariantTest is BaseTest {
         }
     }
 
-    function warp(uint256 elapsed) external {
-        elapsed = bound(elapsed, 12, 7 days);
+    function mine(uint256 blocks) external {
+        blocks = bound(blocks, 1, 50_400);
 
-        vm.roll(block.number + elapsed / 12);
-        vm.warp(block.timestamp + elapsed);
+        _forward(blocks);
     }
 
     function _randomSupplier(address[] memory users, MarketParams memory _marketParams, uint256 seed)

@@ -23,6 +23,7 @@ contract BaseTest is Test {
     using MorphoBalancesLib for IMorpho;
     using MarketParamsLib for MarketParams;
 
+    uint256 internal constant BLOCK_TIME = 12;
     uint256 internal constant HIGH_COLLATERAL_AMOUNT = 1e35;
     uint256 internal constant MIN_TEST_AMOUNT = 100;
     uint256 internal constant MAX_TEST_AMOUNT = 1e28;
@@ -115,6 +116,24 @@ contract BaseTest is Test {
     function _addrFromHashedString(string memory name) internal returns (address addr) {
         addr = address(uint160(uint256(keccak256(bytes(name)))));
         vm.label(addr, name);
+    }
+
+    /// @dev Rolls & warps the given number of blocks forward the blockchain.
+    function _forward(uint256 blocks) internal {
+        vm.roll(block.number + blocks);
+        vm.warp(block.timestamp + blocks * BLOCK_TIME); // Block speed should depend on test network.
+    }
+
+    /// @dev Bounds the fuzzing input to a realistic number of blocks.
+    function _boundBlocks(uint256 blocks) internal view returns (uint256) {
+        return bound(blocks, 1, type(uint24).max);
+    }
+
+    /// @dev Bounds the fuzzing input to a non-zero address.
+    /// @dev This function should be used in place of `vm.assume` in invariant test handler functions:
+    /// https://github.com/foundry-rs/foundry/issues/4190.
+    function _boundAddressNotZero(address input) internal view virtual returns (address) {
+        return address(uint160(bound(uint256(uint160(input)), 1, type(uint160).max)));
     }
 
     function _supply(uint256 amount) internal {
@@ -213,6 +232,24 @@ contract BaseTest is Test {
         return bound(assets, 0, MAX_TEST_AMOUNT.zeroFloorSub(supplyBalance));
     }
 
+    function _boundSupplyShares(MarketParams memory _marketParams, address onBehalf, uint256 assets)
+        internal
+        view
+        returns (uint256)
+    {
+        Id _id = _marketParams.id();
+
+        uint256 supplyShares = morpho.supplyShares(_id, onBehalf);
+
+        return bound(
+            assets,
+            0,
+            MAX_TEST_AMOUNT.toSharesDown(morpho.totalSupplyAssets(_id), morpho.totalSupplyShares(_id)).zeroFloorSub(
+                supplyShares
+            )
+        );
+    }
+
     function _boundWithdrawAssets(MarketParams memory _marketParams, address onBehalf, uint256 assets)
         internal
         view
@@ -261,9 +298,12 @@ contract BaseTest is Test {
         view
         returns (uint256)
     {
-        uint256 borrowed = morpho.expectedBorrowBalance(_marketParams, onBehalf);
+        Id _id = _marketParams.id();
 
-        return bound(assets, 0, borrowed);
+        (,, uint256 totalBorrowAssets, uint256 totalBorrowShares) = morpho.expectedMarketBalances(_marketParams);
+        uint256 maxRepayAssets = morpho.borrowShares(_id, onBehalf).toAssetsDown(totalBorrowAssets, totalBorrowShares);
+
+        return bound(assets, 0, maxRepayAssets);
     }
 
     function _boundRepayShares(MarketParams memory _marketParams, address onBehalf, uint256 shares)
