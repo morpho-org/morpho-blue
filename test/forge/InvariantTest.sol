@@ -84,7 +84,7 @@ contract InvariantTest is BaseTest {
             }
         }
 
-        return _randomNonZero(users, seed);
+        return _randomNonZero(candidates, seed);
     }
 
     function _randomBorrower(address[] memory users, MarketParams memory _marketParams, uint256 seed)
@@ -103,7 +103,7 @@ contract InvariantTest is BaseTest {
             }
         }
 
-        return _randomNonZero(users, seed);
+        return _randomNonZero(candidates, seed);
     }
 
     function _randomHealthyCollateralSupplier(address[] memory users, MarketParams memory _marketParams, uint256 seed)
@@ -122,7 +122,7 @@ contract InvariantTest is BaseTest {
             }
         }
 
-        return _randomNonZero(users, seed);
+        return _randomNonZero(candidates, seed);
     }
 
     function _randomUnhealthyBorrower(address[] memory users, MarketParams memory _marketParams, uint256 seed)
@@ -140,7 +140,7 @@ contract InvariantTest is BaseTest {
             }
         }
 
-        return _randomNonZero(users, seed);
+        return _randomNonZero(candidates, seed);
     }
 
     function sumSupplyShares(address[] memory users) internal view returns (uint256 sum) {

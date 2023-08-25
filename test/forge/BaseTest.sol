@@ -313,7 +313,44 @@ contract BaseTest is Test {
     {
         Id _id = _marketParams.id();
 
-        return bound(shares, 0, morpho.borrowShares(_id, onBehalf));
+        uint256 borrowShares = morpho.borrowShares(_id, onBehalf);
+
+        return bound(shares, 0, borrowShares);
+    }
+
+    function _boundLiquidateSeizedAssets(MarketParams memory _marketParams, address borrower, uint256 seizedAssets)
+        internal
+        view
+        returns (uint256)
+    {
+        Id _id = _marketParams.id();
+
+        uint256 collateral = morpho.collateral(_id, borrower);
+        uint256 collateralPrice = IOracle(_marketParams.oracle).price();
+        uint256 maxRepaidAssets = morpho.expectedBorrowBalance(_marketParams, borrower);
+        uint256 maxSeizedAssets = maxRepaidAssets.wMulDown(_liquidationIncentive(_marketParams.lltv)).mulDivDown(
+            ORACLE_PRICE_SCALE, collateralPrice
+        );
+
+        return bound(seizedAssets, 0, Math.min(collateral, maxSeizedAssets));
+    }
+
+    function _boundLiquidateRepaidShares(MarketParams memory _marketParams, address borrower, uint256 repaidShares)
+        internal
+        view
+        returns (uint256)
+    {
+        Id _id = _marketParams.id();
+
+        uint256 borrowShares = morpho.borrowShares(_id, borrower);
+        uint256 collateralPrice = IOracle(_marketParams.oracle).price();
+        uint256 maxRepaidAssets = morpho.collateral(_id, borrower).mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(
+            _liquidationIncentive(_marketParams.lltv)
+        );
+        (,, uint256 totalBorrowAssets, uint256 totalBorrowShares) = morpho.expectedMarketBalances(marketParams);
+        uint256 maxRepaidShares = maxRepaidAssets.toSharesDown(totalBorrowAssets, totalBorrowShares);
+
+        return bound(repaidShares, 0, Math.min(borrowShares, maxRepaidShares));
     }
 
     function _maxBorrow(MarketParams memory _marketParams, address user) internal view returns (uint256) {
