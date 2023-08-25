@@ -124,13 +124,15 @@ interface IMorpho {
     /// - The IRM should not re-enter Morpho.
     /// @dev Here is a list of properties on these market's dependencies that could break Morpho's liveness properties:
     /// - The token can revert on `transfer` and `transferFrom` for a reason other than an approval or balance issue.
+    /// - A very high amount of assets (~1e35) supplied or borrowed on the market can make the computation of
+    /// `toSharesUp` and `toSharesDown` overflow.
     /// - The IRM can revert on `borrowRate`.
-    /// - If the IRM returns a high borrow rate such that the computation of `interest` in `_accrueInterest` overflows,
+    /// - A very high borrow rate returned by the IRM can make the computation of `interest` in `_accrueInterest`
+    /// overflow.
     /// - The oracle can revert on `price`. Note that this can be used to prevent `borrow`, `withdrawCollateral` and
     /// `liquidate` of being used in certain market conditions.
-    /// - If the oracle returns a high price such that the computation of `maxBorrow` in `_inHealthy` overflows, then
-    /// `borrow`, `withdrawCollateral` and `liquidate` revert. If the price is such that the computation of
-    /// `assetsRepaid` in `liquidate` overflows, then `liquidate` reverts.
+    /// - A very high price returned by the oracle can make the computation of `maxBorrow` in `_inHealthy` overflow, or
+    /// the computation of `assetsRepaid` in `liquidate` overflows, then `liquidate` reverts.
     function createMarket(MarketParams memory marketParams) external;
 
     /// @notice Supplies `assets` or `shares` on behalf of `onBehalf`, optionally calling back the caller's
