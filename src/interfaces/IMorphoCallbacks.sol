@@ -6,9 +6,9 @@ pragma solidity >=0.6.2;
 interface IMorphoLiquidateCallback {
     /// @notice Callback called when a liquidation occurs.
     /// @dev The callback is called only if data is not empty.
-    /// @param assets The amount of repaid assets.
+    /// @param repaidAssets The amount of repaid assets.
     /// @param data Arbitrary data passed to the `liquidate` function.
-    function onMorphoLiquidate(uint256 assets, bytes calldata data) external;
+    function onMorphoLiquidate(uint256 repaidAssets, bytes calldata data) external;
 }
 
 /// @title IMorphoRepayCallback
