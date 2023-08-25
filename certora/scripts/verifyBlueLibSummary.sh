@@ -2,6 +2,6 @@
 
 certoraRun \
     certora/harness/MorphoHarness.sol \
-    --verify MorphoHarness:certora/specs/BlueRatioMathSummary.spec \
+    --verify MorphoHarness:certora/specs/BlueLibSummary.spec \
     --msg "Morpho Ratio Math Summary" \
     "$@"

@@ -81,6 +81,12 @@ contract MorphoHarness is Morpho {
         return marketParams.id();
     }
 
+    function marketLibId(MarketParams memory marketParams) external pure returns (Id marketParamsId) {
+        assembly ("memory-safe") {
+            marketParamsId := keccak256(marketParams, mul(5, 32))
+        }
+    }
+
     function mathLibMulDivUp(uint256 x, uint256 y, uint256 d) public pure returns (uint256) {
         return MathLib.mulDivUp(x, y, d);
     }

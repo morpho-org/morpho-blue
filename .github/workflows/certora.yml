@@ -45,10 +45,9 @@ jobs:
         script:
           - verifyBlue.sh
           - verifyBlueAccrueInterests.sh
-          - verifyBlueRatioMathSummary.sh
           - verifyBlueExitLiquidity.sh
+          - verifyBlueLibSummary.sh
           - verifyBlueRatioMath.sh
-          - verifyBlueRatioMathSummary.sh
           - verifyBlueReverts.sh
           - verifyBlueTransfer.sh
           - verifyDifficultMath.sh
