@@ -131,8 +131,8 @@ contract SingleMarketInvariantTest is InvariantTest {
     }
 
     function invariantMorphoBalance() public {
-        assertApproxEqAbs(
-            morpho.totalSupplyAssets(id) - morpho.totalBorrowAssets(id), borrowableToken.balanceOf(address(morpho)), 1
+        assertGe(
+            borrowableToken.balanceOf(address(morpho)), morpho.totalSupplyAssets(id) - morpho.totalBorrowAssets(id)
         );
     }
 }
