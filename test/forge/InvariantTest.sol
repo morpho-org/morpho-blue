@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "test/forge/BaseTest.sol";
 
-contract InvariantBaseTest is BaseTest {
+contract InvariantTest is BaseTest {
     using MathLib for uint256;
     using MorphoLib for Morpho;
     using SharesMathLib for uint256;
@@ -19,6 +19,9 @@ contract InvariantBaseTest is BaseTest {
         super.setUp();
 
         targetContract(address(this));
+
+        blockNumber = block.number;
+        timestamp = block.timestamp;
     }
 
     function _targetDefaultSenders() internal {
@@ -57,10 +60,10 @@ contract InvariantBaseTest is BaseTest {
         }
     }
 
-    /// @dev Apparently permanently setting block number and timestamp with cheatcodes in this function doesn't work,
+    /// @dev Permanently setting block number and timestamp with cheatcodes in this function doesn't work at the moment,
     ///      they get reset to the ones defined in the set up function after each function call.
-    ///      The solution we choose is to store these in storage, and set them with roll and warp cheatcodes with the
-    ///      setCorrectBlock function at the the begenning of each function.
+    ///      The solution we choose is to save these in storage, and set them with roll and warp cheatcodes with the
+    ///      setCorrectBlock function at the the beginning of each function.
     ///      The purpose of this function is to increment these variables to simulate a new block.
     function newBlock(uint256 elapsed) public {
         elapsed = bound(elapsed, 10, 1 days);
@@ -153,7 +156,7 @@ contract InvariantBaseTest is BaseTest {
         returns (address randomSenderToLiquidate)
     {
         for (uint256 i; i < addresses.length; ++i) {
-            if (morpho.borrowShares(id, addresses[i]) != 0 && !isHealthy(id, addresses[i])) {
+            if (!isHealthy(id, addresses[i])) {
                 addressArray.push(addresses[i]);
             }
         }

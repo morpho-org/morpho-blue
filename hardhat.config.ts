@@ -1,7 +1,7 @@
 import "@nomicfoundation/hardhat-chai-matchers";
+import "@nomicfoundation/hardhat-ethers";
 import "@nomicfoundation/hardhat-foundry";
 import "@nomicfoundation/hardhat-network-helpers";
-import "@nomiclabs/hardhat-ethers";
 import "@typechain/hardhat";
 import * as dotenv from "dotenv";
 import "ethers-maths";
@@ -47,7 +47,7 @@ const config: HardhatUserConfig = {
     timeout: 3000000,
   },
   typechain: {
-    target: "ethers-v5",
+    target: "ethers-v6",
     outDir: "types/",
     externalArtifacts: ["deps/**/*.json"],
   },

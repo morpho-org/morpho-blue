@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "../BaseTest.sol";
 
-contract IntegrationOnlyOwnerTest is BaseTest {
+contract OnlyOwnerIntegrationTest is BaseTest {
     using MathLib for uint256;
     using MorphoLib for Morpho;
 
