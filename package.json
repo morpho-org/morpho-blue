@@ -1,10 +1,19 @@
 {
   "scripts": {
-    "postinstall": "husky install",
-    "compile": "npx hardhat compile --force",
-    "test": "npx hardhat test",
-    "lint": "prettier --check test/hardhat && forge fmt --check",
-    "lint:fix": "prettier --write test/hardhat && forge fmt"
+    "postinstall": "husky install && forge install",
+    "build:forge": "FOUNDRY_PROFILE=build forge build",
+    "build:hardhat": "npx hardhat compile --force",
+    "test:forge": "FOUNDRY_PROFILE=test forge test",
+    "test:forge:invariant": "FOUNDRY_MATCH_CONTRACT=InvariantTest yarn test:forge",
+    "test:forge:integration": "FOUNDRY_MATCH_CONTRACT=IntegrationTest yarn test:forge",
+    "test:hardhat": "npx hardhat test",
+    "lint": "yarn lint:forge && yarn lint:hardhat",
+    "lint:forge": "forge fmt --check",
+    "lint:hardhat": "prettier --check test/hardhat",
+    "lint:fix": "yarn lint:forge:fix && yarn lint:hardhat:fix",
+    "lint:forge:fix": "forge fmt",
+    "lint:hardhat:fix": "prettier --write test/hardhat",
+    "clean": "npx hardhat clean && forge clean"
   },
   "dependencies": {
     "@ethersproject/abi": "^5.7.0",

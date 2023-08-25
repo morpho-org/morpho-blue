@@ -21,13 +21,13 @@ jobs:
           - type: "slow"
             fuzz-runs: 10000
             max-test-rejects: 500000
-            invariant-runs: 100
-            invariant-depth: 100
+            invariant-runs: 64
+            invariant-depth: 2048
           - type: "fast"
             fuzz-runs: 256
             max-test-rejects: 65536
-            invariant-runs: 256
-            invariant-depth: 15
+            invariant-runs: 16
+            invariant-depth: 256
 
     runs-on: ubuntu-latest
     steps:

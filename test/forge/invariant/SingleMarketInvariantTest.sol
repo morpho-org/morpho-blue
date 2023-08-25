@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import "test/forge/InvariantBase.sol";
+import "../InvariantTest.sol";
 
-contract SingleMarketInvariantTest is InvariantBaseTest {
+contract SingleMarketInvariantTest is InvariantTest {
     using MathLib for uint256;
     using MorphoLib for Morpho;
     using SharesMathLib for uint256;
@@ -27,9 +27,6 @@ contract SingleMarketInvariantTest is InvariantBaseTest {
         _weightSelector(this.repayNoRevert.selector, 10);
         _weightSelector(this.supplyCollateralNoRevert.selector, 20);
         _weightSelector(this.withdrawCollateralNoRevert.selector, 15);
-
-        blockNumber = block.number;
-        timestamp = block.timestamp;
 
         targetSelector(FuzzSelector({addr: address(this), selectors: selectors}));
     }
@@ -110,6 +107,8 @@ contract SingleMarketInvariantTest is InvariantBaseTest {
         vm.prank(msg.sender);
         morpho.withdrawCollateral(marketParams, amount, msg.sender, msg.sender);
     }
+
+    /* INVARIANTS */
 
     function invariantSupplyShares() public {
         assertEq(sumUsersSupplyShares(targetSenders()), morpho.totalSupplyShares(id));

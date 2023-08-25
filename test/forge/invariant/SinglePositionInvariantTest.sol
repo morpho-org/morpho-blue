@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import "test/forge/InvariantBase.sol";
+import "../InvariantTest.sol";
 
-contract SinglePositionInvariantTest is InvariantBaseTest {
+contract SinglePositionInvariantTest is InvariantTest {
     using MathLib for uint256;
     using MorphoLib for Morpho;
     using SharesMathLib for uint256;
@@ -95,6 +95,8 @@ contract SinglePositionInvariantTest is InvariantBaseTest {
         vm.prank(msg.sender);
         morpho.withdrawCollateral(marketParams, amount, msg.sender, msg.sender);
     }
+
+    /* INVARIANTS */
 
     function invariantSupplyShares() public {
         assertEq(morpho.supplyShares(id, user), morpho.totalSupplyShares(id));

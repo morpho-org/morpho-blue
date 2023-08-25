@@ -346,8 +346,8 @@ contract Morpho is IMorpho {
         uint256 collateralPrice = IOracle(marketParams.oracle).price();
 
         require(!_isHealthy(marketParams, id, borrower, collateralPrice), ErrorsLib.HEALTHY_POSITION);
-        uint256 repaidAssets;
 
+        uint256 repaidAssets;
         {
             // The liquidation incentive factor is min(maxIncentiveFactor, 1/(1 - cursor*(1 - lltv))).
             uint256 incentiveFactor = UtilsLib.min(
