@@ -106,6 +106,7 @@ interface IMorpho {
 
     /// @notice Sets `newOwner` as owner of the contract.
     /// @dev Warning: No two-step transfer ownership.
+    /// @dev Warning: The owner can be set to the zero address.
     function setOwner(address newOwner) external;
 
     /// @notice Enables `irm` as a possible IRM for market creation.
