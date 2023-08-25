@@ -10,23 +10,22 @@ contract InvariantTest is BaseTest {
     using MorphoBalancesLib for IMorpho;
     using MarketParamsLib for MarketParams;
 
-    uint256 blockNumber;
-    uint256 timestamp;
-
     bytes4[] internal selectors;
 
     function setUp() public virtual override {
         super.setUp();
 
+        _targetSenders();
+
+        _supplyCollateralMax(targetSenders(), marketParams);
+
         _weightSelector(this.warp.selector, 20);
 
+        targetContract(address(this));
         targetSelector(FuzzSelector({addr: address(this), selectors: selectors}));
-
-        blockNumber = block.number;
-        timestamp = block.timestamp;
     }
 
-    function _targetDefaultSenders() internal {
+    function _targetSenders() internal virtual {
         _targetSender(_addrFromHashedString("Sender1"));
         _targetSender(_addrFromHashedString("Sender2"));
         _targetSender(_addrFromHashedString("Sender3"));
@@ -52,13 +51,14 @@ contract InvariantTest is BaseTest {
         }
     }
 
-    function _supplyHighAmountOfCollateralForAllSenders(address[] memory users, MarketParams memory marketParams)
-        internal
-    {
+    function _supplyCollateralMax(address[] memory users, MarketParams memory _marketParams) internal {
         for (uint256 i; i < users.length; ++i) {
-            collateralToken.setBalance(users[i], 1e30);
-            vm.prank(users[i]);
-            morpho.supplyCollateral(marketParams, 1e30, users[i], hex"");
+            address user = users[i];
+
+            collateralToken.setBalance(user, 1e30);
+
+            vm.prank(user);
+            morpho.supplyCollateral(_marketParams, 1e30, user, hex"");
         }
     }
 

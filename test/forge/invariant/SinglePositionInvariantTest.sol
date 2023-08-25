@@ -21,18 +21,19 @@ contract SinglePositionInvariantTest is InvariantTest {
 
         super.setUp();
 
-        user = _addrFromHashedString("User");
-        targetSender(user);
-
         collateralToken.setBalance(user, 1e30);
-        vm.startPrank(user);
-        borrowableToken.approve(address(morpho), type(uint256).max);
-        collateralToken.approve(address(morpho), type(uint256).max);
+
+        vm.prank(user);
         morpho.supplyCollateral(marketParams, 1e30, user, hex"");
-        vm.stopPrank();
 
         // High price because of the 1e36 price scale
         oracle.setPrice(1e40);
+    }
+
+    function _targetSenders() internal virtual override {
+        user = _addrFromHashedString("User");
+
+        _targetSender(user);
     }
 
     function supplyNoRevert(uint256 assets) public {
@@ -42,8 +43,6 @@ contract SinglePositionInvariantTest is InvariantTest {
 
         vm.prank(msg.sender);
         morpho.supply(marketParams, assets, 0, msg.sender, hex"");
-
-        console2.log("supply", morpho.expectedSupplyBalance(marketParams, user));
     }
 
     function withdrawNoRevert(uint256 assets, address receiver) public {

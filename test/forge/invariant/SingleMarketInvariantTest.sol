@@ -20,9 +20,6 @@ contract SingleMarketInvariantTest is InvariantTest {
 
         super.setUp();
 
-        _targetDefaultSenders();
-        _supplyHighAmountOfCollateralForAllSenders(targetSenders(), marketParams);
-
         // High price because of the 1e36 price scale
         oracle.setPrice(1e40);
     }

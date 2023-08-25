@@ -26,6 +26,8 @@ contract TwoMarketsInvariantTest is InvariantTest {
 
         super.setUp();
 
+        _supplyCollateralMax(targetSenders(), marketParams2);
+
         irm2 = new IrmMock();
         vm.label(address(irm2), "IRM2");
 
@@ -38,10 +40,6 @@ contract TwoMarketsInvariantTest is InvariantTest {
         morpho.enableLltv(LLTV + 1);
         morpho.createMarket(marketParams2);
         vm.stopPrank();
-
-        _targetDefaultSenders();
-        _supplyHighAmountOfCollateralForAllSenders(targetSenders(), marketParams);
-        _supplyHighAmountOfCollateralForAllSenders(targetSenders(), marketParams2);
 
         // High price because of the 1e36 price scale
         oracle.setPrice(1e40);

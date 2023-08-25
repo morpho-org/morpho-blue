@@ -23,8 +23,6 @@ contract SingleMarketChangingPriceInvariantTest is InvariantTest {
 
         super.setUp();
 
-        _targetDefaultSenders();
-
         oracle.setPrice(1e36);
     }
 
