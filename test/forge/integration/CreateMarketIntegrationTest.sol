@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "../BaseTest.sol";
 
-contract IntegrationCreateMarketTest is BaseTest {
+contract CreateMarketIntegrationTest is BaseTest {
     using MathLib for uint256;
     using MorphoLib for Morpho;
     using MarketParamsLib for MarketParams;
@@ -71,5 +71,26 @@ contract IntegrationCreateMarketTest is BaseTest {
         vm.expectRevert(bytes(ErrorsLib.MARKET_ALREADY_CREATED));
         morpho.createMarket(marketParamsFuzz);
         vm.stopPrank();
+    }
+
+    function testIdToMarketParams(MarketParams memory marketParamsFuzz) public {
+        marketParamsFuzz.lltv = _boundValidLltv(marketParamsFuzz.lltv);
+        Id marketParamsFuzzId = marketParamsFuzz.id();
+
+        vm.startPrank(OWNER);
+        if (marketParamsFuzz.irm != marketParams.irm) morpho.enableIrm(marketParamsFuzz.irm);
+        if (marketParamsFuzz.lltv != LLTV) morpho.enableLltv(marketParamsFuzz.lltv);
+
+        morpho.createMarket(marketParamsFuzz);
+        vm.stopPrank();
+
+        (address borrowableToken, address collateralToken, address oracle, address irm, uint256 lltv) =
+            morpho.idToMarketParams(marketParamsFuzzId);
+
+        assertEq(marketParamsFuzz.borrowableToken, borrowableToken, "borrowableToken != borrowableToken");
+        assertEq(marketParamsFuzz.collateralToken, collateralToken, "collateralToken != collateralToken");
+        assertEq(marketParamsFuzz.oracle, oracle, "oracle != oracle");
+        assertEq(marketParamsFuzz.irm, irm, "irm != irm");
+        assertEq(marketParamsFuzz.lltv, lltv, "lltv != lltv");
     }
 }

@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "../BaseTest.sol";
 
-contract IntegrationCallbacksTest is
+contract CallbacksIntegrationTest is
     BaseTest,
     IMorphoLiquidateCallback,
     IMorphoRepayCallback,
@@ -166,9 +166,9 @@ contract IntegrationCallbacksTest is
         borrowableToken.approve(address(morpho), 0);
 
         vm.expectRevert();
-        morpho.liquidate(marketParams, address(this), collateralAmount, hex"");
+        morpho.liquidate(marketParams, address(this), collateralAmount, 0, hex"");
         morpho.liquidate(
-            marketParams, address(this), collateralAmount, abi.encode(this.testLiquidateCallback.selector, hex"")
+            marketParams, address(this), collateralAmount, 0, abi.encode(this.testLiquidateCallback.selector, hex"")
         );
     }
 

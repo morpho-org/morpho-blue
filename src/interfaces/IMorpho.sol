@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-pragma solidity >=0.5.0;
+pragma solidity >=0.8.8;
 
 type Id is bytes32;
 
@@ -13,7 +13,7 @@ struct MarketParams {
 
 /// @dev Warning: For `feeRecipient`, `supplyShares` does not contain the accrued shares since the last interest
 /// accrual.
-struct User {
+struct Position {
     uint256 supplyShares;
     uint128 borrowShares;
     uint128 collateral;
@@ -64,10 +64,10 @@ interface IMorpho {
     /// @dev The recipient receives the fees of a given market through a supply position on that market.
     function feeRecipient() external view returns (address);
 
-    /// @notice Users' storage for market `id`.
-    function user(Id id, address user) external view returns (uint256, uint128, uint128);
+    /// @notice The state of the position of `user` on the market corresponding to `id`.
+    function position(Id id, address user) external view returns (uint256, uint128, uint128);
 
-    /// @notice Market' storage for market `id`.
+    /// @notice The state of the market corresponding to `id`.
     function market(Id id) external view returns (uint128, uint128, uint128, uint128, uint128, uint128);
 
     /// @notice Whether the `irm` is enabled.
@@ -110,6 +110,8 @@ interface IMorpho {
 
     /// @notice Sets `newFeeRecipient` as recipient of the fee.
     /// @dev Warning: The fee recipient can be set to the zero address.
+    /// @dev Warning: The fee to be accrued on each market won't belong to the old fee recipient after calling this
+    /// function.
     function setFeeRecipient(address newFeeRecipient) external;
 
     /// @notice Creates the market `marketParams`.
@@ -216,19 +218,26 @@ interface IMorpho {
     function withdrawCollateral(MarketParams memory marketParams, uint256 assets, address onBehalf, address receiver)
         external;
 
-    /// @notice Liquidates `seized` of collateral of `borrower`'s position, optionally calling back the caller's
-    /// `onMorphoLiquidate` function with the given `data`.
+    /// @notice Liquidates the given `repaidShares` of debt asset or seize the given `seized` of collateral on the given
+    /// `market` of the given `borrower`'s position, optionally calling back the caller's `onMorphoLiquidate` function
+    /// with the given `data`.
+    /// @dev Either `seized` or `repaidShares` should be zero.
     /// @dev Seizing more than the collateral balance will underflow and revert without any error message.
     /// @dev Repaying more than the borrow balance will underflow and revert without any error message.
     /// @param marketParams The market of the position.
     /// @param borrower The owner of the position.
-    /// @param seized The amount of collateral to seize.
+    /// @param seizedAssets The amount of collateral to seize.
+    /// @param repaidShares The amount of shares to repay.
     /// @param data Arbitrary data to pass to the `onMorphoLiquidate` callback. Pass empty data if not needed.
-    /// @return assetsRepaid The amount of assets repaid.
-    /// @return sharesRepaid The amount of shares burned.
-    function liquidate(MarketParams memory marketParams, address borrower, uint256 seized, bytes memory data)
-        external
-        returns (uint256 assetsRepaid, uint256 sharesRepaid);
+    /// @return The amount of assets seized.
+    /// @return The amount of assets repaid.
+    function liquidate(
+        MarketParams memory marketParams,
+        address borrower,
+        uint256 seizedAssets,
+        uint256 repaidShares,
+        bytes memory data
+    ) external returns (uint256, uint256);
 
     /// @notice Executes a flash loan.
     /// @param token The token to flash loan.
@@ -242,6 +251,9 @@ interface IMorpho {
     function setAuthorization(address authorized, bool newIsAuthorized) external;
 
     /// @notice Sets the authorization for `authorization.authorized` to manage `authorization.authorizer`'s positions.
+    /// @dev Warning: Reverts if the signature has already been submitted.
+    /// @dev The signature is malleable, but it has no impact on the security here.
+    /// @dev The nonce is passed as argument to be able to revert with a different error message.
     /// @param authorization The `Authorization` struct.
     /// @param signature The signature.
     function setAuthorizationWithSig(Authorization calldata authorization, Signature calldata signature) external;

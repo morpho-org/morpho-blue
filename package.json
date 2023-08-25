@@ -4,45 +4,51 @@
   "license": "BUSL-1.1",
   "version": "1.0.0",
   "scripts": {
-    "postinstall": "husky install",
-    "compile": "npx hardhat compile --force",
-    "test": "npx hardhat test",
-    "lint": "prettier --check test/hardhat && forge fmt --check",
-    "lint:fix": "prettier --write test/hardhat && forge fmt"
+    "postinstall": "husky install && forge install",
+    "build:forge": "FOUNDRY_PROFILE=build forge build",
+    "build:hardhat": "npx hardhat compile --force",
+    "test:forge": "FOUNDRY_PROFILE=test forge test",
+    "test:forge:invariant": "FOUNDRY_MATCH_CONTRACT=InvariantTest yarn test:forge",
+    "test:forge:integration": "FOUNDRY_MATCH_CONTRACT=IntegrationTest yarn test:forge",
+    "test:hardhat": "npx hardhat test",
+    "lint": "yarn lint:forge && yarn lint:hardhat",
+    "lint:forge": "forge fmt --check",
+    "lint:hardhat": "prettier --check test/hardhat",
+    "lint:fix": "yarn lint:forge:fix && yarn lint:hardhat:fix",
+    "lint:forge:fix": "forge fmt",
+    "lint:hardhat:fix": "prettier --write test/hardhat",
+    "clean": "npx hardhat clean && forge clean"
   },
   "dependencies": {
-    "@ethersproject/abi": "^5.7.0",
-    "@ethersproject/bytes": "^5.7.0",
-    "@ethersproject/providers": "^5.7.2",
-    "ethers": "^5.7.2",
-    "ethers-maths": "^3.5.3",
+    "ethers": "^6.7.1",
+    "ethers-maths": "^4.0.2",
     "lodash": "^4.17.21"
   },
   "devDependencies": {
-    "@commitlint/cli": "^17.6.7",
-    "@commitlint/config-conventional": "^17.6.7",
-    "@nomicfoundation/hardhat-chai-matchers": "^1.0.6",
-    "@nomicfoundation/hardhat-foundry": "^1.0.2",
+    "@commitlint/cli": "^17.7.1",
+    "@commitlint/config-conventional": "^17.7.0",
+    "@nomicfoundation/hardhat-chai-matchers": "^2.0.2",
+    "@nomicfoundation/hardhat-ethers": "^3.0.4",
+    "@nomicfoundation/hardhat-foundry": "^1.0.3",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.8",
-    "@nomiclabs/hardhat-ethers": "^2.2.3",
-    "@trivago/prettier-plugin-sort-imports": "^4.1.1",
-    "@typechain/ethers-v5": "^11.1.0",
-    "@typechain/hardhat": "^8.0.2",
+    "@trivago/prettier-plugin-sort-imports": "^4.2.0",
+    "@typechain/ethers-v6": "^0.5.0",
+    "@typechain/hardhat": "^9.0.0",
     "@types/chai": "^4.3.5",
-    "@types/lodash": "^4.14.195",
+    "@types/lodash": "^4.14.197",
     "@types/mocha": "^10.0.1",
-    "@types/node": "^20.4.2",
-    "chai": "^4.3.7",
+    "@types/node": "^20.5.4",
+    "chai": "^4.3.8",
     "dotenv": "^16.3.1",
-    "hardhat": "^2.17.0",
+    "hardhat": "^2.17.1",
     "hardhat-gas-reporter": "^1.0.9",
-    "hardhat-tracer": "^2.5.1",
+    "hardhat-tracer": "^2.6.0",
     "husky": "^8.0.3",
-    "lint-staged": "^13.2.3",
-    "prettier": "^3.0.0",
+    "lint-staged": "^14.0.1",
+    "prettier": "^3.0.2",
     "solidity-coverage": "^0.8.4",
     "ts-node": "^10.9.1",
-    "typechain": "^8.3.0",
+    "typechain": "^8.3.1",
     "typescript": "^5.1.6"
   },
   "lint-staged": {
@@ -59,6 +65,8 @@
   },
   "prettier": {
     "printWidth": 120,
-    "plugins": ["@trivago/prettier-plugin-sort-imports"]
+    "plugins": [
+      "@trivago/prettier-plugin-sort-imports"
+    ]
   }
 }

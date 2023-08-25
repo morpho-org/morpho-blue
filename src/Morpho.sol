@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.19;
 
-import {Id, IMorpho, MarketParams, User, Market, Authorization, Signature} from "./interfaces/IMorpho.sol";
+import {Id, IMorpho, MarketParams, Position, Market, Authorization, Signature} from "./interfaces/IMorpho.sol";
 import {
     IMorphoLiquidateCallback,
     IMorphoRepayCallback,
@@ -13,6 +13,7 @@ import {IIrm} from "./interfaces/IIrm.sol";
 import {IERC20} from "./interfaces/IERC20.sol";
 import {IOracle} from "./interfaces/IOracle.sol";
 
+import "./libraries/ConstantsLib.sol";
 import {UtilsLib} from "./libraries/UtilsLib.sol";
 import {EventsLib} from "./libraries/EventsLib.sol";
 import {ErrorsLib} from "./libraries/ErrorsLib.sol";
@@ -20,20 +21,6 @@ import {MathLib, WAD} from "./libraries/MathLib.sol";
 import {SharesMathLib} from "./libraries/SharesMathLib.sol";
 import {MarketParamsLib} from "./libraries/MarketParamsLib.sol";
 import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
-
-/// @dev The maximum fee a market can have (25%).
-uint256 constant MAX_FEE = 0.25e18;
-/// @dev Oracle price scale.
-uint256 constant ORACLE_PRICE_SCALE = 1e36;
-/// @dev Liquidation cursor.
-uint256 constant LIQUIDATION_CURSOR = 0.3e18;
-/// @dev Max liquidation incentive factor.
-uint256 constant MAX_LIQUIDATION_INCENTIVE_FACTOR = 1.15e18;
-/// @dev The EIP-712 typeHash for EIP712Domain.
-bytes32 constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
-/// @dev The EIP-712 typeHash for Authorization.
-bytes32 constant AUTHORIZATION_TYPEHASH =
-    keccak256("Authorization(address authorizer,address authorized,bool isAuthorized,uint256 nonce,uint256 deadline)");
 
 /// @title Morpho
 /// @author Morpho Labs
@@ -59,7 +46,7 @@ contract Morpho is IMorpho {
     /// @inheritdoc IMorpho
     address public feeRecipient;
     /// @inheritdoc IMorpho
-    mapping(Id => mapping(address => User)) public user;
+    mapping(Id => mapping(address => Position)) public position;
     /// @inheritdoc IMorpho
     mapping(Id => Market) public market;
     /// @inheritdoc IMorpho
@@ -79,9 +66,9 @@ contract Morpho is IMorpho {
     /// @param newOwner The new owner of the contract.
     constructor(address newOwner) {
         require(newOwner != address(0), ErrorsLib.ZERO_ADDRESS);
-        owner = newOwner;
 
-        DOMAIN_SEPARATOR = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256("Morpho"), block.chainid, address(this)));
+        owner = newOwner;
+        DOMAIN_SEPARATOR = keccak256(abi.encode(DOMAIN_TYPEHASH, block.chainid, address(this)));
     }
 
     /* MODIFIERS */
@@ -97,6 +84,7 @@ contract Morpho is IMorpho {
     /// @inheritdoc IMorpho
     function setOwner(address newOwner) external onlyOwner {
         require(newOwner != owner, ErrorsLib.ALREADY_SET);
+
         owner = newOwner;
 
         emit EventsLib.SetOwner(newOwner);
@@ -105,6 +93,7 @@ contract Morpho is IMorpho {
     /// @inheritdoc IMorpho
     function enableIrm(address irm) external onlyOwner {
         require(!isIrmEnabled[irm], ErrorsLib.ALREADY_SET);
+
         isIrmEnabled[irm] = true;
 
         emit EventsLib.EnableIrm(address(irm));
@@ -113,7 +102,8 @@ contract Morpho is IMorpho {
     /// @inheritdoc IMorpho
     function enableLltv(uint256 lltv) external onlyOwner {
         require(!isLltvEnabled[lltv], ErrorsLib.ALREADY_SET);
-        require(lltv < WAD, ErrorsLib.LLTV_TOO_HIGH);
+        require(lltv < WAD, ErrorsLib.MAX_LLTV_EXCEEDED);
+
         isLltvEnabled[lltv] = true;
 
         emit EventsLib.EnableLltv(lltv);
@@ -138,6 +128,7 @@ contract Morpho is IMorpho {
     /// @inheritdoc IMorpho
     function setFeeRecipient(address newFeeRecipient) external onlyOwner {
         require(newFeeRecipient != feeRecipient, ErrorsLib.ALREADY_SET);
+
         feeRecipient = newFeeRecipient;
 
         emit EventsLib.SetFeeRecipient(newFeeRecipient);
@@ -179,7 +170,7 @@ contract Morpho is IMorpho {
         if (assets > 0) shares = assets.toSharesDown(market[id].totalSupplyAssets, market[id].totalSupplyShares);
         else assets = shares.toAssetsUp(market[id].totalSupplyAssets, market[id].totalSupplyShares);
 
-        user[id][onBehalf].supplyShares += shares;
+        position[id][onBehalf].supplyShares += shares;
         market[id].totalSupplyShares += shares.toUint128();
         market[id].totalSupplyAssets += assets.toUint128();
 
@@ -212,7 +203,7 @@ contract Morpho is IMorpho {
         if (assets > 0) shares = assets.toSharesUp(market[id].totalSupplyAssets, market[id].totalSupplyShares);
         else assets = shares.toAssetsDown(market[id].totalSupplyAssets, market[id].totalSupplyShares);
 
-        user[id][onBehalf].supplyShares -= shares;
+        position[id][onBehalf].supplyShares -= shares;
         market[id].totalSupplyShares -= shares.toUint128();
         market[id].totalSupplyAssets -= assets.toUint128();
 
@@ -247,7 +238,7 @@ contract Morpho is IMorpho {
         if (assets > 0) shares = assets.toSharesUp(market[id].totalBorrowAssets, market[id].totalBorrowShares);
         else assets = shares.toAssetsDown(market[id].totalBorrowAssets, market[id].totalBorrowShares);
 
-        user[id][onBehalf].borrowShares += shares.toUint128();
+        position[id][onBehalf].borrowShares += shares.toUint128();
         market[id].totalBorrowShares += shares.toUint128();
         market[id].totalBorrowAssets += assets.toUint128();
 
@@ -279,7 +270,7 @@ contract Morpho is IMorpho {
         if (assets > 0) shares = assets.toSharesDown(market[id].totalBorrowAssets, market[id].totalBorrowShares);
         else assets = shares.toAssetsUp(market[id].totalBorrowAssets, market[id].totalBorrowShares);
 
-        user[id][onBehalf].borrowShares -= shares.toUint128();
+        position[id][onBehalf].borrowShares -= shares.toUint128();
         market[id].totalBorrowShares -= shares.toUint128();
         market[id].totalBorrowAssets -= assets.toUint128();
 
@@ -305,7 +296,7 @@ contract Morpho is IMorpho {
 
         // Don't accrue interest because it's not required and it saves gas.
 
-        user[id][onBehalf].collateral += assets.toUint128();
+        position[id][onBehalf].collateral += assets.toUint128();
 
         emit EventsLib.SupplyCollateral(id, msg.sender, onBehalf, assets);
 
@@ -327,7 +318,7 @@ contract Morpho is IMorpho {
 
         _accrueInterest(marketParams, id);
 
-        user[id][onBehalf].collateral -= assets.toUint128();
+        position[id][onBehalf].collateral -= assets.toUint128();
 
         require(_isHealthy(marketParams, id, onBehalf), ErrorsLib.INSUFFICIENT_COLLATERAL);
 
@@ -339,13 +330,16 @@ contract Morpho is IMorpho {
     /* LIQUIDATION */
 
     /// @inheritdoc IMorpho
-    function liquidate(MarketParams memory marketParams, address borrower, uint256 seized, bytes calldata data)
-        external
-        returns (uint256 assetsRepaid, uint256 sharesRepaid)
-    {
+    function liquidate(
+        MarketParams memory marketParams,
+        address borrower,
+        uint256 seizedAssets,
+        uint256 repaidShares,
+        bytes calldata data
+    ) external returns (uint256, uint256) {
         Id id = marketParams.id();
         require(market[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
-        require(seized != 0, ErrorsLib.ZERO_ASSETS);
+        require(UtilsLib.exactlyOneZero(seizedAssets, repaidShares), ErrorsLib.INCONSISTENT_INPUT);
 
         _accrueInterest(marketParams, id);
 
@@ -353,37 +347,49 @@ contract Morpho is IMorpho {
 
         require(!_isHealthy(marketParams, id, borrower, collateralPrice), ErrorsLib.HEALTHY_POSITION);
 
-        // The liquidation incentive factor is min(maxIncentiveFactor, 1/(1 - cursor*(1 - lltv))).
-        uint256 incentiveFactor = UtilsLib.min(
-            MAX_LIQUIDATION_INCENTIVE_FACTOR, WAD.wDivDown(WAD - LIQUIDATION_CURSOR.wMulDown(WAD - marketParams.lltv))
-        );
-        assetsRepaid = seized.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(incentiveFactor);
-        sharesRepaid = assetsRepaid.toSharesDown(market[id].totalBorrowAssets, market[id].totalBorrowShares);
+        uint256 repaidAssets;
+        {
+            // The liquidation incentive factor is min(maxIncentiveFactor, 1/(1 - cursor*(1 - lltv))).
+            uint256 incentiveFactor = UtilsLib.min(
+                MAX_LIQUIDATION_INCENTIVE_FACTOR,
+                WAD.wDivDown(WAD - LIQUIDATION_CURSOR.wMulDown(WAD - marketParams.lltv))
+            );
 
-        user[id][borrower].borrowShares -= sharesRepaid.toUint128();
-        market[id].totalBorrowShares -= sharesRepaid.toUint128();
-        market[id].totalBorrowAssets -= assetsRepaid.toUint128();
+            if (seizedAssets > 0) {
+                repaidAssets = seizedAssets.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(incentiveFactor);
+                repaidShares = repaidAssets.toSharesDown(market[id].totalBorrowAssets, market[id].totalBorrowShares);
+            } else {
+                repaidAssets = repaidShares.toAssetsUp(market[id].totalBorrowAssets, market[id].totalBorrowShares);
+                seizedAssets = repaidAssets.wMulDown(incentiveFactor).mulDivDown(ORACLE_PRICE_SCALE, collateralPrice);
+            }
+        }
 
-        user[id][borrower].collateral -= seized.toUint128();
+        position[id][borrower].borrowShares -= repaidShares.toUint128();
+        market[id].totalBorrowShares -= repaidShares.toUint128();
+        market[id].totalBorrowAssets -= repaidAssets.toUint128();
+
+        position[id][borrower].collateral -= seizedAssets.toUint128();
 
         // Realize the bad debt if needed. Note that it saves ~3k gas to do it.
         uint256 badDebtShares;
-        if (user[id][borrower].collateral == 0) {
-            badDebtShares = user[id][borrower].borrowShares;
+        if (position[id][borrower].collateral == 0) {
+            badDebtShares = position[id][borrower].borrowShares;
             uint256 badDebt = badDebtShares.toAssetsUp(market[id].totalBorrowAssets, market[id].totalBorrowShares);
             market[id].totalSupplyAssets -= badDebt.toUint128();
             market[id].totalBorrowAssets -= badDebt.toUint128();
             market[id].totalBorrowShares -= badDebtShares.toUint128();
-            user[id][borrower].borrowShares = 0;
+            position[id][borrower].borrowShares = 0;
         }
 
-        IERC20(marketParams.collateralToken).safeTransfer(msg.sender, seized);
+        IERC20(marketParams.collateralToken).safeTransfer(msg.sender, seizedAssets);
 
-        emit EventsLib.Liquidate(id, msg.sender, borrower, assetsRepaid, sharesRepaid, seized, badDebtShares);
+        emit EventsLib.Liquidate(id, msg.sender, borrower, repaidAssets, repaidShares, seizedAssets, badDebtShares);
 
-        if (data.length > 0) IMorphoLiquidateCallback(msg.sender).onMorphoLiquidate(assetsRepaid, data);
+        if (data.length > 0) IMorphoLiquidateCallback(msg.sender).onMorphoLiquidate(repaidAssets, data);
 
-        IERC20(marketParams.borrowableToken).safeTransferFrom(msg.sender, address(this), assetsRepaid);
+        IERC20(marketParams.borrowableToken).safeTransferFrom(msg.sender, address(this), repaidAssets);
+
+        return (seizedAssets, repaidAssets);
     }
 
     /* FLASH LOANS */
@@ -409,9 +415,6 @@ contract Morpho is IMorpho {
     }
 
     /// @inheritdoc IMorpho
-    /// @dev Warning: Reverts if the signature has already been submitted.
-    /// @dev The signature is malleable, but it has no impact on the security here.
-    /// @dev The nonce is passed as argument to be able to revert with a different error message.
     function setAuthorizationWithSig(Authorization memory authorization, Signature calldata signature) external {
         require(block.timestamp < authorization.deadline, ErrorsLib.SIGNATURE_EXPIRED);
         require(authorization.nonce == nonce[authorization.authorizer]++, ErrorsLib.INVALID_NONCE);
@@ -445,7 +448,7 @@ contract Morpho is IMorpho {
         if (elapsed == 0) return;
 
         if (market[id].totalBorrowAssets != 0) {
-            uint256 borrowRate = IIrm(marketParams.irm).borrowRate(marketParams);
+            uint256 borrowRate = IIrm(marketParams.irm).borrowRate(marketParams, market[id]);
             uint256 interest = market[id].totalBorrowAssets.wMulDown(borrowRate.wTaylorCompounded(elapsed));
             market[id].totalBorrowAssets += interest.toUint128();
             market[id].totalSupplyAssets += interest.toUint128();
@@ -457,7 +460,7 @@ contract Morpho is IMorpho {
                 // that total supply is already updated.
                 feeShares =
                     feeAmount.toSharesDown(market[id].totalSupplyAssets - feeAmount, market[id].totalSupplyShares);
-                user[id][feeRecipient].supplyShares += feeShares;
+                position[id][feeRecipient].supplyShares += feeShares;
                 market[id].totalSupplyShares += feeShares.toUint128();
             }
 
@@ -470,17 +473,18 @@ contract Morpho is IMorpho {
 
     /* HEALTH CHECK */
 
-    /// @dev Returns whether the position of `user` in the given market `marketParams` is healthy.
+    /// @dev Returns whether the position of `borrower` in the given market `marketParams` is healthy.
     /// @dev Assumes that the inputs `marketParams` and `id` match.
     function _isHealthy(MarketParams memory marketParams, Id id, address borrower) internal view returns (bool) {
-        if (user[id][borrower].borrowShares == 0) return true;
+        if (position[id][borrower].borrowShares == 0) return true;
 
         uint256 collateralPrice = IOracle(marketParams.oracle).price();
 
         return _isHealthy(marketParams, id, borrower, collateralPrice);
     }
 
-    /// @dev Returns whether the position of `user` in the given market `marketParams` with the given `collateralPrice`
+    /// @dev Returns whether the position of `borrower` in the given market `marketParams` with the given
+    /// `collateralPrice`
     /// is healthy.
     /// @dev Assumes that the inputs `marketParams` and `id` match.
     function _isHealthy(MarketParams memory marketParams, Id id, address borrower, uint256 collateralPrice)
@@ -488,10 +492,10 @@ contract Morpho is IMorpho {
         view
         returns (bool)
     {
-        uint256 borrowed = uint256(user[id][borrower].borrowShares).toAssetsUp(
+        uint256 borrowed = uint256(position[id][borrower].borrowShares).toAssetsUp(
             market[id].totalBorrowAssets, market[id].totalBorrowShares
         );
-        uint256 maxBorrow = uint256(user[id][borrower].collateral).mulDivDown(collateralPrice, ORACLE_PRICE_SCALE)
+        uint256 maxBorrow = uint256(position[id][borrower].collateral).mulDivDown(collateralPrice, ORACLE_PRICE_SCALE)
             .wMulDown(marketParams.lltv);
 
         return maxBorrow >= borrowed;
@@ -508,8 +512,7 @@ contract Morpho is IMorpho {
         for (uint256 i; i < nSlots;) {
             bytes32 slot = slots[i++];
 
-            /// @solidity memory-safe-assembly
-            assembly {
+            assembly ("memory-safe") {
                 mstore(add(res, mul(i, 32)), sload(slot))
             }
         }

@@ -16,6 +16,8 @@ library SharesMathLib {
     /// high precision computations.
     uint256 internal constant VIRTUAL_SHARES = 1e6;
 
+    /// @dev A number of virtual assets of 1 enforces a conversion rate between shares and assets when a market is
+    /// empty.
     uint256 internal constant VIRTUAL_ASSETS = 1;
 
     /// @dev Calculates the value of `assets` quoted in shares, rounding down.

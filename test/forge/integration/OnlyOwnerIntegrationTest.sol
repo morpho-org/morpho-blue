@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "../BaseTest.sol";
 
-contract IntegrationOnlyOwnerTest is BaseTest {
+contract OnlyOwnerIntegrationTest is BaseTest {
     using MathLib for uint256;
     using MorphoLib for Morpho;
 
@@ -82,7 +82,7 @@ contract IntegrationOnlyOwnerTest is BaseTest {
         lltvFuzz = _boundInvalidLltv(lltvFuzz);
 
         vm.prank(OWNER);
-        vm.expectRevert(bytes(ErrorsLib.LLTV_TOO_HIGH));
+        vm.expectRevert(bytes(ErrorsLib.MAX_LLTV_EXCEEDED));
         morpho.enableLltv(lltvFuzz);
     }
 
