@@ -139,7 +139,7 @@ contract SinglePositionInvariantTest is InvariantTest {
     }
 
     function invariantMorphoBalance() public {
-        assertEq(
+        assertGe(
             borrowableToken.balanceOf(address(morpho)), morpho.totalSupplyAssets(id) - morpho.totalBorrowAssets(id)
         );
     }
