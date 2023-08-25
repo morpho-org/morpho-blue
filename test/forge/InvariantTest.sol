@@ -5,9 +5,10 @@ import "./BaseTest.sol";
 
 contract InvariantTest is BaseTest {
     using MathLib for uint256;
+    using SharesMathLib for uint256;
     using MorphoLib for IMorpho;
     using MorphoBalancesLib for IMorpho;
-    using SharesMathLib for uint256;
+    using MarketParamsLib for MarketParams;
 
     uint256 blockNumber;
     uint256 timestamp;
@@ -17,7 +18,9 @@ contract InvariantTest is BaseTest {
     function setUp() public virtual override {
         super.setUp();
 
-        targetContract(address(this));
+        _weightSelector(this.warp.selector, 20);
+
+        targetSelector(FuzzSelector({addr: address(this), selectors: selectors}));
 
         blockNumber = block.number;
         timestamp = block.timestamp;
@@ -59,69 +62,82 @@ contract InvariantTest is BaseTest {
         }
     }
 
-    /// @dev Permanently setting block number and timestamp with cheatcodes in this function doesn't work at the moment,
-    ///      they get reset to the ones defined in the set up function after each function call.
-    ///      The solution we choose is to save these in storage, and set them with roll and warp cheatcodes with the
-    ///      setCorrectBlock function at the the beginning of each function.
-    ///      The purpose of this function is to increment these variables to simulate a new block.
-    function newBlock(uint256 elapsed) external {
-        elapsed = bound(elapsed, 10, 7 days);
+    function warp(uint256 elapsed) external {
+        elapsed = bound(elapsed, 12, 7 days);
 
-        blockNumber += 1;
-        timestamp += elapsed;
+        vm.roll(block.number + elapsed / 12);
+        vm.warp(block.timestamp + elapsed);
     }
 
-    modifier setCorrectBlock() {
-        vm.roll(blockNumber);
-        vm.warp(timestamp);
-        _;
-    }
-
-    function _randomSupplier(address[] memory users, uint256 seed) internal returns (address) {
-        address[] memory candidates = new address[](users.length);
-
-        for (uint256 i; i < users.length; ++i) {
-            if (morpho.supplyShares(id, users[i]) != 0) {
-                candidates[i] = users[i];
-            }
-        }
-
-        return _randomNonZero(users, seed);
-    }
-
-    function _randomBorrower(address[] memory users, uint256 seed) internal returns (address) {
-        address[] memory candidates = new address[](users.length);
-
-        for (uint256 i; i < users.length; ++i) {
-            if (morpho.borrowShares(id, users[i]) != 0) {
-                candidates[i] = users[i];
-            }
-        }
-
-        return _randomNonZero(users, seed);
-    }
-
-    function _randomHealthyCollateralSupplier(address[] memory users, uint256 seed) internal returns (address) {
-        address[] memory candidates = new address[](users.length);
-
-        for (uint256 i; i < users.length; ++i) {
-            if (morpho.collateral(id, users[i]) != 0 && isHealthy(id, users[i])) {
-                candidates[i] = users[i];
-            }
-        }
-
-        return _randomNonZero(users, seed);
-    }
-
-    function _randomUnhealthyBorrower(address[] memory users, uint256 seed)
+    function _randomSupplier(address[] memory users, MarketParams memory _marketParams, uint256 seed)
         internal
+        view
+        returns (address)
+    {
+        Id _id = _marketParams.id();
+        address[] memory candidates = new address[](users.length);
+
+        for (uint256 i; i < users.length; ++i) {
+            address user = users[i];
+
+            if (morpho.supplyShares(_id, user) != 0) {
+                candidates[i] = user;
+            }
+        }
+
+        return _randomNonZero(users, seed);
+    }
+
+    function _randomBorrower(address[] memory users, MarketParams memory _marketParams, uint256 seed)
+        internal
+        view
+        returns (address)
+    {
+        Id _id = _marketParams.id();
+        address[] memory candidates = new address[](users.length);
+
+        for (uint256 i; i < users.length; ++i) {
+            address user = users[i];
+
+            if (morpho.borrowShares(_id, user) != 0) {
+                candidates[i] = user;
+            }
+        }
+
+        return _randomNonZero(users, seed);
+    }
+
+    function _randomHealthyCollateralSupplier(address[] memory users, MarketParams memory _marketParams, uint256 seed)
+        internal
+        view
+        returns (address)
+    {
+        Id _id = _marketParams.id();
+        address[] memory candidates = new address[](users.length);
+
+        for (uint256 i; i < users.length; ++i) {
+            address user = users[i];
+
+            if (morpho.collateral(_id, user) != 0 && _isHealthy(_marketParams, user)) {
+                candidates[i] = user;
+            }
+        }
+
+        return _randomNonZero(users, seed);
+    }
+
+    function _randomUnhealthyBorrower(address[] memory users, MarketParams memory _marketParams, uint256 seed)
+        internal
+        view
         returns (address randomSenderToLiquidate)
     {
         address[] memory candidates = new address[](users.length);
 
         for (uint256 i; i < users.length; ++i) {
-            if (!isHealthy(id, users[i])) {
-                candidates[i] = users[i];
+            address user = users[i];
+
+            if (!_isHealthy(_marketParams, user)) {
+                candidates[i] = user;
             }
         }
 
@@ -156,16 +172,5 @@ contract InvariantTest is BaseTest {
             sum += morpho.expectedBorrowBalance(marketParams, users[i]);
             console2.log(sum);
         }
-    }
-
-    function isHealthy(Id id, address user) public view returns (bool) {
-        uint256 collateralPrice = IOracle(marketParams.oracle).price();
-
-        uint256 borrowed =
-            morpho.borrowShares(id, user).toAssetsUp(morpho.totalBorrowAssets(id), morpho.totalBorrowShares(id));
-        uint256 maxBorrow =
-            morpho.collateral(id, user).mulDivDown(collateralPrice, ORACLE_PRICE_SCALE).wMulDown(marketParams.lltv);
-
-        return maxBorrow >= borrowed;
     }
 }

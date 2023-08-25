@@ -16,6 +16,14 @@ contract TwoMarketsInvariantTest is InvariantTest {
     Id public id2;
 
     function setUp() public virtual override {
+        _weightSelector(this.setFeeNoRevert.selector, 5);
+        _weightSelector(this.supplyNoRevert.selector, 20);
+        _weightSelector(this.withdrawNoRevert.selector, 15);
+        _weightSelector(this.borrowNoRevert.selector, 15);
+        _weightSelector(this.repayNoRevert.selector, 10);
+        _weightSelector(this.supplyCollateralNoRevert.selector, 20);
+        _weightSelector(this.withdrawCollateralNoRevert.selector, 15);
+
         super.setUp();
 
         irm2 = new IrmMock();
@@ -37,17 +45,6 @@ contract TwoMarketsInvariantTest is InvariantTest {
 
         // High price because of the 1e36 price scale
         oracle.setPrice(1e40);
-
-        _weightSelector(this.newBlock.selector, 20);
-        _weightSelector(this.setFeeNoRevert.selector, 5);
-        _weightSelector(this.supplyNoRevert.selector, 20);
-        _weightSelector(this.withdrawNoRevert.selector, 15);
-        _weightSelector(this.borrowNoRevert.selector, 15);
-        _weightSelector(this.repayNoRevert.selector, 10);
-        _weightSelector(this.supplyCollateralNoRevert.selector, 20);
-        _weightSelector(this.withdrawCollateralNoRevert.selector, 15);
-
-        targetSelector(FuzzSelector({addr: address(this), selectors: selectors}));
     }
 
     function chooseMarket(bool changeMarket) internal view returns (MarketParams memory chosenMarket, Id chosenId) {
@@ -60,7 +57,7 @@ contract TwoMarketsInvariantTest is InvariantTest {
         }
     }
 
-    function setFeeNoRevert(uint256 newFee, bool changeMarket) public setCorrectBlock {
+    function setFeeNoRevert(uint256 newFee, bool changeMarket) public {
         (MarketParams memory chosenMarket,) = chooseMarket(changeMarket);
 
         newFee = bound(newFee, 0.1e18, MAX_FEE);
@@ -69,7 +66,7 @@ contract TwoMarketsInvariantTest is InvariantTest {
         morpho.setFee(chosenMarket, newFee);
     }
 
-    function supplyNoRevert(uint256 amount, bool changeMarket) public setCorrectBlock {
+    function supplyNoRevert(uint256 amount, bool changeMarket) public {
         (MarketParams memory chosenMarket,) = chooseMarket(changeMarket);
 
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
@@ -80,7 +77,7 @@ contract TwoMarketsInvariantTest is InvariantTest {
         morpho.supply(chosenMarket, amount, 0, msg.sender, hex"");
     }
 
-    function withdrawNoRevert(uint256 amount, bool changeMarket) public setCorrectBlock {
+    function withdrawNoRevert(uint256 amount, bool changeMarket) public {
         (MarketParams memory chosenMarket, Id chosenId) = chooseMarket(changeMarket);
 
         uint256 supplierBalance = morpho.expectedSupplyBalance(chosenMarket, msg.sender);
@@ -93,7 +90,7 @@ contract TwoMarketsInvariantTest is InvariantTest {
         morpho.withdraw(chosenMarket, amount, 0, msg.sender, msg.sender);
     }
 
-    function borrowNoRevert(uint256 amount, bool changeMarket) public setCorrectBlock {
+    function borrowNoRevert(uint256 amount, bool changeMarket) public {
         (MarketParams memory chosenMarket, Id chosenId) = chooseMarket(changeMarket);
 
         uint256 availableLiquidity = morpho.totalSupplyAssets(chosenId) - morpho.totalBorrowAssets(chosenId);
@@ -105,7 +102,7 @@ contract TwoMarketsInvariantTest is InvariantTest {
         morpho.borrow(chosenMarket, amount, 0, msg.sender, msg.sender);
     }
 
-    function repayNoRevert(uint256 amount, bool changeMarket) public setCorrectBlock {
+    function repayNoRevert(uint256 amount, bool changeMarket) public {
         (MarketParams memory chosenMarket,) = chooseMarket(changeMarket);
 
         amount = bound(amount, 0, morpho.expectedBorrowBalance(chosenMarket, msg.sender));
@@ -117,7 +114,7 @@ contract TwoMarketsInvariantTest is InvariantTest {
         morpho.repay(chosenMarket, amount, 0, msg.sender, hex"");
     }
 
-    function supplyCollateralNoRevert(uint256 amount, bool changeMarket) public setCorrectBlock {
+    function supplyCollateralNoRevert(uint256 amount, bool changeMarket) public {
         (MarketParams memory chosenMarket,) = chooseMarket(changeMarket);
 
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
@@ -128,7 +125,7 @@ contract TwoMarketsInvariantTest is InvariantTest {
         morpho.supplyCollateral(chosenMarket, amount, msg.sender, hex"");
     }
 
-    function withdrawCollateralNoRevert(uint256 amount, bool changeMarket) public setCorrectBlock {
+    function withdrawCollateralNoRevert(uint256 amount, bool changeMarket) public {
         (MarketParams memory chosenMarket, Id chosenId) = chooseMarket(changeMarket);
 
         amount = bound(amount, 0, morpho.collateral(chosenId, msg.sender));

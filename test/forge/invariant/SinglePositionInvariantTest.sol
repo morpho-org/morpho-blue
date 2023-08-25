@@ -12,6 +12,13 @@ contract SinglePositionInvariantTest is InvariantTest {
     address user;
 
     function setUp() public virtual override {
+        _weightSelector(this.supplyNoRevert.selector, 20);
+        _weightSelector(this.withdrawNoRevert.selector, 15);
+        _weightSelector(this.borrowNoRevert.selector, 15);
+        _weightSelector(this.repayNoRevert.selector, 10);
+        _weightSelector(this.supplyCollateralNoRevert.selector, 20);
+        _weightSelector(this.withdrawCollateralNoRevert.selector, 15);
+
         super.setUp();
 
         user = _addrFromHashedString("User");
@@ -26,68 +33,61 @@ contract SinglePositionInvariantTest is InvariantTest {
 
         // High price because of the 1e36 price scale
         oracle.setPrice(1e40);
-
-        _weightSelector(this.supplyNoRevert.selector, 20);
-        _weightSelector(this.withdrawNoRevert.selector, 15);
-        _weightSelector(this.borrowNoRevert.selector, 15);
-        _weightSelector(this.repayNoRevert.selector, 10);
-        _weightSelector(this.supplyCollateralNoRevert.selector, 20);
-        _weightSelector(this.withdrawCollateralNoRevert.selector, 15);
-
-        targetSelector(FuzzSelector({addr: address(this), selectors: selectors}));
     }
 
-    function supplyNoRevert(uint256 amount) public {
-        amount = bound(amount, 1, MAX_TEST_AMOUNT);
+    function supplyNoRevert(uint256 assets) public {
+        assets = _boundSupplyAssets(marketParams, user, assets);
 
-        borrowableToken.setBalance(msg.sender, amount);
+        borrowableToken.setBalance(msg.sender, assets);
+
         vm.prank(msg.sender);
-        morpho.supply(marketParams, amount, 0, msg.sender, hex"");
+        morpho.supply(marketParams, assets, 0, msg.sender, hex"");
+
+        console2.log("supply", morpho.expectedSupplyBalance(marketParams, user));
     }
 
-    function withdrawNoRevert(uint256 assets) public {
+    function withdrawNoRevert(uint256 assets, address receiver) public {
         assets = _boundWithdrawAssets(marketParams, msg.sender, assets);
         if (assets == 0) return;
 
         vm.prank(msg.sender);
-        morpho.withdraw(marketParams, assets, 0, msg.sender, msg.sender);
+        morpho.withdraw(marketParams, assets, 0, msg.sender, receiver);
     }
 
-    function borrowNoRevert(uint256 assets) public {
+    function borrowNoRevert(uint256 assets, address receiver) public {
         assets = _boundBorrowAssets(marketParams, msg.sender, assets);
         if (assets == 0) return;
 
         vm.prank(msg.sender);
-        morpho.borrow(marketParams, assets, 0, msg.sender, msg.sender);
+        morpho.borrow(marketParams, assets, 0, msg.sender, receiver);
     }
 
-    function repayNoRevert(uint256 amount) public {
-        uint256 borrowerBalance = morpho.expectedBorrowBalance(marketParams, msg.sender);
+    function repayNoRevert(uint256 assets) public {
+        assets = _boundRepayAssets(marketParams, msg.sender, assets);
+        if (assets == 0) return;
 
-        amount = bound(amount, 0, borrowerBalance);
-        if (amount == 0) return;
-
-        borrowableToken.setBalance(msg.sender, amount);
+        borrowableToken.setBalance(msg.sender, assets);
 
         vm.prank(msg.sender);
-        morpho.repay(marketParams, amount, 0, msg.sender, hex"");
+        morpho.repay(marketParams, assets, 0, msg.sender, hex"");
     }
 
-    function supplyCollateralNoRevert(uint256 amount) public {
-        amount = bound(amount, 1, MAX_TEST_AMOUNT);
+    function supplyCollateralNoRevert(uint256 assets) public {
+        assets = _boundSupplyCollateralAssets(marketParams, msg.sender, assets);
+        if (assets == 0) return;
 
-        collateralToken.setBalance(msg.sender, amount);
+        collateralToken.setBalance(msg.sender, assets);
 
         vm.prank(msg.sender);
-        morpho.supplyCollateral(marketParams, amount, msg.sender, hex"");
+        morpho.supplyCollateral(marketParams, assets, msg.sender, hex"");
     }
 
-    function withdrawCollateralNoRevert(uint256 amount) public {
-        amount = bound(amount, 0, morpho.collateral(id, msg.sender));
-        if (amount == 0) return;
+    function withdrawCollateralNoRevert(uint256 assets, address receiver) public {
+        assets = _boundWithdrawCollateralAssets(marketParams, msg.sender, assets);
+        if (assets == 0) return;
 
         vm.prank(msg.sender);
-        morpho.withdrawCollateral(marketParams, amount, msg.sender, msg.sender);
+        morpho.withdrawCollateral(marketParams, assets, msg.sender, receiver);
     }
 
     /* INVARIANTS */
@@ -101,13 +101,11 @@ contract SinglePositionInvariantTest is InvariantTest {
     }
 
     function invariantTotalSupply() public {
-        uint256 suppliedAmount = morpho.expectedSupplyBalance(marketParams, user);
-        assertLe(suppliedAmount, morpho.totalSupplyAssets(id));
+        assertEq(morpho.expectedSupplyBalance(marketParams, user), morpho.totalSupplyAssets(id));
     }
 
     function invariantTotalBorrow() public {
-        uint256 borrowedAmount = morpho.expectedBorrowBalance(marketParams, user);
-        assertGe(borrowedAmount, morpho.totalBorrowAssets(id));
+        assertEq(morpho.expectedBorrowBalance(marketParams, user), morpho.totalBorrowAssets(id));
     }
 
     function invariantTotalSupplyGreaterThanTotalBorrow() public {
@@ -116,12 +114,12 @@ contract SinglePositionInvariantTest is InvariantTest {
 
     function invariantMorphoBalance() public {
         assertEq(
-            morpho.totalSupplyAssets(id) - morpho.totalBorrowAssets(id), borrowableToken.balanceOf(address(morpho))
+            borrowableToken.balanceOf(address(morpho)), morpho.totalSupplyAssets(id) - morpho.totalBorrowAssets(id)
         );
     }
 
     // No price changes, and no new blocks so position has to remain healthy.
     function invariantHealthyPosition() public {
-        assertTrue(isHealthy(id, user));
+        assertTrue(_isHealthy(marketParams, user));
     }
 }

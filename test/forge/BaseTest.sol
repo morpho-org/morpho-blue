@@ -16,6 +16,7 @@ import {MorphoLib} from "src/libraries/periphery/MorphoLib.sol";
 import {MorphoBalancesLib} from "src/libraries/periphery/MorphoBalancesLib.sol";
 
 contract BaseTest is Test {
+    using Math for uint256;
     using MathLib for uint256;
     using SharesMathLib for uint256;
     using MorphoLib for IMorpho;
@@ -178,16 +179,38 @@ contract BaseTest is Test {
         return bound(lltv, WAD, type(uint256).max);
     }
 
-    function _boundSupplyAssets(MarketParams memory _marketParams, address onBehalf, uint256 assets)
+    function _boundSupplyCollateralAssets(MarketParams memory _marketParams, address onBehalf, uint256 assets)
         internal
         view
         returns (uint256)
     {
         Id _id = _marketParams.id();
 
+        uint256 collateral = morpho.collateral(_id, onBehalf);
+
+        return bound(assets, 0, MAX_TEST_AMOUNT.zeroFloorSub(collateral));
+    }
+
+    function _boundWithdrawCollateralAssets(MarketParams memory _marketParams, address onBehalf, uint256 assets)
+        internal
+        view
+        returns (uint256)
+    {
+        Id _id = _marketParams.id();
+
+        uint256 collateral = morpho.collateral(_id, onBehalf);
+
+        return bound(assets, 0, MAX_TEST_AMOUNT.min(collateral));
+    }
+
+    function _boundSupplyAssets(MarketParams memory _marketParams, address onBehalf, uint256 assets)
+        internal
+        view
+        returns (uint256)
+    {
         uint256 supplyBalance = morpho.expectedSupplyBalance(_marketParams, onBehalf);
 
-        return bound(assets, 0, MAX_TEST_AMOUNT - supplyBalance);
+        return bound(assets, 0, MAX_TEST_AMOUNT.zeroFloorSub(supplyBalance));
     }
 
     function _boundWithdrawAssets(MarketParams memory _marketParams, address onBehalf, uint256 assets)
@@ -200,7 +223,7 @@ contract BaseTest is Test {
         uint256 supplyBalance = morpho.expectedSupplyBalance(_marketParams, onBehalf);
         uint256 liquidity = morpho.totalSupplyAssets(_id) - morpho.totalBorrowAssets(_id);
 
-        return bound(assets, 0, Math.min(MAX_TEST_AMOUNT, Math.min(supplyBalance, liquidity)));
+        return bound(assets, 0, MAX_TEST_AMOUNT.min(supplyBalance).min(liquidity));
     }
 
     function _boundWithdrawShares(MarketParams memory _marketParams, address onBehalf, uint256 shares)
@@ -216,11 +239,7 @@ contract BaseTest is Test {
         uint256 liquidity = totalSupplyAssets - morpho.totalBorrowAssets(_id);
         uint256 liquidityShares = liquidity.toSharesDown(totalSupplyAssets, morpho.totalSupplyShares(_id));
 
-        return bound(shares, 0, Math.min(supplyShares, liquidityShares));
-    }
-
-    function _liquidationIncentive(uint256 lltv) internal pure returns (uint256) {
-        return Math.min(MAX_LIQUIDATION_INCENTIVE_FACTOR, WAD.wDivDown(WAD - LIQUIDATION_CURSOR.wMulDown(WAD - lltv)));
+        return bound(shares, 0, supplyShares.min(liquidityShares));
     }
 
     function _boundBorrowAssets(MarketParams memory _marketParams, address onBehalf, uint256 assets)
@@ -230,14 +249,11 @@ contract BaseTest is Test {
     {
         Id _id = _marketParams.id();
 
-        uint256 collateralPrice = IOracle(_marketParams.oracle).price();
-        uint256 maxBorrow = morpho.collateral(_id, onBehalf).mulDivDown(collateralPrice, ORACLE_PRICE_SCALE).wMulDown(
-            _marketParams.lltv
-        );
+        uint256 maxBorrow = _maxBorrow(_marketParams, onBehalf);
         uint256 borrowed = morpho.expectedBorrowBalance(_marketParams, onBehalf);
         uint256 liquidity = morpho.totalSupplyAssets(_id) - morpho.totalBorrowAssets(_id);
 
-        return bound(assets, 0, Math.min(MAX_TEST_AMOUNT, Math.min(maxBorrow - borrowed, liquidity)));
+        return bound(assets, 0, MAX_TEST_AMOUNT.min(maxBorrow - borrowed).min(liquidity));
     }
 
     function _boundRepayAssets(MarketParams memory _marketParams, address onBehalf, uint256 assets)
@@ -245,8 +261,6 @@ contract BaseTest is Test {
         view
         returns (uint256)
     {
-        Id _id = _marketParams.id();
-
         uint256 borrowed = morpho.expectedBorrowBalance(_marketParams, onBehalf);
 
         return bound(assets, 0, borrowed);
@@ -260,6 +274,25 @@ contract BaseTest is Test {
         Id _id = _marketParams.id();
 
         return bound(shares, 0, morpho.borrowShares(_id, onBehalf));
+    }
+
+    function _maxBorrow(MarketParams memory _marketParams, address user) internal view returns (uint256) {
+        Id _id = _marketParams.id();
+
+        uint256 collateralPrice = IOracle(_marketParams.oracle).price();
+
+        return morpho.collateral(_id, user).mulDivDown(collateralPrice, ORACLE_PRICE_SCALE).wMulDown(_marketParams.lltv);
+    }
+
+    function _isHealthy(MarketParams memory _marketParams, address user) internal view returns (bool) {
+        uint256 maxBorrow = _maxBorrow(_marketParams, user);
+        uint256 borrowed = morpho.expectedBorrowBalance(_marketParams, user);
+
+        return maxBorrow >= borrowed;
+    }
+
+    function _liquidationIncentive(uint256 lltv) internal pure returns (uint256) {
+        return Math.min(MAX_LIQUIDATION_INCENTIVE_FACTOR, WAD.wDivDown(WAD - LIQUIDATION_CURSOR.wMulDown(WAD - lltv)));
     }
 
     function _accrueInterest(MarketParams memory market) internal {
@@ -296,7 +329,7 @@ contract BaseTest is Test {
         }
     }
 
-    function _randomNonZero(address[] memory users, uint256 seed) internal returns (address) {
+    function _randomNonZero(address[] memory users, uint256 seed) internal pure returns (address) {
         users = _removeAll(users, address(0));
 
         return _randomCandidate(users, seed);
