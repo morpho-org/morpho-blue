@@ -79,7 +79,7 @@ contract LiquidateIntegrationTest is BaseTest {
 
         uint256 incentive = _liquidationIncentive(marketParams.lltv);
         uint256 maxSeized = amountBorrowed.wMulDown(incentive).mulDivDown(ORACLE_PRICE_SCALE, priceCollateral);
-        amountSeized = bound(amountSeized, 1, min(maxSeized, amountCollateral - 1));
+        amountSeized = bound(amountSeized, 1, Math.min(maxSeized, amountCollateral - 1));
         uint256 expectedRepaid = amountSeized.mulDivUp(priceCollateral, ORACLE_PRICE_SCALE).wDivUp(incentive);
 
         borrowableToken.setBalance(LIQUIDATOR, amountBorrowed);
@@ -144,7 +144,7 @@ contract LiquidateIntegrationTest is BaseTest {
             _liquidationIncentive(marketParams.lltv)
         );
         vm.assume(maxRepaidShares != 0);
-        sharesRepaid = bound(sharesRepaid, 1, min(maxRepaidShares, expectedBorrowShares));
+        sharesRepaid = bound(sharesRepaid, 1, Math.min(maxRepaidShares, expectedBorrowShares));
         uint256 expectedRepaid = sharesRepaid.toAssetsUp(amountBorrowed, expectedBorrowShares);
         uint256 expectedSeized = expectedRepaid.wMulDown(_liquidationIncentive(marketParams.lltv)).mulDivDown(
             ORACLE_PRICE_SCALE, priceCollateral
@@ -216,10 +216,10 @@ contract LiquidateIntegrationTest is BaseTest {
         params.incentive = _liquidationIncentive(marketParams.lltv);
         params.expectedRepaid = amountCollateral.mulDivUp(priceCollateral, ORACLE_PRICE_SCALE).wDivUp(params.incentive);
 
-        uint256 minBorrowed = max(params.expectedRepaid, amountBorrowed);
-        amountBorrowed = bound(amountBorrowed, minBorrowed, max(minBorrowed, MAX_TEST_AMOUNT));
+        uint256 minBorrowed = Math.max(params.expectedRepaid, amountBorrowed);
+        amountBorrowed = bound(amountBorrowed, minBorrowed, Math.max(minBorrowed, MAX_TEST_AMOUNT));
 
-        amountSupplied = bound(amountSupplied, amountBorrowed, max(amountBorrowed, MAX_TEST_AMOUNT));
+        amountSupplied = bound(amountSupplied, amountBorrowed, Math.max(amountBorrowed, MAX_TEST_AMOUNT));
         _supply(amountSupplied);
 
         borrowableToken.setBalance(LIQUIDATOR, amountBorrowed);

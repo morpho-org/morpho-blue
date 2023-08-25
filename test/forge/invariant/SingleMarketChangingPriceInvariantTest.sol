@@ -16,21 +16,15 @@ contract SingleMarketChangingPriceInvariantTest is InvariantTest {
 
         _targetDefaultSenders();
 
-        _approveSendersTransfers(targetSenders());
-
         _weightSelector(this.newBlock.selector, 20);
         _weightSelector(this.changePrice.selector, 5);
         _weightSelector(this.setFeeNoRevert.selector, 2);
-        _weightSelector(this.supplyNoRevert.selector, 20);
-        _weightSelector(this.withdrawNoRevert.selector, 5);
-        _weightSelector(this.withdrawOnBehalfNoRevert.selector, 5);
-        _weightSelector(this.borrowNoRevert.selector, 5);
-        _weightSelector(this.borrowOnBehalfNoRevert.selector, 5);
-        _weightSelector(this.repayNoRevert.selector, 2);
-        _weightSelector(this.repayOnBehalfNoRevert.selector, 2);
+        _weightSelector(this.supplyOnBehalfNoRevert.selector, 20);
+        _weightSelector(this.withdrawOnBehalfNoRevert.selector, 10);
+        _weightSelector(this.borrowOnBehalfNoRevert.selector, 10);
+        _weightSelector(this.repayOnBehalfNoRevert.selector, 4);
         _weightSelector(this.supplyCollateralNoRevert.selector, 20);
-        _weightSelector(this.withdrawCollateralNoRevert.selector, 5);
-        _weightSelector(this.withdrawCollateralOnBehalfNoRevert.selector, 5);
+        _weightSelector(this.withdrawCollateralOnBehalfNoRevert.selector, 10);
 
         targetSelector(FuzzSelector({addr: address(this), selectors: selectors}));
 
@@ -53,113 +47,52 @@ contract SingleMarketChangingPriceInvariantTest is InvariantTest {
         morpho.setFee(marketParams, newFee);
     }
 
-    function supplyNoRevert(uint256 amount) public setCorrectBlock {
-        amount = bound(amount, 1, MAX_TEST_AMOUNT);
-        borrowableToken.setBalance(msg.sender, amount);
+    function supplyOnBehalfNoRevert(uint256 assets, uint256 seed) public setCorrectBlock {
+        address onBehalf = _randomCandidate(targetSenders(), seed);
+
+        assets = _boundSupplyAssets(marketParams, onBehalf, assets);
+        if (assets == 0) return;
+
+        borrowableToken.setBalance(msg.sender, assets);
 
         vm.prank(msg.sender);
-        morpho.supply(marketParams, amount, 0, msg.sender, hex"");
+        morpho.supply(marketParams, assets, 0, onBehalf, hex"");
     }
 
-    function withdrawNoRevert(uint256 amount) public setCorrectBlock {
-        _accrueInterest(marketParams);
-
-        uint256 availableLiquidity = morpho.totalSupplyAssets(id) - morpho.totalBorrowAssets(id);
-        if (availableLiquidity == 0) return;
-
-        uint256 supplierBalance = morpho.expectedSupplyBalance(marketParams, msg.sender);
-        if (supplierBalance == 0) return;
-
-        amount = bound(amount, 1, min(supplierBalance, availableLiquidity));
-
-        vm.prank(msg.sender);
-        morpho.withdraw(marketParams, amount, 0, msg.sender, msg.sender);
-    }
-
-    function withdrawOnBehalfNoRevert(uint256 amount, address seed) public setCorrectBlock {
-        _accrueInterest(marketParams);
-
-        uint256 availableLiquidity = morpho.totalSupplyAssets(id) - morpho.totalBorrowAssets(id);
-        if (availableLiquidity == 0) return;
-
-        address onBehalf = _randomSenderToWithdrawOnBehalf(targetSenders(), seed, msg.sender);
+    function withdrawOnBehalfNoRevert(uint256 assets, uint256 seed, address receiver) public setCorrectBlock {
+        address onBehalf = _randomSupplier(targetSenders(), seed);
         if (onBehalf == address(0)) return;
 
-        uint256 supplierBalance = morpho.expectedSupplyBalance(marketParams, onBehalf);
-        if (supplierBalance == 0) return;
+        assets = _boundWithdrawAssets(marketParams, onBehalf, assets);
+        if (assets == 0) return;
 
-        amount = bound(amount, 1, min(supplierBalance, availableLiquidity));
-
-        vm.prank(msg.sender);
-        morpho.withdraw(marketParams, amount, 0, onBehalf, msg.sender);
-    }
-
-    function borrowNoRevert(uint256 amount) public setCorrectBlock {
-        _accrueInterest(marketParams);
-
-        uint256 availableLiquidity = morpho.totalSupplyAssets(id) - morpho.totalBorrowAssets(id);
-        if (availableLiquidity == 0 || morpho.collateral(id, msg.sender) == 0 || !isHealthy(id, msg.sender)) {
-            return;
+        if (onBehalf != msg.sender) {
+            vm.prank(onBehalf);
+            morpho.setAuthorization(msg.sender, true);
         }
-        uint256 collateralPrice = IOracle(marketParams.oracle).price();
-
-        uint256 totalBorrowPower = morpho.collateral(id, msg.sender).mulDivDown(collateralPrice, ORACLE_PRICE_SCALE)
-            .wMulDown(marketParams.lltv);
-        uint256 borrowed =
-            morpho.borrowShares(id, msg.sender).toAssetsUp(morpho.totalBorrowAssets(id), morpho.totalBorrowShares(id));
-        uint256 currentBorrowPower = totalBorrowPower - borrowed;
-
-        if (currentBorrowPower == 0) return;
-        amount = bound(amount, 1, min(currentBorrowPower, availableLiquidity));
 
         vm.prank(msg.sender);
-        morpho.borrow(marketParams, amount, 0, msg.sender, msg.sender);
+        morpho.withdraw(marketParams, assets, 0, onBehalf, receiver);
     }
 
-    function borrowOnBehalfNoRevert(uint256 amount, address seed) public setCorrectBlock {
-        _accrueInterest(marketParams);
-
-        uint256 availableLiquidity = morpho.totalSupplyAssets(id) - morpho.totalBorrowAssets(id);
-        if (availableLiquidity == 0) return;
-
-        address onBehalf = _randomSenderToBorrowOnBehalf(targetSenders(), seed, msg.sender);
+    function borrowOnBehalfNoRevert(uint256 assets, uint256 seed, address receiver) public setCorrectBlock {
+        address onBehalf = _randomHealthyCollateralSupplier(targetSenders(), seed);
         if (onBehalf == address(0)) return;
 
-        uint256 collateralPrice = IOracle(marketParams.oracle).price();
+        assets = _boundBorrowAssets(marketParams, onBehalf, assets);
+        if (assets == 0) return;
 
-        uint256 totalBorrowPower =
-            morpho.collateral(id, onBehalf).mulDivDown(collateralPrice, ORACLE_PRICE_SCALE).wMulDown(marketParams.lltv);
-        uint256 borrowed =
-            morpho.borrowShares(id, onBehalf).toAssetsUp(morpho.totalBorrowAssets(id), morpho.totalBorrowShares(id));
-        uint256 currentBorrowPower = totalBorrowPower - borrowed;
-
-        if (currentBorrowPower == 0) return;
-        amount = bound(amount, 1, min(currentBorrowPower, availableLiquidity));
+        if (onBehalf != msg.sender) {
+            vm.prank(onBehalf);
+            morpho.setAuthorization(msg.sender, true);
+        }
 
         vm.prank(msg.sender);
-        morpho.borrow(marketParams, amount, 0, onBehalf, msg.sender);
+        morpho.borrow(marketParams, assets, 0, onBehalf, receiver);
     }
 
-    function repayNoRevert(uint256 shares) public setCorrectBlock {
-        _accrueInterest(marketParams);
-
-        uint256 borrowShares = morpho.borrowShares(id, msg.sender);
-        if (borrowShares == 0) return;
-
-        shares = bound(shares, 1, borrowShares);
-        uint256 repaidAmount = shares.toAssetsUp(morpho.totalBorrowAssets(id), morpho.totalBorrowShares(id));
-        if (repaidAmount == 0) return;
-
-        borrowableToken.setBalance(msg.sender, repaidAmount);
-
-        vm.prank(msg.sender);
-        morpho.repay(marketParams, 0, shares, msg.sender, hex"");
-    }
-
-    function repayOnBehalfNoRevert(uint256 shares, address seed) public setCorrectBlock {
-        _accrueInterest(marketParams);
-
-        address onBehalf = _randomSenderToRepayOnBehalf(targetSenders(), seed);
+    function repayOnBehalfNoRevert(uint256 shares, uint256 seed) public setCorrectBlock {
+        address onBehalf = _randomBorrower(targetSenders(), seed);
         if (onBehalf == address(0)) return;
 
         uint256 borrowShares = morpho.borrowShares(id, onBehalf);
@@ -182,32 +115,10 @@ contract SingleMarketChangingPriceInvariantTest is InvariantTest {
         morpho.supplyCollateral(marketParams, amount, msg.sender, hex"");
     }
 
-    function withdrawCollateralNoRevert(uint256 amount) public setCorrectBlock {
+    function withdrawCollateralOnBehalfNoRevert(uint256 amount, uint256 seed) public setCorrectBlock {
         _accrueInterest(marketParams);
 
-        if (morpho.collateral(id, msg.sender) == 0 || !isHealthy(id, msg.sender)) return;
-
-        uint256 collateralPrice = IOracle(marketParams.oracle).price();
-
-        uint256 borrowPower = morpho.collateral(id, msg.sender).mulDivDown(collateralPrice, ORACLE_PRICE_SCALE).wMulDown(
-            marketParams.lltv
-        );
-        uint256 borrowed =
-            morpho.borrowShares(id, msg.sender).toAssetsUp(morpho.totalBorrowAssets(id), morpho.totalBorrowShares(id));
-        uint256 withdrawableCollateral =
-            (borrowPower - borrowed).mulDivDown(ORACLE_PRICE_SCALE, collateralPrice).wDivDown(marketParams.lltv);
-
-        if (withdrawableCollateral == 0) return;
-        amount = bound(amount, 1, withdrawableCollateral);
-
-        vm.prank(msg.sender);
-        morpho.withdrawCollateral(marketParams, amount, msg.sender, msg.sender);
-    }
-
-    function withdrawCollateralOnBehalfNoRevert(uint256 amount, address seed) public setCorrectBlock {
-        _accrueInterest(marketParams);
-
-        address onBehalf = _randomSenderToWithdrawCollateralOnBehalf(targetSenders(), seed, msg.sender);
+        address onBehalf = _randomHealthyCollateralSupplier(targetSenders(), seed);
         if (onBehalf == address(0)) return;
 
         uint256 collateralPrice = IOracle(marketParams.oracle).price();
@@ -222,20 +133,25 @@ contract SingleMarketChangingPriceInvariantTest is InvariantTest {
         if (withdrawableCollateral == 0) return;
         amount = bound(amount, 1, withdrawableCollateral);
 
+        if (onBehalf != msg.sender) {
+            vm.prank(onBehalf);
+            morpho.setAuthorization(msg.sender, true);
+        }
+
         vm.prank(msg.sender);
         morpho.withdrawCollateral(marketParams, amount, onBehalf, msg.sender);
     }
 
-    function liquidateNoRevert(uint256 seized, address seed) public setCorrectBlock {
+    function liquidateNoRevert(uint256 seized, uint256 seed) public setCorrectBlock {
         _accrueInterest(marketParams);
 
-        user = _randomSenderToLiquidate(targetSenders(), seed);
+        user = _randomUnhealthyBorrower(targetSenders(), seed);
         if (user == address(0)) return;
 
         uint256 collateralPrice = IOracle(marketParams.oracle).price();
 
         uint256 repaid =
-            seized.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(_liquidationIncentiveFactor(marketParams.lltv));
+            seized.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(_liquidationIncentive(marketParams.lltv));
         uint256 repaidShares = repaid.toSharesDown(morpho.totalBorrowAssets(id), morpho.totalBorrowShares(id));
 
         if (repaidShares > morpho.borrowShares(id, user)) {
@@ -250,19 +166,19 @@ contract SingleMarketChangingPriceInvariantTest is InvariantTest {
     /* INVARIANTS */
 
     function invariantSupplyShares() public {
-        assertEq(sumUsersSupplyShares(targetSenders()), morpho.totalSupplyShares(id));
+        assertEq(sumSupplyShares(targetSenders()), morpho.totalSupplyShares(id));
     }
 
     function invariantBorrowShares() public {
-        assertEq(sumUsersBorrowShares(targetSenders()), morpho.totalBorrowShares(id));
+        assertEq(sumBorrowShares(targetSenders()), morpho.totalBorrowShares(id));
     }
 
     function invariantTotalSupply() public {
-        assertLe(sumUsersSuppliedAmounts(targetSenders()), morpho.totalSupplyAssets(id));
+        assertLe(sumSupplyAssets(targetSenders()), morpho.totalSupplyAssets(id));
     }
 
     function invariantTotalBorrow() public {
-        assertGe(sumUsersBorrowedAmounts(targetSenders()), morpho.totalBorrowAssets(id));
+        assertGe(sumBorrowAssets(targetSenders()), morpho.totalBorrowAssets(id));
     }
 
     function invariantTotalSupplyGreaterThanTotalBorrow() public {

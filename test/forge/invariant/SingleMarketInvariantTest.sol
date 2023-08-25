@@ -13,8 +13,6 @@ contract SingleMarketInvariantTest is InvariantTest {
         super.setUp();
 
         _targetDefaultSenders();
-
-        _approveSendersTransfers(targetSenders());
         _supplyHighAmountOfCollateralForAllSenders(targetSenders(), marketParams);
 
         // High price because of the 1e36 price scale
@@ -48,31 +46,26 @@ contract SingleMarketInvariantTest is InvariantTest {
         morpho.supply(marketParams, amount, 0, msg.sender, hex"");
     }
 
-    function withdrawNoRevert(uint256 amount) public setCorrectBlock {
-        uint256 supplierBalance = morpho.expectedSupplyBalance(marketParams, msg.sender);
-        uint256 availableLiquidity = morpho.totalSupplyAssets(id) - morpho.totalBorrowAssets(id);
-
-        amount = bound(amount, 0, min(supplierBalance, availableLiquidity));
-        if (amount == 0) return;
+    function withdrawNoRevert(uint256 assets) public setCorrectBlock {
+        assets = _boundWithdrawAssets(marketParams, msg.sender, assets);
+        if (assets == 0) return;
 
         vm.prank(msg.sender);
-        morpho.withdraw(marketParams, amount, 0, msg.sender, msg.sender);
+        morpho.withdraw(marketParams, assets, 0, msg.sender, msg.sender);
     }
 
-    function borrowNoRevert(uint256 amount) public setCorrectBlock {
-        uint256 availableLiquidity = morpho.totalSupplyAssets(id) - morpho.totalBorrowAssets(id);
-
-        amount = bound(amount, 0, availableLiquidity);
-        if (amount == 0) return;
+    function borrowNoRevert(uint256 assets) public setCorrectBlock {
+        assets = _boundBorrowAssets(marketParams, msg.sender, assets);
+        if (assets == 0) return;
 
         vm.prank(msg.sender);
-        morpho.borrow(marketParams, amount, 0, msg.sender, msg.sender);
+        morpho.borrow(marketParams, assets, 0, msg.sender, msg.sender);
     }
 
     function repayNoRevert(uint256 amount) public setCorrectBlock {
         uint256 borrowerBalance = morpho.expectedBorrowBalance(marketParams, msg.sender);
 
-        amount = bound(amount, 0, borrowerBalance);
+        amount = bound(amount, 0, Math.min(MAX_TEST_AMOUNT, borrowerBalance));
         if (amount == 0) return;
 
         borrowableToken.setBalance(msg.sender, amount);
@@ -91,7 +84,7 @@ contract SingleMarketInvariantTest is InvariantTest {
     }
 
     function withdrawCollateralNoRevert(uint256 amount) public setCorrectBlock {
-        amount = bound(amount, 0, morpho.collateral(id, msg.sender));
+        amount = bound(amount, 0, Math.min(MAX_TEST_AMOUNT, morpho.collateral(id, msg.sender)));
         if (amount == 0) return;
 
         vm.prank(msg.sender);
@@ -101,19 +94,19 @@ contract SingleMarketInvariantTest is InvariantTest {
     /* INVARIANTS */
 
     function invariantSupplyShares() public {
-        assertEq(sumUsersSupplyShares(targetSenders()), morpho.totalSupplyShares(id));
+        assertEq(sumSupplyShares(targetSenders()), morpho.totalSupplyShares(id));
     }
 
     function invariantBorrowShares() public {
-        assertEq(sumUsersBorrowShares(targetSenders()), morpho.totalBorrowShares(id));
+        assertEq(sumBorrowShares(targetSenders()), morpho.totalBorrowShares(id));
     }
 
     function invariantTotalSupply() public {
-        assertLe(sumUsersSuppliedAmounts(targetSenders()), morpho.totalSupplyAssets(id));
+        assertLe(sumSupplyAssets(targetSenders()), morpho.totalSupplyAssets(id));
     }
 
     function invariantTotalBorrow() public {
-        assertGe(sumUsersBorrowedAmounts(targetSenders()), morpho.totalBorrowAssets(id));
+        assertGe(sumBorrowAssets(targetSenders()), morpho.totalBorrowAssets(id));
     }
 
     function invariantTotalSupplyGreaterThanTotalBorrow() public {

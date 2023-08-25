@@ -45,25 +45,20 @@ contract SinglePositionInvariantTest is InvariantTest {
         morpho.supply(marketParams, amount, 0, msg.sender, hex"");
     }
 
-    function withdrawNoRevert(uint256 amount) public {
-        uint256 supplierBalance = morpho.expectedSupplyBalance(marketParams, msg.sender);
-        uint256 availableLiquidity = morpho.totalSupplyAssets(id) - morpho.totalBorrowAssets(id);
-
-        amount = bound(amount, 0, min(supplierBalance, availableLiquidity));
-        if (amount == 0) return;
+    function withdrawNoRevert(uint256 assets) public {
+        assets = _boundWithdrawAssets(marketParams, msg.sender, assets);
+        if (assets == 0) return;
 
         vm.prank(msg.sender);
-        morpho.withdraw(marketParams, amount, 0, msg.sender, msg.sender);
+        morpho.withdraw(marketParams, assets, 0, msg.sender, msg.sender);
     }
 
-    function borrowNoRevert(uint256 amount) public {
-        uint256 availableLiquidity = morpho.totalSupplyAssets(id) - morpho.totalBorrowAssets(id);
-
-        amount = bound(amount, 0, availableLiquidity);
-        if (amount == 0) return;
+    function borrowNoRevert(uint256 assets) public {
+        assets = _boundBorrowAssets(marketParams, msg.sender, assets);
+        if (assets == 0) return;
 
         vm.prank(msg.sender);
-        morpho.borrow(marketParams, amount, 0, msg.sender, msg.sender);
+        morpho.borrow(marketParams, assets, 0, msg.sender, msg.sender);
     }
 
     function repayNoRevert(uint256 amount) public {

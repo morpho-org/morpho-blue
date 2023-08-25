@@ -97,7 +97,7 @@ contract WithdrawCollateralIntegrationTest is BaseTest {
         amountCollateralExcess = bound(
             amountCollateralExcess,
             1,
-            min(MAX_COLLATERAL_ASSETS - amountCollateral, type(uint256).max / priceCollateral - amountCollateral)
+            Math.min(MAX_COLLATERAL_ASSETS - amountCollateral, type(uint256).max / priceCollateral - amountCollateral)
         );
 
         oracle.setPrice(priceCollateral);
@@ -138,7 +138,7 @@ contract WithdrawCollateralIntegrationTest is BaseTest {
         amountCollateralExcess = bound(
             amountCollateralExcess,
             1,
-            min(MAX_COLLATERAL_ASSETS - amountCollateral, type(uint256).max / priceCollateral - amountCollateral)
+            Math.min(MAX_COLLATERAL_ASSETS - amountCollateral, type(uint256).max / priceCollateral - amountCollateral)
         );
 
         collateralToken.setBalance(ONBEHALF, amountCollateral + amountCollateralExcess);

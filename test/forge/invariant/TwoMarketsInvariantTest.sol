@@ -32,8 +32,6 @@ contract TwoMarketsInvariantTest is InvariantTest {
         vm.stopPrank();
 
         _targetDefaultSenders();
-
-        _approveSendersTransfers(targetSenders());
         _supplyHighAmountOfCollateralForAllSenders(targetSenders(), marketParams);
         _supplyHighAmountOfCollateralForAllSenders(targetSenders(), marketParams2);
 
@@ -88,7 +86,7 @@ contract TwoMarketsInvariantTest is InvariantTest {
         uint256 supplierBalance = morpho.expectedSupplyBalance(chosenMarket, msg.sender);
         uint256 availableLiquidity = morpho.totalSupplyAssets(chosenId) - morpho.totalBorrowAssets(chosenId);
 
-        amount = bound(amount, 0, min(supplierBalance, availableLiquidity));
+        amount = bound(amount, 0, Math.min(supplierBalance, availableLiquidity));
         if (amount == 0) return;
 
         vm.prank(msg.sender);
@@ -108,7 +106,7 @@ contract TwoMarketsInvariantTest is InvariantTest {
     }
 
     function repayNoRevert(uint256 amount, bool changeMarket) public setCorrectBlock {
-        (MarketParams memory chosenMarket, Id chosenId) = chooseMarket(changeMarket);
+        (MarketParams memory chosenMarket,) = chooseMarket(changeMarket);
 
         amount = bound(amount, 0, morpho.expectedBorrowBalance(chosenMarket, msg.sender));
         if (amount == 0) return;

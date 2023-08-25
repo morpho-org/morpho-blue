@@ -10,13 +10,16 @@ import {ERC20Mock} from "src/mocks/ERC20Mock.sol";
 import {OracleMock} from "src/mocks/OracleMock.sol";
 
 import "src/Morpho.sol";
-import {SigUtils} from "test/forge/helpers/SigUtils.sol";
+import {Math} from "./helpers/Math.sol";
+import {SigUtils} from "./helpers/SigUtils.sol";
 import {MorphoLib} from "src/libraries/periphery/MorphoLib.sol";
 import {MorphoBalancesLib} from "src/libraries/periphery/MorphoBalancesLib.sol";
 
 contract BaseTest is Test {
     using MathLib for uint256;
+    using SharesMathLib for uint256;
     using MorphoLib for IMorpho;
+    using MorphoBalancesLib for IMorpho;
     using MarketParamsLib for MarketParams;
 
     uint256 internal constant HIGH_COLLATERAL_AMOUNT = 1e35;
@@ -140,7 +143,7 @@ contract BaseTest is Test {
             amountCollateral = bound(amountCollateral, minCollateral, MAX_COLLATERAL_ASSETS);
         } else {
             amountCollateral = MAX_COLLATERAL_ASSETS;
-            amountBorrowed = min(
+            amountBorrowed = Math.min(
                 amountBorrowed.wMulDown(marketParams.lltv).mulDivDown(priceCollateral, ORACLE_PRICE_SCALE),
                 MAX_TEST_AMOUNT
             );
@@ -161,7 +164,7 @@ contract BaseTest is Test {
 
         uint256 maxCollateral =
             amountBorrowed.wDivDown(marketParams.lltv).mulDivDown(ORACLE_PRICE_SCALE, priceCollateral);
-        amountCollateral = bound(amountBorrowed, 0, min(maxCollateral, MAX_COLLATERAL_ASSETS));
+        amountCollateral = bound(amountBorrowed, 0, Math.min(maxCollateral, MAX_COLLATERAL_ASSETS));
 
         vm.assume(amountCollateral > 0);
         return (amountCollateral, amountBorrowed, priceCollateral);
@@ -175,9 +178,88 @@ contract BaseTest is Test {
         return bound(lltv, WAD, type(uint256).max);
     }
 
+    function _boundSupplyAssets(MarketParams memory _marketParams, address onBehalf, uint256 assets)
+        internal
+        view
+        returns (uint256)
+    {
+        Id _id = _marketParams.id();
+
+        uint256 supplyBalance = morpho.expectedSupplyBalance(_marketParams, onBehalf);
+
+        return bound(assets, 0, MAX_TEST_AMOUNT - supplyBalance);
+    }
+
+    function _boundWithdrawAssets(MarketParams memory _marketParams, address onBehalf, uint256 assets)
+        internal
+        view
+        returns (uint256)
+    {
+        Id _id = _marketParams.id();
+
+        uint256 supplyBalance = morpho.expectedSupplyBalance(_marketParams, onBehalf);
+        uint256 liquidity = morpho.totalSupplyAssets(_id) - morpho.totalBorrowAssets(_id);
+
+        return bound(assets, 0, Math.min(MAX_TEST_AMOUNT, Math.min(supplyBalance, liquidity)));
+    }
+
+    function _boundWithdrawShares(MarketParams memory _marketParams, address onBehalf, uint256 shares)
+        internal
+        view
+        returns (uint256)
+    {
+        Id _id = _marketParams.id();
+
+        uint256 supplyShares = morpho.supplyShares(_id, onBehalf);
+        uint256 totalSupplyAssets = morpho.totalSupplyAssets(_id);
+
+        uint256 liquidity = totalSupplyAssets - morpho.totalBorrowAssets(_id);
+        uint256 liquidityShares = liquidity.toSharesDown(totalSupplyAssets, morpho.totalSupplyShares(_id));
+
+        return bound(shares, 0, Math.min(supplyShares, liquidityShares));
+    }
+
     function _liquidationIncentive(uint256 lltv) internal pure returns (uint256) {
-        return
-            UtilsLib.min(MAX_LIQUIDATION_INCENTIVE_FACTOR, WAD.wDivDown(WAD - LIQUIDATION_CURSOR.wMulDown(WAD - lltv)));
+        return Math.min(MAX_LIQUIDATION_INCENTIVE_FACTOR, WAD.wDivDown(WAD - LIQUIDATION_CURSOR.wMulDown(WAD - lltv)));
+    }
+
+    function _boundBorrowAssets(MarketParams memory _marketParams, address onBehalf, uint256 assets)
+        internal
+        view
+        returns (uint256)
+    {
+        Id _id = _marketParams.id();
+
+        uint256 collateralPrice = IOracle(_marketParams.oracle).price();
+        uint256 maxBorrow = morpho.collateral(_id, onBehalf).mulDivDown(collateralPrice, ORACLE_PRICE_SCALE).wMulDown(
+            _marketParams.lltv
+        );
+        uint256 borrowed = morpho.expectedBorrowBalance(_marketParams, onBehalf);
+        uint256 liquidity = morpho.totalSupplyAssets(_id) - morpho.totalBorrowAssets(_id);
+
+        return bound(assets, 0, Math.min(MAX_TEST_AMOUNT, Math.min(maxBorrow - borrowed, liquidity)));
+    }
+
+    function _boundRepayAssets(MarketParams memory _marketParams, address onBehalf, uint256 assets)
+        internal
+        view
+        returns (uint256)
+    {
+        Id _id = _marketParams.id();
+
+        uint256 borrowed = morpho.expectedBorrowBalance(_marketParams, onBehalf);
+
+        return bound(assets, 0, borrowed);
+    }
+
+    function _boundRepayShares(MarketParams memory _marketParams, address onBehalf, uint256 shares)
+        internal
+        view
+        returns (uint256)
+    {
+        Id _id = _marketParams.id();
+
+        return bound(shares, 0, morpho.borrowShares(_id, onBehalf));
     }
 
     function _accrueInterest(MarketParams memory market) internal {
@@ -190,11 +272,33 @@ contract BaseTest is Test {
         return (Id.unwrap(a.id()) != Id.unwrap(b.id()));
     }
 
-    function max(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a > b ? a : b;
+    function _randomCandidate(address[] memory candidates, uint256 seed) internal pure returns (address) {
+        if (candidates.length == 0) return address(0);
+
+        return candidates[seed % candidates.length];
     }
 
-    function min(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a < b ? a : b;
+    function _removeAll(address[] memory inputs, address removed) internal pure returns (address[] memory result) {
+        result = new address[](inputs.length);
+
+        uint256 nbAddresses;
+        for (uint256 i; i < inputs.length; ++i) {
+            address input = inputs[i];
+
+            if (input != removed) {
+                result[nbAddresses] = input;
+                ++nbAddresses;
+            }
+        }
+
+        assembly {
+            mstore(result, nbAddresses)
+        }
+    }
+
+    function _randomNonZero(address[] memory users, uint256 seed) internal returns (address) {
+        users = _removeAll(users, address(0));
+
+        return _randomCandidate(users, seed);
     }
 }
