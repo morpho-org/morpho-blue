@@ -6,7 +6,7 @@ methods {
     // we assume here that all external functions will not access storage, since we cannot show
     // commutativity otherwise.  We also need to assume that the price and borrow rate return
     // always the same value (and do not depend on msg.origin), so we use ghost functions for them.
-    function _.borrowRate(MorphoHarness.MarketParams marketParams) external with (env e) => ghostBorrowRate(marketParams.irm, e.block.timestamp) expect uint256;
+    function _.borrowRate(MorphoHarness.MarketParams marketParams, MorphoHarness.Market market) external with (env e) => ghostBorrowRate(marketParams.irm, e.block.timestamp) expect uint256;
     function _.price() external with (env e) => ghostOraclePrice(e.block.timestamp) expect uint256;
     function _.transfer(address to, uint256 amount) external => ghostTransfer(to, amount) expect bool;
     function _.transferFrom(address from, address to, uint256 amount) external => ghostTransferFrom(from, to, amount) expect bool;
