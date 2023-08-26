@@ -21,7 +21,7 @@ const random = () => {
 const identifier = (marketParams: MarketParamsStruct) => {
   const encodedMarket = AbiCoder.defaultAbiCoder().encode(
     ["address", "address", "address", "address", "uint256"],
-    Object.values(marketParams)
+    Object.values(marketParams),
   );
 
   return Buffer.from(keccak256(encodedMarket).slice(2), "hex");
