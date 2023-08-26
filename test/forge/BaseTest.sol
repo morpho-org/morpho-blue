@@ -24,8 +24,8 @@ contract BaseTest is Test {
     uint256 internal constant MAX_TEST_AMOUNT = 1e28;
     uint256 internal constant MIN_TEST_SHARES = MIN_TEST_AMOUNT * SharesMathLib.VIRTUAL_SHARES;
     uint256 internal constant MAX_TEST_SHARES = MAX_TEST_AMOUNT * SharesMathLib.VIRTUAL_SHARES;
-    uint256 internal constant MIN_TEST_LLTV = 0.1 ether;
-    uint256 internal constant MAX_TEST_LLTV = 0.9 ether;
+    uint256 internal constant MIN_TEST_LLTV = 0.01 ether;
+    uint256 internal constant MAX_TEST_LLTV = 0.99 ether;
     uint256 internal constant MIN_COLLATERAL_PRICE = 1e10;
     uint256 internal constant MAX_COLLATERAL_PRICE = 1e40;
     uint256 internal constant MAX_COLLATERAL_ASSETS = type(uint128).max;

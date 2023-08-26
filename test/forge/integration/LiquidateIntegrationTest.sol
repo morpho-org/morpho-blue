@@ -78,13 +78,18 @@ contract LiquidateIntegrationTest is BaseTest {
         (amountCollateral, amountBorrowed, priceCollateral) =
             _boundUnhealthyPosition(amountCollateral, amountBorrowed, priceCollateral);
 
+        console2.log(amountCollateral);
+        console2.log(amountBorrowed);
+        console2.log(priceCollateral);
+
         vm.assume(amountCollateral > 1);
 
-        amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
+        amountSupplied = bound(amountSupplied, amountBorrowed, amountBorrowed + MAX_TEST_AMOUNT);
         _supply(amountSupplied);
 
         uint256 incentive = _liquidationIncentive(marketParams.lltv);
         uint256 maxSeized = amountBorrowed.wMulDown(incentive).mulDivDown(ORACLE_PRICE_SCALE, priceCollateral);
+        vm.assume(maxSeized != 0);
         amountSeized = bound(amountSeized, 1, min(maxSeized, amountCollateral - 1));
         uint256 expectedRepaid = amountSeized.mulDivUp(priceCollateral, ORACLE_PRICE_SCALE).wDivUp(incentive);
 
