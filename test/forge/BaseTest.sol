@@ -24,6 +24,8 @@ contract BaseTest is Test {
     uint256 internal constant MAX_TEST_AMOUNT = 1e28;
     uint256 internal constant MIN_TEST_SHARES = MIN_TEST_AMOUNT * SharesMathLib.VIRTUAL_SHARES;
     uint256 internal constant MAX_TEST_SHARES = MAX_TEST_AMOUNT * SharesMathLib.VIRTUAL_SHARES;
+    uint256 internal constant MIN_TEST_LLTV = 0.1 ether;
+    uint256 internal constant MAX_TEST_LLTV = 0.9 ether;
     uint256 internal constant MIN_COLLATERAL_PRICE = 1e10;
     uint256 internal constant MAX_COLLATERAL_PRICE = 1e40;
     uint256 internal constant MAX_COLLATERAL_ASSETS = type(uint128).max;
@@ -36,7 +38,7 @@ contract BaseTest is Test {
     address internal LIQUIDATOR = _addrFromHashedString("Morpho Liquidator");
     address internal OWNER = _addrFromHashedString("Morpho Owner");
 
-    uint256 internal constant LLTV = 0.8 ether;
+    uint256 internal LLTV = 0.8 ether;
 
     Morpho internal morpho;
     ERC20 internal borrowableToken;
@@ -112,6 +114,21 @@ contract BaseTest is Test {
         vm.warp(block.timestamp + 1 days);
     }
 
+    function _setLltv(uint256 lltv) internal {
+        LLTV = lltv;
+        marketParams =
+            MarketParams(address(borrowableToken), address(collateralToken), address(oracle), address(irm), lltv);
+        id = marketParams.id();
+
+        vm.startPrank(OWNER);
+        if (!morpho.isLltvEnabled(lltv)) morpho.enableLltv(lltv);
+        if (morpho.lastUpdate(marketParams.id()) == 0) morpho.createMarket(marketParams);
+        vm.stopPrank();
+
+        vm.roll(block.number + 1);
+        vm.warp(block.timestamp + 1 days);
+    }
+
     function _addrFromHashedString(string memory str) internal pure returns (address) {
         return address(uint160(uint256(keccak256(bytes(str)))));
     }
@@ -168,6 +185,10 @@ contract BaseTest is Test {
 
         vm.assume(amountCollateral > 0);
         return (amountCollateral, amountBorrowed, priceCollateral);
+    }
+
+    function _boundTestLltv(uint256 lltv) internal view returns (uint256) {
+        return bound(lltv, MIN_TEST_LLTV, MAX_TEST_LLTV);
     }
 
     function _boundValidLltv(uint256 lltv) internal view returns (uint256) {
