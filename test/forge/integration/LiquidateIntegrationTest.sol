@@ -78,10 +78,6 @@ contract LiquidateIntegrationTest is BaseTest {
         (amountCollateral, amountBorrowed, priceCollateral) =
             _boundUnhealthyPosition(amountCollateral, amountBorrowed, priceCollateral);
 
-        console2.log(amountCollateral);
-        console2.log(amountBorrowed);
-        console2.log(priceCollateral);
-
         vm.assume(amountCollateral > 1);
 
         amountSupplied = bound(amountSupplied, amountBorrowed, amountBorrowed + MAX_TEST_AMOUNT);

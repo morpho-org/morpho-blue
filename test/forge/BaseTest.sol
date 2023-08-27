@@ -76,14 +76,8 @@ contract BaseTest is Test {
         irm = new Irm();
         vm.label(address(irm), "IRM");
 
-        marketParams =
-            MarketParams(address(borrowableToken), address(collateralToken), address(oracle), address(irm), LLTV);
-        id = marketParams.id();
-
         vm.startPrank(OWNER);
         morpho.enableIrm(address(irm));
-        morpho.enableLltv(LLTV);
-        morpho.createMarket(marketParams);
         vm.stopPrank();
 
         borrowableToken.approve(address(morpho), type(uint256).max);
@@ -110,8 +104,7 @@ contract BaseTest is Test {
         morpho.setAuthorization(BORROWER, true);
         vm.stopPrank();
 
-        vm.roll(block.number + 1);
-        vm.warp(block.timestamp + 1 days);
+        _setLltv(LLTV);
     }
 
     function _setLltv(uint256 lltv) internal {
