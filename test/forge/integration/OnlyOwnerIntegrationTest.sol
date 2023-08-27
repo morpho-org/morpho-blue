@@ -65,7 +65,7 @@ contract OnlyOwnerIntegrationTest is BaseTest {
 
     function testEnableLltvWhenNotOwner(address addressFuzz, uint256 lltvFuzz) public {
         vm.assume(addressFuzz != OWNER);
-        vm.assume(lltvFuzz != LLTV);
+        vm.assume(lltvFuzz != lltv);
 
         vm.prank(addressFuzz);
         vm.expectRevert(bytes(ErrorsLib.NOT_OWNER));
@@ -75,7 +75,7 @@ contract OnlyOwnerIntegrationTest is BaseTest {
     function testEnableLltvAlreadySet() public {
         vm.prank(OWNER);
         vm.expectRevert(bytes(ErrorsLib.ALREADY_SET));
-        morpho.enableLltv(LLTV);
+        morpho.enableLltv(lltv);
     }
 
     function testEnableTooHighLltv(uint256 lltvFuzz) public {
@@ -88,7 +88,7 @@ contract OnlyOwnerIntegrationTest is BaseTest {
 
     function testEnableLltv(uint256 lltvFuzz) public {
         lltvFuzz = _boundValidLltv(lltvFuzz);
-        vm.assume(lltvFuzz != LLTV);
+        vm.assume(lltvFuzz != lltv);
 
         vm.prank(OWNER);
         vm.expectEmit(true, true, true, true, address(morpho));
