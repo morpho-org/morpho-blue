@@ -13,8 +13,6 @@ methods {
 
     function _.borrowRate(MorphoHarness.MarketParams, MorphoHarness.Market) external => HAVOC_ECF;
 
-    function VIRTUAL_ASSETS() external returns uint256 envfree;
-    function VIRTUAL_SHARES() external returns uint256 envfree;
     function MAX_FEE() external returns uint256 envfree;
 }
 
@@ -101,7 +99,9 @@ filtered {
 }
 
 rule onlyAccrueInterestsCanIncreaseBorrowRatio(env e, method f, calldataarg args)
-filtered { f -> !f.isView }
+filtered {
+    f -> !f.isView && f.selector != sig:repay(MorphoHarness.MarketParams, uint256, uint256, address, bytes).selector
+}
 {
     MorphoHarness.Id id;
     requireInvariant feeInRange(id);
@@ -118,5 +118,27 @@ filtered { f -> !f.isView }
     mathint sharesAfter = getVirtualTotalBorrowShares(id);
 
     // Check if ratio increases: assetsBefore/sharesBefore <= assetsAfter / sharesAfter
+    assert assetsBefore * sharesAfter >= assetsAfter * sharesBefore;
+}
+
+rule repayIncreasesBorrowRatio(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onbehalf, bytes data)
+{
+    MorphoHarness.Id id = getMarketId(marketParams);
+    requireInvariant feeInRange(id);
+
+    mathint assetsBefore = getVirtualTotalBorrowAssets(id);
+    mathint sharesBefore = getVirtualTotalBorrowShares(id);
+
+    require getLastUpdate(id) == e.block.timestamp;
+
+    mathint repaidAssets;
+    repaidAssets, _ = repay(e, marketParams, assets, shares, onbehalf, data);
+
+    require repaidAssets < assetsBefore;
+
+    mathint assetsAfter = getVirtualTotalBorrowAssets(id);
+    mathint sharesAfter = getVirtualTotalBorrowShares(id);
+
+    assert assetsAfter == assetsBefore - repaidAssets;
     assert assetsBefore * sharesAfter >= assetsAfter * sharesBefore;
 }
