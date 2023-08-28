@@ -78,7 +78,7 @@ library EventsLib {
     /// @param id The market id.
     /// @param caller The caller.
     /// @param onBehalf The address for which the assets were repaid.
-    /// @param assets The amount of assets repaid.
+    /// @param assets The amount of assets repaid. May be 1 over the corresponding market's `totalBorrowAssets`.
     /// @param shares The amount of shares burned.
     event Repay(Id indexed id, address indexed caller, address indexed onBehalf, uint256 assets, uint256 shares);
 
@@ -103,7 +103,7 @@ library EventsLib {
     /// @param id The market id.
     /// @param caller The caller.
     /// @param borrower The borrower of the position.
-    /// @param repaidAssets The amount of assets repaid.
+    /// @param repaidAssets The amount of assets repaid. May be 1 over the corresponding market's `totalBorrowAssets`.
     /// @param repaidShares The amount of shares burned.
     /// @param seizedAssets The amount of collateral seized.
     /// @param badDebtShares The amount of shares minted as bad debt.

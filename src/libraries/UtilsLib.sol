@@ -28,4 +28,11 @@ library UtilsLib {
         require(x <= type(uint128).max, ErrorsLib.MAX_UINT128_EXCEEDED);
         return uint128(x);
     }
+
+    /// @dev Returns max(x - y, 0).
+    function zeroFloorSub(uint256 x, uint256 y) internal pure returns (uint256 z) {
+        assembly {
+            z := mul(gt(x, y), sub(x, y))
+        }
+    }
 }
