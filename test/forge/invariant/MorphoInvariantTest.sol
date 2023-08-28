@@ -22,7 +22,7 @@ contract MorphoInvariantTest is InvariantTest {
 
     function setUp() public virtual override {
         _weightSelector(this.setPrice.selector, 10);
-        _weightSelector(this.setFeeNoRevert.selector, 2);
+        _weightSelector(this.setFeeNoRevert.selector, 5);
         _weightSelector(this.supplyAssetsOnBehalfNoRevert.selector, 100);
         _weightSelector(this.supplySharesOnBehalfNoRevert.selector, 100);
         _weightSelector(this.withdrawAssetsOnBehalfNoRevert.selector, 50);
@@ -358,5 +358,20 @@ contract MorphoInvariantTest is InvariantTest {
         assertGe(
             borrowableToken.balanceOf(address(morpho)), morpho.totalSupplyAssets(id) - morpho.totalBorrowAssets(id)
         );
+    }
+
+    function invariantBadDebt() public {
+        address[] memory users = targetSenders();
+
+        for (uint256 i; i < users.length; ++i) {
+            address user = users[i];
+
+            for (uint256 j; j < allMarketParams.length; ++j) {
+                MarketParams memory _marketParams = allMarketParams[j];
+                Id _id = _marketParams.id();
+
+                if (morpho.collateral(_id, user) == 0) assertEq(morpho.borrowShares(_id, user), 0);
+            }
+        }
     }
 }
