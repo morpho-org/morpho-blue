@@ -163,7 +163,7 @@ contract MorphoInvariantTest is InvariantTest {
 
     function _liquidateSeizedAssets(MarketParams memory _marketParams, address borrower, uint256 seizedAssets)
         internal
-        logCall("_liquidateSeizedAssets")
+        logCall("liquidateSeizedAssets")
     {
         uint256 collateralPrice = oracle.price();
         uint256 repaidAssets =

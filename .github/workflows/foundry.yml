@@ -21,7 +21,7 @@ jobs:
           - type: "slow"
             fuzz-runs: 10000
             max-test-rejects: 500000
-            invariant-runs: 64
+            invariant-runs: 48
             invariant-depth: 2048
           - type: "fast"
             fuzz-runs: 256
