@@ -27,4 +27,8 @@ contract UtilsLibTest is Test {
         vm.expectRevert(bytes(ErrorsLib.MAX_UINT128_EXCEEDED));
         x.toUint128();
     }
+
+    function testZeroFloorSub(uint256 x, uint256 y) public {
+        assertEq(UtilsLib.zeroFloorSub(x, y), x < y ? 0 : x - y);
+    }
 }

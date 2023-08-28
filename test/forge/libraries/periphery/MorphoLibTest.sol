@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import {MorphoBalancesLib} from "src/libraries/periphery/MorphoBalancesLib.sol";
 
-import "../BaseTest.sol";
+import "../../BaseTest.sol";
 
 contract MorphoLibTest is BaseTest {
     using MathLib for uint256;

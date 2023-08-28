@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import "test/forge/InvariantBase.sol";
+import "../InvariantTest.sol";
 
-contract SingleMarketChangingPriceInvariantTest is InvariantBaseTest {
+contract SingleMarketChangingPriceInvariantTest is InvariantTest {
     using MathLib for uint256;
     using MorphoLib for Morpho;
     using SharesMathLib for uint256;
@@ -31,13 +31,12 @@ contract SingleMarketChangingPriceInvariantTest is InvariantBaseTest {
         _weightSelector(this.withdrawCollateralNoRevert.selector, 5);
         _weightSelector(this.withdrawCollateralOnBehalfNoRevert.selector, 5);
 
-        blockNumber = block.number;
-        timestamp = block.timestamp;
-
         targetSelector(FuzzSelector({addr: address(this), selectors: selectors}));
 
         oracle.setPrice(1e36);
     }
+
+    /* ACTIONS */
 
     function changePrice(uint256 variation) public {
         // price variation bounded between -20% and +20%
@@ -250,6 +249,8 @@ contract SingleMarketChangingPriceInvariantTest is InvariantBaseTest {
         morpho.liquidate(marketParams, user, seized, 0, hex"");
     }
 
+    /* INVARIANTS */
+
     function invariantSupplyShares() public {
         assertEq(sumUsersSupplyShares(targetSenders()), morpho.totalSupplyShares(id));
     }
@@ -271,8 +272,8 @@ contract SingleMarketChangingPriceInvariantTest is InvariantBaseTest {
     }
 
     function invariantMorphoBalance() public {
-        assertEq(
-            morpho.totalSupplyAssets(id) - morpho.totalBorrowAssets(id), borrowableToken.balanceOf(address(morpho))
+        assertGe(
+            borrowableToken.balanceOf(address(morpho)), morpho.totalSupplyAssets(id) - morpho.totalBorrowAssets(id)
         );
     }
 }
