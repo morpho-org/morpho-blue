@@ -139,34 +139,4 @@ contract InvariantTest is BaseTest {
 
         return _randomNonZero(candidates, seed);
     }
-
-    function _sumSupplyShares(address[] memory users) internal view returns (uint256 sum) {
-        for (uint256 i; i < users.length; ++i) {
-            sum += morpho.supplyShares(id, users[i]);
-        }
-
-        sum += morpho.supplyShares(id, morpho.feeRecipient());
-    }
-
-    function _sumBorrowShares(address[] memory users) internal view returns (uint256 sum) {
-        for (uint256 i; i < users.length; ++i) {
-            sum += morpho.borrowShares(id, users[i]);
-        }
-    }
-
-    function _sumSupplyAssets(address[] memory users) internal view returns (uint256 sum) {
-        for (uint256 i; i < users.length; ++i) {
-            sum += morpho.expectedSupplyBalance(marketParams, users[i]);
-            console2.log(sum);
-        }
-
-        sum += morpho.expectedSupplyBalance(marketParams, morpho.feeRecipient());
-    }
-
-    function _sumBorrowAssets(address[] memory users) internal view returns (uint256 sum) {
-        for (uint256 i; i < users.length; ++i) {
-            sum += morpho.expectedBorrowBalance(marketParams, users[i]);
-            console2.log(sum);
-        }
-    }
 }

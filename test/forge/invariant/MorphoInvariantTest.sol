@@ -10,7 +10,7 @@ contract MorphoInvariantTest is InvariantTest {
     using MorphoBalancesLib for IMorpho;
     using MarketParamsLib for MarketParams;
 
-    uint256 internal immutable MAX_PRICE_VARIATION = 0.05e18;
+    uint256 internal immutable MAX_PRICE_VARIATION = 0.4e18;
 
     address internal immutable USER;
 
@@ -343,11 +343,25 @@ contract MorphoInvariantTest is InvariantTest {
     /* INVARIANTS */
 
     function invariantSupplyShares() public {
-        assertEq(_sumSupplyShares(targetSenders()), morpho.totalSupplyShares(id));
+        address[] memory users = targetSenders();
+
+        uint256 sumSupplyShares;
+        for (uint256 i; i < users.length; ++i) {
+            sumSupplyShares += morpho.supplyShares(id, users[i]);
+        }
+
+        assertEq(sumSupplyShares, morpho.totalSupplyShares(id));
     }
 
     function invariantBorrowShares() public {
-        assertEq(_sumBorrowShares(targetSenders()), morpho.totalBorrowShares(id));
+        address[] memory users = targetSenders();
+
+        uint256 sumBorrowShares;
+        for (uint256 i; i < users.length; ++i) {
+            sumBorrowShares += morpho.borrowShares(id, users[i]);
+        }
+
+        assertEq(sumBorrowShares, morpho.totalBorrowShares(id));
     }
 
     function invariantTotalSupplyGeTotalBorrow() public {
