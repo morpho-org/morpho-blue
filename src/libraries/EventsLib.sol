@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
 import {Id, MarketParams} from "../interfaces/IMorpho.sol";
@@ -14,12 +14,12 @@ library EventsLib {
 
     /// @notice Emitted when setting a new fee.
     /// @param id The market id.
-    /// @param fee The new fee.
-    event SetFee(Id indexed id, uint256 fee);
+    /// @param newFee The new fee.
+    event SetFee(Id indexed id, uint256 newFee);
 
     /// @notice Emitted when setting a new fee recipient.
-    /// @param feeRecipient The new fee recipient.
-    event SetFeeRecipient(address indexed feeRecipient);
+    /// @param newFeeRecipient The new fee recipient.
+    event SetFeeRecipient(address indexed newFeeRecipient);
 
     /// @notice Emitted when enabling an IRM.
     /// @param irm The IRM that was enabled.
