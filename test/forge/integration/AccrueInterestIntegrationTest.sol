@@ -9,7 +9,7 @@ contract AccrueInterestIntegrationTest is BaseTest {
     using SharesMathLib for uint256;
 
     function testAccrueInterestNoTimeElapsed(uint256 amountSupplied, uint256 amountBorrowed) public {
-        uint256 collateralPrice = IOracle(marketParams.oracle).price();
+        uint256 collateralPrice = oracle.price();
         uint256 amountCollateral;
         (amountCollateral, amountBorrowed,) = _boundHealthyPosition(amountCollateral, amountBorrowed, collateralPrice);
         amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
@@ -69,7 +69,7 @@ contract AccrueInterestIntegrationTest is BaseTest {
     }
 
     function testAccrueInterestNoFee(uint256 amountSupplied, uint256 amountBorrowed, uint256 timeElapsed) public {
-        uint256 collateralPrice = IOracle(marketParams.oracle).price();
+        uint256 collateralPrice = oracle.price();
         uint256 amountCollateral;
         (amountCollateral, amountBorrowed,) = _boundHealthyPosition(amountCollateral, amountBorrowed, collateralPrice);
         amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
@@ -133,7 +133,7 @@ contract AccrueInterestIntegrationTest is BaseTest {
     ) public {
         AccrueInterestWithFeesTestParams memory params;
 
-        uint256 collateralPrice = IOracle(marketParams.oracle).price();
+        uint256 collateralPrice = oracle.price();
         uint256 amountCollateral;
         (amountCollateral, amountBorrowed,) = _boundHealthyPosition(amountCollateral, amountBorrowed, collateralPrice);
         amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);

@@ -17,12 +17,16 @@ contract InvariantTest is BaseTest {
 
         _targetSenders();
 
-        _supplyCollateralMax(targetSenders(), marketParams);
-
         _weightSelector(this.mine.selector, 100);
 
         targetContract(address(this));
         targetSelector(FuzzSelector({addr: address(this), selectors: selectors}));
+    }
+
+    modifier logCall(string memory name) {
+        console2.log(msg.sender, "->", name);
+
+        _;
     }
 
     function _targetSenders() internal virtual {
@@ -51,22 +55,15 @@ contract InvariantTest is BaseTest {
         }
     }
 
-    function _supplyCollateralMax(address[] memory users, MarketParams memory _marketParams) internal {
-        for (uint256 i; i < users.length; ++i) {
-            address user = users[i];
-
-            collateralToken.setBalance(user, 1e30);
-
-            vm.prank(user);
-            morpho.supplyCollateral(_marketParams, 1e30, user, hex"");
-        }
-    }
+    /* HANDLERS */
 
     function mine(uint256 blocks) external {
         blocks = bound(blocks, 1, 50_400);
 
         _forward(blocks);
     }
+
+    /* UTILS */
 
     function _randomSupplier(address[] memory users, MarketParams memory _marketParams, uint256 seed)
         internal
@@ -143,7 +140,7 @@ contract InvariantTest is BaseTest {
         return _randomNonZero(candidates, seed);
     }
 
-    function sumSupplyShares(address[] memory users) internal view returns (uint256 sum) {
+    function _sumSupplyShares(address[] memory users) internal view returns (uint256 sum) {
         for (uint256 i; i < users.length; ++i) {
             sum += morpho.supplyShares(id, users[i]);
         }
@@ -151,13 +148,13 @@ contract InvariantTest is BaseTest {
         sum += morpho.supplyShares(id, morpho.feeRecipient());
     }
 
-    function sumBorrowShares(address[] memory users) internal view returns (uint256 sum) {
+    function _sumBorrowShares(address[] memory users) internal view returns (uint256 sum) {
         for (uint256 i; i < users.length; ++i) {
             sum += morpho.borrowShares(id, users[i]);
         }
     }
 
-    function sumSupplyAssets(address[] memory users) internal view returns (uint256 sum) {
+    function _sumSupplyAssets(address[] memory users) internal view returns (uint256 sum) {
         for (uint256 i; i < users.length; ++i) {
             sum += morpho.expectedSupplyBalance(marketParams, users[i]);
             console2.log(sum);
@@ -166,7 +163,7 @@ contract InvariantTest is BaseTest {
         sum += morpho.expectedSupplyBalance(marketParams, morpho.feeRecipient());
     }
 
-    function sumBorrowAssets(address[] memory users) internal view returns (uint256 sum) {
+    function _sumBorrowAssets(address[] memory users) internal view returns (uint256 sum) {
         for (uint256 i; i < users.length; ++i) {
             sum += morpho.expectedBorrowBalance(marketParams, users[i]);
             console2.log(sum);

@@ -124,8 +124,7 @@ contract CallbacksIntegrationTest is
     function testRepayCallback(uint256 borrowableAmount) public {
         borrowableAmount = bound(borrowableAmount, MIN_TEST_AMOUNT, MAX_TEST_AMOUNT);
         uint256 collateralAmount;
-        (collateralAmount, borrowableAmount,) =
-            _boundHealthyPosition(0, borrowableAmount, IOracle(marketParams.oracle).price());
+        (collateralAmount, borrowableAmount,) = _boundHealthyPosition(0, borrowableAmount, oracle.price());
 
         oracle.setPrice(ORACLE_PRICE_SCALE);
 
@@ -148,8 +147,7 @@ contract CallbacksIntegrationTest is
     function testLiquidateCallback(uint256 borrowableAmount) public {
         borrowableAmount = bound(borrowableAmount, MIN_TEST_AMOUNT, MAX_TEST_AMOUNT);
         uint256 collateralAmount;
-        (collateralAmount, borrowableAmount,) =
-            _boundHealthyPosition(0, borrowableAmount, IOracle(marketParams.oracle).price());
+        (collateralAmount, borrowableAmount,) = _boundHealthyPosition(0, borrowableAmount, oracle.price());
 
         oracle.setPrice(ORACLE_PRICE_SCALE);
 
@@ -175,8 +173,7 @@ contract CallbacksIntegrationTest is
     function testFlashActions(uint256 borrowableAmount) public {
         borrowableAmount = bound(borrowableAmount, MIN_TEST_AMOUNT, MAX_TEST_AMOUNT);
         uint256 collateralAmount;
-        (collateralAmount, borrowableAmount,) =
-            _boundHealthyPosition(0, borrowableAmount, IOracle(marketParams.oracle).price());
+        (collateralAmount, borrowableAmount,) = _boundHealthyPosition(0, borrowableAmount, oracle.price());
 
         oracle.setPrice(ORACLE_PRICE_SCALE);
 

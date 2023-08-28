@@ -71,7 +71,7 @@ contract BaseTest is Test {
 
         oracle = new OracleMock();
 
-        oracle.setPrice(1e36);
+        oracle.setPrice(ORACLE_PRICE_SCALE);
 
         irm = new IrmMock();
 
@@ -218,8 +218,14 @@ contract BaseTest is Test {
         Id _id = _marketParams.id();
 
         uint256 collateral = morpho.collateral(_id, onBehalf);
+        uint256 collateralPrice = IOracle(_marketParams.oracle).price();
+        uint256 borrowed = morpho.expectedBorrowBalance(_marketParams, onBehalf);
 
-        return bound(assets, 0, MAX_TEST_AMOUNT.min(collateral));
+        return bound(
+            assets,
+            0,
+            collateral.zeroFloorSub(borrowed.mulDivUp(ORACLE_PRICE_SCALE, collateralPrice).wDivUp(_marketParams.lltv))
+        );
     }
 
     function _boundSupplyAssets(MarketParams memory _marketParams, address onBehalf, uint256 assets)
