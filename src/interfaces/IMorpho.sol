@@ -273,6 +273,8 @@ interface IMorpho {
     ) external returns (uint256, uint256);
 
     /// @notice Executes a flash loan.
+    /// @dev Flash loans have access to the whole balance of the contract (the liquidity and deposited collateral of all
+    /// markets combined, plus donations).
     /// @param token The token to flash loan.
     /// @param assets The amount of assets to flash loan.
     /// @param data Arbitrary data to pass to the `onMorphoFlashLoan` callback.
