@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
 uint256 constant WAD = 1e18;
@@ -23,18 +23,18 @@ library MathLib {
         return mulDivUp(x, WAD, y);
     }
 
-    /// @dev (x * y) / denominator rounded down.
-    function mulDivDown(uint256 x, uint256 y, uint256 denominator) internal pure returns (uint256) {
-        return (x * y) / denominator;
+    /// @dev (x * y) / d rounded down.
+    function mulDivDown(uint256 x, uint256 y, uint256 d) internal pure returns (uint256) {
+        return (x * y) / d;
     }
 
-    /// @dev (x * y) / denominator rounded up.
-    function mulDivUp(uint256 x, uint256 y, uint256 denominator) internal pure returns (uint256) {
-        return (x * y + (denominator - 1)) / denominator;
+    /// @dev (x * y) / d rounded up.
+    function mulDivUp(uint256 x, uint256 y, uint256 d) internal pure returns (uint256) {
+        return (x * y + (d - 1)) / d;
     }
 
-    /// @dev The sum of the last three terms in a four term taylor series expansion
-    ///      to approximate a continuous compound interest rate: e^(nx) - 1.
+    /// @dev The sum of the first three non-zero terms of a Taylor expansion of e^(nx) - 1,
+    ///      to approximate a continuous compound interest rate.
     function wTaylorCompounded(uint256 x, uint256 n) internal pure returns (uint256) {
         uint256 firstTerm = x * n;
         uint256 secondTerm = mulDivDown(firstTerm, firstTerm, 2 * WAD);
