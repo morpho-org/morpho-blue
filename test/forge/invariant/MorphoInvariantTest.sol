@@ -347,6 +347,7 @@ contract MorphoInvariantTest is InvariantTest {
         uint256 sumSupplyShares;
         for (uint256 i; i < users.length; ++i) {
             sumSupplyShares += morpho.supplyShares(id, users[i]);
+            sumSupplyShares += morpho.supplyShares(id, FEE_RECIPIENT);
         }
 
         assertEq(sumSupplyShares, morpho.totalSupplyShares(id));

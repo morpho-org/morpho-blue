@@ -21,7 +21,6 @@ contract MorphoStorageLibTest is BaseTest {
 
         // Set fee parameters.
         vm.startPrank(OWNER);
-        morpho.setFeeRecipient(OWNER);
         morpho.setFee(marketParams, fee);
         vm.stopPrank();
 

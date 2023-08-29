@@ -40,6 +40,7 @@ contract BaseTest is Test {
     address internal RECEIVER;
     address internal LIQUIDATOR;
     address internal OWNER;
+    address internal FEE_RECIPIENT;
 
     uint256 internal constant LLTV = 0.8 ether;
 
@@ -60,6 +61,7 @@ contract BaseTest is Test {
         RECEIVER = _addrFromHashedString("Receiver");
         LIQUIDATOR = _addrFromHashedString("Liquidator");
         OWNER = _addrFromHashedString("Owner");
+        FEE_RECIPIENT = _addrFromHashedString("FeeRecipient");
 
         morpho = new Morpho(OWNER);
 
@@ -80,9 +82,10 @@ contract BaseTest is Test {
         id = marketParams.id();
 
         vm.startPrank(OWNER);
-        morpho.enableIrm(address(irm));
         morpho.enableLltv(LLTV);
+        morpho.enableIrm(address(irm));
         morpho.createMarket(marketParams);
+        morpho.setFeeRecipient(FEE_RECIPIENT);
         vm.stopPrank();
 
         borrowableToken.approve(address(morpho), type(uint256).max);
@@ -220,7 +223,7 @@ contract BaseTest is Test {
         return bound(
             assets,
             0,
-            collateral.zeroFloorSub(borrowed.mulDivUp(ORACLE_PRICE_SCALE, collateralPrice).wDivUp(_marketParams.lltv))
+            collateral.zeroFloorSub(borrowed.wDivUp(_marketParams.lltv).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice))
         );
     }
 
