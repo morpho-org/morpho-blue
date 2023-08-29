@@ -1,9 +1,9 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
 import "../BaseTest.sol";
 
-contract IntegrationSupplyCollateralTest is BaseTest {
+contract SupplyCollateralIntegrationTest is BaseTest {
     using MorphoLib for Morpho;
 
     function testSupplyCollateralMarketNotCreated(MarketParams memory marketParamsFuzz, uint256 amount) public {

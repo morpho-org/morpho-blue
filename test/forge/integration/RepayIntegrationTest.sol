@@ -1,9 +1,9 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
 import "../BaseTest.sol";
 
-contract IntegrationRepayTest is BaseTest {
+contract RepayIntegrationTest is BaseTest {
     using MathLib for uint256;
     using MorphoLib for Morpho;
     using SharesMathLib for uint256;
@@ -126,5 +126,26 @@ contract IntegrationRepayTest is BaseTest {
             amountSupplied - amountBorrowed + expectedAmountRepaid,
             "morpho balance"
         );
+    }
+
+    function testRepayMax(uint256 shares) public {
+        shares = bound(shares, MIN_TEST_SHARES, MAX_TEST_SHARES);
+
+        uint256 assets = shares.toAssetsUp(0, 0);
+
+        borrowableToken.setBalance(address(this), assets);
+
+        morpho.supply(marketParams, 0, shares, SUPPLIER, hex"");
+
+        collateralToken.setBalance(address(this), HIGH_COLLATERAL_AMOUNT);
+
+        morpho.supplyCollateral(marketParams, HIGH_COLLATERAL_AMOUNT, BORROWER, hex"");
+
+        vm.prank(BORROWER);
+        morpho.borrow(marketParams, 0, shares, BORROWER, RECEIVER);
+
+        borrowableToken.setBalance(address(this), assets);
+
+        morpho.repay(marketParams, 0, shares, BORROWER, hex"");
     }
 }

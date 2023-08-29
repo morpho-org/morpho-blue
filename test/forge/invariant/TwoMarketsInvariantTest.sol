@@ -1,9 +1,9 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import "test/forge/InvariantBase.sol";
+import "../InvariantTest.sol";
 
-contract TwoMarketsInvariantTest is InvariantBaseTest {
+contract TwoMarketsInvariantTest is InvariantTest {
     using MathLib for uint256;
     using MorphoLib for Morpho;
     using SharesMathLib for uint256;
@@ -46,9 +46,6 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
         _weightSelector(this.repayNoRevert.selector, 10);
         _weightSelector(this.supplyCollateralNoRevert.selector, 20);
         _weightSelector(this.withdrawCollateralNoRevert.selector, 15);
-
-        blockNumber = block.number;
-        timestamp = block.timestamp;
 
         targetSelector(FuzzSelector({addr: address(this), selectors: selectors}));
     }
@@ -161,6 +158,7 @@ contract TwoMarketsInvariantTest is InvariantBaseTest {
     function invariantMorphoBalance() public {
         uint256 marketAvailableAmount = morpho.totalSupplyAssets(id) - morpho.totalBorrowAssets(id);
         uint256 market2AvailableAmount = morpho.totalSupplyAssets(id2) - morpho.totalBorrowAssets(id2);
-        assertEq(marketAvailableAmount + market2AvailableAmount, borrowableToken.balanceOf(address(morpho)));
+
+        assertGe(borrowableToken.balanceOf(address(morpho)), marketAvailableAmount + market2AvailableAmount);
     }
 }

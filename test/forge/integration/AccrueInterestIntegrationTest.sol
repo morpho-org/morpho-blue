@@ -1,9 +1,9 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
 import "../BaseTest.sol";
 
-contract IntegrationAccrueInterestTest is BaseTest {
+contract AccrueInterestIntegrationTest is BaseTest {
     using MathLib for uint256;
     using MorphoLib for Morpho;
     using SharesMathLib for uint256;

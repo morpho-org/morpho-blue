@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.19;
 
 import {Id, IMorpho, MarketParams, Position, Market, Authorization, Signature} from "./interfaces/IMorpho.sol";
@@ -272,8 +272,9 @@ contract Morpho is IMorpho {
 
         position[id][onBehalf].borrowShares -= shares.toUint128();
         market[id].totalBorrowShares -= shares.toUint128();
-        market[id].totalBorrowAssets -= assets.toUint128();
+        market[id].totalBorrowAssets = UtilsLib.zeroFloorSub(market[id].totalBorrowAssets, assets).toUint128();
 
+        // `assets` may be greater than `totalBorrowAssets` by 1.
         emit EventsLib.Repay(id, msg.sender, onBehalf, assets, shares);
 
         if (data.length > 0) IMorphoRepayCallback(msg.sender).onMorphoRepay(assets, data);
@@ -346,8 +347,8 @@ contract Morpho is IMorpho {
         uint256 collateralPrice = IOracle(marketParams.oracle).price();
 
         require(!_isHealthy(marketParams, id, borrower, collateralPrice), ErrorsLib.HEALTHY_POSITION);
-        uint256 repaidAssets;
 
+        uint256 repaidAssets;
         {
             // The liquidation incentive factor is min(maxIncentiveFactor, 1/(1 - cursor*(1 - lltv))).
             uint256 incentiveFactor = UtilsLib.min(
@@ -366,7 +367,7 @@ contract Morpho is IMorpho {
 
         position[id][borrower].borrowShares -= repaidShares.toUint128();
         market[id].totalBorrowShares -= repaidShares.toUint128();
-        market[id].totalBorrowAssets -= repaidAssets.toUint128();
+        market[id].totalBorrowAssets = UtilsLib.zeroFloorSub(market[id].totalBorrowAssets, repaidAssets).toUint128();
 
         position[id][borrower].collateral -= seizedAssets.toUint128();
 
@@ -383,6 +384,7 @@ contract Morpho is IMorpho {
 
         IERC20(marketParams.collateralToken).safeTransfer(msg.sender, seizedAssets);
 
+        // `repaidAssets` may be greater than `totalBorrowAssets` by 1.
         emit EventsLib.Liquidate(id, msg.sender, borrower, repaidAssets, repaidShares, seizedAssets, badDebtShares);
 
         if (data.length > 0) IMorphoLiquidateCallback(msg.sender).onMorphoLiquidate(repaidAssets, data);
@@ -457,7 +459,7 @@ contract Morpho is IMorpho {
             if (market[id].fee != 0) {
                 uint256 feeAmount = interest.wMulDown(market[id].fee);
                 // The fee amount is subtracted from the total supply in this calculation to compensate for the fact
-                // that total supply is already updated.
+                // that total supply is already increased by the full interest (including the fee amount).
                 feeShares =
                     feeAmount.toSharesDown(market[id].totalSupplyAssets - feeAmount, market[id].totalSupplyShares);
                 position[id][feeRecipient].supplyShares += feeShares;

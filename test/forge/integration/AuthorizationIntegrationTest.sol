@@ -1,9 +1,9 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
 import "../BaseTest.sol";
 
-contract IntegrationAuthorization is BaseTest {
+contract AuthorizationIntegrationTest is BaseTest {
     function testSetAuthorization(address addressFuzz) public {
         vm.assume(addressFuzz != address(this));
 

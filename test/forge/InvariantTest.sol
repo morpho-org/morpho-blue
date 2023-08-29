@@ -1,9 +1,9 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
 import "test/forge/BaseTest.sol";
 
-contract InvariantBaseTest is BaseTest {
+contract InvariantTest is BaseTest {
     using MathLib for uint256;
     using MorphoLib for Morpho;
     using SharesMathLib for uint256;
@@ -19,6 +19,9 @@ contract InvariantBaseTest is BaseTest {
         super.setUp();
 
         targetContract(address(this));
+
+        blockNumber = block.number;
+        timestamp = block.timestamp;
     }
 
     function _targetDefaultSenders() internal {
@@ -153,7 +156,7 @@ contract InvariantBaseTest is BaseTest {
         returns (address randomSenderToLiquidate)
     {
         for (uint256 i; i < addresses.length; ++i) {
-            if (morpho.borrowShares(id, addresses[i]) != 0 && !isHealthy(id, addresses[i])) {
+            if (!isHealthy(id, addresses[i])) {
                 addressArray.push(addresses[i]);
             }
         }

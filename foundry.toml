@@ -1,8 +1,27 @@
 [profile.default]
+names = true
+sizes = true
 via-ir = true
 optimizer_runs = 4294967295
 
-[fmt]
+[profile.default.invariant]
+runs = 16
+depth = 256
+fail_on_revert = true
+
+[profile.default.fmt]
 wrap_comments = true
+
+
+[profile.build]
+test = "/dev/null"
+script = "/dev/null"
+force = true
+
+
+[profile.test]
+via-ir = false
+extra_output_files = []
+
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/crates/config
