@@ -10,7 +10,8 @@ contract MorphoInvariantTest is InvariantTest {
     using MorphoBalancesLib for IMorpho;
     using MarketParamsLib for MarketParams;
 
-    uint256 internal immutable MAX_PRICE_VARIATION = 0.4e18;
+    uint256 internal immutable MIN_PRICE = ORACLE_PRICE_SCALE / 10;
+    uint256 internal immutable MAX_PRICE = ORACLE_PRICE_SCALE * 10;
 
     address internal immutable USER;
 
@@ -189,12 +190,10 @@ contract MorphoInvariantTest is InvariantTest {
 
     /* HANDLERS */
 
-    function setPrice(uint256 variation) external {
-        variation = bound(variation, WAD - MAX_PRICE_VARIATION, WAD + MAX_PRICE_VARIATION);
+    function setPrice(uint256 price) external {
+        price = bound(price, MIN_PRICE, MAX_PRICE);
 
-        uint256 currentPrice = oracle.price();
-
-        oracle.setPrice(currentPrice.wMulDown(variation));
+        oracle.setPrice(price);
     }
 
     function setFeeNoRevert(uint256 marketSeed, uint256 newFee) external {
