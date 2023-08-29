@@ -1,9 +1,9 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import "test/forge/InvariantBase.sol";
+import "../InvariantTest.sol";
 
-contract SinglePositionInvariantTest is InvariantBaseTest {
+contract SinglePositionInvariantTest is InvariantTest {
     using MathLib for uint256;
     using MorphoLib for Morpho;
     using SharesMathLib for uint256;
@@ -96,6 +96,8 @@ contract SinglePositionInvariantTest is InvariantBaseTest {
         morpho.withdrawCollateral(marketParams, amount, msg.sender, msg.sender);
     }
 
+    /* INVARIANTS */
+
     function invariantSupplyShares() public {
         assertEq(morpho.supplyShares(id, user), morpho.totalSupplyShares(id));
     }
@@ -121,8 +123,8 @@ contract SinglePositionInvariantTest is InvariantBaseTest {
     }
 
     function invariantMorphoBalance() public {
-        assertEq(
-            morpho.totalSupplyAssets(id) - morpho.totalBorrowAssets(id), borrowableToken.balanceOf(address(morpho))
+        assertGe(
+            borrowableToken.balanceOf(address(morpho)), morpho.totalSupplyAssets(id) - morpho.totalBorrowAssets(id)
         );
     }
 

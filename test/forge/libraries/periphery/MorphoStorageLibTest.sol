@@ -1,10 +1,10 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import {MorphoStorageLib} from "../../../src/libraries/periphery/MorphoStorageLib.sol";
-import {SigUtils} from "test/forge/helpers/SigUtils.sol";
+import {MorphoStorageLib} from "src/libraries/periphery/MorphoStorageLib.sol";
+import {SigUtils} from "../../helpers/SigUtils.sol";
 
-import "../BaseTest.sol";
+import "../../BaseTest.sol";
 
 contract MorphoStorageLibTest is BaseTest {
     using MathLib for uint256;

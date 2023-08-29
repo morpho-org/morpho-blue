@@ -1,9 +1,9 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
 import "../BaseTest.sol";
 
-contract IntegrationGetterTest is BaseTest {
+contract ExtSloadIntegrationTest is BaseTest {
     function testExtSloads(uint256 slot, bytes32 value0) public {
         bytes32[] memory slots = new bytes32[](2);
         slots[0] = bytes32(slot);
