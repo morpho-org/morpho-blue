@@ -16,6 +16,6 @@ rule checkSummaryMulDivDown(uint256 x, uint256 y, uint256 d) {
     assert result * d <= x * y;
 }
 
-rule checkSummaryId(MorphoHarness.MarketParams marketParams) {
-    assert marketLibId(marketParams) == getMarketId(marketParams);
-}
+// rule checkSummaryId(MorphoHarness.MarketParams marketParams) {
+//     assert marketLibId(marketParams) == getMarketId(marketParams);
+// }

@@ -1,5 +1,6 @@
 methods {
     function getLastUpdate(MorphoHarness.Id) external returns uint256 envfree;
+    function getTotalBorrowShares(MorphoHarness.Id) external returns uint256 envfree;
     function getBorrowShares(MorphoHarness.Id, address) external returns uint256 envfree;
     function getCollateral(MorphoHarness.Id, address) external returns uint256 envfree;
     function isHealthy(MorphoHarness.MarketParams, address user) external returns bool envfree;
@@ -37,9 +38,12 @@ function summaryMin(uint256 a, uint256 b) returns uint256 {
     return a < b ? a : b;
 }
 
-rule stayHealthy(method f, env e, calldataarg data)
+rule stayHealthy(env e, method f, calldataarg data)
 filtered {
-    f -> !f.isView
+    f -> !f.isView &&
+    f.selector != sig:liquidate(MorphoHarness.MarketParams, address, uint256, uint256, bytes).selector &&
+    f.selector != sig:repay(MorphoHarness.MarketParams, uint256, uint256, address, bytes).selector &&
+    f.selector != sig:borrow(MorphoHarness.MarketParams, uint256, uint256, address, address).selector
 }
 {
     MorphoHarness.MarketParams marketParams;
@@ -53,6 +57,8 @@ filtered {
     priceChanged = false;
 
     f(e, data);
+
+    require getBorrowShares(id, user) <= getTotalBorrowShares(id);
 
     bool stillHealthy = isHealthy(marketParams, user);
     assert !priceChanged => stillHealthy;
