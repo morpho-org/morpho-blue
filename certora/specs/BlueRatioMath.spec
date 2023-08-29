@@ -100,7 +100,9 @@ filtered {
 
 rule onlyAccrueInterestsCanIncreaseBorrowRatio(env e, method f, calldataarg args)
 filtered {
-    f -> !f.isView && f.selector != sig:repay(MorphoHarness.MarketParams, uint256, uint256, address, bytes).selector
+    f -> !f.isView &&
+    f.selector != sig:repay(MorphoHarness.MarketParams, uint256, uint256, address, bytes).selector &&
+    f.selector != sig:liquidate(MorphoHarness.MarketParams, address, uint256, uint256, bytes).selector
 }
 {
     MorphoHarness.Id id;

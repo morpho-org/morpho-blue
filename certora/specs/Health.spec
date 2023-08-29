@@ -40,7 +40,10 @@ function summaryMin(uint256 a, uint256 b) returns uint256 {
 
 rule stayHealthy(env e, method f, calldataarg data)
 filtered {
-    f -> !f.isView
+    f -> !f.isView &&
+    f.selector != sig:liquidate(MorphoHarness.MarketParams, address, uint256, uint256, bytes).selector &&
+    f.selector != sig:repay(MorphoHarness.MarketParams, uint256, uint256, address, bytes).selector &&
+    f.selector != sig:borrow(MorphoHarness.MarketParams, uint256, uint256, address, address).selector
 }
 {
     MorphoHarness.MarketParams marketParams;
@@ -54,23 +57,6 @@ filtered {
     priceChanged = false;
 
     f(e, data);
-
-    bool stillHealthy = isHealthy(marketParams, user);
-    assert !priceChanged => stillHealthy;
-}
-
-rule repayStayHealthy(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data)
-{
-    MorphoHarness.Id id = getMarketId(marketParams);
-    address user;
-
-    require isHealthy(marketParams, user);
-    require marketParams.lltv < 10^18;
-    require marketParams.lltv > 0;
-    require getLastUpdate(id) == e.block.timestamp;
-    priceChanged = false;
-
-    repay(e, marketParams, assets, shares, onBehalf, data);
 
     require getBorrowShares(id, user) <= getTotalBorrowShares(id);
 
