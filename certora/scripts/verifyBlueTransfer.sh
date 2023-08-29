@@ -2,6 +2,8 @@
 
 set -euxo pipefail
 
+make -C certora munged
+
 certoraRun \
     certora/harness/TransferHarness.sol \
     certora/dispatch/ERC20Good.sol \

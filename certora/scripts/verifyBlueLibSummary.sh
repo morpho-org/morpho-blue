@@ -1,4 +1,8 @@
-#!/bin/sh
+#!/bin/bash
+
+set -euxo pipefail
+
+make -C certora munged
 
 certoraRun \
     certora/harness/MorphoHarness.sol \
