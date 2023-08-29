@@ -294,5 +294,5 @@ interface IMorpho {
     function setAuthorizationWithSig(Authorization calldata authorization, Signature calldata signature) external;
 
     /// @notice Returns the data stored on the different `slots`.
-    function extSloads(bytes32[] memory slots) external view returns (bytes32[] memory);
+    function extSloads(bytes32[] memory slots) external pure returns (bytes32[] memory);
 }

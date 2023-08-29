@@ -1,38 +1,34 @@
 methods {
-    function getMarketId(MorphoHarness.Market) external returns MorphoHarness.Id envfree;
-    function totalSupply(MorphoHarness.Id) external returns uint256 envfree;
-    function totalSupplyShares(MorphoHarness.Id) external returns uint256 envfree;
-    function totalBorrow(MorphoHarness.Id) external returns uint256 envfree;
-    function totalBorrowShares(MorphoHarness.Id) external returns uint256 envfree;
-    function fee(MorphoHarness.Id) external returns uint256 envfree;
-    function lastUpdate(MorphoHarness.Id) external returns uint256 envfree;
+    function getMarketId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
+    function getVirtualTotalSupplyAssets(MorphoHarness.Id) external returns uint256 envfree;
+    function getVirtualTotalSupplyShares(MorphoHarness.Id) external returns uint256 envfree;
+    function getVirtualTotalBorrowAssets(MorphoHarness.Id) external returns uint256 envfree;
+    function getVirtualTotalBorrowShares(MorphoHarness.Id) external returns uint256 envfree;
+    function getFee(MorphoHarness.Id) external returns uint256 envfree;
+    function getLastUpdate(MorphoHarness.Id) external returns uint256 envfree;
 
     function MathLib.mulDivDown(uint256 a, uint256 b, uint256 c) internal returns uint256 => summaryMulDivDown(a,b,c);
     function MathLib.mulDivUp(uint256 a, uint256 b, uint256 c) internal returns uint256 => summaryMulDivUp(a,b,c);
     function MathLib.wTaylorCompounded(uint256, uint256) internal returns uint256 => NONDET;
 
-    function _.borrowRate(MorphoHarness.Market) external => HAVOC_ECF;
+    function _.borrowRate(MorphoHarness.MarketParams, MorphoHarness.Market) external => HAVOC_ECF;
 
-    function VIRTUAL_ASSETS() external returns uint256 envfree;
-    function VIRTUAL_SHARES() external returns uint256 envfree;
     function MAX_FEE() external returns uint256 envfree;
 }
 
 invariant feeInRange(MorphoHarness.Id id)
-    to_mathint(fee(id)) <= MAX_FEE();
+    getFee(id) <= MAX_FEE();
 
-/* This is a simple overapproximative summary, stating that it rounds in the right direction.
- * The summary is checked by the specification in BlueRatioMathSummary.spec.
- */
+// This is a simple overapproximative summary, stating that it rounds in the right direction.
+// The summary is checked by the specification in BlueRatioMathSummary.spec.
 function summaryMulDivUp(uint256 x, uint256 y, uint256 d) returns uint256 {
     uint256 result;
     require result * d >= x * y;
     return result;
 }
 
-/* This is a simple overapproximative summary, stating that it rounds in the right direction.
- * The summary is checked by the specification in BlueRatioMathSummary.spec.
- */
+// This is a simple overapproximative summary, stating that it rounds in the right direction.
+// The summary is checked by the specification in BlueRatioMathSummary.spec.
 function summaryMulDivDown(uint256 x, uint256 y, uint256 d) returns uint256 {
     uint256 result;
     require result * d <= x * y;
@@ -40,38 +36,38 @@ function summaryMulDivDown(uint256 x, uint256 y, uint256 d) returns uint256 {
 }
 
 rule accrueInterestsIncreasesSupplyRatio() {
-    MorphoHarness.Market market;
+    MorphoHarness.MarketParams marketParams;
     MorphoHarness.Id id;
     requireInvariant feeInRange(id);
 
-    mathint assetsBefore = totalSupply(id) + VIRTUAL_ASSETS();
-    mathint sharesBefore = totalSupplyShares(id) + VIRTUAL_SHARES();
+    mathint assetsBefore = getVirtualTotalSupplyAssets(id);
+    mathint sharesBefore = getVirtualTotalSupplyShares(id);
 
     // The check is done for every market, not just for id.
     env e;
-    accrueInterests(e, market);
+    accrueInterest(e, marketParams);
 
-    mathint assetsAfter = totalSupply(id) + VIRTUAL_ASSETS();
-    mathint sharesAfter = totalSupplyShares(id) + VIRTUAL_SHARES();
+    mathint assetsAfter = getVirtualTotalSupplyAssets(id);
+    mathint sharesAfter = getVirtualTotalSupplyShares(id);
 
     // Check if ratio increases: assetsBefore/sharesBefore <= assetsAfter / sharesAfter
     assert assetsBefore * sharesAfter <= assetsAfter * sharesBefore;
 }
 
 rule accrueInterestsIncreasesBorrowRatio() {
-    MorphoHarness.Market market;
+    MorphoHarness.MarketParams marketParams;
     MorphoHarness.Id id;
     requireInvariant feeInRange(id);
 
-    mathint assetsBefore = totalBorrow(id) + VIRTUAL_ASSETS();
-    mathint sharesBefore = totalBorrowShares(id) + VIRTUAL_SHARES();
+    mathint assetsBefore = getVirtualTotalBorrowAssets(id);
+    mathint sharesBefore = getVirtualTotalBorrowShares(id);
 
-    // The check is done for every market, not just for id.
+    // The check is done for every marketParams, not just for id.
     env e;
-    accrueInterests(e, market);
+    accrueInterest(e, marketParams);
 
-    mathint assetsAfter = totalBorrow(id) + VIRTUAL_ASSETS();
-    mathint sharesAfter = totalBorrowShares(id) + VIRTUAL_SHARES();
+    mathint assetsAfter = getVirtualTotalBorrowAssets(id);
+    mathint sharesAfter = getVirtualTotalBorrowShares(id);
 
     // Check if ratio increases: assetsBefore/sharesBefore <= assetsAfter / sharesAfter
     assert assetsBefore * sharesAfter <= assetsAfter * sharesBefore;
@@ -80,45 +76,71 @@ rule accrueInterestsIncreasesBorrowRatio() {
 
 rule onlyLiquidateCanDecreaseSupplyRatio(env e, method f, calldataarg args)
 filtered {
-    f -> !f.isView && f.selector != sig:liquidate(MorphoHarness.Market, address, uint256, bytes).selector
+    f -> !f.isView && f.selector != sig:liquidate(MorphoHarness.MarketParams, address, uint256, uint256, bytes).selector
 }
 {
     MorphoHarness.Id id;
     requireInvariant feeInRange(id);
 
-    mathint assetsBefore = totalSupply(id) + VIRTUAL_ASSETS();
-    mathint sharesBefore = totalSupplyShares(id) + VIRTUAL_SHARES();
+    mathint assetsBefore = getVirtualTotalSupplyAssets(id);
+    mathint sharesBefore = getVirtualTotalSupplyShares(id);
 
     // Interest is checked separately by the rules above.
     // Here we assume interest has already been accumulated for this block.
-    require lastUpdate(id) == e.block.timestamp;
+    require getLastUpdate(id) == e.block.timestamp;
 
     f(e,args);
 
-    mathint assetsAfter = totalSupply(id) + VIRTUAL_ASSETS();
-    mathint sharesAfter = totalSupplyShares(id) + VIRTUAL_SHARES();
+    mathint assetsAfter = getVirtualTotalSupplyAssets(id);
+    mathint sharesAfter = getVirtualTotalSupplyShares(id);
 
     // Check if ratio increases: assetsBefore/sharesBefore <= assetsAfter / sharesAfter
     assert assetsBefore * sharesAfter <= assetsAfter * sharesBefore;
 }
 
 rule onlyAccrueInterestsCanIncreaseBorrowRatio(env e, method f, calldataarg args)
-filtered { f -> !f.isView }
+filtered {
+    f -> !f.isView &&
+    f.selector != sig:repay(MorphoHarness.MarketParams, uint256, uint256, address, bytes).selector &&
+    f.selector != sig:liquidate(MorphoHarness.MarketParams, address, uint256, uint256, bytes).selector
+}
 {
     MorphoHarness.Id id;
     requireInvariant feeInRange(id);
 
-    mathint assetsBefore = totalBorrow(id) + VIRTUAL_ASSETS();
-    mathint sharesBefore = totalBorrowShares(id) + VIRTUAL_SHARES();
+    mathint assetsBefore = getVirtualTotalBorrowAssets(id);
+    mathint sharesBefore = getVirtualTotalBorrowShares(id);
 
     // Interest would increase borrow ratio, so we need to assume no time passes.
-    require lastUpdate(id) == e.block.timestamp;
+    require getLastUpdate(id) == e.block.timestamp;
 
     f(e,args);
 
-    mathint assetsAfter = totalBorrow(id) + VIRTUAL_ASSETS();
-    mathint sharesAfter = totalBorrowShares(id) + VIRTUAL_SHARES();
+    mathint assetsAfter = getVirtualTotalBorrowAssets(id);
+    mathint sharesAfter = getVirtualTotalBorrowShares(id);
 
     // Check if ratio increases: assetsBefore/sharesBefore <= assetsAfter / sharesAfter
+    assert assetsBefore * sharesAfter >= assetsAfter * sharesBefore;
+}
+
+rule repayIncreasesBorrowRatio(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onbehalf, bytes data)
+{
+    MorphoHarness.Id id = getMarketId(marketParams);
+    requireInvariant feeInRange(id);
+
+    mathint assetsBefore = getVirtualTotalBorrowAssets(id);
+    mathint sharesBefore = getVirtualTotalBorrowShares(id);
+
+    require getLastUpdate(id) == e.block.timestamp;
+
+    mathint repaidAssets;
+    repaidAssets, _ = repay(e, marketParams, assets, shares, onbehalf, data);
+
+    require repaidAssets < assetsBefore;
+
+    mathint assetsAfter = getVirtualTotalBorrowAssets(id);
+    mathint sharesAfter = getVirtualTotalBorrowShares(id);
+
+    assert assetsAfter == assetsBefore - repaidAssets;
     assert assetsBefore * sharesAfter >= assetsAfter * sharesBefore;
 }
