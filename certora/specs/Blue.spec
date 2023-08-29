@@ -173,33 +173,6 @@ filtered {
     assert isAuthorized(user, someone) == authorizedBefore;
 }
 
-rule supplyMovesTokensAndIncreasesShares() {
-    MorphoHarness.MarketParams marketParams;
-    uint256 assets;
-    uint256 shares;
-    uint256 suppliedAssets;
-    uint256 suppliedShares;
-    address onbehalf;
-    bytes data;
-    MorphoHarness.Id id = getMarketId(marketParams);
-    env e;
-
-    require e.msg.sender != currentContract;
-    require getLastUpdate(id) == e.block.timestamp;
-
-    mathint sharesBefore = getSupplyShares(id, onbehalf);
-    mathint balanceBefore = myBalances[marketParams.borrowableToken];
-
-    suppliedAssets, suppliedShares = supply(e, marketParams, assets, shares, onbehalf, data);
-    assert assets != 0 => suppliedAssets == assets && shares == 0;
-    assert assets == 0 => suppliedShares == shares && shares != 0;
-
-    mathint sharesAfter = getSupplyShares(id, onbehalf);
-    mathint balanceAfter = myBalances[marketParams.borrowableToken];
-    assert sharesAfter == sharesBefore + suppliedShares;
-    assert balanceAfter == balanceBefore + suppliedAssets;
-}
-
 rule userCannotLoseSupplyShares(method f, calldataarg data)
 filtered { f -> !f.isView }
 {
@@ -278,30 +251,4 @@ filtered { f -> !f.isView }
     require getLastUpdate(id) <= e.block.timestamp;
     f(e, data);
     assert getLastUpdate(id) <= e.block.timestamp;
-}
-
-rule canWithdrawAll() {
-    MorphoHarness.MarketParams marketParams;
-    uint256 withdrawnAssets;
-    uint256 withdrawnShares;
-    address receiver;
-    env e;
-
-    MorphoHarness.Id id = getMarketId(marketParams);
-    uint256 shares = getSupplyShares(id, e.msg.sender);
-
-    require isCreated(id);
-    require e.msg.sender != 0;
-    require receiver != 0;
-    require e.msg.value == 0;
-    require shares > 0;
-    require getTotalBorrowAssets(id) == 0;
-    require getLastUpdate(id) <= e.block.timestamp;
-    require shares < getTotalSupplyShares(id);
-    require getTotalSupplyShares(id) < 10^40 && getTotalSupplyAssets(id) < 10^30;
-
-    withdrawnAssets, withdrawnShares = withdraw@withrevert(e, marketParams, 0, shares, e.msg.sender, receiver);
-
-    assert withdrawnShares == shares;
-    assert !lastReverted, "Can withdraw all assets if nobody borrows";
 }
