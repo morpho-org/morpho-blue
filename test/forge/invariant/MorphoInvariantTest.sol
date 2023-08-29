@@ -344,24 +344,33 @@ contract MorphoInvariantTest is InvariantTest {
     function invariantSupplyShares() public {
         address[] memory users = targetSenders();
 
-        uint256 sumSupplyShares;
-        for (uint256 i; i < users.length; ++i) {
-            sumSupplyShares += morpho.supplyShares(id, users[i]);
-            sumSupplyShares += morpho.supplyShares(id, FEE_RECIPIENT);
-        }
+        for (uint256 i; i < allMarketParams.length; ++i) {
+            MarketParams memory _marketParams = allMarketParams[i];
+            Id _id = _marketParams.id();
 
-        assertEq(sumSupplyShares, morpho.totalSupplyShares(id));
+            uint256 sumSupplyShares = morpho.supplyShares(_id, FEE_RECIPIENT);
+            for (uint256 j; j < users.length; ++j) {
+                sumSupplyShares += morpho.supplyShares(_id, users[j]);
+            }
+
+            assertEq(sumSupplyShares, morpho.totalSupplyShares(_id), vm.toString(_marketParams.lltv));
+        }
     }
 
     function invariantBorrowShares() public {
         address[] memory users = targetSenders();
 
-        uint256 sumBorrowShares;
-        for (uint256 i; i < users.length; ++i) {
-            sumBorrowShares += morpho.borrowShares(id, users[i]);
-        }
+        for (uint256 i; i < allMarketParams.length; ++i) {
+            MarketParams memory _marketParams = allMarketParams[i];
+            Id _id = _marketParams.id();
 
-        assertEq(sumBorrowShares, morpho.totalBorrowShares(id));
+            uint256 sumBorrowShares;
+            for (uint256 j; j < users.length; ++j) {
+                sumBorrowShares += morpho.borrowShares(_id, users[j]);
+            }
+
+            assertEq(sumBorrowShares, morpho.totalBorrowShares(_id), vm.toString(_marketParams.lltv));
+        }
     }
 
     function invariantTotalSupplyGeTotalBorrow() public {
@@ -377,14 +386,20 @@ contract MorphoInvariantTest is InvariantTest {
     function invariantBadDebt() public {
         address[] memory users = targetSenders();
 
-        for (uint256 i; i < users.length; ++i) {
-            address user = users[i];
+        for (uint256 i; i < allMarketParams.length; ++i) {
+            MarketParams memory _marketParams = allMarketParams[i];
+            Id _id = _marketParams.id();
 
-            for (uint256 j; j < allMarketParams.length; ++j) {
-                MarketParams memory _marketParams = allMarketParams[j];
-                Id _id = _marketParams.id();
+            for (uint256 j; j < users.length; ++j) {
+                address user = users[j];
 
-                if (morpho.collateral(_id, user) == 0) assertEq(morpho.borrowShares(_id, user), 0);
+                if (morpho.collateral(_id, user) == 0) {
+                    assertEq(
+                        morpho.borrowShares(_id, user),
+                        0,
+                        string.concat(vm.toString(_marketParams.lltv), ":", vm.toString(user))
+                    );
+                }
             }
         }
     }
