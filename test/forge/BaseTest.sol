@@ -194,10 +194,6 @@ contract BaseTest is Test {
         return bound(lltv, 0, WAD - 1);
     }
 
-    function _boundInvalidLltv(uint256 lltv) internal view returns (uint256) {
-        return bound(lltv, WAD, type(uint256).max);
-    }
-
     function _boundSupplyCollateralAssets(MarketParams memory _marketParams, address onBehalf, uint256 assets)
         internal
         view

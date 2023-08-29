@@ -78,12 +78,12 @@ contract OnlyOwnerIntegrationTest is BaseTest {
         morpho.enableLltv(LLTV);
     }
 
-    function testEnableTooHighLltv(uint256 lltvFuzz) public {
-        lltvFuzz = _boundInvalidLltv(lltvFuzz);
+    function testEnableTooHighLltv(uint256 lltv) public {
+        lltv = bound(lltv, WAD, type(uint256).max);
 
         vm.prank(OWNER);
         vm.expectRevert(bytes(ErrorsLib.MAX_LLTV_EXCEEDED));
-        morpho.enableLltv(lltvFuzz);
+        morpho.enableLltv(lltv);
     }
 
     function testEnableLltv(uint256 lltvFuzz) public {
