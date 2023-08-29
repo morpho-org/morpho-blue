@@ -506,7 +506,17 @@ contract Morpho is IMorpho {
     /* STORAGE VIEW */
 
     /// @inheritdoc IMorpho
-    function extSloads(bytes32[] calldata slots) external pure returns (bytes32[] memory res) {
-        return slots;
+    function extSloads(bytes32[] calldata slots) external view returns (bytes32[] memory res) {
+        uint256 nSlots = slots.length;
+
+        res = new bytes32[](nSlots);
+
+        for (uint256 i; i < nSlots;) {
+            bytes32 slot = slots[i++];
+
+            assembly ("memory-safe") {
+                mstore(add(res, mul(i, 32)), sload(slot))
+            }
+        }
     }
 }

@@ -1,0 +1,49 @@
+diff -ruN interfaces/IMorpho.sol interfaces/IMorpho.sol
+--- interfaces/IMorpho.sol	2023-08-29 09:58:51.628147127 +0200
++++ interfaces/IMorpho.sol	2023-08-29 10:15:36.946593577 +0200
+@@ -292,7 +292,4 @@
+     /// @param authorization The `Authorization` struct.
+     /// @param signature The signature.
+     function setAuthorizationWithSig(Authorization calldata authorization, Signature calldata signature) external;
+-
+-    /// @notice Returns the data stored on the different `slots`.
+-    function extSloads(bytes32[] memory slots) external view returns (bytes32[] memory);
+ }
+diff -ruN libraries/MarketParamsLib.sol libraries/MarketParamsLib.sol
+--- libraries/MarketParamsLib.sol	2023-08-29 09:59:37.937583556 +0200
++++ libraries/MarketParamsLib.sol	2023-08-29 10:16:10.519752188 +0200
+@@ -10,8 +10,6 @@
+ library MarketParamsLib {
+     /// @notice Returns the id of the market `marketParams`.
+     function id(MarketParams memory marketParams) internal pure returns (Id marketParamsId) {
+-        assembly ("memory-safe") {
+-            marketParamsId := keccak256(marketParams, mul(5, 32))
+-        }
++        marketParamsId = Id.wrap(keccak256(abi.encode(marketParams)));
+     }
+ }
+diff -ruN Morpho.sol Morpho.sol
+--- Morpho.sol	2023-08-29 09:58:43.158169812 +0200
++++ Morpho.sol	2023-08-29 10:15:20.650012827 +0200
+@@ -502,21 +502,4 @@
+ 
+         return maxBorrow >= borrowed;
+     }
+-
+-    /* STORAGE VIEW */
+-
+-    /// @inheritdoc IMorpho
+-    function extSloads(bytes32[] calldata slots) external view returns (bytes32[] memory res) {
+-        uint256 nSlots = slots.length;
+-
+-        res = new bytes32[](nSlots);
+-
+-        for (uint256 i; i < nSlots;) {
+-            bytes32 slot = slots[i++];
+-
+-            assembly ("memory-safe") {
+-                mstore(add(res, mul(i, 32)), sload(slot))
+-            }
+-        }
+-    }
+ }
