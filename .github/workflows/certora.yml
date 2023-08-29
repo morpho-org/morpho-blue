@@ -47,6 +47,7 @@ jobs:
           - verifyBlueAccrueInterests.sh
           - verifyBlueExitLiquidity.sh
           - verifyBlueLibSummary.sh
+          - verifyBlueLiveness.sh
           - verifyBlueRatioMath.sh
           - verifyBlueReverts.sh
           - verifyBlueTransfer.sh
