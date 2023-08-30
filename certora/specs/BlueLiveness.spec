@@ -10,8 +10,7 @@ methods {
     function getLastUpdate(MorphoInternalAccess.Id) external returns uint256 envfree;
     function getMarketId(MorphoInternalAccess.MarketParams) external returns MorphoInternalAccess.Id envfree;
 
-    function _._accrueInterest(MorphoInternalAccess.MarketParams memory marketParams, MorphoInternalAccess.Id id) internal with (env e) => summaryAccrueInterest(e, marketParams, id) expect bool;
-    function _.nonDetInterest() external => NONDET;
+    function _._accrueInterest(MorphoInternalAccess.MarketParams memory marketParams, MorphoInternalAccess.Id id) internal with (env e) => summaryAccrueInterest(e, marketParams, id) expect void;
 
     function SafeTransferLib.safeTransfer(address token, address to, uint256 value) internal => summarySafeTransferFrom(token, currentContract, to, value);
     function SafeTransferLib.safeTransferFrom(address token, address from, address to, uint256 value) internal => summarySafeTransferFrom(token, from, to, value);
@@ -31,10 +30,10 @@ function summarySafeTransferFrom(address token, address from, address to, uint25
 }
 
 // Assume no fee.
-function summaryAccrueInterest(env e, MorphoInternalAccess.MarketParams marketParams, MorphoInternalAccess.Id id) returns bool {
+function summaryAccrueInterest(env e, MorphoInternalAccess.MarketParams marketParams, MorphoInternalAccess.Id id) {
     require e.block.timestamp < 2^128;
     if (e.block.timestamp != getLastUpdate(id) && getTotalBorrowAssets(id) != 0) {
-        uint128 interest = nonDetInterest(e);
+        uint128 interest;
         uint256 borrow = getTotalBorrowAssets(id);
         uint256 supply = getTotalSupplyAssets(id);
         require interest + borrow < 2^256;
@@ -43,8 +42,6 @@ function summaryAccrueInterest(env e, MorphoInternalAccess.MarketParams marketPa
     }
 
     update(e, id, e.block.timestamp);
-
-    return true;
 }
 
 definition isCreated(MorphoInternalAccess.Id id) returns bool =
