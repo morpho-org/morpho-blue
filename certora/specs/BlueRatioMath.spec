@@ -1,4 +1,5 @@
 methods {
+    function extSloads(bytes32[]) external returns bytes32[] => NONDET DELETE(true);
     function getMarketId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
     function getVirtualTotalSupplyAssets(MorphoHarness.Id) external returns uint256 envfree;
     function getVirtualTotalSupplyShares(MorphoHarness.Id) external returns uint256 envfree;

@@ -1,4 +1,5 @@
 methods {
+    function extSloads(bytes32[]) external returns bytes32[] => NONDET DELETE(true);
     function getTotalSupplyAssets(MorphoInternalAccess.Id) external returns uint256 envfree;
     function getTotalSupplyShares(MorphoInternalAccess.Id) external returns uint256 envfree;
     function getTotalBorrowAssets(MorphoInternalAccess.Id) external returns uint256 envfree;
