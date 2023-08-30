@@ -6,7 +6,7 @@ make -C certora munged
 
 certoraRun \
     certora/harness/TransferHarness.sol \
-    certora/dispatch/ERC20Good.sol \
+    certora/dispatch/ERC20Standard.sol \
     certora/dispatch/ERC20USDT.sol \
     certora/dispatch/ERC20NoRevert.sol \
     --verify TransferHarness:certora/specs/BlueTransfer.spec \
