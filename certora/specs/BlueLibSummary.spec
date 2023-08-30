@@ -1,4 +1,5 @@
 methods {
+    function extSloads(bytes32[]) external returns bytes32[] => NONDET DELETE(true);
     function mathLibMulDivUp(uint256, uint256, uint256) external returns uint256 envfree;
     function mathLibMulDivDown(uint256, uint256, uint256) external returns uint256 envfree;
     function getMarketId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
