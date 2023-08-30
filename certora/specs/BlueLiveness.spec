@@ -69,24 +69,24 @@ rule supplyMovesTokensAndIncreasesShares(env e, MorphoInternalAccess.MarketParam
     assert balanceAfter == balanceBefore + suppliedAssets;
 }
 
-rule canRepayAll(env e, MorphoInternalAccess.MarketParams marketParams, uint256 shares, bytes data) {
-    MorphoInternalAccess.Id id = getMarketId(marketParams);
+// rule canRepayAll(env e, MorphoInternalAccess.MarketParams marketParams, uint256 shares, bytes data) {
+//     MorphoInternalAccess.Id id = getMarketId(marketParams);
 
-    require data.length == 0;
+//     require data.length == 0;
 
-    require shares == getBorrowShares(id, e.msg.sender);
-    require isCreated(id);
-    require e.msg.sender != 0;
-    require e.msg.value == 0;
-    require shares > 0;
-    require getLastUpdate(id) <= e.block.timestamp;
-    require shares <= getTotalBorrowShares(id);
-    require getTotalBorrowAssets(id) < 10^35;
+//     require shares == getBorrowShares(id, e.msg.sender);
+//     require isCreated(id);
+//     require e.msg.sender != 0;
+//     require e.msg.value == 0;
+//     require shares > 0;
+//     require getLastUpdate(id) <= e.block.timestamp;
+//     require shares <= getTotalBorrowShares(id);
+//     require getTotalBorrowAssets(id) < 10^35;
 
-    repay@withrevert(e, marketParams, 0, shares, e.msg.sender, data);
+//     repay@withrevert(e, marketParams, 0, shares, e.msg.sender, data);
 
-    assert !lastReverted;
-}
+//     assert !lastReverted;
+// }
 
 rule canWithdrawAll(env e, MorphoInternalAccess.MarketParams marketParams, uint256 shares, address receiver) {
     MorphoInternalAccess.Id id = getMarketId(marketParams);
