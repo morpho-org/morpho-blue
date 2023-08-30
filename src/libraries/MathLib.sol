@@ -33,8 +33,8 @@ library MathLib {
         return (x * y + (d - 1)) / d;
     }
 
-    /// @dev The sum of the first three non-zero terms of a Taylor expansion of e^(nx) - 1,
-    ///      to approximate a continuous compound interest rate.
+    /// @dev The sum of the first three non-zero terms of a Taylor expansion of e^(nx) - 1, to approximate a continuous
+    /// compound interest rate.
     function wTaylorCompounded(uint256 x, uint256 n) internal pure returns (uint256) {
         uint256 firstTerm = x * n;
         uint256 secondTerm = mulDivDown(firstTerm, firstTerm, 2 * WAD);
