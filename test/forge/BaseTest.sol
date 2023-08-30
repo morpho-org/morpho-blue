@@ -24,6 +24,8 @@ contract BaseTest is Test {
     uint256 internal constant MAX_TEST_AMOUNT = 1e28;
     uint256 internal constant MIN_TEST_SHARES = MIN_TEST_AMOUNT * SharesMathLib.VIRTUAL_SHARES;
     uint256 internal constant MAX_TEST_SHARES = MAX_TEST_AMOUNT * SharesMathLib.VIRTUAL_SHARES;
+    uint256 internal constant MIN_TEST_LLTV = 0.01 ether;
+    uint256 internal constant MAX_TEST_LLTV = 0.99 ether;
     uint256 internal constant MIN_COLLATERAL_PRICE = 1e10;
     uint256 internal constant MAX_COLLATERAL_PRICE = 1e40;
     uint256 internal constant MAX_COLLATERAL_ASSETS = type(uint128).max;
@@ -36,8 +38,6 @@ contract BaseTest is Test {
     address internal LIQUIDATOR = _addrFromHashedString("Morpho Liquidator");
     address internal OWNER = _addrFromHashedString("Morpho Owner");
 
-    uint256 internal constant LLTV = 0.8 ether;
-
     Morpho internal morpho;
     ERC20 internal borrowableToken;
     ERC20 internal collateralToken;
@@ -45,6 +45,7 @@ contract BaseTest is Test {
     Irm internal irm;
     MarketParams internal marketParams;
     Id internal id;
+    uint256 internal lltv;
 
     function setUp() public virtual {
         vm.label(OWNER, "Owner");
@@ -74,14 +75,8 @@ contract BaseTest is Test {
         irm = new Irm();
         vm.label(address(irm), "IRM");
 
-        marketParams =
-            MarketParams(address(borrowableToken), address(collateralToken), address(oracle), address(irm), LLTV);
-        id = marketParams.id();
-
         vm.startPrank(OWNER);
         morpho.enableIrm(address(irm));
-        morpho.enableLltv(LLTV);
-        morpho.createMarket(marketParams);
         vm.stopPrank();
 
         borrowableToken.approve(address(morpho), type(uint256).max);
@@ -106,6 +101,20 @@ contract BaseTest is Test {
         borrowableToken.approve(address(morpho), type(uint256).max);
         collateralToken.approve(address(morpho), type(uint256).max);
         morpho.setAuthorization(BORROWER, true);
+        vm.stopPrank();
+
+        _setLltv(0.8 ether);
+    }
+
+    function _setLltv(uint256 _lltv) internal {
+        lltv = _lltv;
+        marketParams =
+            MarketParams(address(borrowableToken), address(collateralToken), address(oracle), address(irm), _lltv);
+        id = marketParams.id();
+
+        vm.startPrank(OWNER);
+        if (!morpho.isLltvEnabled(_lltv)) morpho.enableLltv(_lltv);
+        if (morpho.lastUpdate(marketParams.id()) == 0) morpho.createMarket(marketParams);
         vm.stopPrank();
 
         vm.roll(block.number + 1);
@@ -170,17 +179,21 @@ contract BaseTest is Test {
         return (amountCollateral, amountBorrowed, priceCollateral);
     }
 
-    function _boundValidLltv(uint256 lltv) internal view returns (uint256) {
-        return bound(lltv, 0, WAD - 1);
+    function _boundTestLltv(uint256 _lltv) internal view returns (uint256) {
+        return bound(_lltv, MIN_TEST_LLTV, MAX_TEST_LLTV);
     }
 
-    function _boundInvalidLltv(uint256 lltv) internal view returns (uint256) {
-        return bound(lltv, WAD, type(uint256).max);
+    function _boundValidLltv(uint256 _lltv) internal view returns (uint256) {
+        return bound(_lltv, 0, WAD - 1);
     }
 
-    function _liquidationIncentive(uint256 lltv) internal pure returns (uint256) {
+    function _boundInvalidLltv(uint256 _lltv) internal view returns (uint256) {
+        return bound(_lltv, WAD, type(uint256).max);
+    }
+
+    function _liquidationIncentive(uint256 _lltv) internal pure returns (uint256) {
         return
-            UtilsLib.min(MAX_LIQUIDATION_INCENTIVE_FACTOR, WAD.wDivDown(WAD - LIQUIDATION_CURSOR.wMulDown(WAD - lltv)));
+            UtilsLib.min(MAX_LIQUIDATION_INCENTIVE_FACTOR, WAD.wDivDown(WAD - LIQUIDATION_CURSOR.wMulDown(WAD - _lltv)));
     }
 
     function _accrueInterest(MarketParams memory market) internal {

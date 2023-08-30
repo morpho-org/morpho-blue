@@ -29,11 +29,11 @@ contract MorphoStorageLibTest is BaseTest {
         morpho.supply(marketParams, amountSupplied, 0, address(this), hex"");
 
         uint256 collateralPrice = IOracle(marketParams.oracle).price();
-        collateralToken.setBalance(BORROWER, amountBorrowed.wDivUp(LLTV).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice));
+        collateralToken.setBalance(BORROWER, amountBorrowed.wDivUp(lltv).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice));
 
         vm.startPrank(BORROWER);
         morpho.supplyCollateral(
-            marketParams, amountBorrowed.wDivUp(LLTV).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice), BORROWER, hex""
+            marketParams, amountBorrowed.wDivUp(lltv).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice), BORROWER, hex""
         );
         morpho.borrow(marketParams, amountBorrowed, 0, BORROWER, BORROWER);
         vm.stopPrank();
@@ -63,7 +63,7 @@ contract MorphoStorageLibTest is BaseTest {
         slots[5] = MorphoStorageLib.marketTotalBorrowAssetsAndSharesSlot(id);
         slots[6] = MorphoStorageLib.marketLastUpdateAndFeeSlot(id);
         slots[7] = MorphoStorageLib.isIrmEnabledSlot(address(irm));
-        slots[8] = MorphoStorageLib.isLltvEnabledSlot(LLTV);
+        slots[8] = MorphoStorageLib.isLltvEnabledSlot(lltv);
         slots[9] = MorphoStorageLib.isAuthorizedSlot(authorizer, BORROWER);
         slots[10] = MorphoStorageLib.nonceSlot(authorizer);
         slots[11] = MorphoStorageLib.idToBorrowableTokenSlot(id);
@@ -86,7 +86,7 @@ contract MorphoStorageLibTest is BaseTest {
         assertEq(uint128(uint256(values[6])), morpho.lastUpdate(id));
         assertEq(uint256(values[6] >> 128), morpho.fee(id));
         assertEq(abi.decode(abi.encode(values[7]), (bool)), morpho.isIrmEnabled(address(irm)));
-        assertEq(abi.decode(abi.encode(values[8]), (bool)), morpho.isLltvEnabled(LLTV));
+        assertEq(abi.decode(abi.encode(values[8]), (bool)), morpho.isLltvEnabled(lltv));
         assertEq(abi.decode(abi.encode(values[9]), (bool)), morpho.isAuthorized(authorizer, BORROWER));
         assertEq(uint256(values[10]), morpho.nonce(authorizer));
 

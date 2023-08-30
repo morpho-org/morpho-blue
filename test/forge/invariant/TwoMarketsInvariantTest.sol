@@ -20,12 +20,12 @@ contract TwoMarketsInvariantTest is InvariantTest {
         vm.label(address(irm2), "IRM2");
 
         marketParams2 =
-            MarketParams(address(borrowableToken), address(collateralToken), address(oracle), address(irm2), LLTV + 1);
+            MarketParams(address(borrowableToken), address(collateralToken), address(oracle), address(irm2), lltv + 1);
         id2 = marketParams2.id();
 
         vm.startPrank(OWNER);
         morpho.enableIrm(address(irm2));
-        morpho.enableLltv(LLTV + 1);
+        morpho.enableLltv(lltv + 1);
         morpho.createMarket(marketParams2);
         vm.stopPrank();
 
