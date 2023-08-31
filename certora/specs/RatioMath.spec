@@ -129,7 +129,7 @@ filtered {
 // Check that when not accruing interest, repay is decreasing the value of borrow shares.
 // Check the case where the market is not repaid fully.
 // The other case requires exact math (ie not summarizing mulDivUp and mulDivDown), so it is checked separately in ExactMath.spec
-rule repayIncreasesBorrowRatio(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onbehalf, bytes data)
+rule repayDecreasesBorrowRatio(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data)
 {
     MorphoHarness.Id id = marketId(marketParams);
     requireInvariant feeInRange(id);
@@ -141,13 +141,13 @@ rule repayIncreasesBorrowRatio(env e, MorphoHarness.MarketParams marketParams, u
     mathint sharesBefore = virtualTotalBorrowShares(id);
 
     mathint repaidAssets;
-    repaidAssets, _ = repay(e, marketParams, assets, shares, onbehalf, data);
-
-    mathint assetsAfter = virtualTotalBorrowAssets(id);
-    mathint sharesAfter = virtualTotalBorrowShares(id);
+    repaidAssets, _ = repay(e, marketParams, assets, shares, onBehalf, data);
 
     // Check the case where the market is not repaid fully.
     require repaidAssets < assetsBefore;
+
+    mathint assetsAfter = virtualTotalBorrowAssets(id);
+    mathint sharesAfter = virtualTotalBorrowShares(id);
 
     assert assetsAfter == assetsBefore - repaidAssets;
     // Check that ratio decreases: assetsBefore/sharesBefore >= assetsAfter / sharesAfter
