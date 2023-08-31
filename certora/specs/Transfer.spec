@@ -1,9 +1,9 @@
 methods {
-    function doTransfer(address, address, uint256) external envfree;
-    function doTransferFrom(address, address, address, uint256) external envfree;
-    function getBalance(address, address) external returns (uint256) envfree;
-    function getAllowance(address, address, address) external returns (uint256) envfree;
-    function getTotalSupply(address) external returns (uint256) envfree;
+    function safeTransfer(address, address, uint256) external envfree;
+    function safeTransferFrom(address, address, address, uint256) external envfree;
+    function balanceOf(address, address) external returns (uint256) envfree;
+    function allowance(address, address, address) external returns (uint256) envfree;
+    function totalSupply(address) external returns (uint256) envfree;
 
     function _.transfer(address, uint256) external => DISPATCHER(true);
     function _.transferFrom(address, address, uint256) external => DISPATCHER(true);
@@ -28,11 +28,11 @@ function summarySafeTransferFrom(address token, address from, address to, uint25
 
 // Check the functional correctness of the summary of safeTransfer.
 rule checkTransferSummary(address token, address to, uint256 amount) {
-    mathint initialBalance = getBalance(token, currentContract);
-    require to != currentContract => initialBalance + getBalance(token, to) <= to_mathint(getTotalSupply(token));
+    mathint initialBalance = balanceOf(token, currentContract);
+    require to != currentContract => initialBalance + balanceOf(token, to) <= to_mathint(totalSupply(token));
 
-    doTransfer(token, to, amount);
-    mathint finalBalance = getBalance(token, currentContract);
+    safeTransfer(token, to, amount);
+    mathint finalBalance = balanceOf(token, currentContract);
 
     require myBalances[token] == initialBalance;
     summarySafeTransferFrom(token, currentContract, to, amount);
@@ -41,11 +41,11 @@ rule checkTransferSummary(address token, address to, uint256 amount) {
 
 // Check the functional correctness of the summary of safeTransferFrom.
 rule checkTransferFromSummary(address token, address from, uint256 amount) {
-    mathint initialBalance = getBalance(token, currentContract);
-    require from != currentContract => initialBalance + getBalance(token, from) <= to_mathint(getTotalSupply(token));
+    mathint initialBalance = balanceOf(token, currentContract);
+    require from != currentContract => initialBalance + balanceOf(token, from) <= to_mathint(totalSupply(token));
 
-    doTransferFrom(token, from, currentContract, amount);
-    mathint finalBalance = getBalance(token, currentContract);
+    safeTransferFrom(token, from, currentContract, amount);
+    mathint finalBalance = balanceOf(token, currentContract);
 
     require myBalances[token] == initialBalance;
     summarySafeTransferFrom(token, from, currentContract, amount);
@@ -54,25 +54,25 @@ rule checkTransferFromSummary(address token, address from, uint256 amount) {
 
 // Check the revert condition of the summary of safeTransfer.
 rule transferRevertCondition(address token, address to, uint256 amount) {
-    uint256 initialBalance = getBalance(token, currentContract);
-    uint256 toInitialBalance = getBalance(token, to);
-    require to != currentContract => initialBalance + toInitialBalance <= to_mathint(getTotalSupply(token));
+    uint256 initialBalance = balanceOf(token, currentContract);
+    uint256 toInitialBalance = balanceOf(token, to);
+    require to != currentContract => initialBalance + toInitialBalance <= to_mathint(totalSupply(token));
     require currentContract != 0 && to != 0;
 
-    doTransfer@withrevert(token, to, amount);
+    safeTransfe@withrevert(token, to, amount);
 
     assert lastReverted == (initialBalance < amount);
 }
 
 // Check the revert condition of the summary of safeTransferFrom.
 rule transferFromRevertCondition(address token, address from, address to, uint256 amount) {
-    uint256 initialBalance = getBalance(token, from);
-    uint256 toInitialBalance = getBalance(token, to);
-    uint256 allowance = getAllowance(token, from, currentContract);
-    require to != from => initialBalance + toInitialBalance <= to_mathint(getTotalSupply(token));
+    uint256 initialBalance = balanceOf(token, from);
+    uint256 toInitialBalance = balanceOf(token, to);
+    uint256 allowance = allowance(token, from, currentContract);
+    require to != from => initialBalance + toInitialBalance <= to_mathint(totalSupply(token));
     require from != 0 && to != 0;
 
-    doTransferFrom@withrevert(token, from, to, amount);
+    safeTransferFrom@withrevert(token, from, to, amount);
 
     assert lastReverted == (initialBalance < amount) || allowance < amount;
 }

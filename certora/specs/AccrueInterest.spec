@@ -16,9 +16,7 @@ methods {
     function _.onMorphoSupplyCollateral(uint256, bytes) external => NONDET;
     function _.onMorphoFlashLoan(uint256, bytes) external => NONDET;
 
-    function VIRTUAL_ASSETS() external returns uint256 envfree;
-    function VIRTUAL_SHARES() external returns uint256 envfree;
-    function MAX_FEE() external returns uint256 envfree;
+    function maxFee() external returns uint256 envfree;
 }
 
 ghost ghostMulDivUp(uint256, uint256, uint256) returns uint256;

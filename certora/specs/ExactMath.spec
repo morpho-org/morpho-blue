@@ -1,12 +1,12 @@
 methods {
     function extSloads(bytes32[]) external returns bytes32[] => NONDET DELETE(true);
-    function getMarketId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
-    function getVirtualTotalSupplyAssets(MorphoHarness.Id) external returns uint256 envfree;
-    function getVirtualTotalSupplyShares(MorphoHarness.Id) external returns uint256 envfree;
-    function getVirtualTotalBorrowAssets(MorphoHarness.Id) external returns uint256 envfree;
-    function getVirtualTotalBorrowShares(MorphoHarness.Id) external returns uint256 envfree;
-    function getFee(MorphoHarness.Id) external returns uint256 envfree;
-    function getLastUpdate(MorphoHarness.Id) external returns uint256 envfree;
+    function marketId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
+    function virtualTotalSupplyAssets(MorphoHarness.Id) external returns uint256 envfree;
+    function virtualTotalSupplyShares(MorphoHarness.Id) external returns uint256 envfree;
+    function virtualTotalBorrowAssets(MorphoHarness.Id) external returns uint256 envfree;
+    function virtualTotalBorrowShares(MorphoHarness.Id) external returns uint256 envfree;
+    function fee(MorphoHarness.Id) external returns uint256 envfree;
+    function lastUpdate(MorphoHarness.Id) external returns uint256 envfree;
 
     function MathLib.mulDivDown(uint256 a, uint256 b, uint256 c) internal returns uint256 => summaryMulDivDown(a,b,c);
     function MathLib.mulDivUp(uint256 a, uint256 b, uint256 c) internal returns uint256 => summaryMulDivUp(a,b,c);
@@ -14,7 +14,7 @@ methods {
     function SafeTransferLib.safeTransferFrom(address token, address from, address to, uint256 value) internal => NONDET;
     function _.onMorphoSupply(uint256 assets, bytes data) external => HAVOC_ECF;
 
-    function MAX_FEE() external returns uint256 envfree;
+    function maxFee() external returns uint256 envfree;
 }
 
 function summaryMulDivUp(uint256 x, uint256 y, uint256 d) returns uint256 {
@@ -26,21 +26,21 @@ function summaryMulDivDown(uint256 x, uint256 y, uint256 d) returns uint256 {
 }
 
 rule repayAllResetsBorrowRatio(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onbehalf, bytes data) {
-    MorphoHarness.Id id = getMarketId(marketParams);
-    require getFee(id) <= MAX_FEE();
+    MorphoHarness.Id id = marketId(marketParams);
+    require fee(id) <= maxFee();
 
-    mathint assetsBefore = getVirtualTotalBorrowAssets(id);
-    mathint sharesBefore = getVirtualTotalBorrowShares(id);
+    mathint assetsBefore = virtualTotalBorrowAssets(id);
+    mathint sharesBefore = virtualTotalBorrowShares(id);
 
-    require getLastUpdate(id) == e.block.timestamp;
+    require lastUpdate(id) == e.block.timestamp;
 
     mathint repaidAssets;
     repaidAssets, _ = repay(e, marketParams, assets, shares, onbehalf, data);
 
     require repaidAssets >= assetsBefore;
 
-    mathint assetsAfter = getVirtualTotalBorrowAssets(id);
-    mathint sharesAfter = getVirtualTotalBorrowShares(id);
+    mathint assetsAfter = virtualTotalBorrowAssets(id);
+    mathint sharesAfter = virtualTotalBorrowShares(id);
 
     assert assetsAfter == 1;
 }
@@ -48,7 +48,7 @@ rule repayAllResetsBorrowRatio(env e, MorphoHarness.MarketParams marketParams, u
 // There should be no profit from supply followed immediately by withdraw.
 rule supplyWithdraw() {
     MorphoHarness.MarketParams marketParams;
-    MorphoHarness.Id id = getMarketId(marketParams);
+    MorphoHarness.Id id = marketId(marketParams);
     uint256 assets;
     uint256 shares;
     address onbehalf;
@@ -67,8 +67,8 @@ rule supplyWithdraw() {
     suppliedAssets, suppliedShares = supply(e1, marketParams, assets, shares, onbehalf, data);
 
     // Hints for the prover.
-    assert suppliedAssets * (getVirtualTotalSupplyShares(id) - suppliedShares) >= suppliedShares * (getVirtualTotalSupplyAssets(id) - suppliedAssets);
-    assert suppliedAssets * getVirtualTotalSupplyShares(id) >= suppliedShares * getVirtualTotalSupplyAssets(id);
+    assert suppliedAssets * (virtualTotalSupplyShares(id) - suppliedShares) >= suppliedShares * (virtualTotalSupplyAssets(id) - suppliedAssets);
+    assert suppliedAssets * virtualTotalSupplyShares(id) >= suppliedShares * virtualTotalSupplyAssets(id);
 
     uint256 withdrawnAssets;
     uint256 withdrawnShares;
@@ -81,7 +81,7 @@ rule supplyWithdraw() {
 // There should be no profit from withdraw followed immediately by supply.
 rule withdrawSupply() {
     MorphoHarness.MarketParams marketParams;
-    MorphoHarness.Id id = getMarketId(marketParams);
+    MorphoHarness.Id id = marketId(marketParams);
     uint256 assets;
     uint256 shares;
     address onbehalf;
@@ -100,8 +100,8 @@ rule withdrawSupply() {
     withdrawnAssets, withdrawnShares = withdraw(e2, marketParams, assets, shares, onbehalf, receiver);
 
     // Hints for the prover.
-    assert withdrawnAssets * (getVirtualTotalSupplyShares(id) + withdrawnShares) <= withdrawnShares * (getVirtualTotalSupplyAssets(id) + withdrawnAssets);
-    assert withdrawnAssets * getVirtualTotalSupplyShares(id) <= withdrawnShares * getVirtualTotalSupplyAssets(id);
+    assert withdrawnAssets * (virtualTotalSupplyShares(id) + withdrawnShares) <= withdrawnShares * (virtualTotalSupplyAssets(id) + withdrawnAssets);
+    assert withdrawnAssets * virtualTotalSupplyShares(id) <= withdrawnShares * virtualTotalSupplyAssets(id);
 
     uint256 suppliedAssets;
     uint256 suppliedShares;

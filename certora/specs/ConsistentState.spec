@@ -1,15 +1,15 @@
 methods {
     function extSloads(bytes32[]) external returns bytes32[] => NONDET DELETE(true);
-    function getTotalSupplyAssets(MorphoHarness.Id) external returns uint256 envfree;
-    function getTotalSupplyShares(MorphoHarness.Id) external returns uint256 envfree;
-    function getTotalBorrowAssets(MorphoHarness.Id) external returns uint256 envfree;
-    function getTotalBorrowShares(MorphoHarness.Id) external returns uint256 envfree;
-    function getSupplyShares(MorphoHarness.Id, address) external returns uint256 envfree;
-    function getBorrowShares(MorphoHarness.Id, address) external returns uint256 envfree;
-    function getCollateral(MorphoHarness.Id, address) external returns uint256 envfree;
-    function getFee(MorphoHarness.Id) external returns uint256 envfree;
-    function getLastUpdate(MorphoHarness.Id) external returns uint256 envfree;
-    function getMarketId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
+    function totalSupplyAssets(MorphoHarness.Id) external returns uint256 envfree;
+    function totalSupplyShares(MorphoHarness.Id) external returns uint256 envfree;
+    function totalBorrowAssets(MorphoHarness.Id) external returns uint256 envfree;
+    function totalBorrowShares(MorphoHarness.Id) external returns uint256 envfree;
+    function supplyShares(MorphoHarness.Id, address) external returns uint256 envfree;
+    function borrowShares(MorphoHarness.Id, address) external returns uint256 envfree;
+    function collateral(MorphoHarness.Id, address) external returns uint256 envfree;
+    function fee(MorphoHarness.Id) external returns uint256 envfree;
+    function lastUpdate(MorphoHarness.Id) external returns uint256 envfree;
+    function marketId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
 
     function isAuthorized(address, address) external returns bool envfree;
     function isLltvEnabled(uint256) external returns bool envfree;
@@ -17,7 +17,7 @@ methods {
 
     function _.borrowRate(MorphoHarness.MarketParams, MorphoHarness.Market) external => HAVOC_ECF;
 
-    function MAX_FEE() external returns uint256 envfree;
+    function maxFee() external returns uint256 envfree;
 
     function SafeTransferLib.safeTransfer(address token, address to, uint256 value) internal => summarySafeTransferFrom(token, currentContract, to, value);
     function SafeTransferLib.safeTransferFrom(address token, address from, address to, uint256 value) internal => summarySafeTransferFrom(token, from, to, value);
@@ -86,30 +86,30 @@ function summarySafeTransferFrom(address token, address from, address to, uint25
 }
 
 definition isCreated(MorphoHarness.Id id) returns bool =
-    getLastUpdate(id) != 0;
+    lastUpdate(id) != 0;
 
 // Check that the fee is always lower than the max fee constant.
 invariant feeInRange(MorphoHarness.Id id)
-    getFee(id) <= MAX_FEE();
+    fee(id) <= maxFee();
 
 // Check that the accounting of totalSupplyShares is correct.
 invariant sumSupplySharesCorrect(MorphoHarness.Id id)
-    to_mathint(getTotalSupplyShares(id)) == sumSupplyShares[id];
+    to_mathint(totalSupplyShares(id)) == sumSupplyShares[id];
 
 // Check that the accounting of totalBorrowShares is correct.
 invariant sumBorrowSharesCorrect(MorphoHarness.Id id)
-    to_mathint(getTotalBorrowShares(id)) == sumBorrowShares[id];
+    to_mathint(totalBorrowShares(id)) == sumBorrowShares[id];
 
 // Check that a market only allows borrows up to the total supply.
 // This invariant shows that markets are independent, tokens from one market cannot be taken by interacting with another market.
 invariant borrowLessSupply(MorphoHarness.Id id)
-    getTotalBorrowAssets(id) <= getTotalSupplyAssets(id);
+    totalBorrowAssets(id) <= totalSupplyAssets(id);
 
 // This invariant is useful in the following rule, to link an id back to a market.
 invariant marketInvariant(MorphoHarness.MarketParams marketParams)
-    isCreated(getMarketId(marketParams)) =>
-    idToBorrowable[getMarketId(marketParams)] == marketParams.borrowableToken &&
-    idToCollateral[getMarketId(marketParams)] == marketParams.collateralToken;
+    isCreated(marketId(marketParams)) =>
+    idToBorrowable[marketId(marketParams)] == marketParams.borrowableToken &&
+    idToCollateral[marketId(marketParams)] == marketParams.collateralToken;
 
 // Check that the idle amount on the singleton is greater to the sum amount, that is the sum over all the markets of the total supply plus the total collateral minus the total borrow.
 invariant isLiquid(address token)
@@ -147,11 +147,11 @@ invariant isLiquid(address token)
 
 // Check that a market can only exist if its LLTV is enabled.
 invariant onlyEnabledLltv(MorphoHarness.MarketParams marketParams)
-    isCreated(getMarketId(marketParams)) => isLltvEnabled(marketParams.lltv);
+    isCreated(marketId(marketParams)) => isLltvEnabled(marketParams.lltv);
 
 // Check that a market can only exist if its IRM is enabled.
 invariant onlyEnabledIrm(MorphoHarness.MarketParams marketParams)
-    isCreated(getMarketId(marketParams)) => isIrmEnabled(marketParams.irm);
+    isCreated(marketId(marketParams)) => isIrmEnabled(marketParams.irm);
 
 // Check the pseudo-injectivity of the hashing function id().
 rule marketIdUnique() {
@@ -159,7 +159,7 @@ rule marketIdUnique() {
     MorphoHarness.MarketParams marketParams2;
 
     // Require the same arguments.
-    require getMarketId(marketParams1) == getMarketId(marketParams2);
+    require marketId(marketParams1) == marketId(marketParams2);
 
     assert marketParams1.borrowableToken == marketParams2.borrowableToken;
     assert marketParams1.collateralToken == marketParams2.collateralToken;
@@ -200,11 +200,11 @@ filtered { f -> !f.isView }
     require !isAuthorized(user, e.msg.sender);
     require user != e.msg.sender;
 
-    mathint sharesBefore = getSupplyShares(id, user);
+    mathint sharesBefore = supplyShares(id, user);
 
     f(e, data);
 
-    mathint sharesAfter = getSupplyShares(id, user);
+    mathint sharesAfter = supplyShares(id, user);
 
     assert sharesAfter >= sharesBefore;
 }
@@ -220,11 +220,11 @@ filtered { f -> !f.isView }
     require !isAuthorized(user, e.msg.sender);
     require user != e.msg.sender;
 
-    mathint sharesBefore = getBorrowShares(id, user);
+    mathint sharesBefore = borrowShares(id, user);
 
     f(e, args);
 
-    mathint sharesAfter = getBorrowShares(id, user);
+    mathint sharesAfter = borrowShares(id, user);
 
     assert sharesAfter <= sharesBefore;
 }
@@ -243,9 +243,11 @@ filtered {
     require !isAuthorized(user, e.msg.sender);
     require user != e.msg.sender;
 
+    mathint collateralBefore = collateral(id, user);
+
     f(e, args);
 
-    mathint collateralAfter = getCollateral(id, user);
+    mathint collateralAfter = collateral(id, user);
 
     assert collateralAfter >= collateralBefore;
 }
@@ -261,13 +263,13 @@ filtered { f -> !f.isView }
     require !isAuthorized(user, e.msg.sender);
     require user != e.msg.sender;
     // Require that the user has no outstanding debt.
-    require getBorrowShares(id, user) == 0;
+    require borrowShares(id, user) == 0;
 
-    mathint collateralBefore = getCollateral(id, user);
+    mathint collateralBefore = collateral(id, user);
 
     f(e, args);
 
-    mathint collateralAfter = getCollateral(id, user);
+    mathint collateralAfter = collateral(id, user);
 
     assert collateralAfter >= collateralBefore;
 }
@@ -277,7 +279,7 @@ rule noTimeTravel(method f, env e, calldataarg args)
 filtered { f -> !f.isView }
 {
     MorphoHarness.Id id;
-    require getLastUpdate(id) <= e.block.timestamp;
+    require lastUpdate(id) <= e.block.timestamp;
     f(e, args);
-    assert getLastUpdate(id) <= e.block.timestamp;
+    assert lastUpdate(id) <= e.block.timestamp;
 }

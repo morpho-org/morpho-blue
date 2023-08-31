@@ -1,24 +1,24 @@
 methods {
     function extSloads(bytes32[]) external returns bytes32[] => NONDET DELETE(true);
     function owner() external returns address envfree;
-    function getTotalSupplyAssets(MorphoHarness.Id) external returns uint256 envfree;
-    function getTotalBorrowAssets(MorphoHarness.Id) external returns uint256 envfree;
-    function getTotalSupplyShares(MorphoHarness.Id) external returns uint256 envfree;
-    function getTotalBorrowShares(MorphoHarness.Id) external returns uint256 envfree;
-    function getLastUpdate(MorphoHarness.Id) external returns uint256 envfree;
+    function totalSupplyAssets(MorphoHarness.Id) external returns uint256 envfree;
+    function totalBorrowAssets(MorphoHarness.Id) external returns uint256 envfree;
+    function totalSupplyShares(MorphoHarness.Id) external returns uint256 envfree;
+    function totalBorrowShares(MorphoHarness.Id) external returns uint256 envfree;
+    function lastUpdate(MorphoHarness.Id) external returns uint256 envfree;
 
     function feeRecipient() external returns address envfree;
     function isLltvEnabled(uint256) external returns bool envfree;
     function isIrmEnabled(address) external returns bool envfree;
     function isAuthorized(address, address) external returns bool envfree;
 
-    function getMarketId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
-    function MAX_FEE() external returns uint256 envfree;
-    function WAD() external returns uint256 envfree;
+    function marketId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
+    function maxFee() external returns uint256 envfree;
+    function wad() external returns uint256 envfree;
 }
 
 definition isCreated(MorphoHarness.Id id) returns bool =
-    (getLastUpdate(id) != 0);
+    (lastUpdate(id) != 0);
 
 ghost mapping(MorphoHarness.Id => mathint) sumCollateral
 {
@@ -29,10 +29,10 @@ hook Sstore position[KEY MorphoHarness.Id id][KEY address owner].collateral uint
 }
 
 definition emptyMarket(MorphoHarness.Id id) returns bool =
-    getTotalSupplyAssets(id) == 0 &&
-    getTotalSupplyShares(id) == 0 &&
-    getTotalBorrowAssets(id) == 0 &&
-    getTotalBorrowShares(id) == 0 &&
+    totalSupplyAssets(id) == 0 &&
+    totalSupplyShares(id) == 0 &&
+    totalBorrowAssets(id) == 0 &&
+    totalBorrowShares(id) == 0 &&
     sumCollateral[id] == 0;
 
 definition exactlyOneZero(uint256 assets, uint256 shares) returns bool =
@@ -76,18 +76,18 @@ rule enableLltvRevertCondition(env e, uint256 lltv) {
     address oldOwner = owner();
     bool oldIsLltvEnabled = isLltvEnabled(lltv);
     enableLltv@withrevert(e, lltv);
-    assert lastReverted <=> e.msg.value != 0 || e.msg.sender != oldOwner || lltv >= WAD() || oldIsLltvEnabled;
+    assert lastReverted <=> e.msg.value != 0 || e.msg.sender != oldOwner || lltv >= wad() || oldIsLltvEnabled;
 }
 
 // Check that setFee reverts when its inputs are not validated.
 // setFee can also revert if the accrueInterest reverts.
 rule setFeeInputValidation(env e, MorphoHarness.MarketParams marketParams, uint256 newFee) {
-    MorphoHarness.Id id = getMarketId(marketParams);
+    MorphoHarness.Id id = marketId(marketParams);
     address oldOwner = owner();
     bool wasCreated = isCreated(id);
     setFee@withrevert(e, marketParams, newFee);
     bool hasReverted = lastReverted;
-    assert e.msg.value != 0 || e.msg.sender != oldOwner || !wasCreated || newFee > MAX_FEE() => hasReverted;
+    assert e.msg.value != 0 || e.msg.sender != oldOwner || !wasCreated || newFee > maxFee() => hasReverted;
 }
 
 // Check the revert condition for the setFeeRecipient function.
@@ -100,10 +100,10 @@ rule setFeeRecipientRevertCondition(env e, address newFeeRecipient) {
 
 // Check the revert condition for the createMarket function.
 rule createMarketRevertCondition(env e, MorphoHarness.MarketParams marketParams) {
-    MorphoHarness.Id id = getMarketId(marketParams);
+    MorphoHarness.Id id = marketId(marketParams);
     bool irmEnabled = isIrmEnabled(marketParams.irm);
     bool lltvEnabled = isLltvEnabled(marketParams.lltv);
-    uint256 lastUpdated = getLastUpdate(id);
+    uint256 lastUpdated = lastUpdate(id);
     createMarket@withrevert(e, marketParams);
     assert lastReverted <=> e.msg.value != 0 || !irmEnabled || !lltvEnabled || lastUpdated != 0;
 }
