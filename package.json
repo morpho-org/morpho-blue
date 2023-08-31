@@ -6,7 +6,7 @@
   "scripts": {
     "postinstall": "husky install && forge install",
     "build:forge": "FOUNDRY_PROFILE=build forge build",
-    "build:hardhat": "npx hardhat compile --force",
+    "build:hardhat": "npx hardhat compile",
     "test:forge": "FOUNDRY_PROFILE=test forge test",
     "test:forge:invariant": "FOUNDRY_MATCH_CONTRACT=InvariantTest yarn test:forge",
     "test:forge:integration": "FOUNDRY_MATCH_CONTRACT=IntegrationTest yarn test:forge",
