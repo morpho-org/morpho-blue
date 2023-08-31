@@ -15,7 +15,7 @@ contract MorphoHarness is Morpho {
     }
 
     function maxFee() external pure returns (uint256) {
-        return maxFee();
+        return MAX_FEE;
     }
 
     function totalSupplyAssets(Id id) external view returns (uint256) {

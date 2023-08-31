@@ -59,7 +59,7 @@ rule transferRevertCondition(address token, address to, uint256 amount) {
     require to != currentContract => initialBalance + toInitialBalance <= to_mathint(totalSupply(token));
     require currentContract != 0 && to != 0;
 
-    safeTransfe@withrevert(token, to, amount);
+    safeTransfer@withrevert(token, to, amount);
 
     assert lastReverted == (initialBalance < amount);
 }
