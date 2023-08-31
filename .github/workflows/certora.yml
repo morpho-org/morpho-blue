@@ -43,7 +43,7 @@ jobs:
 
       matrix:
         script:
-          - verifyAccrueInterests.sh
+          - verifyAccrueInterest.sh
           - verifyConsistentState.sh
           - verifyExactMath.sh
           - verifyExitLiquidity.sh
