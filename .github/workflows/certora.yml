@@ -43,14 +43,14 @@ jobs:
 
       matrix:
         script:
-          - verifyBlue.sh
-          - verifyBlueAccrueInterests.sh
-          - verifyBlueExitLiquidity.sh
-          - verifyBlueLibSummary.sh
-          - verifyBlueLiveness.sh
-          - verifyBlueRatioMath.sh
-          - verifyBlueReverts.sh
-          - verifyBlueTransfer.sh
-          - verifyDifficultMath.sh
+          - verifyAccrueInterests.sh
+          - verifyConsistentState.sh
+          - verifyExactMath.sh
+          - verifyExitLiquidity.sh
           - verifyHealth.sh
+          - verifyLibSummary.sh
+          - verifyLiveness.sh
+          - verifyRatioMath.sh
           - verifyReentrancy.sh
+          - verifyReverts.sh
+          - verifyTransfer.sh
