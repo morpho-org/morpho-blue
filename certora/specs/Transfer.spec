@@ -26,18 +26,7 @@ function summarySafeTransferFrom(address token, address from, address to, uint25
     }
 }
 
-rule checkTransferFromSummary(address token, address from, uint256 amount) {
-    mathint initialBalance = getBalance(token, currentContract);
-    require from != currentContract => initialBalance + getBalance(token, from) <= to_mathint(getTotalSupply(token));
-
-    doTransferFrom(token, from, currentContract, amount);
-    mathint finalBalance = getBalance(token, currentContract);
-
-    require myBalances[token] == initialBalance;
-    summarySafeTransferFrom(token, from, currentContract, amount);
-    assert myBalances[token] == finalBalance;
-}
-
+// Check the functional correctness of the summary of safeTransfer.
 rule checkTransferSummary(address token, address to, uint256 amount) {
     mathint initialBalance = getBalance(token, currentContract);
     require to != currentContract => initialBalance + getBalance(token, to) <= to_mathint(getTotalSupply(token));
@@ -50,6 +39,20 @@ rule checkTransferSummary(address token, address to, uint256 amount) {
     assert myBalances[token] == finalBalance;
 }
 
+// Check the functional correctness of the summary of safeTransferFrom.
+rule checkTransferFromSummary(address token, address from, uint256 amount) {
+    mathint initialBalance = getBalance(token, currentContract);
+    require from != currentContract => initialBalance + getBalance(token, from) <= to_mathint(getTotalSupply(token));
+
+    doTransferFrom(token, from, currentContract, amount);
+    mathint finalBalance = getBalance(token, currentContract);
+
+    require myBalances[token] == initialBalance;
+    summarySafeTransferFrom(token, from, currentContract, amount);
+    assert myBalances[token] == finalBalance;
+}
+
+// Check the revert condition of the summary of safeTransfer.
 rule transferRevertCondition(address token, address to, uint256 amount) {
     uint256 initialBalance = getBalance(token, currentContract);
     uint256 toInitialBalance = getBalance(token, to);
@@ -61,6 +64,7 @@ rule transferRevertCondition(address token, address to, uint256 amount) {
     assert lastReverted == (initialBalance < amount);
 }
 
+// Check the revert condition of the summary of safeTransferFrom.
 rule transferFromRevertCondition(address token, address from, address to, uint256 amount) {
     uint256 initialBalance = getBalance(token, from);
     uint256 toInitialBalance = getBalance(token, to);

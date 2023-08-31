@@ -21,7 +21,7 @@ invariant feeInRange(MorphoHarness.Id id)
     getFee(id) <= MAX_FEE();
 
 // This is a simple overapproximative summary, stating that it rounds in the right direction.
-// The summary is checked by the specification in BlueRatioMathSummary.spec.
+// The summary is checked by the specification in LibSummary.spec.
 function summaryMulDivUp(uint256 x, uint256 y, uint256 d) returns uint256 {
     uint256 result;
     require result * d >= x * y;
@@ -29,15 +29,15 @@ function summaryMulDivUp(uint256 x, uint256 y, uint256 d) returns uint256 {
 }
 
 // This is a simple overapproximative summary, stating that it rounds in the right direction.
-// The summary is checked by the specification in BlueRatioMathSummary.spec.
+// The summary is checked by the specification in LibSummary.spec.
 function summaryMulDivDown(uint256 x, uint256 y, uint256 d) returns uint256 {
     uint256 result;
     require result * d <= x * y;
     return result;
 }
 
-rule accrueInterestsIncreasesSupplyRatio() {
-    MorphoHarness.MarketParams marketParams;
+// Check that accrueInterest increases the value of supply shares.
+rule accrueInterestIncreasesSupplyRatio(env e, MorphoHarness.MarketParams marketParams) {
     MorphoHarness.Id id;
     requireInvariant feeInRange(id);
 
@@ -45,18 +45,17 @@ rule accrueInterestsIncreasesSupplyRatio() {
     mathint sharesBefore = getVirtualTotalSupplyShares(id);
 
     // The check is done for every market, not just for id.
-    env e;
     accrueInterest(e, marketParams);
 
     mathint assetsAfter = getVirtualTotalSupplyAssets(id);
     mathint sharesAfter = getVirtualTotalSupplyShares(id);
 
-    // Check if ratio increases: assetsBefore/sharesBefore <= assetsAfter / sharesAfter
+    // Check that ratio increases: assetsBefore/sharesBefore <= assetsAfter / sharesAfter.
     assert assetsBefore * sharesAfter <= assetsAfter * sharesBefore;
 }
 
-rule accrueInterestsIncreasesBorrowRatio() {
-    MorphoHarness.MarketParams marketParams;
+// Check that accrueInterest increases the value of borrow shares.
+rule accrueInterestIncreasesBorrowRatio(env e, MorphoHarness.MarketParams marketParams) {
     MorphoHarness.Id id;
     requireInvariant feeInRange(id);
 
@@ -64,17 +63,17 @@ rule accrueInterestsIncreasesBorrowRatio() {
     mathint sharesBefore = getVirtualTotalBorrowShares(id);
 
     // The check is done for every marketParams, not just for id.
-    env e;
     accrueInterest(e, marketParams);
 
     mathint assetsAfter = getVirtualTotalBorrowAssets(id);
     mathint sharesAfter = getVirtualTotalBorrowShares(id);
 
-    // Check if ratio increases: assetsBefore/sharesBefore <= assetsAfter / sharesAfter
+    // Check that ratio increases: assetsBefore/sharesBefore <= assetsAfter / sharesAfter.
     assert assetsBefore * sharesAfter <= assetsAfter * sharesBefore;
 }
 
 
+// Check that excepti for liquidate, every function increases the value of supply shares.
 rule onlyLiquidateCanDecreaseSupplyRatio(env e, method f, calldataarg args)
 filtered {
     f -> !f.isView && f.selector != sig:liquidate(MorphoHarness.MarketParams, address, uint256, uint256, bytes).selector
@@ -95,11 +94,14 @@ filtered {
     mathint assetsAfter = getVirtualTotalSupplyAssets(id);
     mathint sharesAfter = getVirtualTotalSupplyShares(id);
 
-    // Check if ratio increases: assetsBefore/sharesBefore <= assetsAfter / sharesAfter
+    // Check that ratio increases: assetsBefore/sharesBefore <= assetsAfter / sharesAfter
     assert assetsBefore * sharesAfter <= assetsAfter * sharesBefore;
 }
 
-rule onlyAccrueInterestsCanIncreaseBorrowRatio(env e, method f, calldataarg args)
+// Check that except when not accruing interest, every function is decreasing the value of borrow shares.
+// The repay function is checked separately, see below.
+// The liquidate function is not checked.
+rule onlyAccrueInterestCanIncreaseBorrowRatio(env e, method f, calldataarg args)
 filtered {
     f -> !f.isView &&
     f.selector != sig:repay(MorphoHarness.MarketParams, uint256, uint256, address, bytes).selector &&
@@ -109,39 +111,45 @@ filtered {
     MorphoHarness.Id id;
     requireInvariant feeInRange(id);
 
+    // In;erest would increase borrow ratio, so we need to assume that no time passes.
+    require getLastUpdate(id) == e.block.timestamp;
+
     mathint assetsBefore = getVirtualTotalBorrowAssets(id);
     mathint sharesBefore = getVirtualTotalBorrowShares(id);
-
-    // Interest would increase borrow ratio, so we need to assume no time passes.
-    require getLastUpdate(id) == e.block.timestamp;
 
     f(e,args);
 
     mathint assetsAfter = getVirtualTotalBorrowAssets(id);
     mathint sharesAfter = getVirtualTotalBorrowShares(id);
 
-    // Check if ratio increases: assetsBefore/sharesBefore <= assetsAfter / sharesAfter
+    // Check that ratio decreases: assetsBefore/sharesBefore >= assetsAfter / sharesAfter
     assert assetsBefore * sharesAfter >= assetsAfter * sharesBefore;
 }
 
+// Check that when not accruing interest, repay is decreasing the value of borrow shares.
+// Check the case where the market is not repaid fully.
+// The other case requires exact math (ie not summarizing mulDivUp and mulDivDown), so it is checked separately in ExactMath.spec
 rule repayIncreasesBorrowRatio(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onbehalf, bytes data)
 {
     MorphoHarness.Id id = getMarketId(marketParams);
     requireInvariant feeInRange(id);
 
+    // Interest would increase borrow ratio, so we need to assume that no time passes.
+    require getLastUpdate(id) == e.block.timestamp;
+
     mathint assetsBefore = getVirtualTotalBorrowAssets(id);
     mathint sharesBefore = getVirtualTotalBorrowShares(id);
-
-    require getLastUpdate(id) == e.block.timestamp;
 
     mathint repaidAssets;
     repaidAssets, _ = repay(e, marketParams, assets, shares, onbehalf, data);
 
-    require repaidAssets < assetsBefore;
-
     mathint assetsAfter = getVirtualTotalBorrowAssets(id);
     mathint sharesAfter = getVirtualTotalBorrowShares(id);
 
+    // Check the case where the market is not repaid fully.
+    require repaidAssets < assetsBefore;
+
     assert assetsAfter == assetsBefore - repaidAssets;
+    // Check that ratio decreases: assetsBefore/sharesBefore >= assetsAfter / sharesAfter
     assert assetsBefore * sharesAfter >= assetsAfter * sharesBefore;
 }

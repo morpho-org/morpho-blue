@@ -11,5 +11,5 @@ certoraRun \
     --loop_iter 3 \
     --optimistic_loop \
     --prover_args '-smt_hashingScheme plaininjectivity' \
-    --msg "Morpho Health Check" \
+    --msg "Morpho Blue Health Check" \
     "$@"

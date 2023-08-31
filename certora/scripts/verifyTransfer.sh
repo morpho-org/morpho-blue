@@ -9,9 +9,9 @@ certoraRun \
     certora/dispatch/ERC20Standard.sol \
     certora/dispatch/ERC20USDT.sol \
     certora/dispatch/ERC20NoRevert.sol \
-    --verify TransferHarness:certora/specs/BlueTransfer.spec \
+    --verify TransferHarness:certora/specs/Transfer.spec \
     --packages openzeppelin-contracts=lib/openzeppelin-contracts/contracts \
     --loop_iter 3 \
     --optimistic_loop \
-    --msg "Morpho Transfer Summary" \
+    --msg "Morpho Blue Transfer" \
     "$@"

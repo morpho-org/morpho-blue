@@ -15,6 +15,7 @@ methods {
     function getMarketId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
 }
 
+// Check that it's not possible to withdraw more assets than what the user has supplied.
 rule withdrawLiquidity(MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, address receiver) {
     env e;
     MorphoHarness.Id id = getMarketId(marketParams);
@@ -32,6 +33,7 @@ rule withdrawLiquidity(MorphoHarness.MarketParams marketParams, uint256 assets, 
     assert withdrawnAssets <= owedAssets;
 }
 
+// Check that it's not possible to withdraw more collateral than what the user has supplied.
 rule withdrawCollateralLiquidity(MorphoHarness.MarketParams marketParams, uint256 assets, address onBehalf, address receiver) {
     env e;
     MorphoHarness.Id id = getMarketId(marketParams);
@@ -43,6 +45,7 @@ rule withdrawCollateralLiquidity(MorphoHarness.MarketParams marketParams, uint25
     assert assets <= initialCollateral;
 }
 
+// Check than when repaying the full outstanding debt requires more assets than what was borrowed.
 rule repayLiquidity(MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data) {
     env e;
     MorphoHarness.Id id = getMarketId(marketParams);

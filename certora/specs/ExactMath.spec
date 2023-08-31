@@ -25,8 +25,7 @@ function summaryMulDivDown(uint256 x, uint256 y, uint256 d) returns uint256 {
     return require_uint256((x * y) / d);
 }
 
-rule repayAllResetsBorrowRatio(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onbehalf, bytes data)
-{
+rule repayAllResetsBorrowRatio(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onbehalf, bytes data) {
     MorphoHarness.Id id = getMarketId(marketParams);
     require getFee(id) <= MAX_FEE();
 
@@ -46,32 +45,33 @@ rule repayAllResetsBorrowRatio(env e, MorphoHarness.MarketParams marketParams, u
     assert assetsAfter == 1;
 }
 
-
 // There should be no profit from supply followed immediately by withdraw.
 rule supplyWithdraw() {
     MorphoHarness.MarketParams marketParams;
+    MorphoHarness.Id id = getMarketId(marketParams);
     uint256 assets;
     uint256 shares;
-    uint256 suppliedAssets;
-    uint256 withdrawnAssets;
-    uint256 suppliedShares;
-    uint256 withdrawnShares;
     address onbehalf;
     address receiver;
     bytes data;
     env e1;
     env e2;
 
+    // Require interactions to happen at the same block.
     require e1.block.timestamp == e2.block.timestamp;
+    // Assumption required to cast timestamps to uint128.
     require e1.block.timestamp < 2^128;
-    require e2.block.timestamp < 2^128;
 
+    uint256 suppliedAssets;
+    uint256 suppliedShares;
     suppliedAssets, suppliedShares = supply(e1, marketParams, assets, shares, onbehalf, data);
 
-    MorphoHarness.Id id = getMarketId(marketParams);
+    // Hints for the prover.
     assert suppliedAssets * (getVirtualTotalSupplyShares(id) - suppliedShares) >= suppliedShares * (getVirtualTotalSupplyAssets(id) - suppliedAssets);
     assert suppliedAssets * getVirtualTotalSupplyShares(id) >= suppliedShares * getVirtualTotalSupplyAssets(id);
 
+    uint256 withdrawnAssets;
+    uint256 withdrawnShares;
     withdrawnAssets, withdrawnShares = withdraw(e2, marketParams, 0, suppliedShares, onbehalf, receiver);
 
     assert withdrawnShares == suppliedShares;
@@ -81,28 +81,30 @@ rule supplyWithdraw() {
 // There should be no profit from withdraw followed immediately by supply.
 rule withdrawSupply() {
     MorphoHarness.MarketParams marketParams;
+    MorphoHarness.Id id = getMarketId(marketParams);
     uint256 assets;
     uint256 shares;
-    uint256 suppliedAssets;
-    uint256 withdrawnAssets;
-    uint256 suppliedShares;
-    uint256 withdrawnShares;
     address onbehalf;
     address receiver;
     bytes data;
     env e1;
     env e2;
 
+    // Require interactions to happen at the same block.
     require e1.block.timestamp == e2.block.timestamp;
+    // Assumption required to cast timestamps to uint128.
     require e1.block.timestamp < 2^128;
-    require e2.block.timestamp < 2^128;
 
+    uint256 withdrawnAssets;
+    uint256 withdrawnShares;
     withdrawnAssets, withdrawnShares = withdraw(e2, marketParams, assets, shares, onbehalf, receiver);
 
-    MorphoHarness.Id id = getMarketId(marketParams);
+    // Hints for the prover.
     assert withdrawnAssets * (getVirtualTotalSupplyShares(id) + withdrawnShares) <= withdrawnShares * (getVirtualTotalSupplyAssets(id) + withdrawnAssets);
     assert withdrawnAssets * getVirtualTotalSupplyShares(id) <= withdrawnShares * getVirtualTotalSupplyAssets(id);
 
+    uint256 suppliedAssets;
+    uint256 suppliedShares;
     suppliedAssets, suppliedShares = supply(e1, marketParams, withdrawnAssets, 0, onbehalf, data);
 
     assert suppliedAssets == withdrawnAssets && withdrawnShares >= suppliedShares;
