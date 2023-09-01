@@ -137,6 +137,7 @@ rule repayDecreasesBorrowRatio(env e, MorphoHarness.MarketParams marketParams, u
     mathint assetsBefore = virtualTotalBorrowAssets(id);
     mathint sharesBefore = virtualTotalBorrowShares(id);
 
+    // Interest would increase borrow ratio, so we need to assume that no time passes.
     require lastUpdate(id) == e.block.timestamp;
 
     mathint repaidAssets;
