@@ -32,9 +32,9 @@ const logProgress = (name: string, i: number, max: number) => {
   if (i % 10 == 0) console.log("[" + name + "]", Math.floor((100 * i) / max), "%");
 };
 
-const forwardTimestamp = async () => {
+const randomForwardTimestamp = async () => {
   const block = await hre.ethers.provider.getBlock("latest");
-  const elapsed = (1 + Math.floor(random() * 100)) * 12;
+  const elapsed = random() < 1 / 2 ? 0 : (1 + Math.floor(random() * 100)) * 12; // 50% of the time, don't go forward in time.
 
   await setNextBlockTimestamp(block!.timestamp + elapsed);
 };
@@ -128,11 +128,11 @@ describe("Morpho", () => {
 
       let assets = BigInt.WAD * toBigInt(1 + Math.floor(random() * 100));
 
-      if (random() < 1 / 2) await forwardTimestamp();
+      await randomForwardTimestamp();
 
       await morpho.connect(supplier).supply(marketParams, assets, 0, supplier.address, "0x");
 
-      if (random() < 1 / 2) await forwardTimestamp();
+      await randomForwardTimestamp();
 
       await morpho.connect(supplier).withdraw(marketParams, assets / 2n, 0, supplier.address, supplier.address);
 
@@ -143,19 +143,19 @@ describe("Morpho", () => {
 
       assets = assets.min(liquidity / 2n);
 
-      if (random() < 1 / 2) await forwardTimestamp();
+      await randomForwardTimestamp();
 
       await morpho.connect(borrower).supplyCollateral(marketParams, assets, borrower.address, "0x");
 
-      if (random() < 1 / 2) await forwardTimestamp();
+      await randomForwardTimestamp();
 
       await morpho.connect(borrower).borrow(marketParams, assets / 2n, 0, borrower.address, borrower.address);
 
-      if (random() < 1 / 2) await forwardTimestamp();
+      await randomForwardTimestamp();
 
       await morpho.connect(borrower).repay(marketParams, assets / 4n, 0, borrower.address, "0x");
 
-      if (random() < 1 / 2) await forwardTimestamp();
+      await randomForwardTimestamp();
 
       await morpho.connect(borrower).withdrawCollateral(marketParams, assets / 8n, borrower.address, borrower.address);
     }
