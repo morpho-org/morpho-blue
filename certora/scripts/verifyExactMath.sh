@@ -7,9 +7,9 @@ make -C certora munged
 certoraRun \
     certora/harness/MorphoHarness.sol \
     src/mocks/OracleMock.sol \
-    --verify MorphoHarness:certora/specs/DifficultMath.spec \
+    --verify MorphoHarness:certora/specs/ExactMath.spec \
     --loop_iter 3 \
     --optimistic_loop \
     --prover_args '-smt_hashingScheme plaininjectivity' \
-    --msg "Morpho Difficult Math" \
+    --msg "Morpho Blue Exact Math" \
     "$@"

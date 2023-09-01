@@ -44,6 +44,7 @@ hook STATICCALL(uint g, address addr, uint argsOffset, uint argsLength, uint ret
     static_call = true;
 }
 
+// Check that no function is accessing storage, then making an external call other than to the IRM, and accessing storage again.
 rule reentrancySafe(method f, calldataarg data, env e) {
     require !callIsBorrowRate;
     require !hasAccessedStorage && !hasCallAfterAccessingStorage && !hasReentrancyUnsafeCall;

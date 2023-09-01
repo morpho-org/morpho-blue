@@ -6,7 +6,9 @@ make -C certora munged
 
 certoraRun \
     certora/harness/MorphoHarness.sol \
-    --verify MorphoHarness:certora/specs/BlueAccrueInterests.spec \
+    --verify MorphoHarness:certora/specs/ExitLiquidity.spec \
     --solc_allow_path src \
-    --msg "Morpho Blue Commutativity of accrueInterests" \
+    --loop_iter 3 \
+    --optimistic_loop \
+    --msg "Morpho Blue Exit Liquidity" \
     "$@"

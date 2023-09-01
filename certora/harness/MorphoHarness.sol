@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity 0.8.19;
 
 import "../munged/Morpho.sol";
@@ -9,75 +10,67 @@ contract MorphoHarness is Morpho {
 
     constructor(address newOwner) Morpho(newOwner) {}
 
-    function WAD() external pure returns (uint256) {
+    function wad() external pure returns (uint256) {
         return WAD;
     }
 
-    function VIRTUAL_SHARES() external pure returns (uint256) {
-        return SharesMathLib.VIRTUAL_SHARES;
-    }
-
-    function VIRTUAL_ASSETS() external pure returns (uint256) {
-        return SharesMathLib.VIRTUAL_ASSETS;
-    }
-
-    function MAX_FEE() external pure returns (uint256) {
+    function maxFee() external pure returns (uint256) {
         return MAX_FEE;
     }
 
-    function getTotalSupplyAssets(Id id) external view returns (uint256) {
+    function totalSupplyAssets(Id id) external view returns (uint256) {
         return market[id].totalSupplyAssets;
     }
 
-    function getTotalSupplyShares(Id id) external view returns (uint256) {
+    function totalSupplyShares(Id id) external view returns (uint256) {
         return market[id].totalSupplyShares;
     }
 
-    function getTotalBorrowAssets(Id id) external view returns (uint256) {
+    function totalBorrowAssets(Id id) external view returns (uint256) {
         return market[id].totalBorrowAssets;
     }
 
-    function getTotalBorrowShares(Id id) external view returns (uint256) {
+    function totalBorrowShares(Id id) external view returns (uint256) {
         return market[id].totalBorrowShares;
     }
 
-    function getSupplyShares(Id id, address account) external view returns (uint256) {
+    function supplyShares(Id id, address account) external view returns (uint256) {
         return position[id][account].supplyShares;
     }
 
-    function getBorrowShares(Id id, address account) external view returns (uint256) {
+    function borrowShares(Id id, address account) external view returns (uint256) {
         return position[id][account].borrowShares;
     }
 
-    function getCollateral(Id id, address account) external view returns (uint256) {
+    function collateral(Id id, address account) external view returns (uint256) {
         return position[id][account].collateral;
     }
 
-    function getLastUpdate(Id id) external view returns (uint256) {
+    function lastUpdate(Id id) external view returns (uint256) {
         return market[id].lastUpdate;
     }
 
-    function getFee(Id id) external view returns (uint256) {
+    function fee(Id id) external view returns (uint256) {
         return market[id].fee;
     }
 
-    function getVirtualTotalSupplyAssets(Id id) external view returns (uint256) {
+    function virtualTotalSupplyAssets(Id id) external view returns (uint256) {
         return market[id].totalSupplyAssets + SharesMathLib.VIRTUAL_ASSETS;
     }
 
-    function getVirtualTotalSupplyShares(Id id) external view returns (uint256) {
+    function virtualTotalSupplyShares(Id id) external view returns (uint256) {
         return market[id].totalSupplyShares + SharesMathLib.VIRTUAL_SHARES;
     }
 
-    function getVirtualTotalBorrowAssets(Id id) external view returns (uint256) {
+    function virtualTotalBorrowAssets(Id id) external view returns (uint256) {
         return market[id].totalBorrowAssets + SharesMathLib.VIRTUAL_ASSETS;
     }
 
-    function getVirtualTotalBorrowShares(Id id) external view returns (uint256) {
+    function virtualTotalBorrowShares(Id id) external view returns (uint256) {
         return market[id].totalBorrowShares + SharesMathLib.VIRTUAL_SHARES;
     }
 
-    function getMarketId(MarketParams memory marketParams) external pure returns (Id) {
+    function marketId(MarketParams memory marketParams) external pure returns (Id) {
         return marketParams.id();
     }
 

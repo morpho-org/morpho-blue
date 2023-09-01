@@ -1,24 +1,24 @@
 methods {
     function extSloads(bytes32[]) external returns bytes32[] => NONDET DELETE(true);
     function owner() external returns address envfree;
-    function getTotalSupplyAssets(MorphoHarness.Id) external returns uint256 envfree;
-    function getTotalBorrowAssets(MorphoHarness.Id) external returns uint256 envfree;
-    function getTotalSupplyShares(MorphoHarness.Id) external returns uint256 envfree;
-    function getTotalBorrowShares(MorphoHarness.Id) external returns uint256 envfree;
-    function getLastUpdate(MorphoHarness.Id) external returns uint256 envfree;
+    function totalSupplyAssets(MorphoHarness.Id) external returns uint256 envfree;
+    function totalBorrowAssets(MorphoHarness.Id) external returns uint256 envfree;
+    function totalSupplyShares(MorphoHarness.Id) external returns uint256 envfree;
+    function totalBorrowShares(MorphoHarness.Id) external returns uint256 envfree;
+    function lastUpdate(MorphoHarness.Id) external returns uint256 envfree;
 
     function feeRecipient() external returns address envfree;
     function isLltvEnabled(uint256) external returns bool envfree;
     function isIrmEnabled(address) external returns bool envfree;
     function isAuthorized(address, address) external returns bool envfree;
 
-    function getMarketId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
-    function MAX_FEE() external returns uint256 envfree;
-    function WAD() external returns uint256 envfree;
+    function marketId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
+    function maxFee() external returns uint256 envfree;
+    function wad() external returns uint256 envfree;
 }
 
 definition isCreated(MorphoHarness.Id id) returns bool =
-    (getLastUpdate(id) != 0);
+    (lastUpdate(id) != 0);
 
 ghost mapping(MorphoHarness.Id => mathint) sumCollateral
 {
@@ -29,10 +29,10 @@ hook Sstore position[KEY MorphoHarness.Id id][KEY address owner].collateral uint
 }
 
 definition emptyMarket(MorphoHarness.Id id) returns bool =
-    getTotalSupplyAssets(id) == 0 &&
-    getTotalSupplyShares(id) == 0 &&
-    getTotalBorrowAssets(id) == 0 &&
-    getTotalBorrowShares(id) == 0 &&
+    totalSupplyAssets(id) == 0 &&
+    totalSupplyShares(id) == 0 &&
+    totalBorrowAssets(id) == 0 &&
+    totalBorrowShares(id) == 0 &&
     sumCollateral[id] == 0;
 
 definition exactlyOneZero(uint256 assets, uint256 shares) returns bool =
@@ -47,6 +47,7 @@ invariant notInitializedEmpty(MorphoHarness.Id id)
     }
 }
 
+// Useful to ensure that authorized parties are not the zero address and so we can omit the sanity check in this case.
 invariant zeroDoesNotAuthorize(address authorized)
     !isAuthorized(0, authorized)
 {
@@ -55,12 +56,14 @@ invariant zeroDoesNotAuthorize(address authorized)
     }
 }
 
+// Check the revert condition for the setOwner function.
 rule setOwnerRevertCondition(env e, address newOwner) {
     address oldOwner = owner();
     setOwner@withrevert(e, newOwner);
     assert lastReverted <=> e.msg.value != 0 || e.msg.sender != oldOwner || newOwner == oldOwner;
 }
 
+// Check the revert condition for the setOwner function.
 rule enableIrmRevertCondition(env e, address irm) {
     address oldOwner = owner();
     bool oldIsIrmEnabled = isIrmEnabled(irm);
@@ -68,23 +71,26 @@ rule enableIrmRevertCondition(env e, address irm) {
     assert lastReverted <=> e.msg.value != 0 || e.msg.sender != oldOwner || oldIsIrmEnabled;
 }
 
+// Check the revert condition for the enableLltv function.
 rule enableLltvRevertCondition(env e, uint256 lltv) {
     address oldOwner = owner();
     bool oldIsLltvEnabled = isLltvEnabled(lltv);
     enableLltv@withrevert(e, lltv);
-    assert lastReverted <=> e.msg.value != 0 || e.msg.sender != oldOwner || lltv >= WAD() || oldIsLltvEnabled;
+    assert lastReverted <=> e.msg.value != 0 || e.msg.sender != oldOwner || lltv >= wad() || oldIsLltvEnabled;
 }
 
-// setFee can also revert if the accrueInterests reverts.
+// Check that setFee reverts when its inputs are not validated.
+// setFee can also revert if the accrueInterest reverts.
 rule setFeeInputValidation(env e, MorphoHarness.MarketParams marketParams, uint256 newFee) {
-    MorphoHarness.Id id = getMarketId(marketParams);
+    MorphoHarness.Id id = marketId(marketParams);
     address oldOwner = owner();
     bool wasCreated = isCreated(id);
     setFee@withrevert(e, marketParams, newFee);
     bool hasReverted = lastReverted;
-    assert e.msg.value != 0 || e.msg.sender != oldOwner || !wasCreated || newFee > MAX_FEE() => hasReverted;
+    assert e.msg.value != 0 || e.msg.sender != oldOwner || !wasCreated || newFee > maxFee() => hasReverted;
 }
 
+// Check the revert condition for the setFeeRecipient function.
 rule setFeeRecipientRevertCondition(env e, address newFeeRecipient) {
     address oldOwner = owner();
     address oldFeeRecipient = feeRecipient();
@@ -92,20 +98,23 @@ rule setFeeRecipientRevertCondition(env e, address newFeeRecipient) {
     assert lastReverted <=> e.msg.value != 0 || e.msg.sender != oldOwner || newFeeRecipient == oldFeeRecipient;
 }
 
+// Check the revert condition for the createMarket function.
 rule createMarketRevertCondition(env e, MorphoHarness.MarketParams marketParams) {
-    MorphoHarness.Id id = getMarketId(marketParams);
+    MorphoHarness.Id id = marketId(marketParams);
     bool irmEnabled = isIrmEnabled(marketParams.irm);
     bool lltvEnabled = isLltvEnabled(marketParams.lltv);
-    uint256 lastUpdated = getLastUpdate(id);
+    uint256 lastUpdated = lastUpdate(id);
     createMarket@withrevert(e, marketParams);
     assert lastReverted <=> e.msg.value != 0 || !irmEnabled || !lltvEnabled || lastUpdated != 0;
 }
 
+// Check that supply reverts when its input are not validated.
 rule supplyInputValidation(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data) {
     supply@withrevert(e, marketParams, assets, shares, onBehalf, data);
     assert !exactlyOneZero(assets, shares) || onBehalf == 0 => lastReverted;
 }
 
+// Check that withdraw reverts when its inputs are not validated.
 rule withdrawInputValidation(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, address receiver) {
     require e.msg.sender != 0;
     requireInvariant zeroDoesNotAuthorize(e.msg.sender);
@@ -113,6 +122,7 @@ rule withdrawInputValidation(env e, MorphoHarness.MarketParams marketParams, uin
     assert !exactlyOneZero(assets, shares) || onBehalf == 0 => lastReverted;
 }
 
+// Check that borrow reverts when its inputs are not validated.
 rule borrowInputValidation(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, address receiver) {
     require e.msg.sender != 0;
     requireInvariant zeroDoesNotAuthorize(e.msg.sender);
@@ -120,16 +130,19 @@ rule borrowInputValidation(env e, MorphoHarness.MarketParams marketParams, uint2
     assert !exactlyOneZero(assets, shares) || onBehalf == 0 => lastReverted;
 }
 
+// Check that repay reverts when its inputs are not validated.
 rule repayInputValidation(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data) {
     repay@withrevert(e, marketParams, assets, shares, onBehalf, data);
     assert !exactlyOneZero(assets, shares) || onBehalf == 0 => lastReverted;
 }
 
+// Check that supplyCollateral reverts when its inputs are not validated.
 rule supplyCollateralInputValidation(env e, MorphoHarness.MarketParams marketParams, uint256 assets, address onBehalf, bytes data) {
     supplyCollateral@withrevert(e, marketParams, assets, onBehalf, data);
     assert assets == 0 || onBehalf == 0 => lastReverted;
 }
 
+// Check that withdrawCollateral reverts when its inputs are not validated.
 rule withdrawCollateralInputValidation(env e, MorphoHarness.MarketParams marketParams, uint256 assets, address onBehalf, address receiver) {
     require e.msg.sender != 0;
     requireInvariant zeroDoesNotAuthorize(e.msg.sender);
@@ -137,6 +150,7 @@ rule withdrawCollateralInputValidation(env e, MorphoHarness.MarketParams marketP
     assert assets == 0 || onBehalf == 0 => lastReverted;
 }
 
+// Check that liqudiate reverts when its inputs are not validated.
 rule liquidateInputValidation(env e, MorphoHarness.MarketParams marketParams, address borrower, uint256 seizedAssets, uint256 repaidShares, bytes data) {
     liquidate@withrevert(e, marketParams, borrower, seizedAssets, repaidShares, data);
     assert !exactlyOneZero(seizedAssets, repaidShares) => lastReverted;

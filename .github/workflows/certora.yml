@@ -39,18 +39,17 @@ jobs:
 
     strategy:
       fail-fast: false
-      max-parallel: 4
 
       matrix:
         script:
-          - verifyBlue.sh
-          - verifyBlueAccrueInterests.sh
-          - verifyBlueExitLiquidity.sh
-          - verifyBlueLibSummary.sh
-          - verifyBlueLiveness.sh
-          - verifyBlueRatioMath.sh
-          - verifyBlueReverts.sh
-          - verifyBlueTransfer.sh
-          - verifyDifficultMath.sh
+          - verifyAccrueInterest.sh
+          - verifyConsistentState.sh
+          - verifyExactMath.sh
+          - verifyExitLiquidity.sh
           - verifyHealth.sh
+          - verifyLibSummary.sh
+          - verifyLiveness.sh
+          - verifyRatioMath.sh
           - verifyReentrancy.sh
+          - verifyReverts.sh
+          - verifyTransfer.sh
