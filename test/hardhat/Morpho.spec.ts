@@ -28,6 +28,10 @@ const identifier = (marketParams: MarketParamsStruct) => {
   return Buffer.from(keccak256(encodedMarket).slice(2), "hex");
 };
 
+const logProgress = (name: string, i: number, max: number) => {
+  if (i % 10 == 0) console.log("[" + name + "]", Math.floor((100 * i) / max), "%");
+};
+
 const forwardTimestamp = async () => {
   const block = await hre.ethers.provider.getBlock("latest");
   const elapsed = (1 + Math.floor(random() * 100)) * 12;
@@ -51,8 +55,6 @@ describe("Morpho", () => {
   let marketParams: MarketParamsStruct;
   let id: Buffer;
 
-  let nbLiquidations: number;
-
   const updateMarket = (newMarket: Partial<MarketParamsStruct>) => {
     marketParams = { ...marketParams, ...newMarket };
     id = identifier(marketParams);
@@ -63,11 +65,9 @@ describe("Morpho", () => {
 
     const users = allSigners.slice(0, -2);
 
-    nbLiquidations = users.length / 2;
-
     [admin, liquidator] = allSigners.slice(-2);
-    suppliers = users.slice(0, nbLiquidations);
-    borrowers = users.slice(nbLiquidations);
+    suppliers = users.slice(0, users.length / 2);
+    borrowers = users.slice(users.length / 2);
 
     const ERC20MockFactory = await hre.ethers.getContractFactory("ERC20Mock", admin);
 
@@ -122,18 +122,19 @@ describe("Morpho", () => {
 
   it("should simulate gas cost [main]", async () => {
     for (let i = 0; i < suppliers.length; ++i) {
-      if (i % 20 == 0) console.log("[main]", Math.floor((100 * i) / suppliers.length), "%");
-
-      if (random() < 1 / 2) await forwardTimestamp();
+      logProgress("main", i, suppliers.length);
 
       const supplier = suppliers[i];
 
       let assets = BigInt.WAD * toBigInt(1 + Math.floor(random() * 100));
 
+      if (random() < 1 / 2) await forwardTimestamp();
+
       await morpho.connect(supplier).supply(marketParams, assets, 0, supplier.address, "0x");
-      await morpho.connect(supplier).withdraw(marketParams, assets / 2n, 0, supplier.address, supplier.address);
 
       if (random() < 1 / 2) await forwardTimestamp();
+
+      await morpho.connect(supplier).withdraw(marketParams, assets / 2n, 0, supplier.address, supplier.address);
 
       const borrower = borrowers[i];
 
@@ -142,21 +143,32 @@ describe("Morpho", () => {
 
       assets = assets.min(liquidity / 2n);
 
+      if (random() < 1 / 2) await forwardTimestamp();
+
       await morpho.connect(borrower).supplyCollateral(marketParams, assets, borrower.address, "0x");
+
+      if (random() < 1 / 2) await forwardTimestamp();
+
       await morpho.connect(borrower).borrow(marketParams, assets / 2n, 0, borrower.address, borrower.address);
+
+      if (random() < 1 / 2) await forwardTimestamp();
+
       await morpho.connect(borrower).repay(marketParams, assets / 4n, 0, borrower.address, "0x");
+
+      if (random() < 1 / 2) await forwardTimestamp();
+
       await morpho.connect(borrower).withdrawCollateral(marketParams, assets / 8n, borrower.address, borrower.address);
     }
   });
 
   it("should simulate gas cost [liquidations]", async () => {
     for (let i = 0; i < suppliers.length; ++i) {
-      if (i % 20 == 0) console.log("[liquidations]", Math.floor((100 * i) / nbLiquidations), "%");
+      logProgress("liquidations", i, suppliers.length);
 
       const user = suppliers[i];
       const borrower = borrowers[i];
 
-      const lltv = (BigInt.WAD * toBigInt(i + 1)) / toBigInt(nbLiquidations + 1);
+      const lltv = (BigInt.WAD * toBigInt(i + 1)) / toBigInt(suppliers.length + 1);
       const assets = BigInt.WAD * toBigInt(1 + Math.floor(random() * 100));
       const borrowedAmount = assets.wadMulDown(lltv - 1n);
 
