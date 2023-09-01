@@ -1,4 +1,5 @@
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
+import { mine } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import { AbiCoder, MaxUint256, keccak256, toBigInt } from "ethers";
 import hre from "hardhat";
@@ -109,25 +110,38 @@ describe("Morpho", () => {
   });
 
   it("should simulate gas cost [main]", async () => {
+    await hre.network.provider.send("evm_setAutomine", [false]);
+    await hre.network.provider.send("evm_setIntervalMining", [0]);
+
     for (let i = 0; i < signers.length; ++i) {
       console.log("[main]", i, "/", signers.length);
+
+      if (random() < 1 / 2) await mine(1 + Math.floor(random() * 100), { interval: 12 });
 
       const user = signers[i];
 
       let assets = BigInt.WAD * toBigInt(1 + Math.floor(random() * 100));
 
-      await morpho.connect(user).supply(marketParams, assets, 0, user.address, "0x");
-      await morpho.connect(user).withdraw(marketParams, assets / 2n, 0, user.address, user.address);
-      const totalSupplyAssets = (await morpho.market(id)).totalSupplyAssets;
-      const totalBorrowAssets = (await morpho.market(id)).totalBorrowAssets;
-      const liquidity = totalSupplyAssets - totalBorrowAssets;
+      if (random() < 2 / 3) {
+        Promise.all([
+          morpho.connect(user).supply(marketParams, assets, 0, user.address, "0x"),
+          morpho.connect(user).withdraw(marketParams, assets / 2n, 0, user.address, user.address),
+        ]);
+      } else {
+        const market = await morpho.market(id);
+        const liquidity = market.totalSupplyAssets - market.totalBorrowAssets;
 
-      assets = BigInt.min(assets, liquidity / 2n);
+        assets = assets.min(liquidity / 2n);
 
-      await morpho.connect(user).supplyCollateral(marketParams, assets, user.address, "0x");
-      await morpho.connect(user).borrow(marketParams, assets / 2n, 0, user.address, user.address);
-      await morpho.connect(user).repay(marketParams, assets / 4n, 0, user.address, "0x");
-      await morpho.connect(user).withdrawCollateral(marketParams, assets / 8n, user.address, user.address);
+        if (assets > 0n) {
+          Promise.all([
+            morpho.connect(user).supplyCollateral(marketParams, assets, user.address, "0x"),
+            morpho.connect(user).borrow(marketParams, assets / 2n, 0, user.address, user.address),
+            morpho.connect(user).repay(marketParams, assets / 4n, 0, user.address, "0x"),
+            morpho.connect(user).withdrawCollateral(marketParams, assets / 8n, user.address, user.address),
+          ]);
+        }
+      }
     }
 
     await hre.network.provider.send("evm_setAutomine", [true]);
