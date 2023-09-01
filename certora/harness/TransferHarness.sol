@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.12;
 
-import "../../src/libraries/SafeTransferLib.sol";
-import "../../src/interfaces/IERC20.sol";
+import "../munged/libraries/SafeTransferLib.sol";
+import "../munged/interfaces/IERC20.sol";
 
 interface IERC20Extended is IERC20 {
     function balanceOf(address) external view returns (uint256);
