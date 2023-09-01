@@ -9,4 +9,4 @@ All files in the following folders can also be licensed under `GPL-2.0-or-later`
 - `src/libraries`, see [`src/libraries/LICENSE`](./src/libaries/LICENSE)
 - `src/mocks`, see [`src/mocks/LICENSE`](./src/mocks/LICENSE)
 - `test`, see [`test/LICENSE`](./test/LICENSE)
-- `certora/harness`, see [`certora/harness/LICENSE`](./certora/harness/LICENSE)
+- `certora`, see [`certora/LICENSE`](./certora/LICENSE)

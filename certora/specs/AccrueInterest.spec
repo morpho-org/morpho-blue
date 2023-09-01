@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
 methods {
     function extSloads(bytes32[]) external returns bytes32[] => NONDET DELETE(true);
     function MathLib.mulDivDown(uint256 a, uint256 b, uint256 c) internal returns uint256 => ghostMulDivDown(a,b,c);

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
 methods {
     function safeTransfer(address, address, uint256) external envfree;
     function safeTransferFrom(address, address, address, uint256) external envfree;
