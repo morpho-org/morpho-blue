@@ -1,5 +1,5 @@
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
-import { mine } from "@nomicfoundation/hardhat-network-helpers";
+import { setNextBlockTimestamp } from "@nomicfoundation/hardhat-network-helpers/dist/src/helpers/time";
 import { expect } from "chai";
 import { AbiCoder, MaxUint256, keccak256, toBigInt } from "ethers";
 import hre from "hardhat";
@@ -28,10 +28,18 @@ const identifier = (marketParams: MarketParamsStruct) => {
   return Buffer.from(keccak256(encodedMarket).slice(2), "hex");
 };
 
+const forwardTimestamp = async () => {
+  const block = await hre.ethers.provider.getBlock("latest");
+  const elapsed = (1 + Math.floor(random() * 100)) * 12;
+
+  await setNextBlockTimestamp(block!.timestamp + elapsed);
+};
+
 describe("Morpho", () => {
-  let signers: SignerWithAddress[];
   let admin: SignerWithAddress;
   let liquidator: SignerWithAddress;
+  let suppliers: SignerWithAddress[];
+  let borrowers: SignerWithAddress[];
 
   let morpho: Morpho;
   let borrowable: ERC20Mock;
@@ -53,10 +61,13 @@ describe("Morpho", () => {
   beforeEach(async () => {
     const allSigners = await hre.ethers.getSigners();
 
-    signers = allSigners.slice(0, -2);
-    [admin, liquidator] = allSigners.slice(-2);
+    const users = allSigners.slice(0, -2);
 
-    nbLiquidations = Math.floor((signers.length - 2) / 2);
+    nbLiquidations = users.length / 2;
+
+    [admin, liquidator] = allSigners.slice(-2);
+    suppliers = users.slice(0, nbLiquidations);
+    borrowers = users.slice(nbLiquidations);
 
     const ERC20MockFactory = await hre.ethers.getContractFactory("ERC20Mock", admin);
 
@@ -91,11 +102,11 @@ describe("Morpho", () => {
 
     const morphoAddress = await morpho.getAddress();
 
-    for (const signer of signers) {
-      await borrowable.setBalance(signer.address, initBalance);
-      await borrowable.connect(signer).approve(morphoAddress, MaxUint256);
-      await collateral.setBalance(signer.address, initBalance);
-      await collateral.connect(signer).approve(morphoAddress, MaxUint256);
+    for (const user of users) {
+      await borrowable.setBalance(user.address, initBalance);
+      await borrowable.connect(user).approve(morphoAddress, MaxUint256);
+      await collateral.setBalance(user.address, initBalance);
+      await collateral.connect(user).approve(morphoAddress, MaxUint256);
     }
 
     await borrowable.setBalance(admin.address, initBalance);
@@ -110,49 +121,40 @@ describe("Morpho", () => {
   });
 
   it("should simulate gas cost [main]", async () => {
-    await hre.network.provider.send("evm_setAutomine", [false]);
-    await hre.network.provider.send("evm_setIntervalMining", [0]);
+    for (let i = 0; i < suppliers.length; ++i) {
+      if (i % 20 == 0) console.log("[main]", Math.floor((100 * i) / suppliers.length), "%");
 
-    for (let i = 0; i < signers.length; ++i) {
-      console.log("[main]", i, "/", signers.length);
+      if (random() < 1 / 2) await forwardTimestamp();
 
-      if (random() < 1 / 2) await mine(1 + Math.floor(random() * 100), { interval: 12 });
-
-      const user = signers[i];
+      const supplier = suppliers[i];
 
       let assets = BigInt.WAD * toBigInt(1 + Math.floor(random() * 100));
 
-      if (random() < 2 / 3) {
-        Promise.all([
-          morpho.connect(user).supply(marketParams, assets, 0, user.address, "0x"),
-          morpho.connect(user).withdraw(marketParams, assets / 2n, 0, user.address, user.address),
-        ]);
-      } else {
-        const market = await morpho.market(id);
-        const liquidity = market.totalSupplyAssets - market.totalBorrowAssets;
+      await morpho.connect(supplier).supply(marketParams, assets, 0, supplier.address, "0x");
+      await morpho.connect(supplier).withdraw(marketParams, assets / 2n, 0, supplier.address, supplier.address);
 
-        assets = assets.min(liquidity / 2n);
+      if (random() < 1 / 2) await forwardTimestamp();
 
-        if (assets > 0n) {
-          Promise.all([
-            morpho.connect(user).supplyCollateral(marketParams, assets, user.address, "0x"),
-            morpho.connect(user).borrow(marketParams, assets / 2n, 0, user.address, user.address),
-            morpho.connect(user).repay(marketParams, assets / 4n, 0, user.address, "0x"),
-            morpho.connect(user).withdrawCollateral(marketParams, assets / 8n, user.address, user.address),
-          ]);
-        }
-      }
+      const borrower = borrowers[i];
+
+      const market = await morpho.market(id);
+      const liquidity = market.totalSupplyAssets - market.totalBorrowAssets;
+
+      assets = assets.min(liquidity / 2n);
+
+      await morpho.connect(borrower).supplyCollateral(marketParams, assets, borrower.address, "0x");
+      await morpho.connect(borrower).borrow(marketParams, assets / 2n, 0, borrower.address, borrower.address);
+      await morpho.connect(borrower).repay(marketParams, assets / 4n, 0, borrower.address, "0x");
+      await morpho.connect(borrower).withdrawCollateral(marketParams, assets / 8n, borrower.address, borrower.address);
     }
-
-    await hre.network.provider.send("evm_setAutomine", [true]);
   });
 
   it("should simulate gas cost [liquidations]", async () => {
-    for (let i = 0; i < nbLiquidations; ++i) {
+    for (let i = 0; i < suppliers.length; ++i) {
       if (i % 20 == 0) console.log("[liquidations]", Math.floor((100 * i) / nbLiquidations), "%");
 
-      const user = signers[i];
-      const borrower = signers[nbLiquidations + i];
+      const user = suppliers[i];
+      const borrower = borrowers[i];
 
       const lltv = (BigInt.WAD * toBigInt(i + 1)) / toBigInt(nbLiquidations + 1);
       const assets = BigInt.WAD * toBigInt(1 + Math.floor(random() * 100));
@@ -191,7 +193,7 @@ describe("Morpho", () => {
   });
 
   it("should simuate gas cost [flashLoans]", async () => {
-    const user = signers[0];
+    const user = borrowers[0];
     const assets = BigInt.WAD;
 
     await morpho.connect(user).supply(marketParams, assets, 0, user.address, "0x");
