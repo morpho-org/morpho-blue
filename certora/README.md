@@ -17,7 +17,7 @@ Shares increase in value as interest is accrued.\
 **Borrow.** To borrow on Morpho Blue, collateral must be deposited.
 Collateral tokens remain idle, as well as any borrowable token that has not been borrowed.\
 **Liquidation.** To ensure proper collateralization, a liquidation system is put in place.
-It is verified that no unhealthy position can be created in a given block.\
+In the absence of accrued interest, for example when creating a new position or when interacting multiple times in the same block, a position cannot be made unhealthy.\
 **Authorization.** Morpho Blue also defines a sound authorization system where users cannot modify positions of other users without proper authorization (except when liquidating).\
 **Safety.** Other safety properties are verified, particularly regarding reentrancy attacks and about input validation and revert conditions.\
 **Liveness.** Other liveness properties are verified as well, in particular it is always possible to exit a position without concern for the oracle.
