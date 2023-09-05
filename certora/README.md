@@ -3,7 +3,8 @@ This folder contains the verification of the Morpho Blue protocol using CVL, Cer
 ## High-Level Description
 
 The Morpho Blue protocol relies on several different concepts, which are described below.
-These concepts have been verified using CVL. See the specification files (or those files directly) for more details.\
+These concepts have been verified using CVL. See the specification files (or those files directly) for more details.
+
 The Morpho Blue protocol allows users to take out collateralized loans on ERC20 tokens.
 Token transfers are verified to behave as expected, notably for the most common implementations.\
 Markets on Morpho Blue depend on a pair of assets: the borrowable asset that is supplied and borrowed, and the collateral asset that is needed to take a borrow position.
@@ -50,6 +51,7 @@ The [`certora/dispatch`](./dispatch) folder contains different contracts simil
 ## Usage
 
 To verify specification files, run the corresponding script in the [`certora/scripts`](./scripts) folder.
+It requires having set the `CERTORAKEY` environment variable to a valid Certora key.
 You can pass arguments to the script, which allows you to verify specific properties. For example, at the root of the repository:
 
 ```
