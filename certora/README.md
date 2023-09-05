@@ -3,7 +3,8 @@ This folder contains the verification of the Morpho Blue protocol using CVL, Cer
 ## High-Level Description
 
 The Morpho Blue protocol relies on several different concepts, which are described below.
-These concepts have been verified using CVL. See the specification files (or those files directly) for more details.
+These concepts have been verified using CVL.
+See the description of the specification files below (or those files directly) for more details.
 
 The Morpho Blue protocol allows users to take out collateralized loans on ERC20 tokens.\
 **Transfers.** Token transfers are verified to behave as expected for the most common implementations, in particular the transferred amount is the amount passed as input.\
@@ -11,7 +12,7 @@ The Morpho Blue protocol allows users to take out collateralized loans on ERC20 
 Markets are independent, which means that loans cannot be impacted by loans from other markets.
 Positions of users are also independent, so loans cannot be impacted by loans from other users.
 The accounting of the markets has been verified (such as the total amounts), as well as the fact that only market with enabled parameters are created.\
-**Supply.** When supplying on Morpho Blue, interest is earned over time, and implemented through a share mechanism.
+**Supply.** When supplying on Morpho Blue, interest is earned over time, and the distribution is implemented through a shares mechanism.
 Shares increase in value as interest is accrued.\
 **Borrow.** To borrow on Morpho Blue, collateral must be deposited.
 Collateral tokens remain idle, as well as any borrowable token that has not been borrowed.\
