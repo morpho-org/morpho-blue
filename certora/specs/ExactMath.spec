@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 methods {
     function extSloads(bytes32[]) external returns bytes32[] => NONDET DELETE(true);
-    function marketId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
+    function libId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
     function virtualTotalSupplyAssets(MorphoHarness.Id) external returns uint256 envfree;
     function virtualTotalSupplyShares(MorphoHarness.Id) external returns uint256 envfree;
     function virtualTotalBorrowAssets(MorphoHarness.Id) external returns uint256 envfree;
@@ -26,8 +26,9 @@ function summaryMulDivDown(uint256 x, uint256 y, uint256 d) returns uint256 {
     return require_uint256((x * y) / d);
 }
 
+// Check that when not accruing interest, and when repaying all, the borrow ratio is at least reset to the initial ratio.
 rule repayAllResetsBorrowRatio(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onbehalf, bytes data) {
-    MorphoHarness.Id id = marketId(marketParams);
+    MorphoHarness.Id id = libId(marketParams);
     require fee(id) <= maxFee();
 
     mathint assetsBefore = virtualTotalBorrowAssets(id);
@@ -44,12 +45,13 @@ rule repayAllResetsBorrowRatio(env e, MorphoHarness.MarketParams marketParams, u
     mathint sharesAfter = virtualTotalBorrowShares(id);
 
     assert assetsAfter == 1;
+    // There are at least as many shares as virtual shares.
 }
 
 // There should be no profit from supply followed immediately by withdraw.
 rule supplyWithdraw() {
     MorphoHarness.MarketParams marketParams;
-    MorphoHarness.Id id = marketId(marketParams);
+    MorphoHarness.Id id = libId(marketParams);
     uint256 assets;
     uint256 shares;
     address onbehalf;
@@ -82,7 +84,7 @@ rule supplyWithdraw() {
 // There should be no profit from withdraw followed immediately by supply.
 rule withdrawSupply() {
     MorphoHarness.MarketParams marketParams;
-    MorphoHarness.Id id = marketId(marketParams);
+    MorphoHarness.Id id = libId(marketParams);
     uint256 assets;
     uint256 shares;
     address onbehalf;
