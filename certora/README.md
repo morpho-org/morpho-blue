@@ -5,21 +5,21 @@ This folder contains the verification of the Morpho Blue protocol using CVL, Cer
 The Morpho Blue protocol relies on several different concepts, which are described below.
 These concepts have been verified using CVL. See the specification files (or those files directly) for more details.
 
-The Morpho Blue protocol allows users to take out collateralized loans on ERC20 tokens.
-Token transfers are verified to behave as expected for the most common implementations, in particular the transferred amount is the amount passed as input.\
-Markets on Morpho Blue depend on a pair of assets: the borrowable asset that is supplied and borrowed, and the collateral asset.
-Markets are independent: loans cannot be impacted by loans from other markets.
-Positions of users are also independent: loans cannot be impacted by loans from other users.
+The Morpho Blue protocol allows users to take out collateralized loans on ERC20 tokens.\
+**Transfers.** Token transfers are verified to behave as expected for the most common implementations, in particular the transferred amount is the amount passed as input.\
+**Markets**. Markets on Morpho Blue depend on a pair of assets, the borrowable asset that is supplied and borrowed, and the collateral asset.
+Markets are independent, which means that loans cannot be impacted by loans from other markets.
+Positions of users are also independent, so loans cannot be impacted by loans from other users.
 The accounting of the markets has been verified (such as the total amounts), as well as the fact that only market with enabled parameters are created.\
-When supplying on Morpho Blue, interest is earned over time, and implemented through a share mechanism.
+**Supply.** When supplying on Morpho Blue, interest is earned over time, and implemented through a share mechanism.
 Shares increase in value as interest is accrued.\
-To borrow on Morpho Blue, collateral must be deposited.
+**Borrow.** To borrow on Morpho Blue, collateral must be deposited.
 Collateral tokens remain idle, as well as any borrowable token that has not been borrowed.\
-To ensure proper collateralization, a liquidation system is put in place.
+**Liquidation.** To ensure proper collateralization, a liquidation system is put in place.
 It is verified that no unhealthy position can be created in a given block.\
-Morpho Blue also defines a sound authorization system: users cannot modify positions of other users without proper authorization (except when liquidating).\
-Other safety properties are verified, particularly regarding reentrancy attacks and about input validation and revert conditions.\
-Other liveness properties are verified as well, in particular it is always possible to exit a position without concern for the oracle.
+**Authorization.** Morpho Blue also defines a sound authorization system where users cannot modify positions of other users without proper authorization (except when liquidating).\
+**Safety.** Other safety properties are verified, particularly regarding reentrancy attacks and about input validation and revert conditions.\
+**Liveness.** Other liveness properties are verified as well, in particular it is always possible to exit a position without concern for the oracle.
 
 ## Folder and File Structure
 
