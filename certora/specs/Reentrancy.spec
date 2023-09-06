@@ -50,7 +50,7 @@ rule reentrancySafe(method f, calldataarg data, env e) {
     require !callIsBorrowRate;
     require !hasAccessedStorage && !hasCallAfterAccessingStorage && !hasReentrancyUnsafeCall;
     f(e,data);
-    assert !hasReentrancyUnsafeCall, "Method is not safe for reentrancy.";
+    assert !hasReentrancyUnsafeCall;
 }
 
 rule noDelegateCalls(method f, calldataarg data, env e) {

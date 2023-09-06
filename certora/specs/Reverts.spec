@@ -13,7 +13,7 @@ methods {
     function isIrmEnabled(address) external returns bool envfree;
     function isAuthorized(address, address) external returns bool envfree;
 
-    function marketId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
+    function libId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
     function maxFee() external returns uint256 envfree;
     function wad() external returns uint256 envfree;
 }
@@ -83,7 +83,7 @@ rule enableLltvRevertCondition(env e, uint256 lltv) {
 // Check that setFee reverts when its inputs are not validated.
 // setFee can also revert if the accrueInterest reverts.
 rule setFeeInputValidation(env e, MorphoHarness.MarketParams marketParams, uint256 newFee) {
-    MorphoHarness.Id id = marketId(marketParams);
+    MorphoHarness.Id id = libId(marketParams);
     address oldOwner = owner();
     bool wasCreated = isCreated(id);
     setFee@withrevert(e, marketParams, newFee);
@@ -101,7 +101,7 @@ rule setFeeRecipientRevertCondition(env e, address newFeeRecipient) {
 
 // Check the revert condition for the createMarket function.
 rule createMarketRevertCondition(env e, MorphoHarness.MarketParams marketParams) {
-    MorphoHarness.Id id = marketId(marketParams);
+    MorphoHarness.Id id = libId(marketParams);
     bool irmEnabled = isIrmEnabled(marketParams.irm);
     bool lltvEnabled = isLltvEnabled(marketParams.lltv);
     uint256 lastUpdated = lastUpdate(id);

@@ -13,11 +13,11 @@ interface IERC20Extended is IERC20 {
 contract TransferHarness {
     using SafeTransferLib for IERC20;
 
-    function safeTransferFrom(address token, address from, address to, uint256 value) public {
+    function libSafeTransferFrom(address token, address from, address to, uint256 value) public {
         IERC20(token).safeTransferFrom(from, to, value);
     }
 
-    function safeTransfer(address token, address to, uint256 value) public {
+    function libSafeTransfer(address token, address to, uint256 value) public {
         IERC20(token).safeTransfer(to, value);
     }
 

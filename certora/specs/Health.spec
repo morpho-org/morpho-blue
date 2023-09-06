@@ -7,7 +7,7 @@ methods {
     function collateral(MorphoHarness.Id, address) external returns uint256 envfree;
     function isHealthy(MorphoHarness.MarketParams, address user) external returns bool envfree;
     function isAuthorized(address, address user) external returns bool envfree;
-    function marketId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
+    function libId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
 
     function _.price() external => mockPrice() expect uint256;
     function MathLib.mulDivDown(uint256 a, uint256 b, uint256 c) internal returns uint256 => summaryMulDivDown(a,b,c);
@@ -52,7 +52,7 @@ filtered {
 }
 {
     MorphoHarness.MarketParams marketParams;
-    MorphoHarness.Id id = marketId(marketParams);
+    MorphoHarness.Id id = libId(marketParams);
     address user;
 
     // Require that the position is healthy before the interaction.
@@ -78,7 +78,7 @@ rule healthyUserCannotLoseCollateral(env e, method f, calldataarg data)
 filtered { f -> !f.isView }
 {
     MorphoHarness.MarketParams marketParams;
-    MorphoHarness.Id id = marketId(marketParams);
+    MorphoHarness.Id id = libId(marketParams);
     address user;
 
     // Require that the e.msg.sender is not authorized.

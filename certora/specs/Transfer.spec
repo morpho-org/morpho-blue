@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 methods {
-    function safeTransfer(address, address, uint256) external envfree;
-    function safeTransferFrom(address, address, address, uint256) external envfree;
+    function libSafeTransfer(address, address, uint256) external envfree;
+    function libSafeTransferFrom(address, address, address, uint256) external envfree;
     function balanceOf(address, address) external returns (uint256) envfree;
     function allowance(address, address, address) external returns (uint256) envfree;
     function totalSupply(address) external returns (uint256) envfree;
@@ -32,7 +32,7 @@ rule checkTransferSummary(address token, address to, uint256 amount) {
     mathint initialBalance = balanceOf(token, currentContract);
     require to != currentContract => initialBalance + balanceOf(token, to) <= to_mathint(totalSupply(token));
 
-    safeTransfer(token, to, amount);
+    libSafeTransfer(token, to, amount);
     mathint finalBalance = balanceOf(token, currentContract);
 
     require myBalances[token] == initialBalance;
@@ -45,7 +45,7 @@ rule checkTransferFromSummary(address token, address from, uint256 amount) {
     mathint initialBalance = balanceOf(token, currentContract);
     require from != currentContract => initialBalance + balanceOf(token, from) <= to_mathint(totalSupply(token));
 
-    safeTransferFrom(token, from, currentContract, amount);
+    libSafeTransferFrom(token, from, currentContract, amount);
     mathint finalBalance = balanceOf(token, currentContract);
 
     require myBalances[token] == initialBalance;
@@ -60,7 +60,7 @@ rule transferRevertCondition(address token, address to, uint256 amount) {
     require to != currentContract => initialBalance + toInitialBalance <= to_mathint(totalSupply(token));
     require currentContract != 0 && to != 0;
 
-    safeTransfer@withrevert(token, to, amount);
+    libSafeTransfer@withrevert(token, to, amount);
 
     assert lastReverted == (initialBalance < amount);
 }
@@ -73,7 +73,7 @@ rule transferFromRevertCondition(address token, address from, address to, uint25
     require to != from => initialBalance + toInitialBalance <= to_mathint(totalSupply(token));
     require from != 0 && to != 0;
 
-    safeTransferFrom@withrevert(token, from, to, amount);
+    libSafeTransferFrom@withrevert(token, from, to, amount);
 
     assert lastReverted == (initialBalance < amount) || allowance < amount;
 }

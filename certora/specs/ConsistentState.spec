@@ -10,7 +10,7 @@ methods {
     function collateral(MorphoHarness.Id, address) external returns uint256 envfree;
     function fee(MorphoHarness.Id) external returns uint256 envfree;
     function lastUpdate(MorphoHarness.Id) external returns uint256 envfree;
-    function marketId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
+    function libId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
 
     function isAuthorized(address, address) external returns bool envfree;
     function isLltvEnabled(uint256) external returns bool envfree;
@@ -108,9 +108,9 @@ invariant borrowLessSupply(MorphoHarness.Id id)
 
 // This invariant is useful in the following rule, to link an id back to a market.
 invariant marketInvariant(MorphoHarness.MarketParams marketParams)
-    isCreated(marketId(marketParams)) =>
-    idToBorrowable[marketId(marketParams)] == marketParams.borrowableToken &&
-    idToCollateral[marketId(marketParams)] == marketParams.collateralToken;
+    isCreated(libId(marketParams)) =>
+    idToBorrowable[libId(marketParams)] == marketParams.borrowableToken &&
+    idToCollateral[libId(marketParams)] == marketParams.collateralToken;
 
 // Check that the idle amount on the singleton is greater to the sum amount, that is the sum over all the markets of the total supply plus the total collateral minus the total borrow.
 invariant isLiquid(address token)
@@ -148,19 +148,19 @@ invariant isLiquid(address token)
 
 // Check that a market can only exist if its LLTV is enabled.
 invariant onlyEnabledLltv(MorphoHarness.MarketParams marketParams)
-    isCreated(marketId(marketParams)) => isLltvEnabled(marketParams.lltv);
+    isCreated(libId(marketParams)) => isLltvEnabled(marketParams.lltv);
 
 // Check that a market can only exist if its IRM is enabled.
 invariant onlyEnabledIrm(MorphoHarness.MarketParams marketParams)
-    isCreated(marketId(marketParams)) => isIrmEnabled(marketParams.irm);
+    isCreated(libId(marketParams)) => isIrmEnabled(marketParams.irm);
 
 // Check the pseudo-injectivity of the hashing function id().
-rule marketIdUnique() {
+rule libIdUnique() {
     MorphoHarness.MarketParams marketParams1;
     MorphoHarness.MarketParams marketParams2;
 
     // Require the same arguments.
-    require marketId(marketParams1) == marketId(marketParams2);
+    require libId(marketParams1) == libId(marketParams2);
 
     assert marketParams1.borrowableToken == marketParams2.borrowableToken;
     assert marketParams1.collateralToken == marketParams2.collateralToken;

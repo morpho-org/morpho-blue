@@ -11,22 +11,22 @@ methods {
 
     function lastUpdate(MorphoHarness.Id) external returns uint256 envfree;
 
-    function mathLibMulDivDown(uint256, uint256, uint256) external returns uint256 envfree;
-    function mathLibMulDivUp(uint256, uint256, uint256) external returns uint256 envfree;
-    function marketId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
+    function libMulDivDown(uint256, uint256, uint256) external returns uint256 envfree;
+    function libMulDivUp(uint256, uint256, uint256) external returns uint256 envfree;
+    function libId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
 }
 
 // Check that it's not possible to withdraw more assets than what the user has supplied.
 rule withdrawLiquidity(MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, address receiver) {
     env e;
-    MorphoHarness.Id id = marketId(marketParams);
+    MorphoHarness.Id id = libId(marketParams);
 
     require lastUpdate(id) == e.block.timestamp;
 
     uint256 initialShares = supplyShares(id, onBehalf);
     uint256 initialTotalSupply = virtualTotalSupplyAssets(id);
     uint256 initialTotalSupplyShares = virtualTotalSupplyShares(id);
-    uint256 owedAssets = mathLibMulDivDown(initialShares, initialTotalSupply, initialTotalSupplyShares);
+    uint256 owedAssets = libMulDivDown(initialShares, initialTotalSupply, initialTotalSupplyShares);
 
     uint256 withdrawnAssets;
     withdrawnAssets, _ = withdraw(e, marketParams, assets, shares, onBehalf, receiver);
@@ -37,7 +37,7 @@ rule withdrawLiquidity(MorphoHarness.MarketParams marketParams, uint256 assets, 
 // Check that it's not possible to withdraw more collateral than what the user has supplied.
 rule withdrawCollateralLiquidity(MorphoHarness.MarketParams marketParams, uint256 assets, address onBehalf, address receiver) {
     env e;
-    MorphoHarness.Id id = marketId(marketParams);
+    MorphoHarness.Id id = libId(marketParams);
 
     uint256 initialCollateral = collateral(id, onBehalf);
 
@@ -49,14 +49,14 @@ rule withdrawCollateralLiquidity(MorphoHarness.MarketParams marketParams, uint25
 // Check than when repaying the full outstanding debt requires more assets than what was borrowed.
 rule repayLiquidity(MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data) {
     env e;
-    MorphoHarness.Id id = marketId(marketParams);
+    MorphoHarness.Id id = libId(marketParams);
 
     require lastUpdate(id) == e.block.timestamp;
 
     uint256 initialShares = borrowShares(id, onBehalf);
     uint256 initialTotalBorrow = virtualTotalBorrowAssets(id);
     uint256 initialTotalBorrowShares = virtualTotalBorrowShares(id);
-    uint256 assetsDue = mathLibMulDivUp(initialShares, initialTotalBorrow, initialTotalBorrowShares);
+    uint256 assetsDue = libMulDivUp(initialShares, initialTotalBorrow, initialTotalBorrowShares);
 
     uint256 repaidAssets;
     repaidAssets, _ = repay(e, marketParams, assets, shares, onBehalf, data);
