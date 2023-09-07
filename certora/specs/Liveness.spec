@@ -50,11 +50,11 @@ definition isCreated(MorphoInternalAccess.Id id) returns bool =
     lastUpdate(id) != 0;
 
 // Check that tokens and shares are properly accounted following a supply.
-rule supplyMovesTokensAndIncreasesShares(env e, MorphoInternalAccess.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data) {
+rule supplyChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data) {
     MorphoInternalAccess.Id id = libId(marketParams);
 
-    // Safe require that Morpho is not the sender.
-    require e.msg.sender != currentContract;
+    // Require that Morpho is not the sender.
+    require currentContract != e.msg.sender;
     // Ensure that no interest is accumulated.
     require lastUpdate(id) == e.block.timestamp;
 
@@ -72,6 +72,121 @@ rule supplyMovesTokensAndIncreasesShares(env e, MorphoInternalAccess.MarketParam
     assert assets == 0 => suppliedShares == shares;
     assert sharesAfter == sharesBefore + suppliedShares;
     assert balanceAfter == balanceBefore + suppliedAssets;
+}
+
+// Check that tokens and shares are properly accounted following a withdraw.
+rule withdrawChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, address receiver) {
+    MorphoInternalAccess.Id id = libId(marketParams);
+
+    // Require that Morpho is not the receiver.
+    require currentContract != receiver;
+    // Ensure that no interest is accumulated.
+    require lastUpdate(id) == e.block.timestamp;
+
+    mathint sharesBefore = supplyShares(id, onBehalf);
+    mathint balanceBefore = myBalances[marketParams.borrowableToken];
+
+    uint256 withdrawnAssets;
+    uint256 withdrawnShares;
+    withdrawnAssets, withdrawnShares = withdraw(e, marketParams, assets, shares, onBehalf, receiver);
+
+    mathint sharesAfter = supplyShares(id, onBehalf);
+    mathint balanceAfter = myBalances[marketParams.borrowableToken];
+
+    assert assets != 0 => withdrawnAssets == assets;
+    assert assets == 0 => withdrawnShares == shares;
+    assert sharesAfter == sharesBefore - withdrawnShares;
+    assert balanceAfter == balanceBefore - withdrawnAssets;
+}
+
+// Check that tokens and shares are properly accounted following a borrow.
+rule borrowChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, address receiver) {
+    MorphoInternalAccess.Id id = libId(marketParams);
+
+    // Require that Morpho is not the receiver.
+    require currentContract != receiver;
+    // Ensure that no interest is accumulated.
+    require lastUpdate(id) == e.block.timestamp;
+
+    mathint sharesBefore = borrowShares(id, onBehalf);
+    mathint balanceBefore = myBalances[marketParams.borrowableToken];
+
+    uint256 borrowedAssets;
+    uint256 borrowedShares;
+    borrowedAssets, borrowedShares = borrow(e, marketParams, assets, shares, onBehalf, receiver);
+
+    mathint sharesAfter = borrowShares(id, onBehalf);
+    mathint balanceAfter = myBalances[marketParams.borrowableToken];
+
+    assert assets != 0 => borrowedAssets == assets;
+    assert assets == 0 => borrowedShares == shares;
+    assert sharesAfter == sharesBefore + borrowedShares;
+    assert balanceAfter == balanceBefore - borrowedAssets;
+}
+
+// Check that tokens and shares are properly accounted following a repay.
+rule repayChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data) {
+    MorphoInternalAccess.Id id = libId(marketParams);
+
+    // Require that Morpho is not the sender.
+    require currentContract != e.msg.sender;
+    // Ensure that no interest is accumulated.
+    require lastUpdate(id) == e.block.timestamp;
+
+    mathint sharesBefore = borrowShares(id, onBehalf);
+    mathint balanceBefore = myBalances[marketParams.borrowableToken];
+
+    uint256 repaidAssets;
+    uint256 repaidShares;
+    repaidAssets, repaidShares = repay(e, marketParams, assets, shares, onBehalf, data);
+
+    mathint sharesAfter = borrowShares(id, onBehalf);
+    mathint balanceAfter = myBalances[marketParams.borrowableToken];
+
+    assert assets != 0 => repaidAssets == assets;
+    assert assets == 0 => repaidShares == shares;
+    assert sharesAfter == sharesBefore - repaidShares;
+    assert balanceAfter == balanceBefore + repaidAssets;
+}
+
+// Check that tokens and balances are properly accounted following a supplyCollateral.
+rule supplyCollateralChangesTokensAndBalance(env e, MorphoInternalAccess.MarketParams marketParams, uint256 assets, address onBehalf, bytes data) {
+    MorphoInternalAccess.Id id = libId(marketParams);
+
+    // Require that Morpho is not the sender.
+    require currentContract != e.msg.sender;
+
+    mathint collateralBefore = collateral(id, onBehalf);
+    mathint balanceBefore = myBalances[marketParams.collateralToken];
+
+    supplyCollateral(e, marketParams, assets, onBehalf, data);
+
+    mathint collateralAfter = collateral(id, onBehalf);
+    mathint balanceAfter = myBalances[marketParams.collateralToken];
+
+    assert collateralAfter == collateralBefore + assets;
+    assert balanceAfter == balanceBefore + assets;
+}
+
+// Check that tokens and balances are properly accounted following a withdrawCollateral.
+rule withdrawCollateralChangesTokensAndBalance(env e, MorphoInternalAccess.MarketParams marketParams, uint256 assets, address onBehalf, address receiver) {
+    MorphoInternalAccess.Id id = libId(marketParams);
+
+    // Require that Morpho is not the receiver.
+    require currentContract != receiver;
+    // Ensure that no interest is accumulated.
+    require lastUpdate(id) == e.block.timestamp;
+
+    mathint collateralBefore = collateral(id, onBehalf);
+    mathint balanceBefore = myBalances[marketParams.collateralToken];
+
+    withdrawCollateral(e, marketParams, assets, onBehalf, receiver);
+
+    mathint collateralAfter = collateral(id, onBehalf);
+    mathint balanceAfter = myBalances[marketParams.collateralToken];
+
+    assert collateralAfter == collateralBefore - assets;
+    assert balanceAfter == balanceBefore - assets;
 }
 
 // This rule is commented out for the moment because of a bug in CVL where market IDs are not consistent accross a run.
