@@ -61,7 +61,6 @@ filtered {
     require isHealthy(marketParams, user);
     // Safe require because of the invariants onlyEnabledLltv and lltvSmallerThanWad in ConsistentState.spec.
     require marketParams.lltv < 10^18;
-    require marketParams.lltv > 0;
     // Assumption to ensure that no interest is accumulated.
     require lastUpdate(id) == e.block.timestamp;
 
