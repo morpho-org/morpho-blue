@@ -32,6 +32,7 @@ ghost ghostTransferFrom(address, address, uint256) returns bool;
 // Check that calling accrueInterest first has no effect.
 // This is because supply should call accrueInterest itself.
 rule supplyAccruesInterest(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data) {
+    // Safe require because timestamps cannot realistically be that large.
     require e.block.timestamp < 2^128;
 
     storage init = lastStorage;
@@ -49,6 +50,7 @@ rule supplyAccruesInterest(env e, MorphoHarness.MarketParams marketParams, uint2
 // Check that calling accrueInterest first has no effect.
 // This is because withdraw should call accrueInterest itself.
 rule withdrawAccruesInterest(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, address receiver) {
+    // Safe require because timestamps cannot realistically be that large.
     require e.block.timestamp < 2^128;
 
     storage init = lastStorage;
@@ -66,6 +68,7 @@ rule withdrawAccruesInterest(env e, MorphoHarness.MarketParams marketParams, uin
 // Check that calling accrueInterest first has no effect.
 // This is because borrow should call accrueInterest itself.
 rule borrowAccruesInterest(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, address receiver) {
+    // Safe require because timestamps cannot realistically be that large.
     require e.block.timestamp < 2^128;
 
     storage init = lastStorage;
@@ -83,6 +86,7 @@ rule borrowAccruesInterest(env e, MorphoHarness.MarketParams marketParams, uint2
 // Check that calling accrueInterest first has no effect.
 // This is because repay should call accrueInterest itself.
 rule repayAccruesInterest(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data) {
+    // Safe require because timestamps cannot realistically be that large.
     require e.block.timestamp < 2^128;
 
     storage init = lastStorage;
@@ -111,9 +115,9 @@ filtered {
     env e2;
     MorphoHarness.MarketParams marketParams;
 
-    // Require interactions to happen at the same block.
+    // Assume interactions to happen at the same block.
     require e1.block.timestamp == e2.block.timestamp;
-    // Assumption required to cast a timestamp to uint128.
+    // Safe require because timestamps cannot realistically be that large.
     require e1.block.timestamp < 2^128;
 
     storage init = lastStorage;

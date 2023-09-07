@@ -24,20 +24,24 @@ ghost mapping(address => mathint) myBalances {
 
 function summarySafeTransferFrom(address token, address from, address to, uint256 amount) {
     if (from == currentContract) {
+        // Safe require because the reference implementation would revert.
         myBalances[token] = require_uint256(myBalances[token] - amount);
     }
     if (to == currentContract) {
+        // Safe require because the reference implementation would revert.
         myBalances[token] = require_uint256(myBalances[token] + amount);
     }
 }
 
 // Assume no fee.
 function summaryAccrueInterest(env e, MorphoInternalAccess.MarketParams marketParams, MorphoInternalAccess.Id id) {
+    // Safe require because timestamps cannot realistically be that large.
     require e.block.timestamp < 2^128;
     if (e.block.timestamp != lastUpdate(id) && totalBorrowAssets(id) != 0) {
         uint128 interest;
         uint256 borrow = totalBorrowAssets(id);
         uint256 supply = totalSupplyAssets(id);
+        // Safe requires because the reference implementation would revert.
         require interest + borrow < 2^256;
         require interest + supply < 2^256;
         increaseInterest(e, id, interest);
@@ -53,9 +57,9 @@ definition isCreated(MorphoInternalAccess.Id id) returns bool =
 rule supplyChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data) {
     MorphoInternalAccess.Id id = libId(marketParams);
 
-    // Require that Morpho is not the sender.
+    // Safe require because Morpho cannot call such functions by itself.
     require currentContract != e.msg.sender;
-    // Ensure that no interest is accumulated.
+    // Assumption to ensure that no interest is accumulated.
     require lastUpdate(id) == e.block.timestamp;
 
     mathint sharesBefore = supplyShares(id, onBehalf);
@@ -78,9 +82,9 @@ rule supplyChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams marke
 rule withdrawChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, address receiver) {
     MorphoInternalAccess.Id id = libId(marketParams);
 
-    // Require that Morpho is not the receiver.
+    // Assume that Morpho is not the receiver.
     require currentContract != receiver;
-    // Ensure that no interest is accumulated.
+    // Assumption to ensure that no interest is accumulated.
     require lastUpdate(id) == e.block.timestamp;
 
     mathint sharesBefore = supplyShares(id, onBehalf);
@@ -103,9 +107,9 @@ rule withdrawChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams mar
 rule borrowChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, address receiver) {
     MorphoInternalAccess.Id id = libId(marketParams);
 
-    // Require that Morpho is not the receiver.
+    // Assume that Morpho is not the receiver.
     require currentContract != receiver;
-    // Ensure that no interest is accumulated.
+    // Assumption to ensure that no interest is accumulated.
     require lastUpdate(id) == e.block.timestamp;
 
     mathint sharesBefore = borrowShares(id, onBehalf);
@@ -128,9 +132,9 @@ rule borrowChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams marke
 rule repayChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data) {
     MorphoInternalAccess.Id id = libId(marketParams);
 
-    // Require that Morpho is not the sender.
+    // Safe require because Morpho cannot call such functions by itself.
     require currentContract != e.msg.sender;
-    // Ensure that no interest is accumulated.
+    // Assumption to ensure that no interest is accumulated.
     require lastUpdate(id) == e.block.timestamp;
 
     mathint sharesBefore = borrowShares(id, onBehalf);
@@ -153,7 +157,7 @@ rule repayChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams market
 rule supplyCollateralChangesTokensAndBalance(env e, MorphoInternalAccess.MarketParams marketParams, uint256 assets, address onBehalf, bytes data) {
     MorphoInternalAccess.Id id = libId(marketParams);
 
-    // Require that Morpho is not the sender.
+    // Safe require because Morpho cannot call such functions by itself.
     require currentContract != e.msg.sender;
 
     mathint collateralBefore = collateral(id, onBehalf);
@@ -172,9 +176,9 @@ rule supplyCollateralChangesTokensAndBalance(env e, MorphoInternalAccess.MarketP
 rule withdrawCollateralChangesTokensAndBalance(env e, MorphoInternalAccess.MarketParams marketParams, uint256 assets, address onBehalf, address receiver) {
     MorphoInternalAccess.Id id = libId(marketParams);
 
-    // Require that Morpho is not the receiver.
+    // Assume that Morpho is not the receiver.
     require currentContract != receiver;
-    // Ensure that no interest is accumulated.
+    // Assumption to ensure that no interest is accumulated.
     require lastUpdate(id) == e.block.timestamp;
 
     mathint collateralBefore = collateral(id, onBehalf);
@@ -214,7 +218,7 @@ rule withdrawCollateralChangesTokensAndBalance(env e, MorphoInternalAccess.Marke
 rule canWithdrawAll(env e, MorphoInternalAccess.MarketParams marketParams, uint256 shares, address receiver) {
     MorphoInternalAccess.Id id = libId(marketParams);
 
-    // Require to ensure a withdraw all.
+    // Assume a full withdraw.
     require shares == supplyShares(id, e.msg.sender);
     // Omit sanity checks.
     require isCreated(id);
@@ -222,7 +226,7 @@ rule canWithdrawAll(env e, MorphoInternalAccess.MarketParams marketParams, uint2
     require receiver != 0;
     require e.msg.value == 0;
     require shares > 0;
-    // Require no outstanding debt on the market.
+    // Assume no outstanding debt on the market.
     require totalBorrowAssets(id) == 0;
     // Safe require because of the noTimeTravel rule.
     require lastUpdate(id) <= e.block.timestamp;
@@ -239,7 +243,7 @@ rule canWithdrawAll(env e, MorphoInternalAccess.MarketParams marketParams, uint2
 rule canWithdrawCollateralAll(env e, MorphoInternalAccess.MarketParams marketParams, uint256 assets, address receiver) {
     MorphoInternalAccess.Id id = libId(marketParams);
 
-    // Ensure a withdrawCollateral all.
+    // Ensure a full withdrawCollateral.
     require assets == collateral(id, e.msg.sender);
     // Omit sanity checks.
     require isCreated(id);
@@ -248,7 +252,7 @@ rule canWithdrawCollateralAll(env e, MorphoInternalAccess.MarketParams marketPar
     require assets > 0;
     // Safe require because of the noTimeTravel rule.
     require lastUpdate(id) <= e.block.timestamp;
-    // Require that the user does not have an outstanding debt.
+    // Assume that the user does not have an outstanding debt.
     require borrowShares(id, e.msg.sender) == 0;
 
     withdrawCollateral@withrevert(e, marketParams, assets, e.msg.sender, receiver);

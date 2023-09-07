@@ -44,6 +44,7 @@ invariant notInitializedEmpty(MorphoHarness.Id id)
     !isCreated(id) => emptyMarket(id)
 {
     preserved with (env e) {
+        // Safe require because timestamps cannot realistically be that large.
         require e.block.timestamp < 2^128;
     }
 }
@@ -53,6 +54,7 @@ invariant zeroDoesNotAuthorize(address authorized)
     !isAuthorized(0, authorized)
 {
     preserved setAuthorization(address _authorized, bool _newAuthorization) with (env e) {
+        // Safe require because no one controls the zero address.
         require e.msg.sender != 0;
     }
 }
@@ -117,6 +119,7 @@ rule supplyInputValidation(env e, MorphoHarness.MarketParams marketParams, uint2
 
 // Check that withdraw reverts when its inputs are not validated.
 rule withdrawInputValidation(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, address receiver) {
+    // Safe require because no one controls the zero address.
     require e.msg.sender != 0;
     requireInvariant zeroDoesNotAuthorize(e.msg.sender);
     withdraw@withrevert(e, marketParams, assets, shares, onBehalf, receiver);
@@ -125,6 +128,7 @@ rule withdrawInputValidation(env e, MorphoHarness.MarketParams marketParams, uin
 
 // Check that borrow reverts when its inputs are not validated.
 rule borrowInputValidation(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, address receiver) {
+    // Safe require because no one controls the zero address.
     require e.msg.sender != 0;
     requireInvariant zeroDoesNotAuthorize(e.msg.sender);
     borrow@withrevert(e, marketParams, assets, shares, onBehalf, receiver);
@@ -145,6 +149,7 @@ rule supplyCollateralInputValidation(env e, MorphoHarness.MarketParams marketPar
 
 // Check that withdrawCollateral reverts when its inputs are not validated.
 rule withdrawCollateralInputValidation(env e, MorphoHarness.MarketParams marketParams, uint256 assets, address onBehalf, address receiver) {
+    // Safe require because no one controls the zero address.
     require e.msg.sender != 0;
     requireInvariant zeroDoesNotAuthorize(e.msg.sender);
     withdrawCollateral@withrevert(e, marketParams, assets, onBehalf, receiver);
