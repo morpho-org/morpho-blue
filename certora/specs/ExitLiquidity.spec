@@ -21,6 +21,7 @@ rule withdrawLiquidity(MorphoHarness.MarketParams marketParams, uint256 assets, 
     env e;
     MorphoHarness.Id id = libId(marketParams);
 
+    // Assume no interest as it would increase the total supply assets.
     require lastUpdate(id) == e.block.timestamp;
 
     uint256 initialShares = supplyShares(id, onBehalf);
@@ -51,6 +52,7 @@ rule repayLiquidity(MorphoHarness.MarketParams marketParams, uint256 assets, uin
     env e;
     MorphoHarness.Id id = libId(marketParams);
 
+    // Assume no interest as it would increase the total borrowed assets.
     require lastUpdate(id) == e.block.timestamp;
 
     uint256 initialShares = borrowShares(id, onBehalf);
@@ -61,6 +63,7 @@ rule repayLiquidity(MorphoHarness.MarketParams marketParams, uint256 assets, uin
     uint256 repaidAssets;
     repaidAssets, _ = repay(e, marketParams, assets, shares, onBehalf, data);
 
+    // Assume a full repay.
     require borrowShares(id, onBehalf) == 0;
 
     assert repaidAssets >= assetsDue;

@@ -19,26 +19,32 @@ methods {
 }
 
 function summaryMulDivUp(uint256 x, uint256 y, uint256 d) returns uint256 {
+    // Safe require because the reference implementation would revert.
     return require_uint256((x * y + (d - 1)) / d);
 }
 
 function summaryMulDivDown(uint256 x, uint256 y, uint256 d) returns uint256 {
+    // Safe require because the reference implementation would revert.
     return require_uint256((x * y) / d);
 }
 
 // Check that when not accruing interest, and when repaying all, the borrow ratio is at least reset to the initial ratio.
+// More details on the purpose of this rule in RatioMath.spec.
 rule repayAllResetsBorrowRatio(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onbehalf, bytes data) {
     MorphoHarness.Id id = libId(marketParams);
+    // Safe require because this invariant is checked in ConsistentState.spec
     require fee(id) <= maxFee();
 
     mathint assetsBefore = virtualTotalBorrowAssets(id);
     mathint sharesBefore = virtualTotalBorrowShares(id);
 
+    // Assume no interest as it would increase the borrowed assets.
     require lastUpdate(id) == e.block.timestamp;
 
     mathint repaidAssets;
     repaidAssets, _ = repay(e, marketParams, assets, shares, onbehalf, data);
 
+    // Check the case where the market is fully repaid.
     require repaidAssets >= assetsBefore;
 
     mathint assetsAfter = virtualTotalBorrowAssets(id);
@@ -60,9 +66,9 @@ rule supplyWithdraw() {
     env e1;
     env e2;
 
-    // Require interactions to happen at the same block.
+    // Assume that interactions to happen at the same block.
     require e1.block.timestamp == e2.block.timestamp;
-    // Assumption required to cast timestamps to uint128.
+    // Safe require because timestamps cannot realistically be that large.
     require e1.block.timestamp < 2^128;
 
     uint256 suppliedAssets;
@@ -93,9 +99,9 @@ rule withdrawSupply() {
     env e1;
     env e2;
 
-    // Require interactions to happen at the same block.
+    // Assume interactions to happen at the same block.
     require e1.block.timestamp == e2.block.timestamp;
-    // Assumption required to cast timestamps to uint128.
+    // Safe require because timestamps cannot realistically be that large.
     require e1.block.timestamp < 2^128;
 
     uint256 withdrawnAssets;

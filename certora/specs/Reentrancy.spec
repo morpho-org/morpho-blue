@@ -47,6 +47,7 @@ hook STATICCALL(uint g, address addr, uint argsOffset, uint argsLength, uint ret
 
 // Check that no function is accessing storage, then making an external call other than to the IRM, and accessing storage again.
 rule reentrancySafe(method f, calldataarg data, env e) {
+    // Set up the initial state.
     require !callIsBorrowRate;
     require !hasAccessedStorage && !hasCallAfterAccessingStorage && !hasReentrancyUnsafeCall;
     f(e,data);
@@ -54,6 +55,7 @@ rule reentrancySafe(method f, calldataarg data, env e) {
 }
 
 rule noDelegateCalls(method f, calldataarg data, env e) {
+    // Set up the initial state.
     require !delegate_call;
     f(e,data);
     assert !delegate_call;
@@ -61,6 +63,7 @@ rule noDelegateCalls(method f, calldataarg data, env e) {
 
 // This rule can be used to check which methods have static calls
 // rule hasStaticCalls(method f, calldataarg data, env e) {
+//     // Set up the initial state.
 //     require !static_call;
 //     f(e,data);
 //     satisfy static_call;
