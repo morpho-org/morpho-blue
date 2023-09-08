@@ -66,7 +66,7 @@ contract MorphoStorageLibTest is BaseTest {
         slots[8] = MorphoStorageLib.isLltvEnabledSlot(lltv);
         slots[9] = MorphoStorageLib.isAuthorizedSlot(authorizer, BORROWER);
         slots[10] = MorphoStorageLib.nonceSlot(authorizer);
-        slots[11] = MorphoStorageLib.idToloanableTokenSlot(id);
+        slots[11] = MorphoStorageLib.idToLoanableTokenSlot(id);
         slots[12] = MorphoStorageLib.idToCollateralTokenSlot(id);
         slots[13] = MorphoStorageLib.idToOracleSlot(id);
         slots[14] = MorphoStorageLib.idToIrmSlot(id);
