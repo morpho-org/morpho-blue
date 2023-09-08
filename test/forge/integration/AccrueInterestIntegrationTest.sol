@@ -18,7 +18,7 @@ contract AccrueInterestIntegrationTest is BaseTest {
         vm.prank(OWNER);
         morpho.setFeeRecipient(OWNER);
 
-        loanableToken.setBalance(address(this), amountSupplied);
+        loanToken.setBalance(address(this), amountSupplied);
         morpho.supply(marketParams, amountSupplied, 0, address(this), hex"");
 
         collateralToken.setBalance(BORROWER, amountCollateral);
@@ -48,7 +48,7 @@ contract AccrueInterestIntegrationTest is BaseTest {
         vm.prank(OWNER);
         morpho.setFeeRecipient(OWNER);
 
-        loanableToken.setBalance(address(this), amountSupplied);
+        loanToken.setBalance(address(this), amountSupplied);
         morpho.supply(marketParams, amountSupplied, 0, address(this), hex"");
 
         // New block.
@@ -79,8 +79,8 @@ contract AccrueInterestIntegrationTest is BaseTest {
         vm.prank(OWNER);
         morpho.setFeeRecipient(OWNER);
 
-        loanableToken.setBalance(address(this), amountSupplied);
-        loanableToken.setBalance(address(this), amountSupplied);
+        loanToken.setBalance(address(this), amountSupplied);
+        loanToken.setBalance(address(this), amountSupplied);
         morpho.supply(marketParams, amountSupplied, 0, address(this), hex"");
 
         collateralToken.setBalance(BORROWER, amountCollateral);
@@ -146,7 +146,7 @@ contract AccrueInterestIntegrationTest is BaseTest {
         if (fee != morpho.fee(id)) morpho.setFee(marketParams, fee);
         vm.stopPrank();
 
-        loanableToken.setBalance(address(this), amountSupplied);
+        loanToken.setBalance(address(this), amountSupplied);
         morpho.supply(marketParams, amountSupplied, 0, address(this), hex"");
 
         collateralToken.setBalance(BORROWER, amountCollateral);

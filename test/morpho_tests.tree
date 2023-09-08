@@ -79,7 +79,7 @@
                 ├── it should emit Supply(marketParams.id, msg.sender, onBehalf, assets, shares)
                 ├── if data.length > 0
                 │   └── it should call sender's onMorphoSupply callback
-                ├── it should transfer assets of the loanable asset from the sender to Morpho
+                ├── it should transfer assets of the loan asset from the sender to Morpho
                 └── it should return the assets and the shares supplied
 .
 └── withdraw(MarketParams memory marketParams, uint256 assets, uint256 shares, address onBehalf, address receiver) external
@@ -104,7 +104,7 @@
                     ├── it should remove shares from totalSupplyShares[marketParams.id]
                     ├── it should remove assets from totalSupplyAssets[marketParams.id]
                     ├── it should emit Withdraw(marketParams.id, msg.sender, onBehalf, receiver, assets, shares)
-                    ├── it should transfer assets of the loanable asset to the receiver
+                    ├── it should transfer assets of the loan asset to the receiver
                     ├── when totalBorrowAssets[marketParams.id] > totalSupplyAssets[marketParams.id]
                     │   └── revert with INSUFFICIENT_LIQUIDITY
                     └── when totalBorrowAssets[marketParams.id] <= totalSupplyAssets[marketParams.id]
@@ -132,7 +132,7 @@
                     ├── it should add shares to totalBorrowShares[marketParams.id]
                     ├── it should add assets to totalBorrowAssets[marketParams.id]
                     ├── it should emit Borrow(marketParams.id, msg.sender, onBehalf, receiver, assets, shares)
-                    ├── it should transfer assets of the loanable asset to the receiver
+                    ├── it should transfer assets of the loan asset to the receiver
                     ├── when position is not healthy
                     │   └── revert with INSUFFICIENT_COLLATERAL
                     └── when position is healthy
@@ -163,7 +163,7 @@
                 ├── it should emit Repay(marketParams.id, msg.sender, onBehalf, assets, shares)
                 ├── if data.length > 0
                 │   └── it should call sender's onMorphoRepay callback
-                ├── it should transfer assets of the loanable asset from the sender to Morpho
+                ├── it should transfer assets of the loan asset from the sender to Morpho
                 └── it should return the assets and the shares repaid
 .
 └── supplyCollateral(MarketParams memory marketParams, uint256 assets, address onBehalf, bytes calldata data) external
@@ -233,7 +233,7 @@
                 ├── it should emit Liquidate(marketParams.id, msg.sender, borrower, assetsRepaid, repaidShares, seizedAssets, badDebtShares)
                 ├── if data.length > 0
                 │   └── it should call sender's onMorphoLiquidate callback
-                └── it should transfer assetsRepaid of loanable asset from the sender to Morpho
+                └── it should transfer assetsRepaid of loan asset from the sender to Morpho
 .
 └── flashLoan(address token, uint256 assets, bytes calldata data) external
     ├── it should transfer assets of token from Morpho to the sender

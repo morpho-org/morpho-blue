@@ -23,7 +23,7 @@ library MorphoStorageLib {
 
     /* SLOT OFFSETS */
 
-    uint256 internal constant LOANABLE_TOKEN_OFFSET = 0;
+    uint256 internal constant LOAN_TOKEN_OFFSET = 0;
     uint256 internal constant COLLATERAL_TOKEN_OFFSET = 1;
     uint256 internal constant ORACLE_OFFSET = 2;
     uint256 internal constant IRM_OFFSET = 3;
@@ -87,8 +87,8 @@ library MorphoStorageLib {
         return keccak256(abi.encode(authorizer, NONCE_SLOT));
     }
 
-    function idToLoanableTokenSlot(Id id) internal pure returns (bytes32) {
-        return bytes32(uint256(keccak256(abi.encode(id, ID_TO_MARKET_PARAMS_SLOT))) + LOANABLE_TOKEN_OFFSET);
+    function idToLoanTokenSlot(Id id) internal pure returns (bytes32) {
+        return bytes32(uint256(keccak256(abi.encode(id, ID_TO_MARKET_PARAMS_SLOT))) + LOAN_TOKEN_OFFSET);
     }
 
     function idToCollateralTokenSlot(Id id) internal pure returns (bytes32) {

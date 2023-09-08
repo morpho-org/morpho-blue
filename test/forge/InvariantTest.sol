@@ -44,7 +44,7 @@ contract InvariantTest is BaseTest {
     function _approveSendersTransfers(address[] memory senders) internal {
         for (uint256 i; i < senders.length; ++i) {
             vm.startPrank(senders[i]);
-            loanableToken.approve(address(morpho), type(uint256).max);
+            loanToken.approve(address(morpho), type(uint256).max);
             collateralToken.approve(address(morpho), type(uint256).max);
             vm.stopPrank();
         }

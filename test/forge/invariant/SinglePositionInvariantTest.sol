@@ -18,7 +18,7 @@ contract SinglePositionInvariantTest is InvariantTest {
 
         collateralToken.setBalance(user, 1e30);
         vm.startPrank(user);
-        loanableToken.approve(address(morpho), type(uint256).max);
+        loanToken.approve(address(morpho), type(uint256).max);
         collateralToken.approve(address(morpho), type(uint256).max);
         morpho.supplyCollateral(marketParams, 1e30, user, hex"");
         vm.stopPrank();
@@ -39,7 +39,7 @@ contract SinglePositionInvariantTest is InvariantTest {
     function supplyNoRevert(uint256 amount) public {
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
-        loanableToken.setBalance(msg.sender, amount);
+        loanToken.setBalance(msg.sender, amount);
         vm.prank(msg.sender);
         morpho.supply(marketParams, amount, 0, msg.sender, hex"");
     }
@@ -76,7 +76,7 @@ contract SinglePositionInvariantTest is InvariantTest {
         if (borrowerBalance == 0) return;
         amount = bound(amount, 1, borrowerBalance);
 
-        loanableToken.setBalance(msg.sender, amount);
+        loanToken.setBalance(msg.sender, amount);
         vm.prank(msg.sender);
         morpho.repay(marketParams, amount, 0, msg.sender, hex"");
     }
@@ -123,7 +123,7 @@ contract SinglePositionInvariantTest is InvariantTest {
     }
 
     function invariantMorphoBalance() public {
-        assertGe(loanableToken.balanceOf(address(morpho)), morpho.totalSupplyAssets(id) - morpho.totalBorrowAssets(id));
+        assertGe(loanToken.balanceOf(address(morpho)), morpho.totalSupplyAssets(id) - morpho.totalBorrowAssets(id));
     }
 
     // No price changes, and no new blocks so position has to remain healthy.

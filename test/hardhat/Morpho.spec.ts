@@ -33,7 +33,7 @@ describe("Morpho", () => {
   let liquidator: SignerWithAddress;
 
   let morpho: Morpho;
-  let loanable: ERC20Mock;
+  let loan: ERC20Mock;
   let collateral: ERC20Mock;
   let oracle: OracleMock;
   let irm: IrmMock;
@@ -59,7 +59,7 @@ describe("Morpho", () => {
 
     const ERC20MockFactory = await hre.ethers.getContractFactory("ERC20Mock", admin);
 
-    loanable = await ERC20MockFactory.deploy("DAI", "DAI");
+    loan = await ERC20MockFactory.deploy("DAI", "DAI");
     collateral = await ERC20MockFactory.deploy("Wrapped BTC", "WBTC");
 
     const OracleMockFactory = await hre.ethers.getContractFactory("OracleMock", admin);
@@ -77,7 +77,7 @@ describe("Morpho", () => {
     irm = await IrmMockFactory.deploy();
 
     updateMarket({
-      loanableToken: await loanable.getAddress(),
+      loanToken: await loan.getAddress(),
       collateralToken: await collateral.getAddress(),
       oracle: await oracle.getAddress(),
       irm: await irm.getAddress(),
@@ -91,17 +91,17 @@ describe("Morpho", () => {
     const morphoAddress = await morpho.getAddress();
 
     for (const signer of signers) {
-      await loanable.setBalance(signer.address, initBalance);
-      await loanable.connect(signer).approve(morphoAddress, MaxUint256);
+      await loan.setBalance(signer.address, initBalance);
+      await loan.connect(signer).approve(morphoAddress, MaxUint256);
       await collateral.setBalance(signer.address, initBalance);
       await collateral.connect(signer).approve(morphoAddress, MaxUint256);
     }
 
-    await loanable.setBalance(admin.address, initBalance);
-    await loanable.connect(admin).approve(morphoAddress, MaxUint256);
+    await loan.setBalance(admin.address, initBalance);
+    await loan.connect(admin).approve(morphoAddress, MaxUint256);
 
-    await loanable.setBalance(liquidator.address, initBalance);
-    await loanable.connect(liquidator).approve(morphoAddress, MaxUint256);
+    await loan.setBalance(liquidator.address, initBalance);
+    await loan.connect(liquidator).approve(morphoAddress, MaxUint256);
 
     const FlashBorrowerFactory = await hre.ethers.getContractFactory("FlashBorrowerMock", admin);
 
@@ -182,9 +182,9 @@ describe("Morpho", () => {
 
     await morpho.connect(user).supply(marketParams, assets, 0, user.address, "0x");
 
-    const loanableAddress = await loanable.getAddress();
+    const loanAddress = await loan.getAddress();
 
-    const data = AbiCoder.defaultAbiCoder().encode(["address"], [loanableAddress]);
-    await flashBorrower.flashLoan(loanableAddress, assets / 2n, data);
+    const data = AbiCoder.defaultAbiCoder().encode(["address"], [loanAddress]);
+    await flashBorrower.flashLoan(loanAddress, assets / 2n, data);
   });
 });

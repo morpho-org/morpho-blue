@@ -44,7 +44,7 @@ contract SupplyIntegrationTest is BaseTest {
     function testSupplyAssets(uint256 amount) public {
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
-        loanableToken.setBalance(SUPPLIER, amount);
+        loanToken.setBalance(SUPPLIER, amount);
 
         uint256 expectedSupplyShares = amount.toSharesDown(0, 0);
 
@@ -59,8 +59,8 @@ contract SupplyIntegrationTest is BaseTest {
         assertEq(morpho.supplyShares(id, ONBEHALF), expectedSupplyShares, "supply shares");
         assertEq(morpho.totalSupplyAssets(id), amount, "total supply");
         assertEq(morpho.totalSupplyShares(id), expectedSupplyShares, "total supply shares");
-        assertEq(loanableToken.balanceOf(SUPPLIER), 0, "SUPPLIER balance");
-        assertEq(loanableToken.balanceOf(address(morpho)), amount, "morpho balance");
+        assertEq(loanToken.balanceOf(SUPPLIER), 0, "SUPPLIER balance");
+        assertEq(loanToken.balanceOf(address(morpho)), amount, "morpho balance");
     }
 
     function testSupplyShares(uint256 shares) public {
@@ -68,7 +68,7 @@ contract SupplyIntegrationTest is BaseTest {
 
         uint256 expectedSuppliedAmount = shares.toAssetsUp(0, 0);
 
-        loanableToken.setBalance(SUPPLIER, expectedSuppliedAmount);
+        loanToken.setBalance(SUPPLIER, expectedSuppliedAmount);
 
         vm.prank(SUPPLIER);
 
@@ -81,7 +81,7 @@ contract SupplyIntegrationTest is BaseTest {
         assertEq(morpho.supplyShares(id, ONBEHALF), shares, "supply shares");
         assertEq(morpho.totalSupplyAssets(id), expectedSuppliedAmount, "total supply");
         assertEq(morpho.totalSupplyShares(id), shares, "total supply shares");
-        assertEq(loanableToken.balanceOf(SUPPLIER), 0, "SUPPLIER balance");
-        assertEq(loanableToken.balanceOf(address(morpho)), expectedSuppliedAmount, "morpho balance");
+        assertEq(loanToken.balanceOf(SUPPLIER), 0, "SUPPLIER balance");
+        assertEq(loanToken.balanceOf(address(morpho)), expectedSuppliedAmount, "morpho balance");
     }
 }
