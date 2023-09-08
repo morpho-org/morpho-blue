@@ -54,7 +54,7 @@ contract RepayIntegrationTest is BaseTest {
         uint256 expectedRepaidShares = amountRepaid.toSharesDown(amountBorrowed, expectedBorrowShares);
 
         collateralToken.setBalance(ONBEHALF, amountCollateral);
-        borrowableToken.setBalance(REPAYER, amountRepaid);
+        loanableToken.setBalance(REPAYER, amountRepaid);
 
         vm.startPrank(ONBEHALF);
         morpho.supplyCollateral(marketParams, amountCollateral, ONBEHALF, hex"");
@@ -74,9 +74,9 @@ contract RepayIntegrationTest is BaseTest {
         assertEq(morpho.borrowShares(id, ONBEHALF), expectedBorrowShares, "borrow shares");
         assertEq(morpho.totalBorrowAssets(id), amountBorrowed - amountRepaid, "total borrow");
         assertEq(morpho.totalBorrowShares(id), expectedBorrowShares, "total borrow shares");
-        assertEq(borrowableToken.balanceOf(RECEIVER), amountBorrowed, "RECEIVER balance");
+        assertEq(loanableToken.balanceOf(RECEIVER), amountBorrowed, "RECEIVER balance");
         assertEq(
-            borrowableToken.balanceOf(address(morpho)), amountSupplied - amountBorrowed + amountRepaid, "morpho balance"
+            loanableToken.balanceOf(address(morpho)), amountSupplied - amountBorrowed + amountRepaid, "morpho balance"
         );
     }
 
@@ -100,7 +100,7 @@ contract RepayIntegrationTest is BaseTest {
         uint256 expectedAmountRepaid = sharesRepaid.toAssetsUp(amountBorrowed, expectedBorrowShares);
 
         collateralToken.setBalance(ONBEHALF, amountCollateral);
-        borrowableToken.setBalance(REPAYER, expectedAmountRepaid);
+        loanableToken.setBalance(REPAYER, expectedAmountRepaid);
 
         vm.startPrank(ONBEHALF);
         morpho.supplyCollateral(marketParams, amountCollateral, ONBEHALF, hex"");
@@ -120,9 +120,9 @@ contract RepayIntegrationTest is BaseTest {
         assertEq(morpho.borrowShares(id, ONBEHALF), expectedBorrowShares, "borrow shares");
         assertEq(morpho.totalBorrowAssets(id), amountBorrowed - expectedAmountRepaid, "total borrow");
         assertEq(morpho.totalBorrowShares(id), expectedBorrowShares, "total borrow shares");
-        assertEq(borrowableToken.balanceOf(RECEIVER), amountBorrowed, "RECEIVER balance");
+        assertEq(loanableToken.balanceOf(RECEIVER), amountBorrowed, "RECEIVER balance");
         assertEq(
-            borrowableToken.balanceOf(address(morpho)),
+            loanableToken.balanceOf(address(morpho)),
             amountSupplied - amountBorrowed + expectedAmountRepaid,
             "morpho balance"
         );
@@ -133,7 +133,7 @@ contract RepayIntegrationTest is BaseTest {
 
         uint256 assets = shares.toAssetsUp(0, 0);
 
-        borrowableToken.setBalance(address(this), assets);
+        loanableToken.setBalance(address(this), assets);
 
         morpho.supply(marketParams, 0, shares, SUPPLIER, hex"");
 
@@ -144,7 +144,7 @@ contract RepayIntegrationTest is BaseTest {
         vm.prank(BORROWER);
         morpho.borrow(marketParams, 0, shares, BORROWER, RECEIVER);
 
-        borrowableToken.setBalance(address(this), assets);
+        loanableToken.setBalance(address(this), assets);
 
         morpho.repay(marketParams, 0, shares, BORROWER, hex"");
     }

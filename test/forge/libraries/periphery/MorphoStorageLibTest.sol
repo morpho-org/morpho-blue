@@ -25,7 +25,7 @@ contract MorphoStorageLibTest is BaseTest {
         morpho.setFee(marketParams, fee);
         vm.stopPrank();
 
-        borrowableToken.setBalance(address(this), amountSupplied);
+        loanableToken.setBalance(address(this), amountSupplied);
         morpho.supply(marketParams, amountSupplied, 0, address(this), hex"");
 
         uint256 collateralPrice = IOracle(marketParams.oracle).price();
@@ -66,7 +66,7 @@ contract MorphoStorageLibTest is BaseTest {
         slots[8] = MorphoStorageLib.isLltvEnabledSlot(lltv);
         slots[9] = MorphoStorageLib.isAuthorizedSlot(authorizer, BORROWER);
         slots[10] = MorphoStorageLib.nonceSlot(authorizer);
-        slots[11] = MorphoStorageLib.idToBorrowableTokenSlot(id);
+        slots[11] = MorphoStorageLib.idToloanableTokenSlot(id);
         slots[12] = MorphoStorageLib.idToCollateralTokenSlot(id);
         slots[13] = MorphoStorageLib.idToOracleSlot(id);
         slots[14] = MorphoStorageLib.idToIrmSlot(id);
@@ -91,13 +91,13 @@ contract MorphoStorageLibTest is BaseTest {
         assertEq(uint256(values[10]), morpho.nonce(authorizer));
 
         (
-            address expectedBorrowableToken,
+            address expectedloanableToken,
             address expectedCollateralToken,
             address expectedOracle,
             address expectedIrm,
             uint256 expectedLltv
         ) = morpho.idToMarketParams(id);
-        assertEq(abi.decode(abi.encode(values[11]), (address)), expectedBorrowableToken);
+        assertEq(abi.decode(abi.encode(values[11]), (address)), expectedloanableToken);
         assertEq(abi.decode(abi.encode(values[12]), (address)), expectedCollateralToken);
         assertEq(abi.decode(abi.encode(values[13]), (address)), expectedOracle);
         assertEq(abi.decode(abi.encode(values[14]), (address)), expectedIrm);

@@ -115,7 +115,7 @@ contract MorphoBalancesLibTest is BaseTest {
         vm.stopPrank();
 
         if (amountSupplied > 0) {
-            borrowableToken.setBalance(address(this), amountSupplied);
+            loanableToken.setBalance(address(this), amountSupplied);
             morpho.supply(marketParams, amountSupplied, 0, address(this), hex"");
 
             if (amountBorrowed > 0) {

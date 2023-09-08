@@ -54,7 +54,7 @@ contract SingleMarketChangingPriceInvariantTest is InvariantTest {
 
     function supplyNoRevert(uint256 amount) public setCorrectBlock {
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
-        borrowableToken.setBalance(msg.sender, amount);
+        loanableToken.setBalance(msg.sender, amount);
 
         vm.prank(msg.sender);
         morpho.supply(marketParams, amount, 0, msg.sender, hex"");
@@ -152,7 +152,7 @@ contract SingleMarketChangingPriceInvariantTest is InvariantTest {
         uint256 repaidAmount = shares.toAssetsUp(morpho.totalBorrowAssets(id), morpho.totalBorrowShares(id));
         if (repaidAmount == 0) return;
 
-        borrowableToken.setBalance(msg.sender, repaidAmount);
+        loanableToken.setBalance(msg.sender, repaidAmount);
 
         vm.prank(msg.sender);
         morpho.repay(marketParams, 0, shares, msg.sender, hex"");
@@ -169,7 +169,7 @@ contract SingleMarketChangingPriceInvariantTest is InvariantTest {
         uint256 repaidAmount = shares.toAssetsUp(morpho.totalBorrowAssets(id), morpho.totalBorrowShares(id));
         if (repaidAmount == 0) return;
 
-        borrowableToken.setBalance(msg.sender, repaidAmount);
+        loanableToken.setBalance(msg.sender, repaidAmount);
         vm.prank(msg.sender);
         morpho.repay(marketParams, 0, shares, onBehalf, hex"");
     }
@@ -243,7 +243,7 @@ contract SingleMarketChangingPriceInvariantTest is InvariantTest {
         if (repaidShares > morpho.borrowShares(id, user)) {
             seized = seized / 2;
         }
-        borrowableToken.setBalance(msg.sender, repaid);
+        loanableToken.setBalance(msg.sender, repaid);
 
         vm.prank(msg.sender);
         morpho.liquidate(marketParams, user, seized, 0, hex"");
@@ -272,8 +272,6 @@ contract SingleMarketChangingPriceInvariantTest is InvariantTest {
     }
 
     function invariantMorphoBalance() public {
-        assertGe(
-            borrowableToken.balanceOf(address(morpho)), morpho.totalSupplyAssets(id) - morpho.totalBorrowAssets(id)
-        );
+        assertGe(loanableToken.balanceOf(address(morpho)), morpho.totalSupplyAssets(id) - morpho.totalBorrowAssets(id));
     }
 }
