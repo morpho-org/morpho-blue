@@ -8,14 +8,16 @@ contract LiquidateIntegrationTest is BaseTest {
     using MorphoLib for IMorpho;
     using SharesMathLib for uint256;
 
-    function testLiquidateNotCreatedMarket(MarketParams memory marketParamsFuzz) public {
+    function testLiquidateNotCreatedMarket(MarketParams memory marketParamsFuzz, uint256 lltv) public {
+        _setLltv(_boundTestLltv(lltv));
         vm.assume(neq(marketParamsFuzz, marketParams));
 
         vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
         morpho.liquidate(marketParamsFuzz, address(this), 1, 0, hex"");
     }
 
-    function testLiquidateZeroAmount() public {
+    function testLiquidateZeroAmount(uint256 lltv) public {
+        _setLltv(_boundTestLltv(lltv));
         vm.prank(BORROWER);
 
         vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
@@ -37,12 +39,14 @@ contract LiquidateIntegrationTest is BaseTest {
         uint256 amountSupplied,
         uint256 amountBorrowed,
         uint256 amountSeized,
-        uint256 priceCollateral
+        uint256 priceCollateral,
+        uint256 lltv
     ) public {
+        _setLltv(_boundTestLltv(lltv));
         (amountCollateral, amountBorrowed, priceCollateral) =
             _boundHealthyPosition(amountCollateral, amountBorrowed, priceCollateral);
 
-        amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
+        amountSupplied = bound(amountSupplied, amountBorrowed, amountBorrowed + MAX_TEST_AMOUNT);
         _supply(amountSupplied);
 
         amountSeized = bound(amountSeized, 1, amountCollateral);
@@ -67,18 +71,21 @@ contract LiquidateIntegrationTest is BaseTest {
         uint256 amountSupplied,
         uint256 amountBorrowed,
         uint256 amountSeized,
-        uint256 priceCollateral
+        uint256 priceCollateral,
+        uint256 lltv
     ) public {
+        _setLltv(_boundTestLltv(lltv));
         (amountCollateral, amountBorrowed, priceCollateral) =
             _boundUnhealthyPosition(amountCollateral, amountBorrowed, priceCollateral);
 
         vm.assume(amountCollateral > 1);
 
-        amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
+        amountSupplied = bound(amountSupplied, amountBorrowed, amountBorrowed + MAX_TEST_AMOUNT);
         _supply(amountSupplied);
 
         uint256 incentive = _liquidationIncentive(marketParams.lltv);
         uint256 maxSeized = amountBorrowed.wMulDown(incentive).mulDivDown(ORACLE_PRICE_SCALE, priceCollateral);
+        vm.assume(maxSeized != 0);
         amountSeized = bound(amountSeized, 1, Math.min(maxSeized, amountCollateral - 1));
         uint256 expectedRepaid = amountSeized.mulDivUp(priceCollateral, ORACLE_PRICE_SCALE).wDivUp(incentive);
 
@@ -129,8 +136,10 @@ contract LiquidateIntegrationTest is BaseTest {
         uint256 amountSupplied,
         uint256 amountBorrowed,
         uint256 sharesRepaid,
-        uint256 priceCollateral
+        uint256 priceCollateral,
+        uint256 lltv
     ) public {
+        _setLltv(_boundTestLltv(lltv));
         (amountCollateral, amountBorrowed, priceCollateral) =
             _boundUnhealthyPosition(amountCollateral, amountBorrowed, priceCollateral);
 
@@ -204,8 +213,10 @@ contract LiquidateIntegrationTest is BaseTest {
         uint256 amountCollateral,
         uint256 amountSupplied,
         uint256 amountBorrowed,
-        uint256 priceCollateral
+        uint256 priceCollateral,
+        uint256 lltv
     ) public {
+        _setLltv(_boundTestLltv(lltv));
         LiquidateBadDebtTestParams memory params;
 
         (amountCollateral, amountBorrowed, priceCollateral) =

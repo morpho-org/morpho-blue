@@ -9,7 +9,7 @@ contract CreateMarketIntegrationTest is BaseTest {
     using MarketParamsLib for MarketParams;
 
     function testCreateMarketWithNotEnabledIrmAndNotEnabledLltv(MarketParams memory marketParamsFuzz) public {
-        vm.assume(marketParamsFuzz.irm != address(irm) && marketParamsFuzz.lltv != LLTV);
+        vm.assume(marketParamsFuzz.irm != address(irm) && marketParamsFuzz.lltv != marketParams.lltv);
 
         vm.prank(OWNER);
         vm.expectRevert(bytes(ErrorsLib.IRM_NOT_ENABLED));
@@ -21,7 +21,7 @@ contract CreateMarketIntegrationTest is BaseTest {
         marketParamsFuzz.lltv = _boundValidLltv(marketParamsFuzz.lltv);
 
         vm.startPrank(OWNER);
-        if (marketParamsFuzz.lltv != LLTV) morpho.enableLltv(marketParamsFuzz.lltv);
+        if (marketParamsFuzz.lltv != marketParams.lltv) morpho.enableLltv(marketParamsFuzz.lltv);
 
         vm.expectRevert(bytes(ErrorsLib.IRM_NOT_ENABLED));
         morpho.createMarket(marketParamsFuzz);
@@ -29,7 +29,7 @@ contract CreateMarketIntegrationTest is BaseTest {
     }
 
     function testCreateMarketWithEnabledIrmAndNotEnabledLltv(MarketParams memory marketParamsFuzz) public {
-        vm.assume(marketParamsFuzz.lltv != LLTV);
+        vm.assume(marketParamsFuzz.lltv != marketParams.lltv);
 
         vm.startPrank(OWNER);
         if (marketParamsFuzz.irm != marketParams.irm) morpho.enableIrm(marketParamsFuzz.irm);
@@ -45,7 +45,7 @@ contract CreateMarketIntegrationTest is BaseTest {
 
         vm.startPrank(OWNER);
         if (marketParamsFuzz.irm != marketParams.irm) morpho.enableIrm(marketParamsFuzz.irm);
-        if (marketParamsFuzz.lltv != LLTV) morpho.enableLltv(marketParamsFuzz.lltv);
+        if (marketParamsFuzz.lltv != marketParams.lltv) morpho.enableLltv(marketParamsFuzz.lltv);
 
         vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.CreateMarket(marketParamsFuzz.id(), marketParamsFuzz);
@@ -65,7 +65,7 @@ contract CreateMarketIntegrationTest is BaseTest {
 
         vm.startPrank(OWNER);
         if (marketParamsFuzz.irm != marketParams.irm) morpho.enableIrm(marketParamsFuzz.irm);
-        if (marketParamsFuzz.lltv != LLTV) morpho.enableLltv(marketParamsFuzz.lltv);
+        if (marketParamsFuzz.lltv != marketParams.lltv) morpho.enableLltv(marketParamsFuzz.lltv);
         morpho.createMarket(marketParamsFuzz);
 
         vm.expectRevert(bytes(ErrorsLib.MARKET_ALREADY_CREATED));
@@ -79,7 +79,7 @@ contract CreateMarketIntegrationTest is BaseTest {
 
         vm.startPrank(OWNER);
         if (marketParamsFuzz.irm != marketParams.irm) morpho.enableIrm(marketParamsFuzz.irm);
-        if (marketParamsFuzz.lltv != LLTV) morpho.enableLltv(marketParamsFuzz.lltv);
+        if (marketParamsFuzz.lltv != marketParams.lltv) morpho.enableLltv(marketParamsFuzz.lltv);
 
         morpho.createMarket(marketParamsFuzz);
         vm.stopPrank();
