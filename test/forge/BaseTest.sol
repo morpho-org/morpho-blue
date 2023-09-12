@@ -110,7 +110,6 @@ contract BaseTest is Test {
     }
 
     function _setLltv(uint256 lltv) internal {
-        lltv = lltv;
         marketParams =
             MarketParams(address(borrowableToken), address(collateralToken), address(oracle), address(irm), lltv);
         id = marketParams.id();
