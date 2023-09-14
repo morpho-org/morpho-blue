@@ -74,14 +74,14 @@ contract SafeTransferLibTest is Test {
     function testSafeTransferWithBoolFalse(address to, uint256 amount) public {
         tokenWithBooleanAlwaysFalse.setBalance(address(this), amount);
 
-        vm.expectRevert(bytes(ErrorsLib.TRANSFER_FAILED));
+        vm.expectRevert(bytes(ErrorsLib.RETURN_DATA_AND_FALSE));
         this.safeTransfer(address(tokenWithBooleanAlwaysFalse), to, amount);
     }
 
     function testSafeTransferFromWithBoolFalse(address from, address to, uint256 amount) public {
         tokenWithBooleanAlwaysFalse.setBalance(from, amount);
 
-        vm.expectRevert(bytes(ErrorsLib.TRANSFER_FROM_FAILED));
+        vm.expectRevert(bytes(ErrorsLib.RETURN_DATA_AND_FALSE));
         this.safeTransferFrom(address(tokenWithBooleanAlwaysFalse), from, to, amount);
     }
 

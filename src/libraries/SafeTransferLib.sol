@@ -14,18 +14,20 @@ interface IERC20Internal {
 /// @author Morpho Labs
 /// @custom:contact security@morpho.xyz
 /// @notice Library to manage tokens not fully ERC20 compliant:
-///         not returning a boolean for `transfer` and `transferFrom` functions.
+/// not returning a boolean for `transfer` and `transferFrom` functions.
 /// @dev It is the responsibility of the market creator to make sure that the address of the token has non-zero code.
 library SafeTransferLib {
     function safeTransfer(IERC20 token, address to, uint256 value) internal {
         (bool success, bytes memory returndata) =
             address(token).call(abi.encodeCall(IERC20Internal.transfer, (to, value)));
-        require(success && (returndata.length == 0 || abi.decode(returndata, (bool))), ErrorsLib.TRANSFER_FAILED);
+        require(success, ErrorsLib.TRANSFER_FAILED);
+        require(returndata.length == 0 || abi.decode(returndata, (bool)), ErrorsLib.RETURN_DATA_AND_FALSE);
     }
 
     function safeTransferFrom(IERC20 token, address from, address to, uint256 value) internal {
         (bool success, bytes memory returndata) =
             address(token).call(abi.encodeCall(IERC20Internal.transferFrom, (from, to, value)));
-        require(success && (returndata.length == 0 || abi.decode(returndata, (bool))), ErrorsLib.TRANSFER_FROM_FAILED);
+        require(success, ErrorsLib.TRANSFER_FROM_FAILED);
+        require(returndata.length == 0 || abi.decode(returndata, (bool)), ErrorsLib.RETURN_DATA_AND_FALSE);
     }
 }
