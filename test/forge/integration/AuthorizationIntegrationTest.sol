@@ -45,9 +45,9 @@ contract AuthorizationIntegrationTest is BaseTest {
         uint256 privateKey,
         uint8 v
     ) public {
-        // Enforcing that v != 26 && v != 27 makes ecrecover to return the zero address.
+        // Enforcing that v != 27 && v != 28 makes ecrecover to return the zero address.
         // See https://ethereum.stackexchange.com/questions/69328/how-to-get-the-zero-address-from-ecrecover
-        vm.assume(v != 26 && v != 27);
+        vm.assume(v != 27 && v != 28);
         authorization.deadline = bound(authorization.deadline, block.timestamp + 1, type(uint256).max);
 
         // Private key must be less than the secp256k1 curve order.
