@@ -58,10 +58,12 @@ interface IMorpho {
     /// @dev It has the power to change the owner.
     /// @dev It has the power to set fees on markets and set the fee recipient.
     /// @dev It has the power to enable but not disable IRMs and LLTVs.
+    /// @dev The owner is supposed to be able to trigger the different actions mentioned above.
     function owner() external view returns (address);
 
     /// @notice The fee recipient of all markets.
     /// @dev The recipient receives the fees of a given market through a supply position on that market.
+    /// @dev The recipient is supposed to be able withdraw the funds from this supply position.
     function feeRecipient() external view returns (address);
 
     /// @notice The state of the position of `user` on the market corresponding to `id`.
@@ -136,6 +138,9 @@ interface IMorpho {
     /// - The token should not re-enter Morpho on `transfer` nor `transferFrom`.
     /// - The token balance of the sender (resp. receiver) should decrease (resp. increase) by exactly the given amount
     /// on `transfer` and `transferFrom`. In particular, tokens with fees on transfer are not supported.
+    /// - For tokens with double entry points, only one implementation should be chosen to create markets to avoid
+    /// duplicates.
+    /// - Blacklisting Morpho from interacting with a token will freeze every markets using this token.
     /// - The IRM should not re-enter Morpho.
     /// @dev Here is a list of properties on the market's dependencies that could break Morpho's liveness properties:
     /// - The token can revert on `transfer` and `transferFrom` for a reason other than an approval or balance issue.
