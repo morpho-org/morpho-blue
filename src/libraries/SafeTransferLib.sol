@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.12;
 
-import {ErrorsLib} from "../libraries/ErrorsLib.sol";
-
 import {IERC20} from "../interfaces/IERC20.sol";
+
+import {ErrorsLib} from "../libraries/ErrorsLib.sol";
 
 interface IERC20Internal {
     function transfer(address to, uint256 value) external returns (bool);
