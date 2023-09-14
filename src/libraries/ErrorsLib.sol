@@ -51,8 +51,11 @@ library ErrorsLib {
     /// @notice Thrown when the position to liquidate is healthy.
     string internal constant HEALTHY_POSITION = "position is healthy";
 
+    /// @notice Thrown when the recovered address from the authorization signtaure is the address zero.
+    string internal constant RECOVER_ADDRESS_ZERO = "recover address zero";
+
     /// @notice Thrown when the authorization signature is invalid.
-    string internal constant INVALID_SIGNATURE = "invalid signature";
+    string internal constant INVALID_SIGNATORY = "invalid signatory";
 
     /// @notice Thrown when the authorization signature is expired.
     string internal constant SIGNATURE_EXPIRED = "signature expired";

@@ -248,8 +248,10 @@
         ├── when authorization.nonce != nonce[authorization.authorizer]
         │   └── revert with INVALID_NONCE
         └── when authorization.nonce == nonce[authorization.authorizer]
+            ├── when ecrecover returns the zero address
+            │   └── revert with RECOVER_ADDRESS_ZERO
             ├── when the signature is invalid or not signed by authorization.authorizer
-            │   └── revert with INVALID_SIGNATURE
+            │   └── revert with INVALID_SIGNATORY
             └── when the signature is valid and signed by authorization.authorizer
                 ├── it should increment authorization.authorizer's nonce
                 ├── it should emit IncrementNonce(msg.sender, authorization.authorizer, authorization.nonce)
