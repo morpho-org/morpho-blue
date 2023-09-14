@@ -53,7 +53,7 @@ library ErrorsLib {
     string internal constant HEALTHY_POSITION = "position is healthy";
 
     /// @notice Thrown when the authorization signature is invalid.
-    string internal constant INVALID_SIGNATURE = "invalid signatory";
+    string internal constant INVALID_SIGNATURE = "invalid signature";
 
     /// @notice Thrown when the authorization signature is expired.
     string internal constant SIGNATURE_EXPIRED = "signature expired";
