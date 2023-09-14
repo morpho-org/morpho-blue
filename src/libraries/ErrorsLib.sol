@@ -36,7 +36,8 @@ library ErrorsLib {
     /// @notice Thrown when zero assets is passed as input.
     string internal constant ZERO_ASSETS = "zero assets";
 
-    /// @notice Thrown when a zero address is passed as input.
+    /// @notice Thrown when a zero address is passed as input or when the recovered address from the authorization
+    /// signature is the zero address.
     string internal constant ZERO_ADDRESS = "zero address";
 
     /// @notice Thrown when the caller is not authorized to conduct an action.
@@ -51,11 +52,8 @@ library ErrorsLib {
     /// @notice Thrown when the position to liquidate is healthy.
     string internal constant HEALTHY_POSITION = "position is healthy";
 
-    /// @notice Thrown when the recovered address from the authorization signtaure is the address zero.
-    string internal constant RECOVER_ADDRESS_ZERO = "recover address zero";
-
     /// @notice Thrown when the authorization signature is invalid.
-    string internal constant INVALID_SIGNATORY = "invalid signatory";
+    string internal constant INVALID_SIGNATURE = "invalid signatory";
 
     /// @notice Thrown when the authorization signature is expired.
     string internal constant SIGNATURE_EXPIRED = "signature expired";
@@ -69,8 +67,8 @@ library ErrorsLib {
     /// @notice Thrown when a token transferFrom has failed.
     string internal constant TRANSFER_FROM_FAILED = "transferFrom failed";
 
-    /// @notice Thrown on a token transfer or transferFrom when the call returned data and is false.
-    string internal constant RETURN_DATA_AND_FALSE = "return data and false";
+    /// @notice Thrown on a token transfer or transferFrom when the returned data is false.
+    string internal constant TRANSFER_RETURN_FALSE = "transfer returned false";
 
     /// @notice Thrown when the maximum uint128 is exceeded.
     string internal constant MAX_UINT128_EXCEEDED = "max uint128 exceeded";

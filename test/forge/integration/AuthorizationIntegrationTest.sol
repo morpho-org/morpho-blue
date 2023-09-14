@@ -61,7 +61,7 @@ contract AuthorizationIntegrationTest is BaseTest {
 
         sig.v = v;
 
-        vm.expectRevert(bytes(ErrorsLib.RECOVER_ADDRESS_ZERO));
+        vm.expectRevert(bytes(ErrorsLib.ZERO_ADDRESS));
         morpho.setAuthorizationWithSig(authorization, sig);
     }
 
@@ -76,7 +76,7 @@ contract AuthorizationIntegrationTest is BaseTest {
         bytes32 digest = SigUtils.getTypedDataHash(morpho.DOMAIN_SEPARATOR(), authorization);
         (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
 
-        vm.expectRevert(bytes(ErrorsLib.INVALID_SIGNATORY));
+        vm.expectRevert(bytes(ErrorsLib.INVALID_SIGNATURE));
         morpho.setAuthorizationWithSig(authorization, sig);
     }
 
