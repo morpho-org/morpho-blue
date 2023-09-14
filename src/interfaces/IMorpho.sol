@@ -122,7 +122,7 @@ interface IMorpho {
     function setFee(MarketParams memory marketParams, uint256 newFee) external;
 
     /// @notice Sets `newFeeRecipient` as recipient of the fee.
-    /// @dev Warning: The fee recipient can be set to the zero address.
+    /// @dev Warning: The fee recipient can be set to the zero address while the fee can be active on some markets.
     /// @dev Warning: The fee to be accrued on each market won't belong to the old fee recipient after calling this
     /// function.
     function setFeeRecipient(address newFeeRecipient) external;
@@ -244,7 +244,6 @@ interface IMorpho {
     /// @notice Withdraws `assets` of collateral on behalf of `onBehalf` to `receiver`.
     /// @dev `msg.sender` must be authorized to manage `onBehalf`'s positions.
     /// @dev Withdrawing an amount corresponding to more collateral than supplied will revert for underflow.
-    /// @param marketParams The market to withdraw collateral from.
     /// @param assets The amount of collateral to withdraw.
     /// @param onBehalf The address of the owner of the collateral position.
     /// @param receiver The address that will receive the collateral assets.

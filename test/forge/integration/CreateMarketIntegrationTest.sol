@@ -75,12 +75,12 @@ contract CreateMarketIntegrationTest is BaseTest {
 
     function testIdToMarketParams(MarketParams memory marketParamsFuzz) public {
         marketParamsFuzz.lltv = _boundValidLltv(marketParamsFuzz.lltv);
-        Id marketParamsFuzzId = marketParamsFuzz.id();
 
         vm.startPrank(OWNER);
         if (marketParamsFuzz.irm != marketParams.irm) morpho.enableIrm(marketParamsFuzz.irm);
         if (marketParamsFuzz.lltv != marketParams.lltv) morpho.enableLltv(marketParamsFuzz.lltv);
 
+        Id marketParamsFuzzId = marketParamsFuzz.id();
         morpho.createMarket(marketParamsFuzz);
         vm.stopPrank();
 
