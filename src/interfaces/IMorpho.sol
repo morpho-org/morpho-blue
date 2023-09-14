@@ -52,6 +52,8 @@ struct Signature {
 /// @notice Interface of Morpho.
 interface IMorpho {
     /// @notice The EIP-712 domain separator.
+    /// @dev Warning: In case of an hardfork, a signature can be replayed between chains since the domain is not
+    /// recomputed taking into account the chainid.
     function DOMAIN_SEPARATOR() external view returns (bytes32);
 
     /// @notice The owner of the contract.
