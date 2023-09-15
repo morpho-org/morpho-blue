@@ -9,8 +9,11 @@ import {UtilsLib} from "../UtilsLib.sol";
 import {MorphoLib} from "./MorphoLib.sol";
 import {SharesMathLib} from "../SharesMathLib.sol";
 import {MarketParamsLib} from "../MarketParamsLib.sol";
-import {MorphoStorageLib} from "./MorphoStorageLib.sol";
 
+/// @title IMorphoMarketStruct
+/// @author Morpho Labs
+/// @custom:contact security@morpho.xyz
+/// @notice Interface allowing to retrieve a `Market` struct for the `market` getter instead of a tuple.
 interface IMorphoMarketStruct {
     function market(Id id) external view returns (Market memory);
 }

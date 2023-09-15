@@ -5,6 +5,10 @@ import {ErrorsLib} from "../libraries/ErrorsLib.sol";
 
 import {IERC20} from "../interfaces/IERC20.sol";
 
+/// @title IERC20Internal
+/// @author Morpho Labs
+/// @custom:contact security@morpho.xyz
+/// @notice ERC20 token interface exposing only the `transfer` and `transferFrom` functions.
 interface IERC20Internal {
     function transfer(address to, uint256 value) external returns (bool);
     function transferFrom(address from, address to, uint256 value) external returns (bool);
@@ -14,7 +18,7 @@ interface IERC20Internal {
 /// @author Morpho Labs
 /// @custom:contact security@morpho.xyz
 /// @notice Library to manage tokens not fully ERC20 compliant:
-///         not returning a boolean for `transfer` and `transferFrom` functions.
+/// not returning a boolean for `transfer` and `transferFrom` functions.
 /// @dev It is the responsibility of the market creator to make sure that the address of the token has non-zero code.
 library SafeTransferLib {
     function safeTransfer(IERC20 token, address to, uint256 value) internal {
