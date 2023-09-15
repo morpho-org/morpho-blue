@@ -8,7 +8,6 @@ ghost bool hasAccessedStorage;
 ghost bool hasCallAfterAccessingStorage;
 ghost bool hasReentrancyUnsafeCall;
 ghost bool delegate_call;
-ghost bool static_call;
 ghost bool callIsBorrowRate;
 
 function summaryBorrowRate() returns uint256 {
@@ -41,11 +40,7 @@ hook DELEGATECALL(uint g, address addr, uint argsOffset, uint argsLength, uint r
     delegate_call = true;
 }
 
-hook STATICCALL(uint g, address addr, uint argsOffset, uint argsLength, uint retOffset, uint retLength) uint rc {
-    static_call = true;
-}
-
-// Check that no function is accessing storage, then making an external call other than to the IRM, and accessing storage again.
+// Check that no function is accessing storage, then making an external CALL other than to the IRM, and accessing storage again.
 rule reentrancySafe(method f, calldataarg data, env e) {
     // Set up the initial state.
     require !callIsBorrowRate;
@@ -54,17 +49,10 @@ rule reentrancySafe(method f, calldataarg data, env e) {
     assert !hasReentrancyUnsafeCall;
 }
 
+// Check that the contract is truly immutable.
 rule noDelegateCalls(method f, calldataarg data, env e) {
     // Set up the initial state.
     require !delegate_call;
     f(e,data);
     assert !delegate_call;
 }
-
-// This rule can be used to check which methods have static calls
-// rule hasStaticCalls(method f, calldataarg data, env e) {
-//     // Set up the initial state.
-//     require !static_call;
-//     f(e,data);
-//     satisfy static_call;
-// }
