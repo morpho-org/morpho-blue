@@ -36,16 +36,14 @@ contract AccrueInterestIntegrationTest is BaseTest {
         assertEq(morpho.supplyShares(id, FEE_RECIPIENT), 0, "feeRecipient's supply shares");
     }
 
-    function testAccrueInterestNoBorrow(uint256 amountSupplied, uint256 timeElapsed) public {
+    function testAccrueInterestNoBorrow(uint256 amountSupplied, uint256 blocks) public {
         amountSupplied = bound(amountSupplied, 2, MAX_TEST_AMOUNT);
-        timeElapsed = uint32(bound(timeElapsed, 1, type(uint32).max));
+        blocks = _boundBlocks(blocks);
 
         borrowableToken.setBalance(address(this), amountSupplied);
         morpho.supply(marketParams, amountSupplied, 0, address(this), hex"");
 
-        // New block.
-        vm.roll(block.number + 1);
-        vm.warp(block.timestamp + timeElapsed);
+        _forward(blocks);
 
         uint256 totalBorrowBeforeAccrued = morpho.totalBorrowAssets(id);
         uint256 totalSupplyBeforeAccrued = morpho.totalSupplyAssets(id);
@@ -60,12 +58,12 @@ contract AccrueInterestIntegrationTest is BaseTest {
         assertEq(morpho.lastUpdate(id), block.timestamp, "last update");
     }
 
-    function testAccrueInterestNoFee(uint256 amountSupplied, uint256 amountBorrowed, uint256 timeElapsed) public {
+    function testAccrueInterestNoFee(uint256 amountSupplied, uint256 amountBorrowed, uint256 blocks) public {
         uint256 collateralPrice = oracle.price();
         uint256 amountCollateral;
         (amountCollateral, amountBorrowed,) = _boundHealthyPosition(amountCollateral, amountBorrowed, collateralPrice);
         amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
-        timeElapsed = uint32(bound(timeElapsed, 1, type(uint32).max));
+        blocks = _boundBlocks(blocks);
 
         borrowableToken.setBalance(address(this), amountSupplied);
         borrowableToken.setBalance(address(this), amountSupplied);
@@ -79,15 +77,14 @@ contract AccrueInterestIntegrationTest is BaseTest {
         morpho.borrow(marketParams, amountBorrowed, 0, BORROWER, BORROWER);
         vm.stopPrank();
 
-        // New block.
-        vm.roll(block.number + 1);
-        vm.warp(block.timestamp + timeElapsed);
+        _forward(blocks);
 
         uint256 borrowRate = (morpho.totalBorrowAssets(id).wDivDown(morpho.totalSupplyAssets(id))) / 365 days;
         uint256 totalBorrowBeforeAccrued = morpho.totalBorrowAssets(id);
         uint256 totalSupplyBeforeAccrued = morpho.totalSupplyAssets(id);
         uint256 totalSupplySharesBeforeAccrued = morpho.totalSupplyShares(id);
-        uint256 expectedAccruedInterest = totalBorrowBeforeAccrued.wMulDown(borrowRate.wTaylorCompounded(timeElapsed));
+        uint256 expectedAccruedInterest =
+            totalBorrowBeforeAccrued.wMulDown(borrowRate.wTaylorCompounded(blocks * BLOCK_TIME));
 
         collateralToken.setBalance(address(this), 1);
         morpho.supplyCollateral(marketParams, 1, address(this), hex"");
@@ -113,19 +110,16 @@ contract AccrueInterestIntegrationTest is BaseTest {
         uint256 feeShares;
     }
 
-    function testAccrueInterestWithFees(
-        uint256 amountSupplied,
-        uint256 amountBorrowed,
-        uint256 timeElapsed,
-        uint256 fee
-    ) public {
+    function testAccrueInterestWithFees(uint256 amountSupplied, uint256 amountBorrowed, uint256 blocks, uint256 fee)
+        public
+    {
         AccrueInterestWithFeesTestParams memory params;
 
         uint256 collateralPrice = oracle.price();
         uint256 amountCollateral;
         (amountCollateral, amountBorrowed,) = _boundHealthyPosition(amountCollateral, amountBorrowed, collateralPrice);
         amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
-        timeElapsed = uint32(bound(timeElapsed, 1, 1e8));
+        blocks = _boundBlocks(blocks);
         fee = bound(fee, 1, MAX_FEE);
 
         // Set fee parameters.
@@ -143,16 +137,14 @@ contract AccrueInterestIntegrationTest is BaseTest {
         morpho.borrow(marketParams, amountBorrowed, 0, BORROWER, BORROWER);
         vm.stopPrank();
 
-        // New block.
-        vm.roll(block.number + 1);
-        vm.warp(block.timestamp + timeElapsed);
+        _forward(blocks);
 
         params.borrowRate = (morpho.totalBorrowAssets(id).wDivDown(morpho.totalSupplyAssets(id))) / 365 days;
         params.totalBorrowBeforeAccrued = morpho.totalBorrowAssets(id);
         params.totalSupplyBeforeAccrued = morpho.totalSupplyAssets(id);
         params.totalSupplySharesBeforeAccrued = morpho.totalSupplyShares(id);
         params.expectedAccruedInterest =
-            params.totalBorrowBeforeAccrued.wMulDown(params.borrowRate.wTaylorCompounded(timeElapsed));
+            params.totalBorrowBeforeAccrued.wMulDown(params.borrowRate.wTaylorCompounded(blocks * BLOCK_TIME));
         params.feeAmount = params.expectedAccruedInterest.wMulDown(fee);
         params.feeShares = params.feeAmount.toSharesDown(
             params.totalSupplyBeforeAccrued + params.expectedAccruedInterest - params.feeAmount,

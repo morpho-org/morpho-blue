@@ -100,12 +100,12 @@ contract MorphoBalancesLibTest is BaseTest {
         assertEq(expectedBorrowBalance, actualBorrowBalance);
     }
 
-    function _generatePendingInterest(uint256 amountSupplied, uint256 amountBorrowed, uint256 timeElapsed, uint256 fee)
+    function _generatePendingInterest(uint256 amountSupplied, uint256 amountBorrowed, uint256 blocks, uint256 fee)
         internal
     {
         amountSupplied = bound(amountSupplied, 0, MAX_TEST_AMOUNT);
         amountBorrowed = bound(amountBorrowed, 0, amountSupplied);
-        timeElapsed = uint32(bound(timeElapsed, 0, 1e8));
+        blocks = _boundBlocks(blocks);
         fee = bound(fee, 0, MAX_FEE);
 
         // Set fee parameters.
@@ -135,8 +135,6 @@ contract MorphoBalancesLibTest is BaseTest {
             }
         }
 
-        // New block.
-        vm.roll(block.number + 1);
-        vm.warp(block.timestamp + timeElapsed);
+        _forward(blocks);
     }
 }
