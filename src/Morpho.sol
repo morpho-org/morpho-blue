@@ -486,9 +486,12 @@ contract Morpho is IMorpho {
     }
 
     /// @dev Returns whether the position of `borrower` in the given market `marketParams` with the given
-    /// `collateralPrice`
-    /// is healthy.
+    /// `collateralPrice` is healthy.
     /// @dev Assumes that the inputs `marketParams` and `id` match.
+    /// @dev The total amount of borrowed assets can be rounding up two times in a row:
+    /// 1. When converting the borrowed assets to shares before updating the storage.
+    /// 2. When converting `borrowShares` to `borrowed` in `_isHealthy`.
+    /// This behavior can lead an healthy position to be marked as unhealthy by 1 wei off and is acknowledged.
     function _isHealthy(MarketParams memory marketParams, Id id, address borrower, uint256 collateralPrice)
         internal
         view
