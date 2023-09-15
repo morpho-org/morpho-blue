@@ -21,6 +21,6 @@ rule checkSummaryMulDivDown(uint256 x, uint256 y, uint256 d) {
 
 // Check the munging of the MarketParams.id function.
 // This rule cannot be checked because it is not possible disable the keccak256 summary for the moment.
-// rule checkSummaryId(MorphoHarness.MarketParams marketParams) {
-//     assert optimizedId(marketParams) == libId(marketParams);
-// }
+rule checkSummaryId(MorphoHarness.MarketParams marketParams) {
+    assert optimizedId(marketParams) == libId(marketParams);
+}
