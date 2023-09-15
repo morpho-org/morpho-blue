@@ -7,7 +7,7 @@ import {MorphoStorageLib} from "./MorphoStorageLib.sol";
 /// @title MorphoLib
 /// @author Morpho Labs
 /// @custom:contact security@morpho.xyz
-/// @notice Helper library exposing getters to access Morpho storage variables.
+/// @notice Helper library to access Morpho storage variables.
 library MorphoLib {
     function supplyShares(IMorpho morpho, Id id, address user) internal view returns (uint256) {
         bytes32[] memory slot = _array(MorphoStorageLib.positionSupplySharesSlot(id, user));
