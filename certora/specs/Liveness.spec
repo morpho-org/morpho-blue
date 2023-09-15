@@ -34,6 +34,7 @@ function summarySafeTransferFrom(address token, address from, address to, uint25
 }
 
 // Assume no fee.
+// Summarize the accrue interest to avoid having to deal with reverts with absurdly high borrow rates.
 function summaryAccrueInterest(env e, MorphoInternalAccess.MarketParams marketParams, MorphoInternalAccess.Id id) {
     // Safe require because timestamps cannot realistically be that large.
     require e.block.timestamp < 2^128;
@@ -195,24 +196,35 @@ rule withdrawCollateralChangesTokensAndBalance(env e, MorphoInternalAccess.Marke
 
 // This rule is commented out for the moment because of a bug in CVL where market IDs are not consistent accross a run.
 // Check that one can always repay the debt in full.
-// rule canRepayAll(env e, MorphoInternalAccess.MarketParams marketParams, uint256 shares, bytes data) {
-//     MorphoInternalAccess.Id id = libId(marketParams);
+rule canRepayAll(env e, MorphoInternalAccess.MarketParams marketParams, uint256 shares, bytes data) {
+    MorphoInternalAccess.Id id = libId(marketParams);
 
-//     require data.length == 0;
+    // Assume no callback, which still allows to repay all.
+    require data.length == 0;
 
-//     require shares == borrowShares(id, e.msg.sender);
-//     require isCreated(id);
-//     require e.msg.sender != 0;
-//     require e.msg.value == 0;
-//     require shares > 0;
-//     require lastUpdate(id) <= e.block.timestamp;
-//     require shares <= totalBorrowShares(id);
-//     require totalBorrowAssets(id) < 10^35;
+    // Assume a full repay.
+    require shares == borrowShares(id, e.msg.sender);
+    // Omit sanity checks.
+    require isCreated(id);
+    require e.msg.sender != 0;
+    require e.msg.value == 0;
+    require shares > 0;
+    // Safe require because of the noTimeTravel rule.
+    require lastUpdate(id) <= e.block.timestamp;
+    // Safe require because of the sumBorrowSharesCorrect invariant.
+    require shares <= totalBorrowShares(id);
 
-//     repay@withrevert(e, marketParams, 0, shares, e.msg.sender, data);
+    // Accrue interest first to ensure that the accrued interest is reasonable (next require).
+    // Safe because of the AccrueInterest.repayAccruesInterest rule
+    summaryAccrueInterest(e, marketParams, id);
 
-//     assert !lastReverted;
-// }
+    // Assume that the invariant about tokens total supply is respected.
+    require totalBorrowAssets(id) < 10^35;
+
+    repay@withrevert(e, marketParams, 0, shares, e.msg.sender, data);
+
+    assert !lastReverted;
+}
 
 // Check the one can always withdraw all, under the condition that there are no outstanding debt on the market.
 rule canWithdrawAll(env e, MorphoInternalAccess.MarketParams marketParams, uint256 shares, address receiver) {
