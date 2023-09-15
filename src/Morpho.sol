@@ -96,7 +96,7 @@ contract Morpho is IMorpho {
 
         isIrmEnabled[irm] = true;
 
-        emit EventsLib.EnableIrm(address(irm));
+        emit EventsLib.EnableIrm(irm);
     }
 
     /// @inheritdoc IMorpho
