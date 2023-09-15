@@ -5,7 +5,7 @@ import "../BaseTest.sol";
 
 contract WithdrawIntegrationTest is BaseTest {
     using MathLib for uint256;
-    using MorphoLib for Morpho;
+    using MorphoLib for IMorpho;
     using SharesMathLib for uint256;
 
     function testWithdrawMarketNotCreated(MarketParams memory marketParamsParamsFuzz) public {
@@ -60,8 +60,7 @@ contract WithdrawIntegrationTest is BaseTest {
 
     function testWithdrawInsufficientLiquidity(uint256 amountSupplied, uint256 amountBorrowed) public {
         uint256 amountCollateral;
-        (amountCollateral, amountBorrowed,) =
-            _boundHealthyPosition(0, amountBorrowed, IOracle(marketParams.oracle).price());
+        (amountCollateral, amountBorrowed,) = _boundHealthyPosition(0, amountBorrowed, oracle.price());
         amountSupplied = bound(amountSupplied, amountBorrowed + 1, MAX_TEST_AMOUNT + 1);
 
         borrowableToken.setBalance(SUPPLIER, amountSupplied);
@@ -83,8 +82,7 @@ contract WithdrawIntegrationTest is BaseTest {
 
     function testWithdrawAssets(uint256 amountSupplied, uint256 amountBorrowed, uint256 amountWithdrawn) public {
         uint256 amountCollateral;
-        (amountCollateral, amountBorrowed,) =
-            _boundHealthyPosition(0, amountBorrowed, IOracle(marketParams.oracle).price());
+        (amountCollateral, amountBorrowed,) = _boundHealthyPosition(0, amountBorrowed, oracle.price());
         vm.assume(amountBorrowed < MAX_TEST_AMOUNT);
         amountSupplied = bound(amountSupplied, amountBorrowed + 1, MAX_TEST_AMOUNT);
         amountWithdrawn = bound(amountWithdrawn, 1, amountSupplied - amountBorrowed);
@@ -124,8 +122,7 @@ contract WithdrawIntegrationTest is BaseTest {
 
     function testWithdrawShares(uint256 amountSupplied, uint256 amountBorrowed, uint256 sharesWithdrawn) public {
         uint256 amountCollateral;
-        (amountCollateral, amountBorrowed,) =
-            _boundHealthyPosition(0, amountBorrowed, IOracle(marketParams.oracle).price());
+        (amountCollateral, amountBorrowed,) = _boundHealthyPosition(0, amountBorrowed, oracle.price());
         amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
 
         uint256 expectedSupplyShares = amountSupplied.toSharesDown(0, 0);
@@ -169,8 +166,7 @@ contract WithdrawIntegrationTest is BaseTest {
         public
     {
         uint256 amountCollateral;
-        (amountCollateral, amountBorrowed,) =
-            _boundHealthyPosition(0, amountBorrowed, IOracle(marketParams.oracle).price());
+        (amountCollateral, amountBorrowed,) = _boundHealthyPosition(0, amountBorrowed, oracle.price());
         vm.assume(amountBorrowed < MAX_TEST_AMOUNT);
         amountSupplied = bound(amountSupplied, amountBorrowed + 1, MAX_TEST_AMOUNT);
         amountWithdrawn = bound(amountWithdrawn, 1, amountSupplied - amountBorrowed);
@@ -215,8 +211,7 @@ contract WithdrawIntegrationTest is BaseTest {
         public
     {
         uint256 amountCollateral;
-        (amountCollateral, amountBorrowed,) =
-            _boundHealthyPosition(0, amountBorrowed, IOracle(marketParams.oracle).price());
+        (amountCollateral, amountBorrowed,) = _boundHealthyPosition(0, amountBorrowed, oracle.price());
         amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
 
         uint256 expectedSupplyShares = amountSupplied.toSharesDown(0, 0);

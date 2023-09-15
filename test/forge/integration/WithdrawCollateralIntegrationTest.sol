@@ -5,7 +5,7 @@ import "../BaseTest.sol";
 
 contract WithdrawCollateralIntegrationTest is BaseTest {
     using MathLib for uint256;
-    using MorphoLib for Morpho;
+    using MorphoLib for IMorpho;
 
     function testWithdrawCollateralMarketNotCreated(MarketParams memory marketParamsFuzz) public {
         vm.assume(neq(marketParamsFuzz, marketParams));
@@ -97,7 +97,7 @@ contract WithdrawCollateralIntegrationTest is BaseTest {
         amountCollateralExcess = bound(
             amountCollateralExcess,
             1,
-            min(MAX_COLLATERAL_ASSETS - amountCollateral, type(uint256).max / priceCollateral - amountCollateral)
+            Math.min(MAX_COLLATERAL_ASSETS - amountCollateral, type(uint256).max / priceCollateral - amountCollateral)
         );
 
         oracle.setPrice(priceCollateral);
@@ -138,7 +138,7 @@ contract WithdrawCollateralIntegrationTest is BaseTest {
         amountCollateralExcess = bound(
             amountCollateralExcess,
             1,
-            min(MAX_COLLATERAL_ASSETS - amountCollateral, type(uint256).max / priceCollateral - amountCollateral)
+            Math.min(MAX_COLLATERAL_ASSETS - amountCollateral, type(uint256).max / priceCollateral - amountCollateral)
         );
 
         collateralToken.setBalance(ONBEHALF, amountCollateral + amountCollateralExcess);

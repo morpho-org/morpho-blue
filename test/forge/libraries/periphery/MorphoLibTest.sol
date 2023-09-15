@@ -7,7 +7,7 @@ import "../../BaseTest.sol";
 
 contract MorphoLibTest is BaseTest {
     using MathLib for uint256;
-    using MorphoLib for Morpho;
+    using MorphoLib for IMorpho;
 
     function _testMorphoLibCommon(uint256 amountSupplied, uint256 amountBorrowed, uint256 timestamp, uint256 fee)
         private
@@ -32,11 +32,16 @@ contract MorphoLibTest is BaseTest {
         morpho.supply(marketParams, amountSupplied, 0, address(this), hex"");
 
         uint256 collateralPrice = IOracle(marketParams.oracle).price();
-        collateralToken.setBalance(BORROWER, amountBorrowed.wDivUp(lltv).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice));
+        collateralToken.setBalance(
+            BORROWER, amountBorrowed.wDivUp(marketParams.lltv).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice)
+        );
 
         vm.startPrank(BORROWER);
         morpho.supplyCollateral(
-            marketParams, amountBorrowed.wDivUp(lltv).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice), BORROWER, hex""
+            marketParams,
+            amountBorrowed.wDivUp(marketParams.lltv).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice),
+            BORROWER,
+            hex""
         );
         morpho.borrow(marketParams, amountBorrowed, 0, BORROWER, BORROWER);
         vm.stopPrank();
