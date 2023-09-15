@@ -374,13 +374,24 @@ contract MorphoInvariantTest is InvariantTest {
     }
 
     function invariantTotalSupplyGeTotalBorrow() public {
-        assertGe(morpho.totalSupplyAssets(id), morpho.totalBorrowAssets(id));
+        for (uint256 i; i < allMarketParams.length; ++i) {
+            MarketParams memory _marketParams = allMarketParams[i];
+            Id _id = _marketParams.id();
+
+            assertGe(morpho.totalSupplyAssets(_id), morpho.totalBorrowAssets(_id));
+        }
     }
 
     function invariantMorphoBalance() public {
-        assertGe(
-            borrowableToken.balanceOf(address(morpho)), morpho.totalSupplyAssets(id) - morpho.totalBorrowAssets(id)
-        );
+        for (uint256 i; i < allMarketParams.length; ++i) {
+            MarketParams memory _marketParams = allMarketParams[i];
+            Id _id = _marketParams.id();
+
+            assertGe(
+                borrowableToken.balanceOf(address(morpho)) + morpho.totalBorrowAssets(_id),
+                morpho.totalSupplyAssets(_id)
+            );
+        }
     }
 
     function invariantBadDebt() public {
