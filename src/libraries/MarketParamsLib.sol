@@ -9,13 +9,13 @@ import {Id, MarketParams} from "../interfaces/IMorpho.sol";
 /// @notice Library to convert a market to its id.
 library MarketParamsLib {
     /// @notice The length of the data used to compute the id of a market.
-    /// @dev 5 * 32 because `MarketParams` has 5 variables of 32 bytes each.
-    uint256 internal constant DATA_LENGTH = 5 * 32;
+    /// @dev The length is 5 * 32 because `MarketParams` has 5 variables of 32 bytes each.
+    uint256 internal constant MARKET_PARAMS_BYTES_LENGTH = 5 * 32;
 
     /// @notice Returns the id of the market `marketParams`.
     function id(MarketParams memory marketParams) internal pure returns (Id marketParamsId) {
         assembly ("memory-safe") {
-            marketParamsId := keccak256(marketParams, DATA_LENGTH)
+            marketParamsId := keccak256(marketParams, MARKET_PARAMS_BYTES_LENGTH)
         }
     }
 }
