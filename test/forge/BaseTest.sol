@@ -146,7 +146,8 @@ contract BaseTest is Test {
         priceCollateral = bound(priceCollateral, MIN_COLLATERAL_PRICE, MAX_COLLATERAL_PRICE);
         amountBorrowed = bound(amountBorrowed, MIN_TEST_AMOUNT, MAX_TEST_AMOUNT);
 
-        uint256 minCollateral = amountBorrowed.wDivUp(marketParams.lltv).mulDivUp(ORACLE_PRICE_SCALE, priceCollateral);
+        uint256 minCollateral =
+            amountBorrowed.wDivUp(marketParams.lltv).mulDivUp(ORACLE_PRICE_SCALE, priceCollateral) + 2;
 
         if (minCollateral <= MAX_COLLATERAL_ASSETS) {
             amountCollateral = bound(amountCollateral, minCollateral, MAX_COLLATERAL_ASSETS);
