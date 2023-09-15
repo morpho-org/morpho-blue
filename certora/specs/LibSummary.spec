@@ -4,7 +4,7 @@ methods {
     function libMulDivUp(uint256, uint256, uint256) external returns uint256 envfree;
     function libMulDivDown(uint256, uint256, uint256) external returns uint256 envfree;
     function libId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
-    function optimizedId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
+    function refId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
 }
 
 // Check the summary of mulDivUp required by RatioMath.spec
@@ -19,7 +19,7 @@ rule checkSummaryMulDivDown(uint256 x, uint256 y, uint256 d) {
     assert result * d <= x * y;
 }
 
-// Check the munging of the MarketParams.id function.
+// Check the optimization of the MarketParams.id function.
 rule checkSummaryId(MorphoHarness.MarketParams marketParams) {
-    assert optimizedId(marketParams) == libId(marketParams);
+    assert libId(marketParams) == refId(marketParams);
 }
