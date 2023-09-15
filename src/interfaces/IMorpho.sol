@@ -138,9 +138,8 @@ interface IMorpho {
     /// - The token should not re-enter Morpho on `transfer` nor `transferFrom`.
     /// - The token balance of the sender (resp. receiver) should decrease (resp. increase) by exactly the given amount
     /// on `transfer` and `transferFrom`. In particular, tokens with fees on transfer are not supported.
-    /// - For tokens with double entry points, only one implementation should be chosen to create markets to avoid
-    /// duplicates.
-    /// - Blacklisting Morpho from interacting with a token will freeze every markets using this token.
+    /// - Tokens with double entry points can lead to having duplicate markets.
+    /// - If Morpho is blacklisted from interacting with a token, then every markets using this token will be frozen.
     /// - The IRM should not re-enter Morpho.
     /// @dev Here is a list of properties on the market's dependencies that could break Morpho's liveness properties:
     /// - The token can revert on `transfer` and `transferFrom` for a reason other than an approval or balance issue.
