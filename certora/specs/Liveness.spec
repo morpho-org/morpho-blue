@@ -194,7 +194,6 @@ rule withdrawCollateralChangesTokensAndBalance(env e, MorphoInternalAccess.Marke
     assert balanceAfter == balanceBefore - assets;
 }
 
-// This rule is commented out for the moment because of a bug in CVL where market IDs are not consistent accross a run.
 // Check that one can always repay the debt in full.
 rule canRepayAll(env e, MorphoInternalAccess.MarketParams marketParams, uint256 shares, bytes data) {
     MorphoInternalAccess.Id id = libId(marketParams);

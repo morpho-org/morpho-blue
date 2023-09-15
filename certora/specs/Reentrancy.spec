@@ -41,7 +41,7 @@ hook DELEGATECALL(uint g, address addr, uint argsOffset, uint argsLength, uint r
 }
 
 // Check that no function is accessing storage, then making an external CALL other than to the IRM, and accessing storage again.
-rule reentrancySafe(method f, calldataarg data, env e) {
+rule reentrancySafe(method f, env e, calldataarg data) {
     // Set up the initial state.
     require !callIsBorrowRate;
     require !hasAccessedStorage && !hasCallAfterAccessingStorage && !hasReentrancyUnsafeCall;
@@ -50,7 +50,7 @@ rule reentrancySafe(method f, calldataarg data, env e) {
 }
 
 // Check that the contract is truly immutable.
-rule noDelegateCalls(method f, calldataarg data, env e) {
+rule noDelegateCalls(method f, env e, calldataarg data) {
     // Set up the initial state.
     require !delegate_call;
     f(e,data);
