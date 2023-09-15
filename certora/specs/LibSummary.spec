@@ -7,19 +7,19 @@ methods {
     function refId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
 }
 
-// Check the summary of mulDivUp required by RatioMath.spec
+// Check the summary of MathLib.mulDivUp required by RatioMath.spec
 rule checkSummaryMulDivUp(uint256 x, uint256 y, uint256 d) {
     uint256 result = libMulDivUp(x, y, d);
     assert result * d >= x * y;
 }
 
-// Check the summary of mulDivDown required by RatioMath.spec
+// Check the summary of MathLib.mulDivDown required by RatioMath.spec
 rule checkSummaryMulDivDown(uint256 x, uint256 y, uint256 d) {
     uint256 result = libMulDivDown(x, y, d);
     assert result * d <= x * y;
 }
 
-// Check the optimization of the MarketParams.id function.
+// Check the summary of MarketParams.id required by Liveness.spec
 rule checkSummaryId(MorphoHarness.MarketParams marketParams) {
     assert libId(marketParams) == refId(marketParams);
 }
