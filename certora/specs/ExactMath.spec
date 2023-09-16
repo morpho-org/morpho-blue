@@ -8,7 +8,9 @@ methods {
     function virtualTotalBorrowShares(MorphoHarness.Id) external returns uint256 envfree;
     function fee(MorphoHarness.Id) external returns uint256 envfree;
     function lastUpdate(MorphoHarness.Id) external returns uint256 envfree;
+    function refId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
 
+    function MarketParamsLib.id(MorphoHarness.MarketParams memory marketParams) internal returns MorphoHarness.Id => summaryId(marketParams);
     function MathLib.mulDivDown(uint256 a, uint256 b, uint256 c) internal returns uint256 => summaryMulDivDown(a,b,c);
     function MathLib.mulDivUp(uint256 a, uint256 b, uint256 c) internal returns uint256 => summaryMulDivUp(a,b,c);
     function SafeTransferLib.safeTransfer(address token, address to, uint256 value) internal => NONDET;
@@ -16,6 +18,10 @@ methods {
     function _.onMorphoSupply(uint256 assets, bytes data) external => HAVOC_ECF;
 
     function maxFee() external returns uint256 envfree;
+}
+
+function summaryId(MorphoHarness.MarketParams marketParams) returns MorphoHarness.Id {
+    return refId(marketParams);
 }
 
 function summaryMulDivUp(uint256 x, uint256 y, uint256 d) returns uint256 {

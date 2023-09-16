@@ -19,7 +19,7 @@ rule checkSummaryMulDivDown(uint256 x, uint256 y, uint256 d) {
     assert result * d <= x * y;
 }
 
-// Check the summary of MarketParams.id required by Liveness.spec
+// Check the summary of MarketParamsLib.id required by Liveness.spec and ExactMath.spec
 rule checkSummaryId(MorphoHarness.MarketParams marketParams) {
     assert libId(marketParams) == refId(marketParams);
 }

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity 0.8.19;
 
-import "../munged/Morpho.sol";
-import "../munged/libraries/SharesMathLib.sol";
-import "../munged/libraries/MarketParamsLib.sol";
+import "../../src/Morpho.sol";
+import "../../src/libraries/SharesMathLib.sol";
+import "../../src/libraries/MarketParamsLib.sol";
 
 contract MorphoHarness is Morpho {
     using MarketParamsLib for MarketParams;
