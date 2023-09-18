@@ -36,8 +36,7 @@ library ErrorsLib {
     /// @notice Thrown when zero assets is passed as input.
     string internal constant ZERO_ASSETS = "zero assets";
 
-    /// @notice Thrown when a zero address is passed as input or when the recovered address from the authorization
-    /// signature is the zero address.
+    /// @notice Thrown when a zero address is passed as input.
     string internal constant ZERO_ADDRESS = "zero address";
 
     /// @notice Thrown when the caller is not authorized to conduct an action.
