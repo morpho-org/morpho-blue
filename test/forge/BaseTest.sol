@@ -66,10 +66,10 @@ contract BaseTest is Test {
         morpho = new Morpho(OWNER);
 
         loanToken = new ERC20Mock("loan", "B");
-        vm.label(address(loanToken), "Loan");
+        vm.label(address(loanToken), "LoanToken");
 
         collateralToken = new ERC20Mock("collateral", "C");
-        vm.label(address(collateralToken), "Collateral");
+        vm.label(address(collateralToken), "CollateralToken");
 
         oracle = new OracleMock();
 
