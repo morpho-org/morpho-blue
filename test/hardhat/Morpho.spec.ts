@@ -111,7 +111,7 @@ describe("Morpho", () => {
 
     await loanToken.setBalance(admin.address, initBalance);
     await loanToken.connect(admin).approve(morphoAddress, MaxUint256);
-    
+
     await loanToken.setBalance(liquidator.address, initBalance);
     await loanToken.connect(liquidator).approve(morphoAddress, MaxUint256);
 
