@@ -5,7 +5,7 @@ import "../BaseTest.sol";
 
 contract RepayIntegrationTest is BaseTest {
     using MathLib for uint256;
-    using MorphoLib for Morpho;
+    using MorphoLib for IMorpho;
     using SharesMathLib for uint256;
 
     function testRepayMarketNotCreated(MarketParams memory marketParamsFuzz) public {

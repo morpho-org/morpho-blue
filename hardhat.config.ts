@@ -19,13 +19,9 @@ const config: HardhatUserConfig = {
       chainId: 1,
       gasPrice: 0,
       initialBaseFeePerGas: 0,
+      allowBlocksWithSameTimestamp: true,
       accounts: {
-        count: 252,
-      },
-      mining: {
-        mempool: {
-          order: "fifo",
-        },
+        count: 202, // must be even
       },
     },
   },

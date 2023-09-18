@@ -12,7 +12,7 @@ contract CallbacksIntegrationTest is
     IMorphoFlashLoanCallback
 {
     using MathLib for uint256;
-    using MorphoLib for Morpho;
+    using MorphoLib for IMorpho;
     using MarketParamsLib for MarketParams;
 
     // Callback functions.
@@ -124,7 +124,7 @@ contract CallbacksIntegrationTest is
     function testRepayCallback(uint256 loanAmount) public {
         loanAmount = bound(loanAmount, MIN_TEST_AMOUNT, MAX_TEST_AMOUNT);
         uint256 collateralAmount;
-        (collateralAmount, loanAmount,) = _boundHealthyPosition(0, loanAmount, IOracle(marketParams.oracle).price());
+        (collateralAmount, loanAmount,) = _boundHealthyPosition(0, loanAmount, oracle.price());
 
         oracle.setPrice(ORACLE_PRICE_SCALE);
 
@@ -145,7 +145,7 @@ contract CallbacksIntegrationTest is
     function testLiquidateCallback(uint256 loanAmount) public {
         loanAmount = bound(loanAmount, MIN_TEST_AMOUNT, MAX_TEST_AMOUNT);
         uint256 collateralAmount;
-        (collateralAmount, loanAmount,) = _boundHealthyPosition(0, loanAmount, IOracle(marketParams.oracle).price());
+        (collateralAmount, loanAmount,) = _boundHealthyPosition(0, loanAmount, oracle.price());
 
         oracle.setPrice(ORACLE_PRICE_SCALE);
 
@@ -171,7 +171,7 @@ contract CallbacksIntegrationTest is
     function testFlashActions(uint256 loanAmount) public {
         loanAmount = bound(loanAmount, MIN_TEST_AMOUNT, MAX_TEST_AMOUNT);
         uint256 collateralAmount;
-        (collateralAmount, loanAmount,) = _boundHealthyPosition(0, loanAmount, IOracle(marketParams.oracle).price());
+        (collateralAmount, loanAmount,) = _boundHealthyPosition(0, loanAmount, oracle.price());
 
         oracle.setPrice(ORACLE_PRICE_SCALE);
 
