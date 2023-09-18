@@ -68,7 +68,7 @@ library ErrorsLib {
     string internal constant TRANSFER_FROM_FAILED = "transferFrom failed";
 
     /// @notice Thrown on a token transfer or transferFrom when the returned data is false.
-    string internal constant TRANSFER_RETURN_FALSE = "transfer returned false";
+    string internal constant TRANSFER_RETURNED_FALSE = "transfer returned false";
 
     /// @notice Thrown when the maximum uint128 is exceeded.
     string internal constant MAX_UINT128_EXCEEDED = "max uint128 exceeded";

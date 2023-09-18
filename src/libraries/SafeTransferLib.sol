@@ -20,13 +20,13 @@ library SafeTransferLib {
         (bool success, bytes memory returndata) =
             address(token).call(abi.encodeCall(IERC20Internal.transfer, (to, value)));
         require(success, ErrorsLib.TRANSFER_FAILED);
-        require(returndata.length == 0 || abi.decode(returndata, (bool)), ErrorsLib.TRANSFER_RETURN_FALSE);
+        require(returndata.length == 0 || abi.decode(returndata, (bool)), ErrorsLib.TRANSFER_RETURNED_FALSE);
     }
 
     function safeTransferFrom(IERC20 token, address from, address to, uint256 value) internal {
         (bool success, bytes memory returndata) =
             address(token).call(abi.encodeCall(IERC20Internal.transferFrom, (from, to, value)));
         require(success, ErrorsLib.TRANSFER_FROM_FAILED);
-        require(returndata.length == 0 || abi.decode(returndata, (bool)), ErrorsLib.TRANSFER_RETURN_FALSE);
+        require(returndata.length == 0 || abi.decode(returndata, (bool)), ErrorsLib.TRANSFER_RETURNED_FALSE);
     }
 }
