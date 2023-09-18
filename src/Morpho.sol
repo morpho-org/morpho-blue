@@ -425,8 +425,7 @@ contract Morpho is IMorpho {
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, hashStruct));
         address signatory = ecrecover(digest, signature.v, signature.r, signature.s);
 
-        require(signatory != address(0), ErrorsLib.ZERO_ADDRESS);
-        require(authorization.authorizer == signatory, ErrorsLib.INVALID_SIGNATURE);
+        require(signatory != address(0) && authorization.authorizer == signatory, ErrorsLib.INVALID_SIGNATURE);
 
         emit EventsLib.IncrementNonce(msg.sender, authorization.authorizer, authorization.nonce);
 

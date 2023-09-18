@@ -40,31 +40,6 @@ contract AuthorizationIntegrationTest is BaseTest {
         morpho.setAuthorizationWithSig(authorization, sig);
     }
 
-    function testAuthorizationWithSigEcrecoverZeroAddress(
-        Authorization memory authorization,
-        uint256 privateKey,
-        uint8 v
-    ) public {
-        // Enforcing that v != 27 && v != 28 makes ecrecover to return the zero address.
-        // See https://ethereum.stackexchange.com/questions/69328/how-to-get-the-zero-address-from-ecrecover
-        vm.assume(v != 27 && v != 28);
-        authorization.deadline = bound(authorization.deadline, block.timestamp + 1, type(uint256).max);
-
-        // Private key must be less than the secp256k1 curve order.
-        privateKey = bound(privateKey, 1, type(uint32).max);
-        authorization.nonce = 0;
-        authorization.authorizer = vm.addr(privateKey);
-
-        Signature memory sig;
-        bytes32 digest = SigUtils.getTypedDataHash(morpho.DOMAIN_SEPARATOR(), authorization);
-        (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
-
-        sig.v = v;
-
-        vm.expectRevert(bytes(ErrorsLib.ZERO_ADDRESS));
-        morpho.setAuthorizationWithSig(authorization, sig);
-    }
-
     function testAuthorizationWithSigWrongPK(Authorization memory authorization, uint256 privateKey) public {
         authorization.deadline = bound(authorization.deadline, block.timestamp + 1, type(uint256).max);
 

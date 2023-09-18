@@ -248,8 +248,11 @@
         ├── when authorization.nonce != nonce[authorization.authorizer]
         │   └── revert with INVALID_NONCE
         └── when authorization.nonce == nonce[authorization.authorizer]
+<<<<<<< HEAD
             ├── when ecrecover returns the zero address
             │   └── revert with ZERO_ADDRESS
+=======
+>>>>>>> parent of 9afd7fb (feat: split requires in setAuthorizationWithSig)
             ├── when the signature is invalid or not signed by authorization.authorizer
             │   └── revert with INVALID_SIGNATURE
             └── when the signature is valid and signed by authorization.authorizer
