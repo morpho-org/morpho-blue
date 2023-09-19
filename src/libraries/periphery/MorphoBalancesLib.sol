@@ -9,7 +9,6 @@ import {UtilsLib} from "../UtilsLib.sol";
 import {MorphoLib} from "./MorphoLib.sol";
 import {SharesMathLib} from "../SharesMathLib.sol";
 import {MarketParamsLib} from "../MarketParamsLib.sol";
-import {MorphoStorageLib} from "./MorphoStorageLib.sol";
 
 interface IMorphoMarketStruct {
     function market(Id id) external view returns (Market memory);
