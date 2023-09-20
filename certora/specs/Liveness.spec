@@ -11,15 +11,21 @@ methods {
     function fee(MorphoInternalAccess.Id) external returns uint256 envfree;
     function lastUpdate(MorphoInternalAccess.Id) external returns uint256 envfree;
     function libId(MorphoInternalAccess.MarketParams) external returns MorphoInternalAccess.Id envfree;
+    function refId(MorphoInternalAccess.MarketParams) external returns MorphoInternalAccess.Id envfree;
 
     function _._accrueInterest(MorphoInternalAccess.MarketParams memory marketParams, MorphoInternalAccess.Id id) internal with (env e) => summaryAccrueInterest(e, marketParams, id) expect void;
 
+    function MarketParamsLib.id(MorphoInternalAccess.MarketParams memory marketParams) internal returns MorphoInternalAccess.Id => summaryId(marketParams);
     function SafeTransferLib.safeTransfer(address token, address to, uint256 value) internal => summarySafeTransferFrom(token, currentContract, to, value);
     function SafeTransferLib.safeTransferFrom(address token, address from, address to, uint256 value) internal => summarySafeTransferFrom(token, from, to, value);
 }
 
 ghost mapping(address => mathint) myBalances {
     init_state axiom (forall address token. myBalances[token] == 0);
+}
+
+function summaryId(MorphoInternalAccess.MarketParams marketParams) returns MorphoInternalAccess.Id {
+    return refId(marketParams);
 }
 
 function summarySafeTransferFrom(address token, address from, address to, uint256 amount) {
