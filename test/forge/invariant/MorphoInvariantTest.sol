@@ -167,8 +167,9 @@ contract MorphoInvariantTest is InvariantTest {
         logCall("liquidateSeizedAssets")
     {
         uint256 collateralPrice = oracle.price();
-        uint256 repaidAssets =
-            seizedAssets.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(_liquidationIncentive(_marketParams.lltv));
+        uint256 repaidAssets = seizedAssets.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(
+            _liquidationIncentiveFactor(_marketParams.lltv)
+        );
 
         borrowableToken.setBalance(msg.sender, repaidAssets);
 
