@@ -88,4 +88,22 @@ contract AuthorizationIntegrationTest is BaseTest {
         assertEq(morpho.isAuthorized(authorization.authorizer, authorization.authorized), authorization.isAuthorized);
         assertEq(morpho.nonce(authorization.authorizer), 1);
     }
+
+    function testAuthorizationFailsWithReusedSig(Authorization memory authorization, uint256 privateKey) public {
+        authorization.deadline = bound(authorization.deadline, block.timestamp + 1, type(uint256).max);
+
+        // Private key must be less than the secp256k1 curve order.
+        privateKey = bound(privateKey, 1, type(uint32).max);
+        authorization.nonce = 0;
+        authorization.authorizer = vm.addr(privateKey);
+
+        Signature memory sig;
+        bytes32 digest = SigUtils.getTypedDataHash(morpho.DOMAIN_SEPARATOR(), authorization);
+        (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
+
+        morpho.setAuthorizationWithSig(authorization, sig);
+
+        vm.expectRevert(bytes(ErrorsLib.INVALID_NONCE));
+        morpho.setAuthorizationWithSig(authorization, sig);
+    }
 }

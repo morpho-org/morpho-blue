@@ -5,7 +5,7 @@ import "../BaseTest.sol";
 
 contract OnlyOwnerIntegrationTest is BaseTest {
     using MathLib for uint256;
-    using MorphoLib for Morpho;
+    using MorphoLib for IMorpho;
 
     function testDeployWithAddressZero() public {
         vm.expectRevert(bytes(ErrorsLib.ZERO_ADDRESS));
@@ -65,7 +65,7 @@ contract OnlyOwnerIntegrationTest is BaseTest {
 
     function testEnableLltvWhenNotOwner(address addressFuzz, uint256 lltvFuzz) public {
         vm.assume(addressFuzz != OWNER);
-        vm.assume(lltvFuzz != LLTV);
+        vm.assume(lltvFuzz != marketParams.lltv);
 
         vm.prank(addressFuzz);
         vm.expectRevert(bytes(ErrorsLib.NOT_OWNER));
@@ -75,20 +75,20 @@ contract OnlyOwnerIntegrationTest is BaseTest {
     function testEnableLltvAlreadySet() public {
         vm.prank(OWNER);
         vm.expectRevert(bytes(ErrorsLib.ALREADY_SET));
-        morpho.enableLltv(LLTV);
+        morpho.enableLltv(marketParams.lltv);
     }
 
-    function testEnableTooHighLltv(uint256 lltvFuzz) public {
-        lltvFuzz = _boundInvalidLltv(lltvFuzz);
+    function testEnableTooHighLltv(uint256 lltv) public {
+        lltv = bound(lltv, WAD, type(uint256).max);
 
         vm.prank(OWNER);
         vm.expectRevert(bytes(ErrorsLib.MAX_LLTV_EXCEEDED));
-        morpho.enableLltv(lltvFuzz);
+        morpho.enableLltv(lltv);
     }
 
     function testEnableLltv(uint256 lltvFuzz) public {
         lltvFuzz = _boundValidLltv(lltvFuzz);
-        vm.assume(lltvFuzz != LLTV);
+        vm.assume(lltvFuzz != marketParams.lltv);
 
         vm.prank(OWNER);
         vm.expectEmit(true, true, true, true, address(morpho));
