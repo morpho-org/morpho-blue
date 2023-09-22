@@ -4,7 +4,7 @@ pragma solidity >=0.5.0;
 type Id is bytes32;
 
 struct MarketParams {
-    address borrowableToken;
+    address loanToken;
     address collateralToken;
     address oracle;
     address irm;
@@ -104,7 +104,7 @@ interface IMorpho {
     function idToMarketParams(Id id)
         external
         view
-        returns (address borrowableToken, address collateralToken, address oracle, address irm, uint256 lltv);
+        returns (address loanToken, address collateralToken, address oracle, address irm, uint256 lltv);
 
     /// @notice Sets `newOwner` as owner of the contract.
     /// @dev Warning: No two-step transfer ownership.

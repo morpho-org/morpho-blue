@@ -22,7 +22,7 @@ contract CallbacksIntegrationTest is
         bytes4 selector;
         (selector, data) = abi.decode(data, (bytes4, bytes));
         if (selector == this.testSupplyCallback.selector) {
-            borrowableToken.approve(address(morpho), amount);
+            loanToken.approve(address(morpho), amount);
         }
     }
 
@@ -44,7 +44,7 @@ contract CallbacksIntegrationTest is
         bytes4 selector;
         (selector, data) = abi.decode(data, (bytes4, bytes));
         if (selector == this.testRepayCallback.selector) {
-            borrowableToken.approve(address(morpho), amount);
+            loanToken.approve(address(morpho), amount);
         } else if (selector == this.testFlashActions.selector) {
             uint256 toWithdraw = abi.decode(data, (uint256));
             morpho.withdrawCollateral(marketParams, toWithdraw, address(this), address(this));
@@ -56,7 +56,7 @@ contract CallbacksIntegrationTest is
         bytes4 selector;
         (selector, data) = abi.decode(data, (bytes4, bytes));
         if (selector == this.testLiquidateCallback.selector) {
-            borrowableToken.approve(address(morpho), repaid);
+            loanToken.approve(address(morpho), repaid);
         }
     }
 
@@ -65,8 +65,8 @@ contract CallbacksIntegrationTest is
         bytes4 selector;
         (selector, data) = abi.decode(data, (bytes4, bytes));
         if (selector == this.testFlashLoan.selector) {
-            assertEq(borrowableToken.balanceOf(address(this)), amount);
-            borrowableToken.approve(address(morpho), amount);
+            assertEq(loanToken.balanceOf(address(this)), amount);
+            loanToken.approve(address(morpho), amount);
         }
     }
 
@@ -75,33 +75,33 @@ contract CallbacksIntegrationTest is
     function testFlashLoan(uint256 amount) public {
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
-        borrowableToken.setBalance(address(this), amount);
+        loanToken.setBalance(address(this), amount);
         morpho.supply(marketParams, amount, 0, address(this), hex"");
 
-        morpho.flashLoan(address(borrowableToken), amount, abi.encode(this.testFlashLoan.selector, hex""));
+        morpho.flashLoan(address(loanToken), amount, abi.encode(this.testFlashLoan.selector, hex""));
 
-        assertEq(borrowableToken.balanceOf(address(morpho)), amount, "balanceOf");
+        assertEq(loanToken.balanceOf(address(morpho)), amount, "balanceOf");
     }
 
     function testFlashLoanShouldRevertIfNotReimbursed(uint256 amount) public {
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
-        borrowableToken.setBalance(address(this), amount);
+        loanToken.setBalance(address(this), amount);
         morpho.supply(marketParams, amount, 0, address(this), hex"");
 
-        borrowableToken.approve(address(morpho), 0);
+        loanToken.approve(address(morpho), 0);
 
         vm.expectRevert(bytes(ErrorsLib.TRANSFER_FROM_REVERTED));
         morpho.flashLoan(
-            address(borrowableToken), amount, abi.encode(this.testFlashLoanShouldRevertIfNotReimbursed.selector, hex"")
+            address(loanToken), amount, abi.encode(this.testFlashLoanShouldRevertIfNotReimbursed.selector, hex"")
         );
     }
 
     function testSupplyCallback(uint256 amount) public {
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 
-        borrowableToken.setBalance(address(this), amount);
-        borrowableToken.approve(address(morpho), 0);
+        loanToken.setBalance(address(this), amount);
+        loanToken.approve(address(morpho), 0);
 
         vm.expectRevert();
         morpho.supply(marketParams, amount, 0, address(this), hex"");
@@ -121,47 +121,45 @@ contract CallbacksIntegrationTest is
         );
     }
 
-    function testRepayCallback(uint256 borrowableAmount) public {
-        borrowableAmount = bound(borrowableAmount, MIN_TEST_AMOUNT, MAX_TEST_AMOUNT);
+    function testRepayCallback(uint256 loanAmount) public {
+        loanAmount = bound(loanAmount, MIN_TEST_AMOUNT, MAX_TEST_AMOUNT);
         uint256 collateralAmount;
-        (collateralAmount, borrowableAmount,) = _boundHealthyPosition(0, borrowableAmount, oracle.price());
+        (collateralAmount, loanAmount,) = _boundHealthyPosition(0, loanAmount, oracle.price());
 
         oracle.setPrice(ORACLE_PRICE_SCALE);
 
-        borrowableToken.setBalance(address(this), borrowableAmount);
+        loanToken.setBalance(address(this), loanAmount);
         collateralToken.setBalance(address(this), collateralAmount);
 
-        morpho.supply(marketParams, borrowableAmount, 0, address(this), hex"");
+        morpho.supply(marketParams, loanAmount, 0, address(this), hex"");
         morpho.supplyCollateral(marketParams, collateralAmount, address(this), hex"");
-        morpho.borrow(marketParams, borrowableAmount, 0, address(this), address(this));
+        morpho.borrow(marketParams, loanAmount, 0, address(this), address(this));
 
-        borrowableToken.approve(address(morpho), 0);
+        loanToken.approve(address(morpho), 0);
 
         vm.expectRevert();
-        morpho.repay(marketParams, borrowableAmount, 0, address(this), hex"");
-        morpho.repay(
-            marketParams, borrowableAmount, 0, address(this), abi.encode(this.testRepayCallback.selector, hex"")
-        );
+        morpho.repay(marketParams, loanAmount, 0, address(this), hex"");
+        morpho.repay(marketParams, loanAmount, 0, address(this), abi.encode(this.testRepayCallback.selector, hex""));
     }
 
-    function testLiquidateCallback(uint256 borrowableAmount) public {
-        borrowableAmount = bound(borrowableAmount, MIN_TEST_AMOUNT, MAX_TEST_AMOUNT);
+    function testLiquidateCallback(uint256 loanAmount) public {
+        loanAmount = bound(loanAmount, MIN_TEST_AMOUNT, MAX_TEST_AMOUNT);
         uint256 collateralAmount;
-        (collateralAmount, borrowableAmount,) = _boundHealthyPosition(0, borrowableAmount, oracle.price());
+        (collateralAmount, loanAmount,) = _boundHealthyPosition(0, loanAmount, oracle.price());
 
         oracle.setPrice(ORACLE_PRICE_SCALE);
 
-        borrowableToken.setBalance(address(this), borrowableAmount);
+        loanToken.setBalance(address(this), loanAmount);
         collateralToken.setBalance(address(this), collateralAmount);
 
-        morpho.supply(marketParams, borrowableAmount, 0, address(this), hex"");
+        morpho.supply(marketParams, loanAmount, 0, address(this), hex"");
         morpho.supplyCollateral(marketParams, collateralAmount, address(this), hex"");
-        morpho.borrow(marketParams, borrowableAmount, 0, address(this), address(this));
+        morpho.borrow(marketParams, loanAmount, 0, address(this), address(this));
 
         oracle.setPrice(0.99e18);
 
-        borrowableToken.setBalance(address(this), borrowableAmount);
-        borrowableToken.approve(address(morpho), 0);
+        loanToken.setBalance(address(this), loanAmount);
+        loanToken.approve(address(morpho), 0);
 
         vm.expectRevert();
         morpho.liquidate(marketParams, address(this), collateralAmount, 0, hex"");
@@ -170,27 +168,27 @@ contract CallbacksIntegrationTest is
         );
     }
 
-    function testFlashActions(uint256 borrowableAmount) public {
-        borrowableAmount = bound(borrowableAmount, MIN_TEST_AMOUNT, MAX_TEST_AMOUNT);
+    function testFlashActions(uint256 loanAmount) public {
+        loanAmount = bound(loanAmount, MIN_TEST_AMOUNT, MAX_TEST_AMOUNT);
         uint256 collateralAmount;
-        (collateralAmount, borrowableAmount,) = _boundHealthyPosition(0, borrowableAmount, oracle.price());
+        (collateralAmount, loanAmount,) = _boundHealthyPosition(0, loanAmount, oracle.price());
 
         oracle.setPrice(ORACLE_PRICE_SCALE);
 
-        borrowableToken.setBalance(address(this), borrowableAmount);
-        morpho.supply(marketParams, borrowableAmount, 0, address(this), hex"");
+        loanToken.setBalance(address(this), loanAmount);
+        morpho.supply(marketParams, loanAmount, 0, address(this), hex"");
 
         morpho.supplyCollateral(
             marketParams,
             collateralAmount,
             address(this),
-            abi.encode(this.testFlashActions.selector, abi.encode(borrowableAmount))
+            abi.encode(this.testFlashActions.selector, abi.encode(loanAmount))
         );
         assertGt(morpho.borrowShares(marketParams.id(), address(this)), 0, "no borrow");
 
         morpho.repay(
             marketParams,
-            borrowableAmount,
+            loanAmount,
             0,
             address(this),
             abi.encode(this.testFlashActions.selector, abi.encode(collateralAmount))

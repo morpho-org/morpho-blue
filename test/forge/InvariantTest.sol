@@ -44,7 +44,7 @@ contract InvariantTest is BaseTest {
         targetSender(sender);
 
         vm.startPrank(sender);
-        borrowableToken.approve(address(morpho), type(uint256).max);
+        loanToken.approve(address(morpho), type(uint256).max);
         collateralToken.approve(address(morpho), type(uint256).max);
         vm.stopPrank();
     }
