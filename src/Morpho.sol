@@ -486,9 +486,9 @@ contract Morpho is IMorpho {
     }
 
     /// @dev Returns whether the position of `borrower` in the given market `marketParams` with the given
-    /// `collateralPrice`
-    /// is healthy.
+    /// `collateralPrice` is healthy.
     /// @dev Assumes that the inputs `marketParams` and `id` match.
+    /// @dev Rounds in favor of the protocol, so one might not be able to borrow exactly `maxBorrow` but one unit less.
     function _isHealthy(MarketParams memory marketParams, Id id, address borrower, uint256 collateralPrice)
         internal
         view
