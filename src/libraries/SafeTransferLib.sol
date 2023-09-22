@@ -17,6 +17,7 @@ interface IERC20Internal {
 /// returning a boolean.
 /// @dev It is the responsibility of the market creator to make sure that the address of the token has non-zero code.
 library SafeTransferLib {
+    /// @dev Warning: It does not revert on `token` with no code.
     function safeTransfer(IERC20 token, address to, uint256 value) internal {
         (bool success, bytes memory returndata) =
             address(token).call(abi.encodeCall(IERC20Internal.transfer, (to, value)));
@@ -24,6 +25,7 @@ library SafeTransferLib {
         require(returndata.length == 0 || abi.decode(returndata, (bool)), ErrorsLib.TRANSFER_RETURNED_FALSE);
     }
 
+    /// @dev Warning: It does not revert on `token` with no code.
     function safeTransferFrom(IERC20 token, address from, address to, uint256 value) internal {
         (bool success, bytes memory returndata) =
             address(token).call(abi.encodeCall(IERC20Internal.transferFrom, (from, to, value)));
