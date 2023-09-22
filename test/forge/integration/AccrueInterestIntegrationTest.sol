@@ -5,20 +5,16 @@ import "../BaseTest.sol";
 
 contract AccrueInterestIntegrationTest is BaseTest {
     using MathLib for uint256;
-    using MorphoLib for Morpho;
+    using MorphoLib for IMorpho;
     using SharesMathLib for uint256;
 
     function testAccrueInterestNoTimeElapsed(uint256 amountSupplied, uint256 amountBorrowed) public {
-        uint256 collateralPrice = IOracle(marketParams.oracle).price();
+        uint256 collateralPrice = oracle.price();
         uint256 amountCollateral;
         (amountCollateral, amountBorrowed,) = _boundHealthyPosition(amountCollateral, amountBorrowed, collateralPrice);
         amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
 
-        // Set fee parameters.
-        vm.prank(OWNER);
-        morpho.setFeeRecipient(OWNER);
-
-        borrowableToken.setBalance(address(this), amountSupplied);
+        loanToken.setBalance(address(this), amountSupplied);
         morpho.supply(marketParams, amountSupplied, 0, address(this), hex"");
 
         collateralToken.setBalance(BORROWER, amountCollateral);
@@ -37,18 +33,14 @@ contract AccrueInterestIntegrationTest is BaseTest {
         assertEq(morpho.totalBorrowAssets(id), totalBorrowBeforeAccrued, "total borrow");
         assertEq(morpho.totalSupplyAssets(id), totalSupplyBeforeAccrued, "total supply");
         assertEq(morpho.totalSupplyShares(id), totalSupplySharesBeforeAccrued, "total supply shares");
-        assertEq(morpho.supplyShares(id, OWNER), 0, "feeRecipient's supply shares");
+        assertEq(morpho.supplyShares(id, FEE_RECIPIENT), 0, "feeRecipient's supply shares");
     }
 
     function testAccrueInterestNoBorrow(uint256 amountSupplied, uint256 timeElapsed) public {
         amountSupplied = bound(amountSupplied, 2, MAX_TEST_AMOUNT);
         timeElapsed = uint32(bound(timeElapsed, 1, type(uint32).max));
 
-        // Set fee parameters.
-        vm.prank(OWNER);
-        morpho.setFeeRecipient(OWNER);
-
-        borrowableToken.setBalance(address(this), amountSupplied);
+        loanToken.setBalance(address(this), amountSupplied);
         morpho.supply(marketParams, amountSupplied, 0, address(this), hex"");
 
         // New block.
@@ -64,23 +56,19 @@ contract AccrueInterestIntegrationTest is BaseTest {
         assertEq(morpho.totalBorrowAssets(id), totalBorrowBeforeAccrued, "total borrow");
         assertEq(morpho.totalSupplyAssets(id), totalSupplyBeforeAccrued, "total supply");
         assertEq(morpho.totalSupplyShares(id), totalSupplySharesBeforeAccrued, "total supply shares");
-        assertEq(morpho.supplyShares(id, OWNER), 0, "feeRecipient's supply shares");
+        assertEq(morpho.supplyShares(id, FEE_RECIPIENT), 0, "feeRecipient's supply shares");
         assertEq(morpho.lastUpdate(id), block.timestamp, "last update");
     }
 
     function testAccrueInterestNoFee(uint256 amountSupplied, uint256 amountBorrowed, uint256 timeElapsed) public {
-        uint256 collateralPrice = IOracle(marketParams.oracle).price();
+        uint256 collateralPrice = oracle.price();
         uint256 amountCollateral;
         (amountCollateral, amountBorrowed,) = _boundHealthyPosition(amountCollateral, amountBorrowed, collateralPrice);
         amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
         timeElapsed = uint32(bound(timeElapsed, 1, type(uint32).max));
 
-        // Set fee parameters.
-        vm.prank(OWNER);
-        morpho.setFeeRecipient(OWNER);
-
-        borrowableToken.setBalance(address(this), amountSupplied);
-        borrowableToken.setBalance(address(this), amountSupplied);
+        loanToken.setBalance(address(this), amountSupplied);
+        loanToken.setBalance(address(this), amountSupplied);
         morpho.supply(marketParams, amountSupplied, 0, address(this), hex"");
 
         collateralToken.setBalance(BORROWER, amountCollateral);
@@ -111,7 +99,7 @@ contract AccrueInterestIntegrationTest is BaseTest {
         assertEq(morpho.totalBorrowAssets(id), totalBorrowBeforeAccrued + expectedAccruedInterest, "total borrow");
         assertEq(morpho.totalSupplyAssets(id), totalSupplyBeforeAccrued + expectedAccruedInterest, "total supply");
         assertEq(morpho.totalSupplyShares(id), totalSupplySharesBeforeAccrued, "total supply shares");
-        assertEq(morpho.supplyShares(id, OWNER), 0, "feeRecipient's supply shares");
+        assertEq(morpho.supplyShares(id, FEE_RECIPIENT), 0, "feeRecipient's supply shares");
         assertEq(morpho.lastUpdate(id), block.timestamp, "last update");
     }
 
@@ -133,7 +121,7 @@ contract AccrueInterestIntegrationTest is BaseTest {
     ) public {
         AccrueInterestWithFeesTestParams memory params;
 
-        uint256 collateralPrice = IOracle(marketParams.oracle).price();
+        uint256 collateralPrice = oracle.price();
         uint256 amountCollateral;
         (amountCollateral, amountBorrowed,) = _boundHealthyPosition(amountCollateral, amountBorrowed, collateralPrice);
         amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
@@ -142,11 +130,10 @@ contract AccrueInterestIntegrationTest is BaseTest {
 
         // Set fee parameters.
         vm.startPrank(OWNER);
-        morpho.setFeeRecipient(OWNER);
         if (fee != morpho.fee(id)) morpho.setFee(marketParams, fee);
         vm.stopPrank();
 
-        borrowableToken.setBalance(address(this), amountSupplied);
+        loanToken.setBalance(address(this), amountSupplied);
         morpho.supply(marketParams, amountSupplied, 0, address(this), hex"");
 
         collateralToken.setBalance(BORROWER, amountCollateral);
@@ -194,7 +181,7 @@ contract AccrueInterestIntegrationTest is BaseTest {
             params.totalSupplySharesBeforeAccrued + params.feeShares,
             "total supply shares"
         );
-        assertEq(morpho.supplyShares(id, OWNER), params.feeShares, "feeRecipient's supply shares");
+        assertEq(morpho.supplyShares(id, FEE_RECIPIENT), params.feeShares, "feeRecipient's supply shares");
         assertEq(morpho.lastUpdate(id), block.timestamp, "last update");
     }
 }

@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import "../BaseTest.sol";
 
 contract SupplyCollateralIntegrationTest is BaseTest {
-    using MorphoLib for Morpho;
+    using MorphoLib for IMorpho;
 
     function testSupplyCollateralMarketNotCreated(MarketParams memory marketParamsFuzz, uint256 amount) public {
         vm.assume(neq(marketParamsFuzz, marketParams));

@@ -96,7 +96,7 @@ contract Morpho is IMorpho {
 
         isIrmEnabled[irm] = true;
 
-        emit EventsLib.EnableIrm(address(irm));
+        emit EventsLib.EnableIrm(irm);
     }
 
     /// @inheritdoc IMorpho
@@ -178,7 +178,7 @@ contract Morpho is IMorpho {
 
         if (data.length > 0) IMorphoSupplyCallback(msg.sender).onMorphoSupply(assets, data);
 
-        IERC20(marketParams.borrowableToken).safeTransferFrom(msg.sender, address(this), assets);
+        IERC20(marketParams.loanToken).safeTransferFrom(msg.sender, address(this), assets);
 
         return (assets, shares);
     }
@@ -211,7 +211,7 @@ contract Morpho is IMorpho {
 
         emit EventsLib.Withdraw(id, msg.sender, onBehalf, receiver, assets, shares);
 
-        IERC20(marketParams.borrowableToken).safeTransfer(receiver, assets);
+        IERC20(marketParams.loanToken).safeTransfer(receiver, assets);
 
         return (assets, shares);
     }
@@ -247,7 +247,7 @@ contract Morpho is IMorpho {
 
         emit EventsLib.Borrow(id, msg.sender, onBehalf, receiver, assets, shares);
 
-        IERC20(marketParams.borrowableToken).safeTransfer(receiver, assets);
+        IERC20(marketParams.loanToken).safeTransfer(receiver, assets);
 
         return (assets, shares);
     }
@@ -279,7 +279,7 @@ contract Morpho is IMorpho {
 
         if (data.length > 0) IMorphoRepayCallback(msg.sender).onMorphoRepay(assets, data);
 
-        IERC20(marketParams.borrowableToken).safeTransferFrom(msg.sender, address(this), assets);
+        IERC20(marketParams.loanToken).safeTransferFrom(msg.sender, address(this), assets);
 
         return (assets, shares);
     }
@@ -389,7 +389,7 @@ contract Morpho is IMorpho {
 
         if (data.length > 0) IMorphoLiquidateCallback(msg.sender).onMorphoLiquidate(repaidAssets, data);
 
-        IERC20(marketParams.borrowableToken).safeTransferFrom(msg.sender, address(this), repaidAssets);
+        IERC20(marketParams.loanToken).safeTransferFrom(msg.sender, address(this), repaidAssets);
 
         return (seizedAssets, repaidAssets);
     }
@@ -486,9 +486,9 @@ contract Morpho is IMorpho {
     }
 
     /// @dev Returns whether the position of `borrower` in the given market `marketParams` with the given
-    /// `collateralPrice`
-    /// is healthy.
+    /// `collateralPrice` is healthy.
     /// @dev Assumes that the inputs `marketParams` and `id` match.
+    /// @dev Rounds in favor of the protocol, so one might not be able to borrow exactly `maxBorrow` but one unit less.
     function _isHealthy(MarketParams memory marketParams, Id id, address borrower, uint256 collateralPrice)
         internal
         view

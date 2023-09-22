@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-pragma solidity >=0.6.2;
+pragma solidity >=0.5.0;
 
 /// @title IMorphoLiquidateCallback
 /// @notice Interface that liquidators willing to use `liquidate`'s callback must implement.
