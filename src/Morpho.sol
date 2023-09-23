@@ -73,7 +73,7 @@ contract Morpho is IMorpho {
 
     /* MODIFIERS */
 
-    /// @notice Reverts if the caller is not the owner.
+    /// @dev Reverts if the caller is not the owner.
     modifier onlyOwner() {
         require(msg.sender == owner, ErrorsLib.NOT_OWNER);
         _;
@@ -436,6 +436,7 @@ contract Morpho is IMorpho {
         );
     }
 
+    /// @dev Returns whether the sender is authorized to manage `onBehalf`'s positions.
     function _isSenderAuthorized(address onBehalf) internal view returns (bool) {
         return msg.sender == onBehalf || isAuthorized[onBehalf][msg.sender];
     }
