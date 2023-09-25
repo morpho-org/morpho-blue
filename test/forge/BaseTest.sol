@@ -339,7 +339,7 @@ contract BaseTest is Test {
         uint256 collateral = morpho.collateral(_id, borrower);
         uint256 collateralPrice = IOracle(_marketParams.oracle).price();
         uint256 maxRepaidAssets = morpho.expectedBorrowBalance(_marketParams, borrower);
-        uint256 maxSeizedAssets = maxRepaidAssets.wMulDown(_liquidationIncentive(_marketParams.lltv)).mulDivDown(
+        uint256 maxSeizedAssets = maxRepaidAssets.wMulDown(_liquidationIncentiveFactor(_marketParams.lltv)).mulDivDown(
             ORACLE_PRICE_SCALE, collateralPrice
         );
 
@@ -356,7 +356,7 @@ contract BaseTest is Test {
         uint256 borrowShares = morpho.borrowShares(_id, borrower);
         uint256 collateralPrice = IOracle(_marketParams.oracle).price();
         uint256 maxRepaidAssets = morpho.collateral(_id, borrower).mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(
-            _liquidationIncentive(_marketParams.lltv)
+            _liquidationIncentiveFactor(_marketParams.lltv)
         );
         (,, uint256 totalBorrowAssets, uint256 totalBorrowShares) = morpho.expectedMarketBalances(marketParams);
         uint256 maxRepaidShares = maxRepaidAssets.toSharesDown(totalBorrowAssets, totalBorrowShares);
@@ -379,7 +379,7 @@ contract BaseTest is Test {
         return maxBorrow >= borrowed;
     }
 
-    function _liquidationIncentive(uint256 lltv) internal pure returns (uint256) {
+    function _liquidationIncentiveFactor(uint256 lltv) internal pure returns (uint256) {
         return Math.min(MAX_LIQUIDATION_INCENTIVE_FACTOR, WAD.wDivDown(WAD - LIQUIDATION_CURSOR.wMulDown(WAD - lltv)));
     }
 
