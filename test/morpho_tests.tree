@@ -209,7 +209,7 @@
         ├── when both seizedAssets and repaidShares are null or both seizedAssets and repaidShares are not null
         │   └─  revert with INCONSISTENT_INPUT
         └── when one of seizedAssets or repaidShares is null and one of seizedAssets or repaidShares is not null
-            ├── it should accrue the interests
+            ├── it should accrue the interest
             ├── when position is healthy
             │   └── revert with HEALTHY_POSITION
             └── when the position is not healthy
@@ -218,7 +218,7 @@
                 │    └── it should compute repaidShares = assetsRepaid.toSharesDown(totalBorrow[marketParams.id], totalBorrowShares[market.id])
                 ├── when repaidShares is not zero
                 │    ├── it should compute assetsRepaid = repaidShares.toAssetsUp(totalBorrow[marketParams.id], totalBorrowShares[marketParams.id])
-                │    └── it should compute seizedAssets = assetsRepaid.wMulDown(incentiveFactor).mulDivDown(ORACLE_PRICE_SCALE, collateralPrice)
+                │    └── it should compute seizedAssets = assetsRepaid.wMulDown(liquidationIncentiveFactor).mulDivDown(ORACLE_PRICE_SCALE, collateralPrice)
                 ├── it should remove repaidShares from totalBorrowShares[marketParams.id]
                 ├── it should remove assetsRepaid from totalBorrow[marketParams.id]
                 ├── it should remove repaidShares from collateral[marketParams.id][borrower]
