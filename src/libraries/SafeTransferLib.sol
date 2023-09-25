@@ -12,7 +12,7 @@ interface IERC20Internal {
 
 /// @title SafeTransferLib
 /// @author Morpho Labs
-/// @custom:contact security@morpho.xyz
+/// @custom:contact security@morpho.org
 /// @notice Library to manage transfers of tokens, even if calls to the transfer or transferFrom functions are not
 /// returning a boolean.
 /// @dev It is the responsibility of the market creator to make sure that the address of the token has non-zero code.

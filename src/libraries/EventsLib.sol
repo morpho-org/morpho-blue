@@ -5,7 +5,7 @@ import {Id, MarketParams} from "../interfaces/IMorpho.sol";
 
 /// @title EventsLib
 /// @author Morpho Labs
-/// @custom:contact security@morpho.xyz
+/// @custom:contact security@morpho.org
 /// @notice Library exposing events.
 library EventsLib {
     /// @notice Emitted when setting a new owner.

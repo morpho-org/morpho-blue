@@ -24,7 +24,7 @@ import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
 
 /// @title Morpho
 /// @author Morpho Labs
-/// @custom:contact security@morpho.xyz
+/// @custom:contact security@morpho.org
 /// @notice The Morpho contract.
 contract Morpho is IMorpho {
     using MathLib for uint128;

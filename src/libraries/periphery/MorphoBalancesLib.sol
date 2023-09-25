@@ -16,7 +16,7 @@ interface IMorphoMarketStruct {
 
 /// @title MorphoBalancesLib
 /// @author Morpho Labs
-/// @custom:contact security@morpho.xyz
+/// @custom:contact security@morpho.org
 /// @notice Helper library exposing getters with the expected value after interest accrual.
 /// @dev This library is not used in Morpho itself and is intended to be used by integrators.
 /// @dev The getter to retrieve the expected total borrow shares is not exposed because interest accrual does not apply

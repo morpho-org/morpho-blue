@@ -5,7 +5,7 @@ import {Id, MarketParams} from "../interfaces/IMorpho.sol";
 
 /// @title MarketParamsLib
 /// @author Morpho Labs
-/// @custom:contact security@morpho.xyz
+/// @custom:contact security@morpho.org
 /// @notice Library to convert a market to its id.
 library MarketParamsLib {
     /// @notice The length of the data used to compute the id of a market.
