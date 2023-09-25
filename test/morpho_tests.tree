@@ -209,7 +209,7 @@
         ├── when both seizedAssets and repaidShares are null or both seizedAssets and repaidShares are not null
         │   └─  revert with INCONSISTENT_INPUT
         └── when one of seizedAssets or repaidShares is null and one of seizedAssets or repaidShares is not null
-            ├── it should accrue the interests
+            ├── it should accrue the interest
             ├── when position is healthy
             │   └── revert with HEALTHY_POSITION
             └── when the position is not healthy
