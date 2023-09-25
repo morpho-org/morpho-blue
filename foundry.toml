@@ -5,8 +5,8 @@ via-ir = true
 optimizer_runs = 4294967295
 
 [profile.default.invariant]
-runs = 16
-depth = 256
+runs = 4
+depth = 512
 fail_on_revert = true
 
 [profile.default.fmt]
