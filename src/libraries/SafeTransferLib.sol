@@ -5,10 +5,6 @@ import {IERC20} from "../interfaces/IERC20.sol";
 
 import {ErrorsLib} from "../libraries/ErrorsLib.sol";
 
-/// @title IERC20Internal
-/// @author Morpho Labs
-/// @custom:contact security@morpho.xyz
-/// @notice ERC20 token interface to have access to the selectors of the `transfer` and `transferFrom` functions.
 interface IERC20Internal {
     function transfer(address to, uint256 value) external returns (bool);
     function transferFrom(address from, address to, uint256 value) external returns (bool);
