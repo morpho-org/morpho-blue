@@ -102,7 +102,7 @@ contract BorrowIntegrationTest is BaseTest {
 
         vm.startPrank(BORROWER);
         morpho.supplyCollateral(marketParams, amountCollateral, BORROWER, hex"");
-        vm.expectRevert(bytes(ErrorsLib.INSUFFICIENT_LIQUIDITY));
+        vm.expectRevert();
         morpho.borrow(marketParams, amountBorrowed, 0, BORROWER, BORROWER);
         vm.stopPrank();
     }

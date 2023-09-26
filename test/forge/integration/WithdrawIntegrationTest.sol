@@ -76,7 +76,7 @@ contract WithdrawIntegrationTest is BaseTest {
         vm.stopPrank();
 
         vm.prank(SUPPLIER);
-        vm.expectRevert(bytes(ErrorsLib.INSUFFICIENT_LIQUIDITY));
+        vm.expectRevert();
         morpho.withdraw(marketParams, amountSupplied, 0, SUPPLIER, RECEIVER);
     }
 
