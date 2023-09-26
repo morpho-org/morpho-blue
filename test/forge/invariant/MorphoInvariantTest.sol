@@ -45,7 +45,9 @@ contract MorphoInvariantTest is InvariantTest {
                 collateralToken: address(collateralToken),
                 oracle: address(oracle),
                 irm: address(irm),
-                lltv: 0.8 ether / i
+                lltv: 0.8 ether / i,
+                authority: address(0),
+                authorityCalls: AuthorityCalls(false, false, false, false)
             });
 
             vm.startPrank(OWNER);

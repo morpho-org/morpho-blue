@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
+import "src/interfaces/IMorpho.sol";
 import "src/interfaces/IMorphoCallbacks.sol";
 import {IrmMock} from "src/mocks/IrmMock.sol";
 import {ERC20Mock} from "src/mocks/ERC20Mock.sol";
@@ -110,7 +111,15 @@ contract BaseTest is Test {
     }
 
     function _setLltv(uint256 lltv) internal {
-        marketParams = MarketParams(address(loanToken), address(collateralToken), address(oracle), address(irm), lltv);
+        marketParams = MarketParams(
+            address(loanToken),
+            address(collateralToken),
+            address(oracle),
+            address(irm),
+            lltv,
+            address(0),
+            AuthorityCalls(false, false, false, false)
+        );
         id = marketParams.id();
 
         vm.startPrank(OWNER);

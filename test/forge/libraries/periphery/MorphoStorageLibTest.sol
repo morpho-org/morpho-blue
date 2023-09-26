@@ -99,7 +99,9 @@ contract MorphoStorageLibTest is BaseTest {
             address expectedCollateralToken,
             address expectedOracle,
             address expectedIrm,
-            uint256 expectedLltv
+            uint256 expectedLltv,
+            address authority,
+            AuthorityCalls memory authorityCalls
         ) = morpho.idToMarketParams(id);
         assertEq(abi.decode(abi.encode(values[11]), (address)), expectedloanToken);
         assertEq(abi.decode(abi.encode(values[12]), (address)), expectedCollateralToken);
