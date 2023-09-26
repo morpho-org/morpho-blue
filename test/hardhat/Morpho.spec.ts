@@ -57,7 +57,7 @@ describe("Morpho", () => {
   let id: Buffer;
 
   const updateMarket = (newMarket: MarketParamsStruct) => {
-    marketParams = newMarket ;
+    marketParams = newMarket;
     id = identifier(marketParams);
   };
 
@@ -86,9 +86,9 @@ describe("Morpho", () => {
     morpho = await MorphoFactory.deploy(admin.address);
 
     const IrmMockFactory = await hre.ethers.getContractFactory("IrmMock", admin);
-    
+
     irm = await IrmMockFactory.deploy();
-    
+
     const PermissionMockFactory = await hre.ethers.getContractFactory("PermissionMock", admin);
 
     permission = await PermissionMockFactory.deploy();
