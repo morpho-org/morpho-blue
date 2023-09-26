@@ -71,8 +71,8 @@ describe("Morpho", () => {
 
     const ERC20MockFactory = await hre.ethers.getContractFactory("ERC20Mock", admin);
 
-    loanToken = await ERC20MockFactory.deploy("DAI", "DAI");
-    collateralToken = await ERC20MockFactory.deploy("Wrapped BTC", "WBTC");
+    loanToken = await ERC20MockFactory.deploy();
+    collateralToken = await ERC20MockFactory.deploy();
 
     const OracleMockFactory = await hre.ethers.getContractFactory("OracleMock", admin);
 
