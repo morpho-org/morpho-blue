@@ -3,7 +3,7 @@ import { setNextBlockTimestamp } from "@nomicfoundation/hardhat-network-helpers/
 import { expect } from "chai";
 import { AbiCoder, MaxUint256, keccak256, toBigInt } from "ethers";
 import hre from "hardhat";
-import { Morpho, OracleMock, ERC20Mock, IrmMock } from "types";
+import { Morpho, OracleMock, ERC20Mock, IrmMock, PermissionMock } from "types";
 import { MarketParamsStruct } from "types/src/Morpho";
 import { FlashBorrowerMock } from "types/src/mocks/FlashBorrowerMock";
 
@@ -21,7 +21,7 @@ const random = () => {
 
 const identifier = (marketParams: MarketParamsStruct) => {
   const encodedMarket = AbiCoder.defaultAbiCoder().encode(
-    ["address", "address", "address", "address", "uint256"],
+    ["address", "address", "address", "address", "uint256", "address"],
     Object.values(marketParams),
   );
 
@@ -50,13 +50,14 @@ describe("Morpho", () => {
   let collateralToken: ERC20Mock;
   let oracle: OracleMock;
   let irm: IrmMock;
+  let permission: PermissionMock;
   let flashBorrower: FlashBorrowerMock;
 
   let marketParams: MarketParamsStruct;
   let id: Buffer;
 
-  const updateMarket = (newMarket: Partial<MarketParamsStruct>) => {
-    marketParams = { ...marketParams, ...newMarket };
+  const updateMarket = (newMarket: MarketParamsStruct) => {
+    marketParams = newMarket ;
     id = identifier(marketParams);
   };
 
@@ -85,8 +86,12 @@ describe("Morpho", () => {
     morpho = await MorphoFactory.deploy(admin.address);
 
     const IrmMockFactory = await hre.ethers.getContractFactory("IrmMock", admin);
-
+    
     irm = await IrmMockFactory.deploy();
+    
+    const PermissionMockFactory = await hre.ethers.getContractFactory("PermissionMock", admin);
+
+    permission = await PermissionMockFactory.deploy();
 
     updateMarket({
       loanToken: await loanToken.getAddress(),
@@ -94,6 +99,7 @@ describe("Morpho", () => {
       oracle: await oracle.getAddress(),
       irm: await irm.getAddress(),
       lltv: BigInt.WAD / 2n + 1n,
+      permission: await permission.getAddress(),
     });
 
     await morpho.enableLltv(marketParams.lltv);
@@ -177,7 +183,14 @@ describe("Morpho", () => {
         await morpho.createMarket({ ...marketParams, lltv });
       }
 
-      updateMarket({ lltv });
+      updateMarket({
+        loanToken: await loanToken.getAddress(),
+        collateralToken: await collateralToken.getAddress(),
+        oracle: await oracle.getAddress(),
+        irm: await irm.getAddress(),
+        lltv: lltv,
+        permission: await permission.getAddress(),
+      });
 
       // We use 2 different users to borrow from a marketParams so that liquidations do not put the borrow storage back to 0 on that marketParams.
       await morpho.connect(user).supply(marketParams, assets, 0, user.address, "0x");
