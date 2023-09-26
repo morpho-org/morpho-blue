@@ -12,6 +12,7 @@ import {
 import {IIrm} from "./interfaces/IIrm.sol";
 import {IERC20} from "./interfaces/IERC20.sol";
 import {IOracle} from "./interfaces/IOracle.sol";
+import {IAuthority} from "./interfaces/IAuthority.sol";
 
 import "./libraries/ConstantsLib.sol";
 import {UtilsLib} from "./libraries/UtilsLib.sol";
@@ -165,6 +166,10 @@ contract Morpho is IMorpho {
         require(UtilsLib.exactlyOneZero(assets, shares), ErrorsLib.INCONSISTENT_INPUT);
         require(onBehalf != address(0), ErrorsLib.ZERO_ADDRESS);
 
+        if (marketParams.authority != address(0) && marketParams.authorityCalls.onSupply) {
+            require(IAuthority(marketParams.authority).isAuthorized(msg.sender), ErrorsLib.UNAUTHORIZED);
+        }
+
         _accrueInterest(marketParams, id);
 
         if (assets > 0) shares = assets.toSharesDown(market[id].totalSupplyAssets, market[id].totalSupplyShares);
@@ -233,6 +238,10 @@ contract Morpho is IMorpho {
         require(receiver != address(0), ErrorsLib.ZERO_ADDRESS);
         require(_isSenderAuthorized(onBehalf), ErrorsLib.UNAUTHORIZED);
 
+        if (marketParams.authority != address(0) && marketParams.authorityCalls.onBorrow) {
+            require(IAuthority(marketParams.authority).isAuthorized(msg.sender), ErrorsLib.UNAUTHORIZED);
+        }
+
         _accrueInterest(marketParams, id);
 
         if (assets > 0) shares = assets.toSharesUp(market[id].totalBorrowAssets, market[id].totalBorrowShares);
@@ -295,6 +304,10 @@ contract Morpho is IMorpho {
         require(assets != 0, ErrorsLib.ZERO_ASSETS);
         require(onBehalf != address(0), ErrorsLib.ZERO_ADDRESS);
 
+        if (marketParams.authority != address(0) && marketParams.authorityCalls.onSupplyCollateral) {
+            require(IAuthority(marketParams.authority).isAuthorized(msg.sender), ErrorsLib.UNAUTHORIZED);
+        }
+
         // Don't accrue interest because it's not required and it saves gas.
 
         position[id][onBehalf].collateral += assets.toUint128();
@@ -341,6 +354,10 @@ contract Morpho is IMorpho {
         Id id = marketParams.id();
         require(market[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
         require(UtilsLib.exactlyOneZero(seizedAssets, repaidShares), ErrorsLib.INCONSISTENT_INPUT);
+
+        if (marketParams.authority != address(0) && marketParams.authorityCalls.onLiquidate) {
+            require(IAuthority(marketParams.authority).isAuthorized(msg.sender), ErrorsLib.UNAUTHORIZED);
+        }
 
         _accrueInterest(marketParams, id);
 

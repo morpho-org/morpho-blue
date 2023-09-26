@@ -9,6 +9,8 @@ struct MarketParams {
     address oracle;
     address irm;
     uint256 lltv;
+    address authority;
+    AuthorityCalls authorityCalls;
 }
 
 /// @dev Warning: For `feeRecipient`, `supplyShares` does not contain the accrued shares since the last interest
@@ -44,6 +46,13 @@ struct Signature {
     uint8 v;
     bytes32 r;
     bytes32 s;
+}
+
+struct AuthorityCalls {
+    bool onSupply;
+    bool onSupplyCollateral;
+    bool onBorrow;
+    bool onLiquidate;
 }
 
 /// @title IMorpho
@@ -104,7 +113,15 @@ interface IMorpho {
     function idToMarketParams(Id id)
         external
         view
-        returns (address loanToken, address collateralToken, address oracle, address irm, uint256 lltv);
+        returns (
+            address loanToken,
+            address collateralToken,
+            address oracle,
+            address irm,
+            uint256 lltv,
+            address authority,
+            AuthorityCalls memory authorityCalls
+        );
 
     /// @notice Sets `newOwner` as owner of the contract.
     /// @dev Warning: No two-step transfer ownership.
