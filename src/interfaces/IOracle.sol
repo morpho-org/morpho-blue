@@ -3,7 +3,7 @@ pragma solidity >=0.5.0;
 
 /// @title IOracle
 /// @author Morpho Labs
-/// @custom:contact security@morpho.xyz
+/// @custom:contact security@morpho.org
 /// @notice Interface that oracles used by Morpho must implement.
 interface IOracle {
     /// @notice Returns the price of 1 asset of collateral token quoted in 1 asset of loan token, scaled by 1e36.

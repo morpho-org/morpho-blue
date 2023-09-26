@@ -5,7 +5,7 @@ import {MarketParams, Market} from "./IMorpho.sol";
 
 /// @title IIrm
 /// @author Morpho Labs
-/// @custom:contact security@morpho.xyz
+/// @custom:contact security@morpho.org
 /// @notice Interface that IRMs used by Morpho must implement.
 interface IIrm {
     /// @notice Returns the borrow rate of the market `marketParams`.

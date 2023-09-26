@@ -5,7 +5,7 @@ uint256 constant WAD = 1e18;
 
 /// @title MathLib
 /// @author Morpho Labs
-/// @custom:contact security@morpho.xyz
+/// @custom:contact security@morpho.org
 /// @notice Library to manage fixed-point arithmetic.
 library MathLib {
     /// @dev (x * y) / WAD rounded down.

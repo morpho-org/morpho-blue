@@ -5,7 +5,7 @@ import {Id} from "../../interfaces/IMorpho.sol";
 
 /// @title MorphoStorageLib
 /// @author Morpho Labs
-/// @custom:contact security@morpho.xyz
+/// @custom:contact security@morpho.org
 /// @notice Helper library exposing getters to access Morpho storage variables' slot.
 /// @dev This library is not used in Morpho itself and is intended to be used by integrators.
 library MorphoStorageLib {

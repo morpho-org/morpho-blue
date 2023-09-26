@@ -48,7 +48,7 @@ struct Signature {
 
 /// @title IMorpho
 /// @author Morpho Labs
-/// @custom:contact security@morpho.xyz
+/// @custom:contact security@morpho.org
 /// @notice Interface of Morpho.
 interface IMorpho {
     /// @notice The EIP-712 domain separator.
