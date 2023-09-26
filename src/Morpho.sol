@@ -12,6 +12,7 @@ import {
 import {IIrm} from "./interfaces/IIrm.sol";
 import {IERC20} from "./interfaces/IERC20.sol";
 import {IOracle} from "./interfaces/IOracle.sol";
+import {IPermission} from "./interfaces/IPermission.sol";
 
 import "./libraries/ConstantsLib.sol";
 import {UtilsLib} from "./libraries/UtilsLib.sol";
@@ -164,6 +165,7 @@ contract Morpho is IMorpho {
         require(market[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
         require(UtilsLib.exactlyOneZero(assets, shares), ErrorsLib.INCONSISTENT_INPUT);
         require(onBehalf != address(0), ErrorsLib.ZERO_ADDRESS);
+        require(IPermission(marketParams.permission).isPermissioned(msg.sender));
 
         _accrueInterest(marketParams, id);
 
@@ -232,6 +234,7 @@ contract Morpho is IMorpho {
         // No need to verify that onBehalf != address(0) thanks to the authorization check.
         require(receiver != address(0), ErrorsLib.ZERO_ADDRESS);
         require(_isSenderAuthorized(onBehalf), ErrorsLib.UNAUTHORIZED);
+        require(IPermission(marketParams.permission).isPermissioned(msg.sender));
 
         _accrueInterest(marketParams, id);
 
@@ -341,6 +344,7 @@ contract Morpho is IMorpho {
         Id id = marketParams.id();
         require(market[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
         require(UtilsLib.exactlyOneZero(seizedAssets, repaidShares), ErrorsLib.INCONSISTENT_INPUT);
+        require(IPermission(marketParams.permission).isPermissioned(msg.sender));
 
         _accrueInterest(marketParams, id);
 

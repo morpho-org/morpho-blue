@@ -84,7 +84,7 @@ contract CreateMarketIntegrationTest is BaseTest {
         morpho.createMarket(marketParamsFuzz);
         vm.stopPrank();
 
-        (address loanToken, address collateralToken, address oracle, address irm, uint256 lltv) =
+        (address loanToken, address collateralToken, address oracle, address irm, uint256 lltv, address authorization) =
             morpho.idToMarketParams(marketParamsFuzzId);
 
         assertEq(marketParamsFuzz.loanToken, loanToken, "loanToken != loanToken");

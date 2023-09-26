@@ -9,6 +9,7 @@ struct MarketParams {
     address oracle;
     address irm;
     uint256 lltv;
+    address permission;
 }
 
 /// @dev Warning: For `feeRecipient`, `supplyShares` does not contain the accrued shares since the last interest
@@ -104,7 +105,14 @@ interface IMorpho {
     function idToMarketParams(Id id)
         external
         view
-        returns (address loanToken, address collateralToken, address oracle, address irm, uint256 lltv);
+        returns (
+            address loanToken,
+            address collateralToken,
+            address oracle,
+            address irm,
+            uint256 lltv,
+            address permission
+        );
 
     /// @notice Sets `newOwner` as owner of the contract.
     /// @dev Warning: No two-step transfer ownership.
