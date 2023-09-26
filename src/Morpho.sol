@@ -166,9 +166,7 @@ contract Morpho is IMorpho {
         require(UtilsLib.exactlyOneZero(assets, shares), ErrorsLib.INCONSISTENT_INPUT);
         require(onBehalf != address(0), ErrorsLib.ZERO_ADDRESS);
 
-        if (marketParams.authority != address(0) && marketParams.authorityCalls.onSupply) {
-            require(IAuthority(marketParams.authority).isAuthorized(msg.sender), ErrorsLib.UNAUTHORIZED);
-        }
+        if (marketParams.authorityCalls.onSupply) _checkAuhtority(marketParams.authority);
 
         _accrueInterest(marketParams, id);
 
@@ -238,9 +236,7 @@ contract Morpho is IMorpho {
         require(receiver != address(0), ErrorsLib.ZERO_ADDRESS);
         require(_isSenderAuthorized(onBehalf), ErrorsLib.UNAUTHORIZED);
 
-        if (marketParams.authority != address(0) && marketParams.authorityCalls.onBorrow) {
-            require(IAuthority(marketParams.authority).isAuthorized(msg.sender), ErrorsLib.UNAUTHORIZED);
-        }
+        if (marketParams.authorityCalls.onBorrow) _checkAuhtority(marketParams.authority);
 
         _accrueInterest(marketParams, id);
 
@@ -304,9 +300,7 @@ contract Morpho is IMorpho {
         require(assets != 0, ErrorsLib.ZERO_ASSETS);
         require(onBehalf != address(0), ErrorsLib.ZERO_ADDRESS);
 
-        if (marketParams.authority != address(0) && marketParams.authorityCalls.onSupplyCollateral) {
-            require(IAuthority(marketParams.authority).isAuthorized(msg.sender), ErrorsLib.UNAUTHORIZED);
-        }
+        if (marketParams.authorityCalls.onSupplyCollateral) _checkAuhtority(marketParams.authority);
 
         // Don't accrue interest because it's not required and it saves gas.
 
@@ -355,9 +349,7 @@ contract Morpho is IMorpho {
         require(market[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
         require(UtilsLib.exactlyOneZero(seizedAssets, repaidShares), ErrorsLib.INCONSISTENT_INPUT);
 
-        if (marketParams.authority != address(0) && marketParams.authorityCalls.onLiquidate) {
-            require(IAuthority(marketParams.authority).isAuthorized(msg.sender), ErrorsLib.UNAUTHORIZED);
-        }
+        if (marketParams.authorityCalls.onLiquidate) _checkAuhtority(marketParams.authority);
 
         _accrueInterest(marketParams, id);
 
@@ -521,6 +513,14 @@ contract Morpho is IMorpho {
             .wMulDown(marketParams.lltv);
 
         return maxBorrow >= borrowed;
+    }
+
+    /* AUTHORITY */
+
+    function _checkAuhtority(address authority) internal view {
+        if (authority != address(0)) {
+            require(IAuthority(authority).isAuthorized(msg.sender), ErrorsLib.UNAUTHORIZED);
+        }
     }
 
     /* STORAGE VIEW */
