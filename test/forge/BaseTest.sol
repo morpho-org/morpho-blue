@@ -33,6 +33,7 @@ contract BaseTest is Test {
     uint256 internal constant MAX_TEST_SHARES = MAX_TEST_AMOUNT * SharesMathLib.VIRTUAL_SHARES;
     uint256 internal constant MIN_TEST_LLTV = 0.01 ether;
     uint256 internal constant MAX_TEST_LLTV = 0.99 ether;
+    uint256 internal constant DEFAULT_TEST_LLTV = 0.8 ether;
     uint256 internal constant MIN_COLLATERAL_PRICE = 1e10;
     uint256 internal constant MAX_COLLATERAL_PRICE = 1e40;
     uint256 internal constant MAX_COLLATERAL_ASSETS = type(uint128).max;
@@ -108,7 +109,7 @@ contract BaseTest is Test {
         morpho.setAuthorization(BORROWER, true);
         vm.stopPrank();
 
-        _setLltv(0.8 ether);
+        _setLltv(DEFAULT_TEST_LLTV);
     }
 
     function _setLltv(uint256 lltv) internal {
