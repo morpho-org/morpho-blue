@@ -45,7 +45,7 @@ contract MorphoInvariantTest is InvariantTest {
                 collateralToken: address(collateralToken),
                 oracle: address(oracle),
                 irm: address(irm),
-                lltv: 0.8 ether / i
+                lltv: MAX_TEST_LLTV / i
             });
 
             vm.startPrank(OWNER);
@@ -375,11 +375,23 @@ contract MorphoInvariantTest is InvariantTest {
     }
 
     function invariantTotalSupplyGeTotalBorrow() public {
-        assertGe(morpho.totalSupplyAssets(id), morpho.totalBorrowAssets(id));
+        for (uint256 i; i < allMarketParams.length; ++i) {
+            MarketParams memory _marketParams = allMarketParams[i];
+            Id _id = _marketParams.id();
+
+            assertGe(morpho.totalSupplyAssets(_id), morpho.totalBorrowAssets(_id));
+        }
     }
 
     function invariantMorphoBalance() public {
-        assertGe(loanToken.balanceOf(address(morpho)), morpho.totalSupplyAssets(id) - morpho.totalBorrowAssets(id));
+        for (uint256 i; i < allMarketParams.length; ++i) {
+            MarketParams memory _marketParams = allMarketParams[i];
+            Id _id = _marketParams.id();
+
+            assertGe(
+                loanToken.balanceOf(address(morpho)) + morpho.totalBorrowAssets(_id), morpho.totalSupplyAssets(_id)
+            );
+        }
     }
 
     function invariantBadDebt() public {

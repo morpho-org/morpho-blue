@@ -12,6 +12,7 @@ import {OracleMock} from "src/mocks/OracleMock.sol";
 import "src/Morpho.sol";
 import {Math} from "./helpers/Math.sol";
 import {SigUtils} from "./helpers/SigUtils.sol";
+import {ArrayLib} from "./helpers/ArrayLib.sol";
 import {MorphoLib} from "src/libraries/periphery/MorphoLib.sol";
 import {MorphoBalancesLib} from "src/libraries/periphery/MorphoBalancesLib.sol";
 
@@ -19,11 +20,12 @@ contract BaseTest is Test {
     using Math for uint256;
     using MathLib for uint256;
     using SharesMathLib for uint256;
+    using ArrayLib for address[];
     using MorphoLib for IMorpho;
     using MorphoBalancesLib for IMorpho;
     using MarketParamsLib for MarketParams;
 
-    uint256 internal constant BLOCK_TIME = 12;
+    uint256 internal constant BLOCK_TIME = 1;
     uint256 internal constant HIGH_COLLATERAL_AMOUNT = 1e35;
     uint256 internal constant MIN_TEST_AMOUNT = 100;
     uint256 internal constant MAX_TEST_AMOUNT = 1e28;
@@ -31,6 +33,7 @@ contract BaseTest is Test {
     uint256 internal constant MAX_TEST_SHARES = MAX_TEST_AMOUNT * SharesMathLib.VIRTUAL_SHARES;
     uint256 internal constant MIN_TEST_LLTV = 0.01 ether;
     uint256 internal constant MAX_TEST_LLTV = 0.99 ether;
+    uint256 internal constant DEFAULT_TEST_LLTV = 0.8 ether;
     uint256 internal constant MIN_COLLATERAL_PRICE = 1e10;
     uint256 internal constant MAX_COLLATERAL_PRICE = 1e40;
     uint256 internal constant MAX_COLLATERAL_ASSETS = type(uint128).max;
@@ -106,7 +109,7 @@ contract BaseTest is Test {
         morpho.setAuthorization(BORROWER, true);
         vm.stopPrank();
 
-        _setLltv(0.8 ether);
+        _setLltv(DEFAULT_TEST_LLTV);
     }
 
     function _setLltv(uint256 lltv) internal {
@@ -118,8 +121,7 @@ contract BaseTest is Test {
         if (morpho.lastUpdate(marketParams.id()) == 0) morpho.createMarket(marketParams);
         vm.stopPrank();
 
-        vm.roll(block.number + 1);
-        vm.warp(block.timestamp + 1 days);
+        _forward(1);
     }
 
     function _addrFromHashedString(string memory name) internal returns (address addr) {
@@ -135,7 +137,7 @@ contract BaseTest is Test {
 
     /// @dev Bounds the fuzzing input to a realistic number of blocks.
     function _boundBlocks(uint256 blocks) internal view returns (uint256) {
-        return bound(blocks, 1, type(uint24).max);
+        return bound(blocks, 1, type(uint32).max);
     }
 
     /// @dev Bounds the fuzzing input to a non-zero address.
@@ -403,26 +405,8 @@ contract BaseTest is Test {
         return candidates[seed % candidates.length];
     }
 
-    function _removeAll(address[] memory inputs, address removed) internal pure returns (address[] memory result) {
-        result = new address[](inputs.length);
-
-        uint256 nbAddresses;
-        for (uint256 i; i < inputs.length; ++i) {
-            address input = inputs[i];
-
-            if (input != removed) {
-                result[nbAddresses] = input;
-                ++nbAddresses;
-            }
-        }
-
-        assembly {
-            mstore(result, nbAddresses)
-        }
-    }
-
     function _randomNonZero(address[] memory users, uint256 seed) internal pure returns (address) {
-        users = _removeAll(users, address(0));
+        users = users.removeAll(address(0));
 
         return _randomCandidate(users, seed);
     }
