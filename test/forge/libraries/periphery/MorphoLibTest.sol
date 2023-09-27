@@ -28,7 +28,7 @@ contract MorphoLibTest is BaseTest {
         // Set timestamp.
         vm.warp(timestamp);
 
-        borrowableToken.setBalance(address(this), amountSupplied);
+        loanToken.setBalance(address(this), amountSupplied);
         morpho.supply(marketParams, amountSupplied, 0, address(this), hex"");
 
         uint256 collateralPrice = IOracle(marketParams.oracle).price();

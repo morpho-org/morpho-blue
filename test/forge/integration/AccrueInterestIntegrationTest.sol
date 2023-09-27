@@ -14,7 +14,7 @@ contract AccrueInterestIntegrationTest is BaseTest {
         (amountCollateral, amountBorrowed,) = _boundHealthyPosition(amountCollateral, amountBorrowed, collateralPrice);
         amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
 
-        borrowableToken.setBalance(address(this), amountSupplied);
+        loanToken.setBalance(address(this), amountSupplied);
         morpho.supply(marketParams, amountSupplied, 0, address(this), hex"");
 
         collateralToken.setBalance(BORROWER, amountCollateral);
@@ -40,7 +40,7 @@ contract AccrueInterestIntegrationTest is BaseTest {
         amountSupplied = bound(amountSupplied, 2, MAX_TEST_AMOUNT);
         blocks = _boundBlocks(blocks);
 
-        borrowableToken.setBalance(address(this), amountSupplied);
+        loanToken.setBalance(address(this), amountSupplied);
         morpho.supply(marketParams, amountSupplied, 0, address(this), hex"");
 
         _forward(blocks);
@@ -65,8 +65,8 @@ contract AccrueInterestIntegrationTest is BaseTest {
         amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
         blocks = _boundBlocks(blocks);
 
-        borrowableToken.setBalance(address(this), amountSupplied);
-        borrowableToken.setBalance(address(this), amountSupplied);
+        loanToken.setBalance(address(this), amountSupplied);
+        loanToken.setBalance(address(this), amountSupplied);
         morpho.supply(marketParams, amountSupplied, 0, address(this), hex"");
 
         collateralToken.setBalance(BORROWER, amountCollateral);
@@ -127,7 +127,7 @@ contract AccrueInterestIntegrationTest is BaseTest {
         if (fee != morpho.fee(id)) morpho.setFee(marketParams, fee);
         vm.stopPrank();
 
-        borrowableToken.setBalance(address(this), amountSupplied);
+        loanToken.setBalance(address(this), amountSupplied);
         morpho.supply(marketParams, amountSupplied, 0, address(this), hex"");
 
         collateralToken.setBalance(BORROWER, amountCollateral);

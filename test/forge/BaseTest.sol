@@ -47,7 +47,7 @@ contract BaseTest is Test {
     address internal FEE_RECIPIENT;
 
     IMorpho internal morpho;
-    ERC20Mock internal borrowableToken;
+    ERC20Mock internal loanToken;
     ERC20Mock internal collateralToken;
     OracleMock internal oracle;
     IrmMock internal irm;
@@ -67,11 +67,11 @@ contract BaseTest is Test {
 
         morpho = new Morpho(OWNER);
 
-        borrowableToken = new ERC20Mock("borrowable", "B");
-        vm.label(address(borrowableToken), "Borrowable");
+        loanToken = new ERC20Mock();
+        vm.label(address(loanToken), "LoanToken");
 
-        collateralToken = new ERC20Mock("collateral", "C");
-        vm.label(address(collateralToken), "Collateral");
+        collateralToken = new ERC20Mock();
+        vm.label(address(collateralToken), "CollateralToken");
 
         oracle = new OracleMock();
 
@@ -84,26 +84,26 @@ contract BaseTest is Test {
         morpho.setFeeRecipient(FEE_RECIPIENT);
         vm.stopPrank();
 
-        borrowableToken.approve(address(morpho), type(uint256).max);
+        loanToken.approve(address(morpho), type(uint256).max);
         collateralToken.approve(address(morpho), type(uint256).max);
         vm.startPrank(SUPPLIER);
-        borrowableToken.approve(address(morpho), type(uint256).max);
+        loanToken.approve(address(morpho), type(uint256).max);
         collateralToken.approve(address(morpho), type(uint256).max);
         vm.stopPrank();
         vm.startPrank(BORROWER);
-        borrowableToken.approve(address(morpho), type(uint256).max);
+        loanToken.approve(address(morpho), type(uint256).max);
         collateralToken.approve(address(morpho), type(uint256).max);
         vm.stopPrank();
         vm.startPrank(REPAYER);
-        borrowableToken.approve(address(morpho), type(uint256).max);
+        loanToken.approve(address(morpho), type(uint256).max);
         collateralToken.approve(address(morpho), type(uint256).max);
         vm.stopPrank();
         vm.startPrank(LIQUIDATOR);
-        borrowableToken.approve(address(morpho), type(uint256).max);
+        loanToken.approve(address(morpho), type(uint256).max);
         collateralToken.approve(address(morpho), type(uint256).max);
         vm.stopPrank();
         vm.startPrank(ONBEHALF);
-        borrowableToken.approve(address(morpho), type(uint256).max);
+        loanToken.approve(address(morpho), type(uint256).max);
         collateralToken.approve(address(morpho), type(uint256).max);
         morpho.setAuthorization(BORROWER, true);
         vm.stopPrank();
@@ -112,8 +112,7 @@ contract BaseTest is Test {
     }
 
     function _setLltv(uint256 lltv) internal {
-        marketParams =
-            MarketParams(address(borrowableToken), address(collateralToken), address(oracle), address(irm), lltv);
+        marketParams = MarketParams(address(loanToken), address(collateralToken), address(oracle), address(irm), lltv);
         id = marketParams.id();
 
         vm.startPrank(OWNER);
@@ -148,7 +147,7 @@ contract BaseTest is Test {
     }
 
     function _supply(uint256 amount) internal {
-        borrowableToken.setBalance(address(this), amount);
+        loanToken.setBalance(address(this), amount);
         morpho.supply(marketParams, amount, 0, address(this), hex"");
     }
 
@@ -341,7 +340,7 @@ contract BaseTest is Test {
         uint256 collateral = morpho.collateral(_id, borrower);
         uint256 collateralPrice = IOracle(_marketParams.oracle).price();
         uint256 maxRepaidAssets = morpho.expectedBorrowBalance(_marketParams, borrower);
-        uint256 maxSeizedAssets = maxRepaidAssets.wMulDown(_liquidationIncentive(_marketParams.lltv)).mulDivDown(
+        uint256 maxSeizedAssets = maxRepaidAssets.wMulDown(_liquidationIncentiveFactor(_marketParams.lltv)).mulDivDown(
             ORACLE_PRICE_SCALE, collateralPrice
         );
 
@@ -358,7 +357,7 @@ contract BaseTest is Test {
         uint256 borrowShares = morpho.borrowShares(_id, borrower);
         uint256 collateralPrice = IOracle(_marketParams.oracle).price();
         uint256 maxRepaidAssets = morpho.collateral(_id, borrower).mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(
-            _liquidationIncentive(_marketParams.lltv)
+            _liquidationIncentiveFactor(_marketParams.lltv)
         );
         (,, uint256 totalBorrowAssets, uint256 totalBorrowShares) = morpho.expectedMarketBalances(marketParams);
         uint256 maxRepaidShares = maxRepaidAssets.toSharesDown(totalBorrowAssets, totalBorrowShares);
@@ -381,7 +380,7 @@ contract BaseTest is Test {
         return maxBorrow >= borrowed;
     }
 
-    function _liquidationIncentive(uint256 lltv) internal pure returns (uint256) {
+    function _liquidationIncentiveFactor(uint256 lltv) internal pure returns (uint256) {
         return Math.min(MAX_LIQUIDATION_INCENTIVE_FACTOR, WAD.wDivDown(WAD - LIQUIDATION_CURSOR.wMulDown(WAD - lltv)));
     }
 

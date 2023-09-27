@@ -24,7 +24,7 @@ import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
 
 /// @title Morpho
 /// @author Morpho Labs
-/// @custom:contact security@morpho.xyz
+/// @custom:contact security@morpho.org
 /// @notice The Morpho contract.
 contract Morpho is IMorpho {
     using MathLib for uint128;
@@ -73,7 +73,7 @@ contract Morpho is IMorpho {
 
     /* MODIFIERS */
 
-    /// @notice Reverts if the caller is not the owner.
+    /// @dev Reverts if the caller is not the owner.
     modifier onlyOwner() {
         require(msg.sender == owner, ErrorsLib.NOT_OWNER);
         _;
@@ -96,7 +96,7 @@ contract Morpho is IMorpho {
 
         isIrmEnabled[irm] = true;
 
-        emit EventsLib.EnableIrm(address(irm));
+        emit EventsLib.EnableIrm(irm);
     }
 
     /// @inheritdoc IMorpho
@@ -178,7 +178,7 @@ contract Morpho is IMorpho {
 
         if (data.length > 0) IMorphoSupplyCallback(msg.sender).onMorphoSupply(assets, data);
 
-        IERC20(marketParams.borrowableToken).safeTransferFrom(msg.sender, address(this), assets);
+        IERC20(marketParams.loanToken).safeTransferFrom(msg.sender, address(this), assets);
 
         return (assets, shares);
     }
@@ -211,7 +211,7 @@ contract Morpho is IMorpho {
 
         emit EventsLib.Withdraw(id, msg.sender, onBehalf, receiver, assets, shares);
 
-        IERC20(marketParams.borrowableToken).safeTransfer(receiver, assets);
+        IERC20(marketParams.loanToken).safeTransfer(receiver, assets);
 
         return (assets, shares);
     }
@@ -247,7 +247,7 @@ contract Morpho is IMorpho {
 
         emit EventsLib.Borrow(id, msg.sender, onBehalf, receiver, assets, shares);
 
-        IERC20(marketParams.borrowableToken).safeTransfer(receiver, assets);
+        IERC20(marketParams.loanToken).safeTransfer(receiver, assets);
 
         return (assets, shares);
     }
@@ -279,7 +279,7 @@ contract Morpho is IMorpho {
 
         if (data.length > 0) IMorphoRepayCallback(msg.sender).onMorphoRepay(assets, data);
 
-        IERC20(marketParams.borrowableToken).safeTransferFrom(msg.sender, address(this), assets);
+        IERC20(marketParams.loanToken).safeTransferFrom(msg.sender, address(this), assets);
 
         return (assets, shares);
     }
@@ -350,18 +350,20 @@ contract Morpho is IMorpho {
 
         uint256 repaidAssets;
         {
-            // The liquidation incentive factor is min(maxIncentiveFactor, 1/(1 - cursor*(1 - lltv))).
-            uint256 incentiveFactor = UtilsLib.min(
+            // The liquidation incentive factor is min(maxLiquidationIncentiveFactor, 1/(1 - cursor*(1 - lltv))).
+            uint256 liquidationIncentiveFactor = UtilsLib.min(
                 MAX_LIQUIDATION_INCENTIVE_FACTOR,
                 WAD.wDivDown(WAD - LIQUIDATION_CURSOR.wMulDown(WAD - marketParams.lltv))
             );
 
             if (seizedAssets > 0) {
-                repaidAssets = seizedAssets.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(incentiveFactor);
+                repaidAssets =
+                    seizedAssets.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(liquidationIncentiveFactor);
                 repaidShares = repaidAssets.toSharesDown(market[id].totalBorrowAssets, market[id].totalBorrowShares);
             } else {
                 repaidAssets = repaidShares.toAssetsUp(market[id].totalBorrowAssets, market[id].totalBorrowShares);
-                seizedAssets = repaidAssets.wMulDown(incentiveFactor).mulDivDown(ORACLE_PRICE_SCALE, collateralPrice);
+                seizedAssets =
+                    repaidAssets.wMulDown(liquidationIncentiveFactor).mulDivDown(ORACLE_PRICE_SCALE, collateralPrice);
             }
         }
 
@@ -389,7 +391,7 @@ contract Morpho is IMorpho {
 
         if (data.length > 0) IMorphoLiquidateCallback(msg.sender).onMorphoLiquidate(repaidAssets, data);
 
-        IERC20(marketParams.borrowableToken).safeTransferFrom(msg.sender, address(this), repaidAssets);
+        IERC20(marketParams.loanToken).safeTransferFrom(msg.sender, address(this), repaidAssets);
 
         return (seizedAssets, repaidAssets);
     }
@@ -436,6 +438,7 @@ contract Morpho is IMorpho {
         );
     }
 
+    /// @dev Returns whether the sender is authorized to manage `onBehalf`'s positions.
     function _isSenderAuthorized(address onBehalf) internal view returns (bool) {
         return msg.sender == onBehalf || isAuthorized[onBehalf][msg.sender];
     }
@@ -486,9 +489,9 @@ contract Morpho is IMorpho {
     }
 
     /// @dev Returns whether the position of `borrower` in the given market `marketParams` with the given
-    /// `collateralPrice`
-    /// is healthy.
+    /// `collateralPrice` is healthy.
     /// @dev Assumes that the inputs `marketParams` and `id` match.
+    /// @dev Rounds in favor of the protocol, so one might not be able to borrow exactly `maxBorrow` but one unit less.
     function _isHealthy(MarketParams memory marketParams, Id id, address borrower, uint256 collateralPrice)
         internal
         view

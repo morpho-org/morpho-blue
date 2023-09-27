@@ -41,7 +41,7 @@ contract MorphoInvariantTest is InvariantTest {
 
         for (uint256 i = 2; i <= 6; ++i) {
             MarketParams memory _marketParams = MarketParams({
-                borrowableToken: address(borrowableToken),
+                loanToken: address(loanToken),
                 collateralToken: address(collateralToken),
                 oracle: address(oracle),
                 irm: address(irm),
@@ -81,7 +81,7 @@ contract MorphoInvariantTest is InvariantTest {
         internal
         logCall("supplyAssets")
     {
-        borrowableToken.setBalance(msg.sender, assets);
+        loanToken.setBalance(msg.sender, assets);
 
         vm.prank(msg.sender);
         morpho.supply(_marketParams, assets, 0, onBehalf, hex"");
@@ -93,7 +93,7 @@ contract MorphoInvariantTest is InvariantTest {
     {
         (uint256 totalSupplyAssets, uint256 totalSupplyShares,,) = morpho.expectedMarketBalances(_marketParams);
 
-        borrowableToken.setBalance(msg.sender, shares.toAssetsUp(totalSupplyAssets, totalSupplyShares));
+        loanToken.setBalance(msg.sender, shares.toAssetsUp(totalSupplyAssets, totalSupplyShares));
 
         vm.prank(msg.sender);
         morpho.supply(_marketParams, 0, shares, onBehalf, hex"");
@@ -125,7 +125,7 @@ contract MorphoInvariantTest is InvariantTest {
         internal
         logCall("repayAssets")
     {
-        borrowableToken.setBalance(msg.sender, assets);
+        loanToken.setBalance(msg.sender, assets);
 
         vm.prank(msg.sender);
         morpho.repay(_marketParams, assets, 0, onBehalf, hex"");
@@ -137,7 +137,7 @@ contract MorphoInvariantTest is InvariantTest {
     {
         (,, uint256 totalBorrowAssets, uint256 totalBorrowShares) = morpho.expectedMarketBalances(_marketParams);
 
-        borrowableToken.setBalance(msg.sender, shares.toAssetsUp(totalBorrowAssets, totalBorrowShares));
+        loanToken.setBalance(msg.sender, shares.toAssetsUp(totalBorrowAssets, totalBorrowShares));
 
         vm.prank(msg.sender);
         morpho.repay(_marketParams, 0, shares, onBehalf, hex"");
@@ -167,10 +167,11 @@ contract MorphoInvariantTest is InvariantTest {
         logCall("liquidateSeizedAssets")
     {
         uint256 collateralPrice = oracle.price();
-        uint256 repaidAssets =
-            seizedAssets.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(_liquidationIncentive(_marketParams.lltv));
+        uint256 repaidAssets = seizedAssets.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(
+            _liquidationIncentiveFactor(_marketParams.lltv)
+        );
 
-        borrowableToken.setBalance(msg.sender, repaidAssets);
+        loanToken.setBalance(msg.sender, repaidAssets);
 
         vm.prank(msg.sender);
         morpho.liquidate(_marketParams, borrower, seizedAssets, 0, hex"");
@@ -182,7 +183,7 @@ contract MorphoInvariantTest is InvariantTest {
     {
         (,, uint256 totalBorrowAssets, uint256 totalBorrowShares) = morpho.expectedMarketBalances(_marketParams);
 
-        borrowableToken.setBalance(msg.sender, repaidShares.toAssetsUp(totalBorrowAssets, totalBorrowShares));
+        loanToken.setBalance(msg.sender, repaidShares.toAssetsUp(totalBorrowAssets, totalBorrowShares));
 
         vm.prank(msg.sender);
         morpho.liquidate(_marketParams, borrower, 0, repaidShares, hex"");
@@ -388,8 +389,7 @@ contract MorphoInvariantTest is InvariantTest {
             Id _id = _marketParams.id();
 
             assertGe(
-                borrowableToken.balanceOf(address(morpho)) + morpho.totalBorrowAssets(_id),
-                morpho.totalSupplyAssets(_id)
+                loanToken.balanceOf(address(morpho)) + morpho.totalBorrowAssets(_id), morpho.totalSupplyAssets(_id)
             );
         }
     }
