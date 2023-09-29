@@ -1,5 +1,9 @@
 # Morpho Blue
 
+## Audits
+
+All audits are stored in the [audits](./audits/)' folder.
+
 ## Licensing
 
 The primary license for Morpho Blue is the Business Source License 1.1 (`BUSL-1.1`), see [`LICENSE`](./LICENSE). However, some files are dual licensed under `GPL-2.0-or-later`.
