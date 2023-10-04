@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import "forge-std/Test.sol";
+import "@blue/forge-std/Test.sol";
 
 import "src/libraries/ErrorsLib.sol";
 import {IERC20, SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
