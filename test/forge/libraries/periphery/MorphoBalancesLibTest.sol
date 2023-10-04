@@ -100,6 +100,37 @@ contract MorphoBalancesLibTest is BaseTest {
         assertEq(expectedBorrowBalance, actualBorrowBalance);
     }
 
+    function testExpectedLiquidity(uint256 amountSupplied, uint256 amountBorrowed, uint256 timeElapsed, uint256 fee)
+        internal
+    {
+        _generatePendingInterest(amountSupplied, amountBorrowed, timeElapsed, fee);
+
+        uint256 expectedLiquidity = morpho.expectedLiquidity(marketParams);
+
+        _accrueInterest(marketParams);
+
+        uint256 actualLiquidity = morpho.totalSupplyAssets(id) - morpho.totalBorrowAssets(id);
+
+        assertEq(expectedLiquidity, actualLiquidity);
+    }
+
+    function testExpectedLiquidityFlashLoan(
+        uint256 amountSupplied,
+        uint256 amountBorrowed,
+        uint256 timeElapsed,
+        uint256 fee
+    ) internal {
+        _generatePendingInterest(amountSupplied, amountBorrowed, timeElapsed, fee);
+
+        morpho.flashLoan(marketParams.loanToken, IERC20(marketParams.loanToken).balanceOf(address(morpho)), hex"");
+    }
+
+    function onMorphoFlashLoan(uint256, bytes memory) external {
+        uint256 expectedLiquidity = morpho.expectedLiquidity(marketParams);
+
+        assertEq(expectedLiquidity, 0);
+    }
+
     function _generatePendingInterest(uint256 amountSupplied, uint256 amountBorrowed, uint256 blocks, uint256 fee)
         internal
     {

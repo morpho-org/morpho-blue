@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import {Id, MarketParams, Market, IMorpho} from "../../interfaces/IMorpho.sol";
 import {IIrm} from "../../interfaces/IIrm.sol";
+import {IERC20} from "../../interfaces/IERC20.sol";
 
 import {MathLib} from "../MathLib.sol";
 import {UtilsLib} from "../UtilsLib.sol";
@@ -116,5 +117,14 @@ library MorphoBalancesLib {
         (,, uint256 totalBorrowAssets, uint256 totalBorrowShares) = expectedMarketBalances(morpho, marketParams);
 
         return borrowShares.toAssetsUp(totalBorrowAssets, totalBorrowShares);
+    }
+
+    /// @notice Returns the expected borrow balance of a user on a market after having accrued interest.
+    function expectedLiquidity(IMorpho morpho, MarketParams memory marketParams) internal view returns (uint256) {
+        (uint256 totalSupplyAssets,, uint256 totalBorrowAssets,) = expectedMarketBalances(morpho, marketParams);
+
+        return UtilsLib.min(
+            totalSupplyAssets - totalBorrowAssets, IERC20(marketParams.loanToken).balanceOf(address(morpho))
+        );
     }
 }

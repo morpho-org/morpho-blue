@@ -4,6 +4,7 @@ pragma solidity >=0.5.0;
 /// @title IERC20
 /// @author Morpho Labs
 /// @custom:contact security@morpho.org
-/// @dev Empty because we only call library functions. It prevents calling transfer (transferFrom) instead of
-/// safeTransfer (safeTransferFrom).
-interface IERC20 {}
+/// @dev Prevents calling transfer (transferFrom) instead of safeTransfer (safeTransferFrom).
+interface IERC20 {
+    function balanceOf(address owner) external view returns (uint256);
+}
