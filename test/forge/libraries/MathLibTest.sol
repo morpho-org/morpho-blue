@@ -3,8 +3,8 @@ pragma solidity ^0.8.0;
 
 import "@blue/lib/forge-std/src/Test.sol";
 
-import "src/libraries/MathLib.sol";
-import "test/forge/helpers/WadMath.sol";
+import "@blue/src/libraries/MathLib.sol";
+import "../helpers/WadMath.sol";
 
 contract MathLibTest is Test {
     using MathLib for uint256;

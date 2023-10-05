@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "@blue/lib/forge-std/src/Test.sol";
 
-import {MarketParamsLib, MarketParams, Id} from "src/libraries/MarketParamsLib.sol";
+import {MarketParamsLib, MarketParams, Id} from "@blue/src/libraries/MarketParamsLib.sol";
 
 contract MarketParamsLibTest is Test {
     using MarketParamsLib for MarketParams;
