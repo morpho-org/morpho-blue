@@ -1,1 +1,1 @@
-@blue/lib=lib/
+@blue/lib/=lib/
