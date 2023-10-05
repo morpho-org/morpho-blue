@@ -1,1 +1,3 @@
 @blue/lib/=lib/
+@blue/src/=src/
+@blue/test/=test/
