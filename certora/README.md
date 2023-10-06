@@ -2,25 +2,68 @@ This folder contains the verification of the Morpho Blue protocol using CVL, Cer
 
 ## High-Level Description
 
-The Morpho Blue protocol relies on several different concepts, which are described below.
+The Morpho Blue protocol relies on several different concepts, which are described in the Whitepaper.
 These concepts have been verified using CVL.
-See the description of the specification files below (or those files directly) for more details.
+For more details, see the description of the specification below or the description of the specification files in the next section.
 
-The Morpho Blue protocol allows users to take out collateralized loans on ERC20 tokens.\
-**Transfers.** Token transfers are verified to behave as expected for the most common implementations, in particular the transferred amount is the amount passed as input.\
-**Markets**. Markets on Morpho Blue depend on a pair of assets, the borrowable asset that is supplied and borrowed, and the collateral asset.
+The Morpho Blue protocol allows users to take out collateralized loans on ERC20 tokens.
+
+```solidity
+rule supplyAccruesInterest(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data) {
+    // Safe require because timestamps cannot realistically be that large.
+    require e.block.timestamp < 2^128;
+
+    storage init = lastStorage;
+
+    accrueInterest(e, marketParams);
+    supply(e, marketParams, assets, shares, onBehalf, data);
+    storage afterBoth = lastStorage;
+
+    supply(e, marketParams, assets, shares, onBehalf, data) at init;
+    storage afterOne = lastStorage;
+
+    assert afterBoth == afterOne;
+}
+```
+
+### Transfers
+
+Token transfers are verified to behave as expected for the most common implementations, in particular the transferred amount is the amount passed as input.
+Morpho Blue uses a transfer library to handle different tokens, including tokens that do not strictly respect the standard, in particular, when the return value on transfer and transferFrom function are missing, such as for the USDT token. This is difficult for the prover, so a summary is used to ease the verification of rules that rely on the transfer of tokens. This summary is verified to behave as expected in the Transfer.spec file.
+
+### Markets
+
+Markets on Morpho Blue depend on a pair of assets, the borrowable asset that is supplied and borrowed, and the collateral asset.
 Markets are independent, which means that loans cannot be impacted by loans from other markets.
 Positions of users are also independent, so loans cannot be impacted by loans from other users.
-The accounting of the markets has been verified (such as the total amounts), as well as the fact that only market with enabled parameters are created.\
-**Supply.** When supplying on Morpho Blue, interest is earned over time, and the distribution is implemented through a shares mechanism.
-Shares increase in value as interest is accrued.\
-**Borrow.** To borrow on Morpho Blue, collateral must be deposited.
-Collateral tokens remain idle, as well as any borrowable token that has not been borrowed.\
-**Liquidation.** To ensure proper collateralization, a liquidation system is put in place.
-In the absence of accrued interest, for example when creating a new position or when interacting multiple times in the same block, a position cannot be made unhealthy.\
-**Authorization.** Morpho Blue also defines a sound authorization system where users cannot modify positions of other users without proper authorization (except when liquidating).\
-**Safety.** Other safety properties are verified, particularly regarding reentrancy attacks and about input validation and revert conditions.\
-**Liveness.** Other liveness properties are verified as well, in particular it is always possible to exit a position without concern for the oracle.
+The accounting of the markets has been verified (such as the total amounts), as well as the fact that only market with enabled parameters are created.
+
+### Supply
+
+When supplying on Morpho Blue, interest is earned over time, and the distribution is implemented through a shares mechanism.
+Shares increase in value as interest is accrued.
+
+### Borrow
+
+To borrow on Morpho Blue, collateral must be deposited.
+Collateral tokens remain idle, as well as any borrowable token that has not been borrowed.
+
+### Liquidation
+
+To ensure proper collateralization, a liquidation system is put in place.
+In the absence of accrued interest, for example when creating a new position or when interacting multiple times in the same block, a position cannot be made unhealthy.
+
+### Authorization
+
+Morpho Blue also defines a sound authorization system where users cannot modify positions of other users without proper authorization (except when liquidating).
+
+### Safety
+
+Other safety properties are verified, particularly regarding reentrancy attacks and about input validation and revert conditions.
+
+### Liveness
+
+Other liveness properties are verified as well, in particular it is always possible to exit a position without concern for the oracle.
 
 ## Folder and File Structure
 
