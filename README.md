@@ -8,13 +8,13 @@ A more detailed description of Morpho Blue can be found in the [Morpho Blue's Wh
 
 ## Repository Structure
 
-Morpho Blue is a singleton contract at the `src`'s root: [`Morpho.sol`](./src/Morpho.sol). It solely relies on internal libraries in the [`src/libraries`](./src/libraries) directory. No external dependency is used.
+[`Morpho.sol`](./src/Morpho.sol) contains most of the source code of the core contract of Morpho Blue. It solely relies on internal libraries in the [`src/libraries`](./src/libraries) subdirectory.
 
-Libaries in the [`src/libraries/periphery`](./src/libraries/periphery) directory are not directly used by Morpho Blue. They are useful helpers that integrators can reuse or adapt to their own needs.
+Libaries in the [`src/libraries/periphery`](./src/libraries/periphery) directory are not used by Morpho Blue. They are useful helpers that integrators can reuse or adapt to their own needs.
 
-The `mocks` directory contains contracts designed exclusively for testing.
+The [src/mocks](./src/mocks) directory contains contracts designed exclusively for testing.
 
-You'll find relevant comments in [Morpho's interface](./src/interfaces/IMorpho.sol), notably a list of assumptions about market creation.
+You'll find relevant comments in [Morpho's interface](./src/interfaces/IMorpho.sol), notably a list of assumptions about market dependencies.
 
 ## Getting Started
 
@@ -24,7 +24,7 @@ Run tests using forge: `yarn test:forge`
 
 Run tests using hardhat (gas cost study): `yarn test:hardhat`
 
-You will find other CLI commands in the [`package.json`](./package.json) file.
+You will find other useful commands in the [`package.json`](./package.json) file.
 
 ## Audits
 
