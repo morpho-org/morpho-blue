@@ -192,6 +192,8 @@ describe("Morpho", () => {
 
       const seized = closePositions ? assets : assets / 2n;
 
+      await randomForwardTimestamp();
+
       await morpho.connect(liquidator).liquidate(marketParams, borrower.address, seized, 0, "0x");
 
       const remainingCollateral = (await morpho.position(id, borrower.address)).collateral;
