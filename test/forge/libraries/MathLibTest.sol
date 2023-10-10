@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import "forge-std/Test.sol";
+import "../../../lib/forge-std/src/Test.sol";
 
-import "src/libraries/MathLib.sol";
-import "test/forge/helpers/WadMath.sol";
+import "../../../src/libraries/MathLib.sol";
+import "../helpers/WadMath.sol";
 
 contract MathLibTest is Test {
     using MathLib for uint256;

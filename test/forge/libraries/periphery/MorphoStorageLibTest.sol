@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import {MorphoStorageLib} from "src/libraries/periphery/MorphoStorageLib.sol";
+import {MorphoStorageLib} from "../../../../src/libraries/periphery/MorphoStorageLib.sol";
 import {SigUtils} from "../../helpers/SigUtils.sol";
 
 import "../../BaseTest.sol";
