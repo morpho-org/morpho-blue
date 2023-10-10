@@ -1,6 +1,11 @@
 # Morpho Blue
 
-Morpho Blue is a new lending primitive that offers better rates, high capital efficiency and extended flexibility to lenders & borrowers.
+Morpho Blue is a noncustodial lending protocol implemented for the Ethereum Virtual Machine.
+Morpho Blue offers a new trustless primitive with increased efficiency and flexibility compared to existing lending platforms.
+It provides permissionless risk management and permissionless market creation with oracle agnostic pricing.
+It also enables higher collateralization factors, improved interest rates, and lower gas consumption.
+The protocol is designed to be a simple, immutable, and governance-minimized base layer that allows for a wide variety of other layers to be built on top.
+Morpho Blue also offers a convenient developer experience with a singleton implementation, callbacks, free flash loans, and account management features.
 
 ## Whitepaper
 
@@ -32,7 +37,7 @@ You will find other useful commands in the [`package.json`](./package.json) file
 
 All audits are stored in the [audits](./audits/)' folder.
 
-## Licensing
+## Licences
 
 The primary license for Morpho Blue is the Business Source License 1.1 (`BUSL-1.1`), see [`LICENSE`](./LICENSE).
 However, some files are dual licensed under `GPL-2.0-or-later`.
