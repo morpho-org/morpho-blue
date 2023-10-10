@@ -9,7 +9,7 @@ import "./BaseTest.sol";
 contract HealthyTest is BaseTest {
     using MathLib for uint256;
     using SharesMathLib for uint256;
-    using MorphoLib for Morpho;
+    using MorphoLib for IMorpho;
     using MarketParamsLib for MarketParams;
 
     uint256 internal constant N = 4; // TODO: test with a larger N
@@ -53,15 +53,15 @@ contract HealthyTest is BaseTest {
             // bounded to keep the resulting total supply shares < 2**128
 
             collateralToken.setBalance(user, type(uint128).max);
-            borrowableToken.setBalance(user, type(uint128).max);
+            loanToken.setBalance(user, type(uint128).max);
 
             //collateralToken.setBalance(user, collateral);
-            //borrowableToken.setBalance(user, supply);
+            //loanToken.setBalance(user, supply);
 
             vm.startPrank(user);
 
             collateralToken.approve(address(morpho), type(uint256).max);
-            borrowableToken.approve(address(morpho), type(uint256).max);
+            loanToken.approve(address(morpho), type(uint256).max);
 
             if (collateral > 0) morpho.supplyCollateral(marketParams, collateral, user, "");
             if (supply > 0) morpho.supply(marketParams, supply, 0, user, "");
@@ -72,8 +72,9 @@ contract HealthyTest is BaseTest {
 
             uint256 maxBorrow = min(
                 morpho.totalSupplyAssets(id) - morpho.totalBorrowAssets(id), // remaining supply
-                collateral.mulDivDown(IOracle(marketParams.oracle).price(), ORACLE_PRICE_SCALE).wMulDown(LLTV) // remaining
-                    // collateral
+                collateral.mulDivDown(IOracle(marketParams.oracle).price(), ORACLE_PRICE_SCALE).wMulDown(
+                    marketParams.lltv
+                ) // remaining collateral
             );
             borrow = bound(borrow, 1, maxBorrow * (1e18 - maxBorrowMargin) / 1e18);
 
@@ -120,7 +121,10 @@ contract HealthyTest is BaseTest {
 
             uint256 collateral = morpho.collateral(id, user);
             console2.log(
-                "collateral  ", user, collateral.mulDivDown(price, ORACLE_PRICE_SCALE).wMulDown(LLTV), collateral
+                "collateral  ",
+                user,
+                collateral.mulDivDown(price, ORACLE_PRICE_SCALE).wMulDown(marketParams.lltv),
+                collateral
             );
 
             console2.log("value       ", user, value(user));
@@ -172,7 +176,7 @@ contract HealthyTest is BaseTest {
         // TODO: can probably be advantageously transformed into an forge invariant
         selector = selector % 7;
         if (selector == 0) {
-            borrowableToken.setBalance(sender, type(uint128).max);
+            loanToken.setBalance(sender, type(uint128).max);
             vm.prank(sender);
             morphoSupply(marketParams, assets, shares, onBehalf, data);
             console2.log("supply", assets, shares);
@@ -185,7 +189,7 @@ contract HealthyTest is BaseTest {
             morphoBorrow(marketParams, assets, shares, onBehalf, receiver);
             console2.log("borrow", assets, shares);
         } else if (selector == 3) {
-            borrowableToken.setBalance(sender, type(uint128).max);
+            loanToken.setBalance(sender, type(uint128).max);
             vm.prank(sender);
             morphoRepay(marketParams, assets, shares, onBehalf, data);
             console2.log("repay", assets, shares);
@@ -201,7 +205,7 @@ contract HealthyTest is BaseTest {
             morphoWithdrawCollateral(marketParams, assets, onBehalf, receiver);
             console2.log("withdrawCollateral", assets);
         } else {
-            borrowableToken.setBalance(sender, type(uint128).max);
+            loanToken.setBalance(sender, type(uint128).max);
             address borrower = userOf(init, 1);
             vm.prank(sender);
             morphoLiquidate(marketParams, borrower, assets, shares, data);
@@ -213,8 +217,13 @@ contract HealthyTest is BaseTest {
         assert(morphoIsHealthy(marketParams, sender));
     }
 
-    function morphoIsHealthy(MarketParams memory marketParams, address borrower) public view returns (bool) {
-        return MorphoMock(address(morpho)).isHealthy(marketParams, borrower);
+    function morphoIsHealthy(MarketParams memory _marketParams, address borrower) public view returns (bool) {
+        Id _id = marketParams.id();
+        uint256 maxBorrow = _maxBorrow(_marketParams, borrower);
+        uint256 borrowed =
+            morpho.borrowShares(_id, borrower).toAssetsUp(morpho.totalBorrowAssets(_id), morpho.totalBorrowShares(_id));
+
+        return maxBorrow >= borrowed;
     }
 
     function morphoSupply(
