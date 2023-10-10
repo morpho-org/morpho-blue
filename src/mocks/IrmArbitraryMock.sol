@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "src/interfaces/IIrm.sol";
 
-contract IrmMock is IIrm {
+contract IrmArbitraryMock is IIrm {
     uint256 internal rate;
 
     function setRate(uint256 newRate) external {

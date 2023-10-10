@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
 import "src/interfaces/IMorphoCallbacks.sol";
-import {IrmMock} from "./IrmMock.sol";
+import {IrmArbitraryMock} from "src/mocks/IrmArbitraryMock.sol";
 import {OracleMock as Oracle} from "src/mocks/OracleMock.sol";
 import {ERC20Mock as ERC20} from "src/mocks/ERC20Mock.sol";
 
@@ -53,7 +53,7 @@ contract BaseTest is Test {
     ERC20 internal loanToken;
     ERC20 internal collateralToken;
     Oracle internal oracle;
-    IrmMock internal irm;
+    IIrm internal irm;
 
     MarketParams internal marketParams; // TODO: test with multiple markets
     Id internal id;
@@ -80,8 +80,9 @@ contract BaseTest is Test {
 
         oracle.setPrice(1e36); // TODO: test with random prices
 
-        irm = new IrmMock();
-        irm.setRate(uint256(5e16) / 365 days); // 5% APR // TODO: test with random rate
+        IrmArbitraryMock arbitraryIrm = new IrmArbitraryMock();
+        arbitraryIrm.setRate(uint256(5e16) / 365 days); // 5% APR // TODO: test with random rate
+        irm = arbitraryIrm;
 
         vm.startPrank(OWNER);
         morpho.enableIrm(address(irm));
