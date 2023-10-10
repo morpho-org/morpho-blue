@@ -4,13 +4,24 @@ pragma solidity ^0.8.0;
 import "forge-std/console.sol";
 import "forge-std/console2.sol";
 
-import "./BaseTest.sol";
+import "src/mocks/IrmArbitraryMock.sol";
+import "../BaseTest.sol";
 
 contract HealthyTest is BaseTest {
     using MathLib for uint256;
     using SharesMathLib for uint256;
     using MorphoLib for IMorpho;
     using MarketParamsLib for MarketParams;
+
+    function setUp() public override {
+        super.setUp();
+        IrmArbitraryMock arbitraryIrm = new IrmArbitraryMock();
+        arbitraryIrm.setRate(uint256(5e16) / 365 days); // 5% APR // TODO: test with random rate
+        irm = arbitraryIrm;
+        vm.prank(OWNER);
+        morpho.enableIrm(address(irm));
+        _setLltv(marketParams.lltv);
+    }
 
     uint256 internal constant N = 4; // TODO: test with a larger N
 

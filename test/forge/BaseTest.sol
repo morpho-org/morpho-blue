@@ -51,7 +51,7 @@ contract BaseTest is Test {
     ERC20Mock internal loanToken;
     ERC20Mock internal collateralToken;
     OracleMock internal oracle;
-    IrmMock internal irm;
+    IIrm internal irm;
 
     MarketParams internal marketParams;
     Id internal id;
