@@ -20,9 +20,8 @@ contract MorphoStorageLibTest is BaseTest {
         fee = bound(fee, 1, MAX_FEE);
 
         // Set fee parameters.
-        vm.startPrank(OWNER);
+        vm.prank(OWNER);
         morpho.setFee(marketParams, fee);
-        vm.stopPrank();
 
         loanToken.setBalance(address(this), amountSupplied);
         morpho.supply(marketParams, amountSupplied, 0, address(this), hex"");

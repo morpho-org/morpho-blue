@@ -54,9 +54,8 @@ contract BorrowIntegrationTest is BaseTest {
         vm.startPrank(supplier);
         collateralToken.approve(address(morpho), amountCollateral);
         morpho.supplyCollateral(marketParams, amountCollateral, supplier, hex"");
-        vm.stopPrank();
 
-        vm.prank(attacker);
+        changePrank(attacker);
         vm.expectRevert(bytes(ErrorsLib.UNAUTHORIZED));
         morpho.borrow(marketParams, amountBorrowed, 0, supplier, RECEIVER);
     }
