@@ -5,7 +5,7 @@ import "forge-std/console.sol";
 import "forge-std/console2.sol";
 
 import "src/mocks/IrmArbitraryMock.sol";
-import "../BaseTest.sol";
+import "./BaseTest.sol";
 
 contract HealthyTest is BaseTest {
     using MathLib for uint256;
