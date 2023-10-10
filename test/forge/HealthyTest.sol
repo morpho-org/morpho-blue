@@ -25,7 +25,7 @@ contract HealthyTest is BaseTest {
 
     uint256 internal constant N = 4; // TODO: test with a larger N
 
-    uint256 internal constant MIN_VALUE = 1e7; // 0.1 WBTC
+    uint256 internal constant MIN_VALUE = 1e7;
 
     struct Init {
         address[N] user;
@@ -58,36 +58,21 @@ contract HealthyTest is BaseTest {
             collateral = bound(collateral, MIN_VALUE, type(uint128).max);
             supply = bound(supply, MIN_VALUE, type(uint128).max / 1e6);
 
-            //collateral = bound(collateral, 0, type(uint128).max - morpho.collateral(id, user)); // bounded to keep the
-            // resulting user's collateral < 2**128
-            //supply     = bound(supply,     0, (type(uint128).max - morpho.totalSupplyShares(id)) / VIRTUAL_SHARES); //
-            // bounded to keep the resulting total supply shares < 2**128
-
             collateralToken.setBalance(user, type(uint128).max);
             loanToken.setBalance(user, type(uint128).max);
 
-            //collateralToken.setBalance(user, collateral);
-            //loanToken.setBalance(user, supply);
-
             vm.startPrank(user);
-
             collateralToken.approve(address(morpho), type(uint256).max);
             loanToken.approve(address(morpho), type(uint256).max);
-
             if (collateral > 0) morpho.supplyCollateral(marketParams, collateral, user, "");
             if (supply > 0) morpho.supply(marketParams, supply, 0, user, "");
-
             vm.stopPrank();
 
             // borrow
 
-            uint256 maxBorrow = min(
-                morpho.totalSupplyAssets(id) - morpho.totalBorrowAssets(id), // remaining supply
-                collateral.mulDivDown(IOracle(marketParams.oracle).price(), ORACLE_PRICE_SCALE).wMulDown(
-                    marketParams.lltv
-                ) // remaining collateral
-            );
-            borrow = bound(borrow, 1, maxBorrow * (1e18 - maxBorrowMargin) / 1e18);
+            uint256 maxBorrow = _maxBorrow(marketParams, user) * (1e18 - maxBorrowMargin) / 1e18;
+            uint256 liquidity = morpho.totalSupplyAssets(id) - morpho.totalBorrowAssets(id);
+            borrow = bound(borrow, 1, UtilsLib.min(maxBorrow, liquidity));
 
             vm.startPrank(user);
             if (borrow > 0) morpho.borrow(marketParams, borrow, 0, user, user);
@@ -99,69 +84,10 @@ contract HealthyTest is BaseTest {
     }
 
     function setUpMarket(Init memory init) public {
-        //_setUpMarket(init);
         (bool success,) = address(this).call(abi.encodeWithSelector(this._setUpMarket.selector, init));
         vm.assume(success);
-
-        logMarket(init);
     }
 
-    function logMarket(Init memory init) internal view {
-        uint256 totalSupplyAssets = morpho.totalSupplyAssets(id);
-        uint256 totalSupplyShares = morpho.totalSupplyShares(id);
-        uint256 totalBorrowAssets = morpho.totalBorrowAssets(id);
-        uint256 totalBorrowShares = morpho.totalBorrowShares(id);
-
-        console2.log("totalSupplyAssets", totalSupplyAssets);
-        console2.log("totalSupplyShares", totalSupplyShares);
-        console2.log("totalBorrowAssets", totalBorrowAssets);
-        console2.log("totalBorrowShares", totalBorrowShares);
-
-        uint256 price = IOracle(marketParams.oracle).price();
-
-        for (uint256 i = 0; i < N; i++) {
-            address user = userOf(init, i);
-
-            uint256 supplyShares = morpho.supplyShares(id, user);
-            uint256 borrowShares = morpho.borrowShares(id, user);
-
-            console2.log("supplyAssets", user, supplyShares.toAssetsUp(totalSupplyAssets, totalSupplyShares));
-            console2.log("supplyShares", user, supplyShares);
-            console2.log("borrowAssets", user, borrowShares.toAssetsUp(totalBorrowAssets, totalBorrowShares));
-            console2.log("borrowShares", user, borrowShares);
-
-            uint256 collateral = morpho.collateral(id, user);
-            console2.log(
-                "collateral  ",
-                user,
-                collateral.mulDivDown(price, ORACLE_PRICE_SCALE).wMulDown(marketParams.lltv),
-                collateral
-            );
-
-            console2.log("value       ", user, value(user));
-        }
-    }
-
-    function value(address user) internal view returns (uint256) {
-        uint256 totalBorrowAssets = morpho.totalBorrowAssets(id);
-        uint256 totalBorrowShares = morpho.totalBorrowShares(id);
-
-        uint256 borrowShares = morpho.borrowShares(id, user);
-        uint256 borrowAssets = borrowShares.toAssetsUp(totalBorrowAssets, totalBorrowShares);
-
-        uint256 price = IOracle(marketParams.oracle).price();
-        uint256 collateral = morpho.collateral(id, user).mulDivDown(price, ORACLE_PRICE_SCALE);
-
-        return collateral - borrowAssets;
-    }
-
-    /*
-    function test_setup(Init memory init) public {
-        setUpMarket(init);
-    }
-    */
-
-    // Property A.1 in https://github.com/morpho-labs/morpho-blue/issues/256
     function testHealthinessPreservation(Init memory init, bool assets_or_shares, uint256 amount, uint256 selector)
         public
     {
@@ -222,8 +148,6 @@ contract HealthyTest is BaseTest {
             morphoLiquidate(marketParams, borrower, assets, shares, data);
             console2.log("liquidate", assets, shares);
         }
-
-        logMarket(init);
 
         assert(morphoIsHealthy(marketParams, sender));
     }
@@ -323,13 +247,5 @@ contract HealthyTest is BaseTest {
         bool success;
         (success, retdata) = address(morpho).call(data);
         vm.assume(success); // if reverted, discard the current fuzz inputs, and let the fuzzer to start a new fuzz run
-    }
-
-    function max(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a > b ? a : b;
-    }
-
-    function min(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a < b ? a : b;
     }
 }
