@@ -18,7 +18,7 @@ contract MorphoInvariantTest is InvariantTest {
     MarketParams[] internal allMarketParams;
 
     constructor() {
-        USER = _addrFromHashedString("User");
+        USER = makeAddr("User");
     }
 
     function setUp() public virtual override {

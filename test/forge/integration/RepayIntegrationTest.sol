@@ -62,7 +62,6 @@ contract RepayIntegrationTest is BaseTest {
         vm.stopPrank();
 
         vm.prank(REPAYER);
-
         vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.Repay(id, REPAYER, ONBEHALF, amountRepaid, expectedRepaidShares);
         (uint256 returnAssets, uint256 returnShares) = morpho.repay(marketParams, amountRepaid, 0, ONBEHALF, hex"");

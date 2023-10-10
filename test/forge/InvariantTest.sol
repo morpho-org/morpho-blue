@@ -30,14 +30,14 @@ contract InvariantTest is BaseTest {
     }
 
     function _targetSenders() internal virtual {
-        _targetSender(_addrFromHashedString("Sender1"));
-        _targetSender(_addrFromHashedString("Sender2"));
-        _targetSender(_addrFromHashedString("Sender3"));
-        _targetSender(_addrFromHashedString("Sender4"));
-        _targetSender(_addrFromHashedString("Sender5"));
-        _targetSender(_addrFromHashedString("Sender6"));
-        _targetSender(_addrFromHashedString("Sender7"));
-        _targetSender(_addrFromHashedString("Sender8"));
+        _targetSender(makeAddr("Sender1"));
+        _targetSender(makeAddr("Sender2"));
+        _targetSender(makeAddr("Sender3"));
+        _targetSender(makeAddr("Sender4"));
+        _targetSender(makeAddr("Sender5"));
+        _targetSender(makeAddr("Sender6"));
+        _targetSender(makeAddr("Sender7"));
+        _targetSender(makeAddr("Sender8"));
     }
 
     function _targetSender(address sender) internal {
