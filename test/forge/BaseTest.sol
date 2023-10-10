@@ -57,14 +57,14 @@ contract BaseTest is Test {
     Id internal id;
 
     function setUp() public virtual {
-        SUPPLIER = _addrFromHashedString("Supplier");
-        BORROWER = _addrFromHashedString("Borrower");
-        REPAYER = _addrFromHashedString("Repayer");
-        ONBEHALF = _addrFromHashedString("OnBehalf");
-        RECEIVER = _addrFromHashedString("Receiver");
-        LIQUIDATOR = _addrFromHashedString("Liquidator");
-        OWNER = _addrFromHashedString("Owner");
-        FEE_RECIPIENT = _addrFromHashedString("FeeRecipient");
+        SUPPLIER = makeAddr("Supplier");
+        BORROWER = makeAddr("Borrower");
+        REPAYER = makeAddr("Repayer");
+        ONBEHALF = makeAddr("OnBehalf");
+        RECEIVER = makeAddr("Receiver");
+        LIQUIDATOR = makeAddr("Liquidator");
+        OWNER = makeAddr("Owner");
+        FEE_RECIPIENT = makeAddr("FeeRecipient");
 
         morpho = new Morpho(OWNER);
 
@@ -122,11 +122,6 @@ contract BaseTest is Test {
         vm.stopPrank();
 
         _forward(1);
-    }
-
-    function _addrFromHashedString(string memory name) internal returns (address addr) {
-        addr = address(uint160(uint256(keccak256(bytes(name)))));
-        vm.label(addr, name);
     }
 
     /// @dev Rolls & warps the given number of blocks forward the blockchain.
