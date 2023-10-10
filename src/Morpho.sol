@@ -62,7 +62,7 @@ contract Morpho is IMorpho {
 
     /* CONSTRUCTOR */
 
-    /// @notice Creates the contract.
+    /// @notice Constructs the contract.
     /// @param newOwner The new owner of the contract.
     constructor(address newOwner) {
         require(newOwner != address(0), ErrorsLib.ZERO_ADDRESS);
