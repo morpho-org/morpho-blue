@@ -19,9 +19,9 @@ It solely relies on internal libraries in the [`src/libraries`](./src/libraries)
 Libaries in the [`src/libraries/periphery`](./src/libraries/periphery) directory are not used by Morpho Blue.
 They are useful helpers that integrators can reuse or adapt to their own needs.
 
-The [src/mocks](./src/mocks) directory contains contracts designed exclusively for testing.
+The [`src/mocks`](./src/mocks) directory contains contracts designed exclusively for testing.
 
-You'll find relevant comments in [Morpho's interface](./src/interfaces/IMorpho.sol), notably a list of assumptions about market dependencies.
+You'll find relevant comments in [`IMorpho.sol`](./src/interfaces/IMorpho.sol), notably a list of requirements about market dependencies.
 
 ## Getting Started
 
@@ -40,9 +40,7 @@ All audits are stored in the [audits](./audits/)' folder.
 ## Licences
 
 The primary license for Morpho Blue is the Business Source License 1.1 (`BUSL-1.1`), see [`LICENSE`](./LICENSE).
-However, some files are dual licensed under `GPL-2.0-or-later`.
-
-All files in the following folders can also be licensed under `GPL-2.0-or-later` (as indicated in their SPDX headers):
+However, all files in the following folders can also be licensed under `GPL-2.0-or-later` (as indicated in their SPDX headers):
 - `src/interfaces`, see [`src/interfaces/LICENSE`](./src/interfaces/LICENSE)
 - `src/libraries`, see [`src/libraries/LICENSE`](./src/libraries/LICENSE)
 - `src/mocks`, see [`src/mocks/LICENSE`](./src/mocks/LICENSE)
