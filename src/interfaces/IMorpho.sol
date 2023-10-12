@@ -21,7 +21,7 @@ struct Position {
 
 /// @dev Warning: `totalSupplyAssets` does not contain the accrued interest since the last interest accrual.
 /// @dev Warning: `totalBorrowAssets` does not contain the accrued interest since the last interest accrual.
-/// @dev Warning: `totalSupplyShares` does not contain the additionnal shares accrued by `feeRecipient` since the last
+/// @dev Warning: `totalSupplyShares` does not contain the additional shares accrued by `feeRecipient` since the last
 /// interest accrual.
 struct Market {
     uint128 totalSupplyAssets;
