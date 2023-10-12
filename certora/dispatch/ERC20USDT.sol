@@ -2,10 +2,8 @@
 pragma solidity ^0.8.0;
 
 contract ERC20USDT {
-    uint256 public constant MAX_UINT = 2 ** 256 - 1;
-
-    uint256 public totalSupply;
     address public owner;
+    uint256 public totalSupply;
     mapping(address => uint256) public balanceOf;
     mapping(address => mapping(address => uint256)) public allowance;
 
@@ -28,7 +26,7 @@ contract ERC20USDT {
     }
 
     function transferFrom(address _from, address _to, uint256 _amount) public {
-        if (allowance[_from][msg.sender] < MAX_UINT) {
+        if (allowance[_from][msg.sender] < type(uint256).max) {
             allowance[_from][msg.sender] -= _amount;
         }
         _transfer(_from, _to, _amount);
