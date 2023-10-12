@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-pragma solidity >=0.8.8;
+pragma solidity >=0.5.0;
 
 type Id is bytes32;
 
 struct MarketParams {
-    address borrowableToken;
+    address loanToken;
     address collateralToken;
     address oracle;
     address irm;
@@ -21,7 +21,7 @@ struct Position {
 
 /// @dev Warning: `totalSupplyAssets` does not contain the accrued interest since the last interest accrual.
 /// @dev Warning: `totalBorrowAssets` does not contain the accrued interest since the last interest accrual.
-/// @dev Warning: `totalSupplyShares` does not contain the additionnal shares accrued by `feeRecipient` since the last
+/// @dev Warning: `totalSupplyShares` does not contain the additional shares accrued by `feeRecipient` since the last
 /// interest accrual.
 struct Market {
     uint128 totalSupplyAssets;
@@ -48,10 +48,12 @@ struct Signature {
 
 /// @title IMorpho
 /// @author Morpho Labs
-/// @custom:contact security@morpho.xyz
+/// @custom:contact security@morpho.org
 /// @notice Interface of Morpho.
 interface IMorpho {
     /// @notice The EIP-712 domain separator.
+    /// @dev Warning: In case of a hardfork, every EIP-712 signed message based on this domain separator can be reused
+    /// on the forked chain because the domain separator would be the same.
     function DOMAIN_SEPARATOR() external view returns (bytes32);
 
     /// @notice The owner of the contract.
@@ -102,7 +104,7 @@ interface IMorpho {
     function idToMarketParams(Id id)
         external
         view
-        returns (address borrowableToken, address collateralToken, address oracle, address irm, uint256 lltv);
+        returns (address loanToken, address collateralToken, address oracle, address irm, uint256 lltv);
 
     /// @notice Sets `newOwner` as owner of the contract.
     /// @dev Warning: No two-step transfer ownership.

@@ -5,7 +5,7 @@ import "../BaseTest.sol";
 
 contract BorrowIntegrationTest is BaseTest {
     using MathLib for uint256;
-    using MorphoLib for Morpho;
+    using MorphoLib for IMorpho;
     using SharesMathLib for uint256;
 
     function testBorrowMarketNotCreated(MarketParams memory marketParamsFuzz, address borrowerFuzz, uint256 amount)
@@ -54,9 +54,8 @@ contract BorrowIntegrationTest is BaseTest {
         vm.startPrank(supplier);
         collateralToken.approve(address(morpho), amountCollateral);
         morpho.supplyCollateral(marketParams, amountCollateral, supplier, hex"");
-        vm.stopPrank();
 
-        vm.prank(attacker);
+        changePrank(attacker);
         vm.expectRevert(bytes(ErrorsLib.UNAUTHORIZED));
         morpho.borrow(marketParams, amountBorrowed, 0, supplier, RECEIVER);
     }
@@ -139,8 +138,8 @@ contract BorrowIntegrationTest is BaseTest {
         assertEq(morpho.totalBorrowAssets(id), amountBorrowed, "total borrow");
         assertEq(morpho.borrowShares(id, BORROWER), expectedBorrowShares, "borrow shares");
         assertEq(morpho.borrowShares(id, BORROWER), expectedBorrowShares, "total borrow shares");
-        assertEq(borrowableToken.balanceOf(RECEIVER), amountBorrowed, "borrower balance");
-        assertEq(borrowableToken.balanceOf(address(morpho)), amountSupplied - amountBorrowed, "morpho balance");
+        assertEq(loanToken.balanceOf(RECEIVER), amountBorrowed, "borrower balance");
+        assertEq(loanToken.balanceOf(address(morpho)), amountSupplied - amountBorrowed, "morpho balance");
     }
 
     function testBorrowShares(
@@ -180,8 +179,8 @@ contract BorrowIntegrationTest is BaseTest {
         assertEq(morpho.totalBorrowAssets(id), expectedAmountBorrowed, "total borrow");
         assertEq(morpho.borrowShares(id, BORROWER), sharesBorrowed, "borrow shares");
         assertEq(morpho.borrowShares(id, BORROWER), sharesBorrowed, "total borrow shares");
-        assertEq(borrowableToken.balanceOf(RECEIVER), expectedAmountBorrowed, "borrower balance");
-        assertEq(borrowableToken.balanceOf(address(morpho)), amountSupplied - expectedAmountBorrowed, "morpho balance");
+        assertEq(loanToken.balanceOf(RECEIVER), expectedAmountBorrowed, "borrower balance");
+        assertEq(loanToken.balanceOf(address(morpho)), amountSupplied - expectedAmountBorrowed, "morpho balance");
     }
 
     function testBorrowAssetsOnBehalf(
@@ -219,8 +218,8 @@ contract BorrowIntegrationTest is BaseTest {
         assertEq(morpho.borrowShares(id, ONBEHALF), expectedBorrowShares, "borrow shares");
         assertEq(morpho.totalBorrowAssets(id), amountBorrowed, "total borrow");
         assertEq(morpho.totalBorrowShares(id), expectedBorrowShares, "total borrow shares");
-        assertEq(borrowableToken.balanceOf(RECEIVER), amountBorrowed, "borrower balance");
-        assertEq(borrowableToken.balanceOf(address(morpho)), amountSupplied - amountBorrowed, "morpho balance");
+        assertEq(loanToken.balanceOf(RECEIVER), amountBorrowed, "borrower balance");
+        assertEq(loanToken.balanceOf(address(morpho)), amountSupplied - amountBorrowed, "morpho balance");
     }
 
     function testBorrowSharesOnBehalf(
@@ -263,7 +262,7 @@ contract BorrowIntegrationTest is BaseTest {
         assertEq(morpho.borrowShares(id, ONBEHALF), sharesBorrowed, "borrow shares");
         assertEq(morpho.totalBorrowAssets(id), expectedAmountBorrowed, "total borrow");
         assertEq(morpho.totalBorrowShares(id), sharesBorrowed, "total borrow shares");
-        assertEq(borrowableToken.balanceOf(RECEIVER), expectedAmountBorrowed, "borrower balance");
-        assertEq(borrowableToken.balanceOf(address(morpho)), amountSupplied - expectedAmountBorrowed, "morpho balance");
+        assertEq(loanToken.balanceOf(RECEIVER), expectedAmountBorrowed, "borrower balance");
+        assertEq(loanToken.balanceOf(address(morpho)), amountSupplied - expectedAmountBorrowed, "morpho balance");
     }
 }

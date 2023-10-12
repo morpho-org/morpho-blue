@@ -5,17 +5,19 @@ import "../BaseTest.sol";
 
 contract LiquidateIntegrationTest is BaseTest {
     using MathLib for uint256;
-    using MorphoLib for Morpho;
+    using MorphoLib for IMorpho;
     using SharesMathLib for uint256;
 
-    function testLiquidateNotCreatedMarket(MarketParams memory marketParamsFuzz) public {
+    function testLiquidateNotCreatedMarket(MarketParams memory marketParamsFuzz, uint256 lltv) public {
+        _setLltv(_boundTestLltv(lltv));
         vm.assume(neq(marketParamsFuzz, marketParams));
 
         vm.expectRevert(bytes(ErrorsLib.MARKET_NOT_CREATED));
         morpho.liquidate(marketParamsFuzz, address(this), 1, 0, hex"");
     }
 
-    function testLiquidateZeroAmount() public {
+    function testLiquidateZeroAmount(uint256 lltv) public {
+        _setLltv(_boundTestLltv(lltv));
         vm.prank(BORROWER);
 
         vm.expectRevert(bytes(ErrorsLib.INCONSISTENT_INPUT));
@@ -37,19 +39,21 @@ contract LiquidateIntegrationTest is BaseTest {
         uint256 amountSupplied,
         uint256 amountBorrowed,
         uint256 amountSeized,
-        uint256 priceCollateral
+        uint256 priceCollateral,
+        uint256 lltv
     ) public {
+        _setLltv(_boundTestLltv(lltv));
         (amountCollateral, amountBorrowed, priceCollateral) =
             _boundHealthyPosition(amountCollateral, amountBorrowed, priceCollateral);
 
-        amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
+        amountSupplied = bound(amountSupplied, amountBorrowed, amountBorrowed + MAX_TEST_AMOUNT);
         _supply(amountSupplied);
 
         amountSeized = bound(amountSeized, 1, amountCollateral);
 
         oracle.setPrice(priceCollateral);
 
-        borrowableToken.setBalance(LIQUIDATOR, amountBorrowed);
+        loanToken.setBalance(LIQUIDATOR, amountBorrowed);
         collateralToken.setBalance(BORROWER, amountCollateral);
 
         vm.startPrank(BORROWER);
@@ -67,22 +71,27 @@ contract LiquidateIntegrationTest is BaseTest {
         uint256 amountSupplied,
         uint256 amountBorrowed,
         uint256 amountSeized,
-        uint256 priceCollateral
+        uint256 priceCollateral,
+        uint256 lltv
     ) public {
+        _setLltv(_boundTestLltv(lltv));
         (amountCollateral, amountBorrowed, priceCollateral) =
             _boundUnhealthyPosition(amountCollateral, amountBorrowed, priceCollateral);
 
         vm.assume(amountCollateral > 1);
 
-        amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
+        amountSupplied = bound(amountSupplied, amountBorrowed, amountBorrowed + MAX_TEST_AMOUNT);
         _supply(amountSupplied);
 
-        uint256 incentive = _liquidationIncentive(marketParams.lltv);
-        uint256 maxSeized = amountBorrowed.wMulDown(incentive).mulDivDown(ORACLE_PRICE_SCALE, priceCollateral);
-        amountSeized = bound(amountSeized, 1, min(maxSeized, amountCollateral - 1));
-        uint256 expectedRepaid = amountSeized.mulDivUp(priceCollateral, ORACLE_PRICE_SCALE).wDivUp(incentive);
+        uint256 liquidationIncentiveFactor = _liquidationIncentiveFactor(marketParams.lltv);
+        uint256 maxSeized =
+            amountBorrowed.wMulDown(liquidationIncentiveFactor).mulDivDown(ORACLE_PRICE_SCALE, priceCollateral);
+        vm.assume(maxSeized != 0);
+        amountSeized = bound(amountSeized, 1, Math.min(maxSeized, amountCollateral - 1));
+        uint256 expectedRepaid =
+            amountSeized.mulDivUp(priceCollateral, ORACLE_PRICE_SCALE).wDivUp(liquidationIncentiveFactor);
 
-        borrowableToken.setBalance(LIQUIDATOR, amountBorrowed);
+        loanToken.setBalance(LIQUIDATOR, amountBorrowed);
         collateralToken.setBalance(BORROWER, amountCollateral);
 
         oracle.setPrice(type(uint256).max / amountCollateral);
@@ -111,12 +120,10 @@ contract LiquidateIntegrationTest is BaseTest {
         assertEq(morpho.totalBorrowAssets(id), amountBorrowed - expectedRepaid, "total borrow");
         assertEq(morpho.totalBorrowShares(id), expectedBorrowShares, "total borrow shares");
         assertEq(morpho.collateral(id, BORROWER), amountCollateral - amountSeized, "collateral");
-        assertEq(borrowableToken.balanceOf(BORROWER), amountBorrowed, "borrower balance");
-        assertEq(borrowableToken.balanceOf(LIQUIDATOR), amountBorrowed - expectedRepaid, "liquidator balance");
+        assertEq(loanToken.balanceOf(BORROWER), amountBorrowed, "borrower balance");
+        assertEq(loanToken.balanceOf(LIQUIDATOR), amountBorrowed - expectedRepaid, "liquidator balance");
         assertEq(
-            borrowableToken.balanceOf(address(morpho)),
-            amountSupplied - amountBorrowed + expectedRepaid,
-            "morpho balance"
+            loanToken.balanceOf(address(morpho)), amountSupplied - amountBorrowed + expectedRepaid, "morpho balance"
         );
         assertEq(
             collateralToken.balanceOf(address(morpho)), amountCollateral - amountSeized, "morpho collateral balance"
@@ -129,8 +136,10 @@ contract LiquidateIntegrationTest is BaseTest {
         uint256 amountSupplied,
         uint256 amountBorrowed,
         uint256 sharesRepaid,
-        uint256 priceCollateral
+        uint256 priceCollateral,
+        uint256 lltv
     ) public {
+        _setLltv(_boundTestLltv(lltv));
         (amountCollateral, amountBorrowed, priceCollateral) =
             _boundUnhealthyPosition(amountCollateral, amountBorrowed, priceCollateral);
 
@@ -141,16 +150,16 @@ contract LiquidateIntegrationTest is BaseTest {
 
         uint256 expectedBorrowShares = amountBorrowed.toSharesUp(0, 0);
         uint256 maxRepaidShares = amountCollateral.mulDivDown(priceCollateral, ORACLE_PRICE_SCALE).wDivDown(
-            _liquidationIncentive(marketParams.lltv)
+            _liquidationIncentiveFactor(marketParams.lltv)
         );
         vm.assume(maxRepaidShares != 0);
-        sharesRepaid = bound(sharesRepaid, 1, min(maxRepaidShares, expectedBorrowShares));
+        sharesRepaid = bound(sharesRepaid, 1, Math.min(maxRepaidShares, expectedBorrowShares));
         uint256 expectedRepaid = sharesRepaid.toAssetsUp(amountBorrowed, expectedBorrowShares);
-        uint256 expectedSeized = expectedRepaid.wMulDown(_liquidationIncentive(marketParams.lltv)).mulDivDown(
+        uint256 expectedSeized = expectedRepaid.wMulDown(_liquidationIncentiveFactor(marketParams.lltv)).mulDivDown(
             ORACLE_PRICE_SCALE, priceCollateral
         );
 
-        borrowableToken.setBalance(LIQUIDATOR, amountBorrowed);
+        loanToken.setBalance(LIQUIDATOR, amountBorrowed);
         collateralToken.setBalance(BORROWER, amountCollateral);
 
         oracle.setPrice(type(uint256).max / amountCollateral);
@@ -176,12 +185,10 @@ contract LiquidateIntegrationTest is BaseTest {
         assertEq(morpho.totalBorrowAssets(id), amountBorrowed - expectedRepaid, "total borrow");
         assertEq(morpho.totalBorrowShares(id), expectedBorrowShares, "total borrow shares");
         assertEq(morpho.collateral(id, BORROWER), amountCollateral - expectedSeized, "collateral");
-        assertEq(borrowableToken.balanceOf(BORROWER), amountBorrowed, "borrower balance");
-        assertEq(borrowableToken.balanceOf(LIQUIDATOR), amountBorrowed - expectedRepaid, "liquidator balance");
+        assertEq(loanToken.balanceOf(BORROWER), amountBorrowed, "borrower balance");
+        assertEq(loanToken.balanceOf(LIQUIDATOR), amountBorrowed - expectedRepaid, "liquidator balance");
         assertEq(
-            borrowableToken.balanceOf(address(morpho)),
-            amountSupplied - amountBorrowed + expectedRepaid,
-            "morpho balance"
+            loanToken.balanceOf(address(morpho)), amountSupplied - amountBorrowed + expectedRepaid, "morpho balance"
         );
         assertEq(
             collateralToken.balanceOf(address(morpho)), amountCollateral - expectedSeized, "morpho collateral balance"
@@ -190,7 +197,7 @@ contract LiquidateIntegrationTest is BaseTest {
     }
 
     struct LiquidateBadDebtTestParams {
-        uint256 incentive;
+        uint256 liquidationIncentiveFactor;
         uint256 expectedRepaid;
         uint256 expectedRepaidShares;
         uint256 borrowSharesBeforeLiquidation;
@@ -204,8 +211,10 @@ contract LiquidateIntegrationTest is BaseTest {
         uint256 amountCollateral,
         uint256 amountSupplied,
         uint256 amountBorrowed,
-        uint256 priceCollateral
+        uint256 priceCollateral,
+        uint256 lltv
     ) public {
+        _setLltv(_boundTestLltv(lltv));
         LiquidateBadDebtTestParams memory params;
 
         (amountCollateral, amountBorrowed, priceCollateral) =
@@ -213,16 +222,17 @@ contract LiquidateIntegrationTest is BaseTest {
 
         vm.assume(amountCollateral > 1);
 
-        params.incentive = _liquidationIncentive(marketParams.lltv);
-        params.expectedRepaid = amountCollateral.mulDivUp(priceCollateral, ORACLE_PRICE_SCALE).wDivUp(params.incentive);
+        params.liquidationIncentiveFactor = _liquidationIncentiveFactor(marketParams.lltv);
+        params.expectedRepaid =
+            amountCollateral.mulDivUp(priceCollateral, ORACLE_PRICE_SCALE).wDivUp(params.liquidationIncentiveFactor);
 
-        uint256 minBorrowed = max(params.expectedRepaid, amountBorrowed);
-        amountBorrowed = bound(amountBorrowed, minBorrowed, max(minBorrowed, MAX_TEST_AMOUNT));
+        uint256 minBorrowed = Math.max(params.expectedRepaid, amountBorrowed);
+        amountBorrowed = bound(amountBorrowed, minBorrowed, Math.max(minBorrowed, MAX_TEST_AMOUNT));
 
-        amountSupplied = bound(amountSupplied, amountBorrowed, max(amountBorrowed, MAX_TEST_AMOUNT));
+        amountSupplied = bound(amountSupplied, amountBorrowed, Math.max(amountBorrowed, MAX_TEST_AMOUNT));
         _supply(amountSupplied);
 
-        borrowableToken.setBalance(LIQUIDATOR, amountBorrowed);
+        loanToken.setBalance(LIQUIDATOR, amountBorrowed);
         collateralToken.setBalance(BORROWER, amountCollateral);
 
         oracle.setPrice(type(uint256).max / amountCollateral);
@@ -263,10 +273,10 @@ contract LiquidateIntegrationTest is BaseTest {
         assertEq(returnSeized, amountCollateral, "returned seized amount");
         assertEq(returnRepaid, params.expectedRepaid, "returned asset amount");
         assertEq(morpho.collateral(id, BORROWER), 0, "collateral");
-        assertEq(borrowableToken.balanceOf(BORROWER), amountBorrowed, "borrower balance");
-        assertEq(borrowableToken.balanceOf(LIQUIDATOR), amountBorrowed - params.expectedRepaid, "liquidator balance");
+        assertEq(loanToken.balanceOf(BORROWER), amountBorrowed, "borrower balance");
+        assertEq(loanToken.balanceOf(LIQUIDATOR), amountBorrowed - params.expectedRepaid, "liquidator balance");
         assertEq(
-            borrowableToken.balanceOf(address(morpho)),
+            loanToken.balanceOf(address(morpho)),
             amountSupplied - amountBorrowed + params.expectedRepaid,
             "morpho balance"
         );

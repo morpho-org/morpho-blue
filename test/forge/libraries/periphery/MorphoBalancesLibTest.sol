@@ -5,9 +5,9 @@ import "../../BaseTest.sol";
 
 contract MorphoBalancesLibTest is BaseTest {
     using MathLib for uint256;
-    using MorphoLib for Morpho;
     using SharesMathLib for uint256;
-    using MorphoBalancesLib for Morpho;
+    using MorphoLib for IMorpho;
+    using MorphoBalancesLib for IMorpho;
 
     function testVirtualAccrueInterest(uint256 amountSupplied, uint256 amountBorrowed, uint256 timeElapsed, uint256 fee)
         public
@@ -100,34 +100,33 @@ contract MorphoBalancesLibTest is BaseTest {
         assertEq(expectedBorrowBalance, actualBorrowBalance);
     }
 
-    function _generatePendingInterest(uint256 amountSupplied, uint256 amountBorrowed, uint256 timeElapsed, uint256 fee)
+    function _generatePendingInterest(uint256 amountSupplied, uint256 amountBorrowed, uint256 blocks, uint256 fee)
         internal
     {
         amountSupplied = bound(amountSupplied, 0, MAX_TEST_AMOUNT);
         amountBorrowed = bound(amountBorrowed, 0, amountSupplied);
-        timeElapsed = uint32(bound(timeElapsed, 0, 1e8));
+        blocks = _boundBlocks(blocks);
         fee = bound(fee, 0, MAX_FEE);
 
         // Set fee parameters.
         vm.startPrank(OWNER);
-        morpho.setFeeRecipient(OWNER);
         if (fee != morpho.fee(id)) morpho.setFee(marketParams, fee);
         vm.stopPrank();
 
         if (amountSupplied > 0) {
-            borrowableToken.setBalance(address(this), amountSupplied);
+            loanToken.setBalance(address(this), amountSupplied);
             morpho.supply(marketParams, amountSupplied, 0, address(this), hex"");
 
             if (amountBorrowed > 0) {
-                uint256 collateralPrice = IOracle(marketParams.oracle).price();
+                uint256 collateralPrice = oracle.price();
                 collateralToken.setBalance(
-                    BORROWER, amountBorrowed.wDivUp(LLTV).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice)
+                    BORROWER, amountBorrowed.wDivUp(marketParams.lltv).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice)
                 );
 
                 vm.startPrank(BORROWER);
                 morpho.supplyCollateral(
                     marketParams,
-                    amountBorrowed.wDivUp(LLTV).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice),
+                    amountBorrowed.wDivUp(marketParams.lltv).mulDivUp(ORACLE_PRICE_SCALE, collateralPrice),
                     BORROWER,
                     hex""
                 );
@@ -136,8 +135,6 @@ contract MorphoBalancesLibTest is BaseTest {
             }
         }
 
-        // New block.
-        vm.roll(block.number + 1);
-        vm.warp(block.timestamp + timeElapsed);
+        _forward(blocks);
     }
 }

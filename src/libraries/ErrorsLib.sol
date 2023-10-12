@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 /// @title ErrorsLib
 /// @author Morpho Labs
-/// @custom:contact security@morpho.xyz
+/// @custom:contact security@morpho.org
 /// @notice Library exposing error messages.
 library ErrorsLib {
     /// @notice Thrown when the caller is not the owner.
@@ -60,11 +60,17 @@ library ErrorsLib {
     /// @notice Thrown when the nonce is invalid.
     string internal constant INVALID_NONCE = "invalid nonce";
 
-    /// @notice Thrown when a token transfer has failed.
-    string internal constant TRANSFER_FAILED = "transfer failed";
+    /// @notice Thrown when a token transfer reverted.
+    string internal constant TRANSFER_REVERTED = "transfer reverted";
 
-    /// @notice Thrown when a token transferFrom has failed.
-    string internal constant TRANSFER_FROM_FAILED = "transferFrom failed";
+    /// @notice Thrown when a token transfer returned false.
+    string internal constant TRANSFER_RETURNED_FALSE = "transfer returned false";
+
+    /// @notice Thrown when a token transferFrom reverted.
+    string internal constant TRANSFER_FROM_REVERTED = "transferFrom reverted";
+
+    /// @notice Thrown when a token transferFrom returned false
+    string internal constant TRANSFER_FROM_RETURNED_FALSE = "transferFrom returned false";
 
     /// @notice Thrown when the maximum uint128 is exceeded.
     string internal constant MAX_UINT128_EXCEEDED = "max uint128 exceeded";

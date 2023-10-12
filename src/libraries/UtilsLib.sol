@@ -5,7 +5,7 @@ import {ErrorsLib} from "../libraries/ErrorsLib.sol";
 
 /// @title UtilsLib
 /// @author Morpho Labs
-/// @custom:contact security@morpho.xyz
+/// @custom:contact security@morpho.org
 /// @notice Library exposing helpers.
 /// @dev Inspired by https://github.com/morpho-org/morpho-utils.
 library UtilsLib {

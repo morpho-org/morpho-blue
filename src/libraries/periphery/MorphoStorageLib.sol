@@ -5,7 +5,7 @@ import {Id} from "../../interfaces/IMorpho.sol";
 
 /// @title MorphoStorageLib
 /// @author Morpho Labs
-/// @custom:contact security@morpho.xyz
+/// @custom:contact security@morpho.org
 /// @notice Helper library exposing getters to access Morpho storage variables' slot.
 /// @dev This library is not used in Morpho itself and is intended to be used by integrators.
 library MorphoStorageLib {
@@ -23,7 +23,7 @@ library MorphoStorageLib {
 
     /* SLOT OFFSETS */
 
-    uint256 internal constant BORROWABLE_TOKEN_OFFSET = 0;
+    uint256 internal constant LOAN_TOKEN_OFFSET = 0;
     uint256 internal constant COLLATERAL_TOKEN_OFFSET = 1;
     uint256 internal constant ORACLE_OFFSET = 2;
     uint256 internal constant IRM_OFFSET = 3;
@@ -87,8 +87,8 @@ library MorphoStorageLib {
         return keccak256(abi.encode(authorizer, NONCE_SLOT));
     }
 
-    function idToBorrowableTokenSlot(Id id) internal pure returns (bytes32) {
-        return bytes32(uint256(keccak256(abi.encode(id, ID_TO_MARKET_PARAMS_SLOT))) + BORROWABLE_TOKEN_OFFSET);
+    function idToLoanTokenSlot(Id id) internal pure returns (bytes32) {
+        return bytes32(uint256(keccak256(abi.encode(id, ID_TO_MARKET_PARAMS_SLOT))) + LOAN_TOKEN_OFFSET);
     }
 
     function idToCollateralTokenSlot(Id id) internal pure returns (bytes32) {

@@ -19,9 +19,9 @@ contract AuthorizationIntegrationTest is BaseTest {
     function testSetAuthorizationWithSignatureDeadlineOutdated(
         Authorization memory authorization,
         uint256 privateKey,
-        uint256 elapsed
+        uint256 blocks
     ) public {
-        elapsed = bound(elapsed, 1, type(uint32).max);
+        blocks = _boundBlocks(blocks);
         authorization.deadline = block.timestamp;
 
         // Private key must be less than the secp256k1 curve order.
@@ -33,8 +33,7 @@ contract AuthorizationIntegrationTest is BaseTest {
         bytes32 digest = SigUtils.getTypedDataHash(morpho.DOMAIN_SEPARATOR(), authorization);
         (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
 
-        vm.roll(block.number + 1);
-        vm.warp(block.timestamp + elapsed);
+        _forward(blocks);
 
         vm.expectRevert(bytes(ErrorsLib.SIGNATURE_EXPIRED));
         morpho.setAuthorizationWithSig(authorization, sig);
@@ -87,5 +86,23 @@ contract AuthorizationIntegrationTest is BaseTest {
 
         assertEq(morpho.isAuthorized(authorization.authorizer, authorization.authorized), authorization.isAuthorized);
         assertEq(morpho.nonce(authorization.authorizer), 1);
+    }
+
+    function testAuthorizationFailsWithReusedSig(Authorization memory authorization, uint256 privateKey) public {
+        authorization.deadline = bound(authorization.deadline, block.timestamp + 1, type(uint256).max);
+
+        // Private key must be less than the secp256k1 curve order.
+        privateKey = bound(privateKey, 1, type(uint32).max);
+        authorization.nonce = 0;
+        authorization.authorizer = vm.addr(privateKey);
+
+        Signature memory sig;
+        bytes32 digest = SigUtils.getTypedDataHash(morpho.DOMAIN_SEPARATOR(), authorization);
+        (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
+
+        morpho.setAuthorizationWithSig(authorization, sig);
+
+        vm.expectRevert(bytes(ErrorsLib.INVALID_NONCE));
+        morpho.setAuthorizationWithSig(authorization, sig);
     }
 }

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import "forge-std/Test.sol";
+import "../../../lib/forge-std/src/Test.sol";
 
-import "src/libraries/ErrorsLib.sol";
-import {IERC20, SafeTransferLib} from "src/libraries/SafeTransferLib.sol";
+import "../../../src/libraries/ErrorsLib.sol";
+import {IERC20, SafeTransferLib} from "../../../src/libraries/SafeTransferLib.sol";
 
 /// @dev Token not returning any boolean on transfer and transferFrom.
 contract ERC20WithoutBoolean {
@@ -74,14 +74,14 @@ contract SafeTransferLibTest is Test {
     function testSafeTransferWithBoolFalse(address to, uint256 amount) public {
         tokenWithBooleanAlwaysFalse.setBalance(address(this), amount);
 
-        vm.expectRevert(bytes(ErrorsLib.TRANSFER_FAILED));
+        vm.expectRevert(bytes(ErrorsLib.TRANSFER_RETURNED_FALSE));
         this.safeTransfer(address(tokenWithBooleanAlwaysFalse), to, amount);
     }
 
     function testSafeTransferFromWithBoolFalse(address from, address to, uint256 amount) public {
         tokenWithBooleanAlwaysFalse.setBalance(from, amount);
 
-        vm.expectRevert(bytes(ErrorsLib.TRANSFER_FROM_FAILED));
+        vm.expectRevert(bytes(ErrorsLib.TRANSFER_FROM_RETURNED_FALSE));
         this.safeTransferFrom(address(tokenWithBooleanAlwaysFalse), from, to, amount);
     }
 
