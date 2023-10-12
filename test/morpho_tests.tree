@@ -222,15 +222,8 @@
                 ├── it should remove repaidShares from totalBorrowShares[marketParams.id]
                 ├── it should remove assetsRepaid from totalBorrow[marketParams.id]
                 ├── it should remove repaidShares from collateral[marketParams.id][borrower]
-                ├── if after the liquidation the borrower's collateral is 0
-                │   └── it should realize bad debt
-                │       ├── it should compute badDebt = borrowShares[marketParams.id][borrower].toAssetsUp(totalBorrow[marketParams.id], totalBorrowShares[marketParams.id])
-                │       ├── it should remove badDebt from totalSupplyAssets[marketParams.id]
-                │       ├── it should remove badDebt from totalBorrowAssets[marketParams.id]
-                │       ├── it should remove borrowShares[marketParams.id][borrower] from totalBorrowShares[marketParams.id]
-                │       └── it should set borrowShares[marketParams.id][borrower] to 0
                 ├── it should transfer repaidShares of collateral asset to the sender
-                ├── it should emit Liquidate(marketParams.id, msg.sender, borrower, assetsRepaid, repaidShares, seizedAssets, badDebtShares)
+                ├── it should emit Liquidate(marketParams.id, msg.sender, borrower, assetsRepaid, repaidShares, seizedAssets)
                 ├── if data.length > 0
                 │   └── it should call sender's onMorphoLiquidate callback
                 └── it should transfer assetsRepaid of loan asset from the sender to Morpho

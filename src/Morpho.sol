@@ -373,21 +373,10 @@ contract Morpho is IMorpho {
 
         position[id][borrower].collateral -= seizedAssets.toUint128();
 
-        // Realize the bad debt if needed. Note that it saves ~3k gas to do it.
-        uint256 badDebtShares;
-        if (position[id][borrower].collateral == 0) {
-            badDebtShares = position[id][borrower].borrowShares;
-            uint256 badDebt = badDebtShares.toAssetsUp(market[id].totalBorrowAssets, market[id].totalBorrowShares);
-            market[id].totalSupplyAssets -= badDebt.toUint128();
-            market[id].totalBorrowAssets -= badDebt.toUint128();
-            market[id].totalBorrowShares -= badDebtShares.toUint128();
-            position[id][borrower].borrowShares = 0;
-        }
-
         IERC20(marketParams.collateralToken).safeTransfer(msg.sender, seizedAssets);
 
         // `repaidAssets` may be greater than `totalBorrowAssets` by 1.
-        emit EventsLib.Liquidate(id, msg.sender, borrower, repaidAssets, repaidShares, seizedAssets, badDebtShares);
+        emit EventsLib.Liquidate(id, msg.sender, borrower, repaidAssets, repaidShares, seizedAssets);
 
         if (data.length > 0) IMorphoLiquidateCallback(msg.sender).onMorphoLiquidate(repaidAssets, data);
 

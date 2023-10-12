@@ -393,25 +393,4 @@ contract MorphoInvariantTest is InvariantTest {
             );
         }
     }
-
-    function invariantBadDebt() public {
-        address[] memory users = targetSenders();
-
-        for (uint256 i; i < allMarketParams.length; ++i) {
-            MarketParams memory _marketParams = allMarketParams[i];
-            Id _id = _marketParams.id();
-
-            for (uint256 j; j < users.length; ++j) {
-                address user = users[j];
-
-                if (morpho.collateral(_id, user) == 0) {
-                    assertEq(
-                        morpho.borrowShares(_id, user),
-                        0,
-                        string.concat(vm.toString(_marketParams.lltv), ":", vm.toString(user))
-                    );
-                }
-            }
-        }
-    }
 }

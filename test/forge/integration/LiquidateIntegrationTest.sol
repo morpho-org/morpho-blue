@@ -109,7 +109,7 @@ contract LiquidateIntegrationTest is BaseTest {
         vm.prank(LIQUIDATOR);
 
         vm.expectEmit(true, true, true, true, address(morpho));
-        emit EventsLib.Liquidate(id, LIQUIDATOR, BORROWER, expectedRepaid, expectedRepaidShares, amountSeized, 0);
+        emit EventsLib.Liquidate(id, LIQUIDATOR, BORROWER, expectedRepaid, expectedRepaidShares, amountSeized);
         (uint256 returnSeized, uint256 returnRepaid) = morpho.liquidate(marketParams, BORROWER, amountSeized, 0, hex"");
 
         uint256 expectedBorrowShares = amountBorrowed.toSharesUp(0, 0) - expectedRepaidShares;
@@ -174,7 +174,7 @@ contract LiquidateIntegrationTest is BaseTest {
         vm.prank(LIQUIDATOR);
 
         vm.expectEmit(true, true, true, true, address(morpho));
-        emit EventsLib.Liquidate(id, LIQUIDATOR, BORROWER, expectedRepaid, sharesRepaid, expectedSeized, 0);
+        emit EventsLib.Liquidate(id, LIQUIDATOR, BORROWER, expectedRepaid, sharesRepaid, expectedSeized);
         (uint256 returnSeized, uint256 returnRepaid) = morpho.liquidate(marketParams, BORROWER, 0, sharesRepaid, hex"");
 
         expectedBorrowShares = amountBorrowed.toSharesUp(0, 0) - sharesRepaid;
@@ -201,10 +201,6 @@ contract LiquidateIntegrationTest is BaseTest {
         uint256 expectedRepaid;
         uint256 expectedRepaidShares;
         uint256 borrowSharesBeforeLiquidation;
-        uint256 totalBorrowSharesBeforeLiquidation;
-        uint256 totalBorrowBeforeLiquidation;
-        uint256 totalSupplyBeforeLiquidation;
-        uint256 expectedBadDebt;
     }
 
     function testLiquidateBadDebt(
@@ -247,25 +243,12 @@ contract LiquidateIntegrationTest is BaseTest {
         params.expectedRepaidShares =
             params.expectedRepaid.toSharesDown(morpho.totalBorrowAssets(id), morpho.totalBorrowShares(id));
         params.borrowSharesBeforeLiquidation = morpho.borrowShares(id, BORROWER);
-        params.totalBorrowSharesBeforeLiquidation = morpho.totalBorrowShares(id);
-        params.totalBorrowBeforeLiquidation = morpho.totalBorrowAssets(id);
-        params.totalSupplyBeforeLiquidation = morpho.totalSupplyAssets(id);
-        params.expectedBadDebt = (params.borrowSharesBeforeLiquidation - params.expectedRepaidShares).toAssetsUp(
-            params.totalBorrowBeforeLiquidation - params.expectedRepaid,
-            params.totalBorrowSharesBeforeLiquidation - params.expectedRepaidShares
-        );
 
         vm.prank(LIQUIDATOR);
 
         vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.Liquidate(
-            id,
-            LIQUIDATOR,
-            BORROWER,
-            params.expectedRepaid,
-            params.expectedRepaidShares,
-            amountCollateral,
-            params.expectedBadDebt * SharesMathLib.VIRTUAL_SHARES
+            id, LIQUIDATOR, BORROWER, params.expectedRepaid, params.expectedRepaidShares, amountCollateral
         );
         (uint256 returnSeized, uint256 returnRepaid) =
             morpho.liquidate(marketParams, BORROWER, amountCollateral, 0, hex"");
@@ -282,17 +265,10 @@ contract LiquidateIntegrationTest is BaseTest {
         );
         assertEq(collateralToken.balanceOf(address(morpho)), 0, "morpho collateral balance");
         assertEq(collateralToken.balanceOf(LIQUIDATOR), amountCollateral, "liquidator collateral balance");
-
-        // Bad debt realization.
-        assertEq(morpho.borrowShares(id, BORROWER), 0, "borrow shares");
-        assertEq(morpho.totalBorrowShares(id), 0, "total borrow shares");
         assertEq(
-            morpho.totalBorrowAssets(id),
-            params.totalBorrowBeforeLiquidation - params.expectedRepaid - params.expectedBadDebt,
-            "total borrow"
-        );
-        assertEq(
-            morpho.totalSupplyAssets(id), params.totalSupplyBeforeLiquidation - params.expectedBadDebt, "total supply"
+            morpho.borrowShares(id, BORROWER),
+            params.borrowSharesBeforeLiquidation - params.expectedRepaidShares,
+            "borrow shares"
         );
     }
 }
