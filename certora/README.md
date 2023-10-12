@@ -27,6 +27,8 @@ function summarySafeTransferFrom(address token, address from, address to, uint25
 }
 ```
 
+where `balance` is the ERC20 balance of the Morpho Blue contract.
+
 The verification is done for the most common implementations of the ERC20 standard, for which we distinguish three different implementations:
 
 - [ERC20Standard](./dispatch/ERC20Standard.sol) which respects the standard and reverts in case of insufficient funds or in case of insufficient allowance.
@@ -39,24 +41,24 @@ The use of the library can make it difficult for the provers, so the summary is 
 
 ## Markets
 
-Morpho Blue is a singleton contract that defines different markets.
+The Morpho Blue contract is a singleton contract that defines different markets.
 Markets on Morpho Blue depend on a pair of assets, the loan token that is supplied and borrowed, and the collateral token.
 Taking out a loan requires to deposit some collateral, which stays idle in the contract.
 Additionally, every loan token that is not borrowed also stays idle in the contract.
 This is verified by the following property:
 
 ```solidity
-invariant idleAmountLessBalance(address token)
+invariant idleAmountLessThanBalance(address token)
     idleAmount[token] <= balance[token]
 ```
 
-where `balance` is the ERC20 balance of the singleton, and where `idleAmount` is the sum over all the markets of: the collateral amounts plus the supplied amounts minus the borrowed amounts.
+where `idleAmount` is the sum over all the markets of: the collateral amounts plus the supplied amounts minus the borrowed amounts.
 In effect, this means that funds can only leave the contract through borrows and withdrawals.
 
 Additionally, it is checked that on a given market the borrowed amounts cannot exceed the supplied amounts.
 
 ```solidity
-invariant borrowLessSupply(MorphoHarness.Id id)
+invariant borrowLessThanSupply(MorphoHarness.Id id)
     totalBorrowAssets(id) <= totalSupplyAssets(id);
 ```
 
@@ -67,8 +69,26 @@ Said otherwise, markets are independent: tokens from a given market cannot be im
 
 When supplying on Morpho Blue, interest is earned over time, and the distribution is implemented through a shares mechanism.
 Shares increase in value as interest is accrued.
+The share mechanism is implemented symetrically for the borrow side: a share of borrow increasing in value over time represents additional owed interest.
+The rule `accrueInterestIncreasesSupplyRatio` checks this property for the supply side with the following statement.
 
-The accounting of the markets has been verified (such as the total shares), .
+```soldidity
+    // Check that the ratio increases: assetsBefore/sharesBefore <= assetsAfter/sharesAfter.
+    assert assetsBefore * sharesAfter <= assetsAfter * sharesBefore;
+```
+
+where `assetsBefore` and `sharesBefore` represents respectively the supplied assets and the supplied shares before accruing the interest. Similarly, `assetsAfter` and `sharesAfter` represent the supplied assets and shares after an interest accrual.
+
+The accounting of the shares mechanism relies on another variable to store the total number of shares, in order to compute what is the relative part of each user.
+This variable needs to be kept up to date at each corresponding interaction, and it is checked that this accounting is done properly.
+For example, for the supply side, this is done by the following invariant.
+
+```solidity
+invariant sumSupplySharesCorrect(MorphoHarness.Id id)
+    to_mathint(totalSupplyShares(id)) == sumSupplyShares[id];
+```
+
+where `sumSupplyShares` only exists in the specification, and is defined to be automatically updated whenever any of the shares of the users are modified.
 
 ## Health
 

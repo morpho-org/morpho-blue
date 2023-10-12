@@ -106,7 +106,7 @@ invariant sumBorrowSharesCorrect(MorphoHarness.Id id)
 
 // Check that a market only allows borrows up to the total supply.
 // This invariant shows that markets are independent, tokens from one market cannot be taken by interacting with another market.
-invariant borrowLessSupply(MorphoHarness.Id id)
+invariant borrowLessThanSupply(MorphoHarness.Id id)
     totalBorrowAssets(id) <= totalSupplyAssets(id);
 
 // This invariant is useful in the following rule, to link an id back to a market.
@@ -116,7 +116,7 @@ invariant marketInvariant(MorphoHarness.MarketParams marketParams)
     idToCollateral[libId(marketParams)] == marketParams.collateralToken;
 
 // Check that the idle amount on the singleton is greater to the sum amount, that is the sum over all the markets of the total supply plus the total collateral minus the total borrow.
-invariant idleAmountLessBalance(address token)
+invariant idleAmountLessThanBalance(address token)
     idleAmount[token] <= balance[token]
 {
     // Safe requires on the sender because the contract cannot call the function itself.
