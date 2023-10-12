@@ -4,11 +4,11 @@ The core concepts of the the Morpho Blue protocol are described in the [Whitepap
 These concepts have been verified using CVL.
 We first give a [high-level description](#high-level-description) of the verification and then describe the [folder and file structure](#folder-and-file-structure) of the specification files.
 
-## High-Level description
+# High-level description
 
 The Morpho Blue protocol allows users to take out collateralized loans on ERC20 tokens.
 
-### Transfers
+## ERC20 tokens and transfers
 
 For a given market, Morpho Blue relies on the fact that the tokens involved respect the ERC20 standard.
 In particular, in case of a transfer, it is assumed that the balance of Morpho Blue increases or decreases (depending if its the recipient or the sender) of the amount transferred.
@@ -19,10 +19,10 @@ This summary is taken as the reference implementation to check that the balance 
 ```solidity
 function summarySafeTransferFrom(address token, address from, address to, uint256 amount) {
     if (from == currentContract) {
-        myBalances[token] = require_uint256(myBalances[token] - amount);
+        balance[token] = require_uint256(balance[token] - amount);
     }
     if (to == currentContract) {
-        myBalances[token] = require_uint256(myBalances[token] + amount);
+        balance[token] = require_uint256(balance[token] + amount);
     }
 }
 ```
@@ -37,41 +37,63 @@ Additionally, Morpho Blue always goes through a custom transfer library to handl
 This library reverts when the transfer is not successful, and this is checked for the case of insufficient funds or insufficient allowance.
 The use of the library can make it difficult for the provers, so the summary is sometimes used in other specification files to ease the verification of rules that rely on the transfer of tokens.
 
-### Markets
+## Markets
 
-Markets on Morpho Blue depend on a pair of assets, the borrowable asset that is supplied and borrowed, and the collateral asset.
-Markets are independent, which means that loans cannot be impacted by loans from other markets.
-Positions of users are also independent, so loans cannot be impacted by loans from other users.
-The accounting of the markets has been verified (such as the total amounts), as well as the fact that only market with enabled parameters are created.
+Morpho Blue is a singleton contract that defines different markets.
+Markets on Morpho Blue depend on a pair of assets, the loan token that is supplied and borrowed, and the collateral token.
+Taking out a loan requires to deposit some collateral, which stays idle in the contract.
+Additionally, every loan token that is not borrowed also stays idle in the contract.
+This is verified by the following property:
 
-### Supply
+```solidity
+invariant idleAmountLessBalance(address token)
+    idleAmount[token] <= balance[token]
+```
+
+where `balance` is the ERC20 balance of the singleton, and where `idleAmount` is the sum over all the markets of: the collateral amounts plus the supplied amounts minus the borrowed amounts.
+In effect, this means that funds can only leave the contract through borrows and withdrawals.
+
+Additionally, it is checked that on a given market the borrowed amounts cannot exceed the supplied amounts.
+
+```solidity
+invariant borrowLessSupply(MorphoHarness.Id id)
+    totalBorrowAssets(id) <= totalSupplyAssets(id);
+```
+
+This property, along with the previous one ensures that other markets can only impact the balance positively.
+Said otherwise, markets are independent: tokens from a given market cannot be impacted by operations done in another market.
+
+## Shares
 
 When supplying on Morpho Blue, interest is earned over time, and the distribution is implemented through a shares mechanism.
 Shares increase in value as interest is accrued.
 
-### Borrow
+The accounting of the markets has been verified (such as the total shares), .
 
-To borrow on Morpho Blue, collateral must be deposited.
-Collateral tokens remain idle, as well as any borrowable token that has not been borrowed.
-
-### Liquidation
+## Health
 
 To ensure proper collateralization, a liquidation system is put in place.
 In the absence of accrued interest, for example when creating a new position or when interacting multiple times in the same block, a position cannot be made unhealthy.
+
+## Safety
 
 ### Authorization
 
 Morpho Blue also defines a sound authorization system where users cannot modify positions of other users without proper authorization (except when liquidating).
 
-### Safety
+Positions of users are also independent, so loans cannot be impacted by loans from other users.
+
+### Others
 
 Other safety properties are verified, particularly regarding reentrancy attacks and about input validation and revert conditions.
 
-### Liveness
+as well as the fact that only market with enabled parameters are created
+
+## Liveness
 
 Other liveness properties are verified as well, in particular it is always possible to exit a position without concern for the oracle.
 
-## Folder and file structure
+# Folder and file structure
 
 The [`certora/specs`](./specs) folder contains the following files:
 
@@ -99,7 +121,7 @@ Notably, this allows handling the fact that library functions should be called f
 
 The [`certora/dispatch`](./dispatch) folder contains different contracts similar to the ones that are expected to be called from Morpho Blue.
 
-## Getting started
+# Getting started
 
 To verify specification files, run the corresponding script in the [`certora/scripts`](./scripts) folder.
 It requires having set the `CERTORAKEY` environment variable to a valid Certora key.
