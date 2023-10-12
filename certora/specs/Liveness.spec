@@ -70,14 +70,14 @@ rule supplyChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams marke
     require lastUpdate(id) == e.block.timestamp;
 
     mathint sharesBefore = supplyShares(id, onBehalf);
-    mathint balanceBefore = myBalances[marketParams.borrowableToken];
+    mathint balanceBefore = myBalances[marketParams.loanToken];
 
     uint256 suppliedAssets;
     uint256 suppliedShares;
     suppliedAssets, suppliedShares = supply(e, marketParams, assets, shares, onBehalf, data);
 
     mathint sharesAfter = supplyShares(id, onBehalf);
-    mathint balanceAfter = myBalances[marketParams.borrowableToken];
+    mathint balanceAfter = myBalances[marketParams.loanToken];
 
     assert assets != 0 => suppliedAssets == assets;
     assert assets == 0 => suppliedShares == shares;
@@ -95,14 +95,14 @@ rule withdrawChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams mar
     require lastUpdate(id) == e.block.timestamp;
 
     mathint sharesBefore = supplyShares(id, onBehalf);
-    mathint balanceBefore = myBalances[marketParams.borrowableToken];
+    mathint balanceBefore = myBalances[marketParams.loanToken];
 
     uint256 withdrawnAssets;
     uint256 withdrawnShares;
     withdrawnAssets, withdrawnShares = withdraw(e, marketParams, assets, shares, onBehalf, receiver);
 
     mathint sharesAfter = supplyShares(id, onBehalf);
-    mathint balanceAfter = myBalances[marketParams.borrowableToken];
+    mathint balanceAfter = myBalances[marketParams.loanToken];
 
     assert assets != 0 => withdrawnAssets == assets;
     assert assets == 0 => withdrawnShares == shares;
@@ -120,14 +120,14 @@ rule borrowChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams marke
     require lastUpdate(id) == e.block.timestamp;
 
     mathint sharesBefore = borrowShares(id, onBehalf);
-    mathint balanceBefore = myBalances[marketParams.borrowableToken];
+    mathint balanceBefore = myBalances[marketParams.loanToken];
 
     uint256 borrowedAssets;
     uint256 borrowedShares;
     borrowedAssets, borrowedShares = borrow(e, marketParams, assets, shares, onBehalf, receiver);
 
     mathint sharesAfter = borrowShares(id, onBehalf);
-    mathint balanceAfter = myBalances[marketParams.borrowableToken];
+    mathint balanceAfter = myBalances[marketParams.loanToken];
 
     assert assets != 0 => borrowedAssets == assets;
     assert assets == 0 => borrowedShares == shares;
@@ -145,14 +145,14 @@ rule repayChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams market
     require lastUpdate(id) == e.block.timestamp;
 
     mathint sharesBefore = borrowShares(id, onBehalf);
-    mathint balanceBefore = myBalances[marketParams.borrowableToken];
+    mathint balanceBefore = myBalances[marketParams.loanToken];
 
     uint256 repaidAssets;
     uint256 repaidShares;
     repaidAssets, repaidShares = repay(e, marketParams, assets, shares, onBehalf, data);
 
     mathint sharesAfter = borrowShares(id, onBehalf);
-    mathint balanceAfter = myBalances[marketParams.borrowableToken];
+    mathint balanceAfter = myBalances[marketParams.loanToken];
 
     assert assets != 0 => repaidAssets == assets;
     assert assets == 0 => repaidShares == shares;

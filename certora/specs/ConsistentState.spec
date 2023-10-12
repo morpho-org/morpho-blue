@@ -49,7 +49,7 @@ ghost mapping(MorphoHarness.Id => address) idToBorrowable;
 
 ghost mapping(MorphoHarness.Id => address) idToCollateral;
 
-hook Sstore idToMarketParams[KEY MorphoHarness.Id id].borrowableToken address token STORAGE {
+hook Sstore idToMarketParams[KEY MorphoHarness.Id id].loanToken address token STORAGE {
     idToBorrowable[id] = token;
 }
 
@@ -112,7 +112,7 @@ invariant borrowLessSupply(MorphoHarness.Id id)
 // This invariant is useful in the following rule, to link an id back to a market.
 invariant marketInvariant(MorphoHarness.MarketParams marketParams)
     isCreated(libId(marketParams)) =>
-    idToBorrowable[libId(marketParams)] == marketParams.borrowableToken &&
+    idToBorrowable[libId(marketParams)] == marketParams.loanToken &&
     idToCollateral[libId(marketParams)] == marketParams.collateralToken;
 
 // Check that the idle amount on the singleton is greater to the sum amount, that is the sum over all the markets of the total supply plus the total collateral minus the total borrow.
@@ -169,7 +169,7 @@ rule libIdUnique() {
     // Assume that arguments are the same.
     require libId(marketParams1) == libId(marketParams2);
 
-    assert marketParams1.borrowableToken == marketParams2.borrowableToken;
+    assert marketParams1.loanToken == marketParams2.loanToken;
     assert marketParams1.collateralToken == marketParams2.collateralToken;
     assert marketParams1.oracle == marketParams2.oracle;
     assert marketParams1.irm == marketParams2.irm;
