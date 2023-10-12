@@ -1,35 +1,41 @@
 This folder contains the verification of the Morpho Blue protocol using CVL, Certora's Verification Language.
 
-## High-Level Description
-
-The Morpho Blue protocol relies on several different concepts, which are described in the Whitepaper.
+The core concepts of the the Morpho Blue protocol are described in the [Whitepaper](../morpho-blue-whitepaper.pdf).
 These concepts have been verified using CVL.
-For more details, see the description of the specification below or the description of the specification files in the next section.
+We first give a [high-level description](#high-level-description) of the verification and then describe the [folder and file structure](#folder-and-file-structure) of the specification files.
+
+## High-Level description
 
 The Morpho Blue protocol allows users to take out collateralized loans on ERC20 tokens.
 
+### Transfers
+
+For a given market, Morpho Blue relies on the fact that the tokens involved respect the ERC20 standard.
+In particular, in case of a transfer, it is assumed that the balance of Morpho Blue increases or decreases (depending if its the recipient or the sender) of the amount transferred.
+
+The file [Transfer.spec](./specs/Transfer.spec) defines a summary of the transfer functions.
+This summary is taken as the reference implementation to check that the balance of the Morpho Blue contract changes as expected.
+
 ```solidity
-rule supplyAccruesInterest(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data) {
-    // Safe require because timestamps cannot realistically be that large.
-    require e.block.timestamp < 2^128;
-
-    storage init = lastStorage;
-
-    accrueInterest(e, marketParams);
-    supply(e, marketParams, assets, shares, onBehalf, data);
-    storage afterBoth = lastStorage;
-
-    supply(e, marketParams, assets, shares, onBehalf, data) at init;
-    storage afterOne = lastStorage;
-
-    assert afterBoth == afterOne;
+function summarySafeTransferFrom(address token, address from, address to, uint256 amount) {
+    if (from == currentContract) {
+        myBalances[token] = require_uint256(myBalances[token] - amount);
+    }
+    if (to == currentContract) {
+        myBalances[token] = require_uint256(myBalances[token] + amount);
+    }
 }
 ```
 
-### Transfers
+The verification is done for the most common implementations of the ERC20 standard, for which we distinguish three different implementations:
 
-Token transfers are verified to behave as expected for the most common implementations, in particular the transferred amount is the amount passed as input.
-Morpho Blue uses a transfer library to handle different tokens, including tokens that do not strictly respect the standard, in particular, when the return value on transfer and transferFrom function are missing, such as for the USDT token. This is difficult for the prover, so a summary is used to ease the verification of rules that rely on the transfer of tokens. This summary is verified to behave as expected in the Transfer.spec file.
+- [ERC20Standard](./dispatch/ERC20Standard.sol) which respects the standard and reverts in case of insufficient funds or in case of insufficient allowance.
+- [ERC20NoRevert](./dispatch/ERC20NoRevert.sol) which respects the standard but does not revert (and returns false instead).
+- [ERC20USDT](./dispatch/ERC20USDT.sol) which does not strictly respects the standard because it omits the return value of the `transfer` and `transferFrom` functions.
+
+Additionally, Morpho Blue always goes through a custom transfer library to handle tokens in all the above cases.
+This library reverts when the transfer is not successful, and this is checked for the case of insufficient funds or insufficient allowance.
+The use of the library can make it difficult for the provers, so the summary is sometimes used in other specification files to ease the verification of rules that rely on the transfer of tokens.
 
 ### Markets
 
@@ -65,7 +71,7 @@ Other safety properties are verified, particularly regarding reentrancy attacks 
 
 Other liveness properties are verified as well, in particular it is always possible to exit a position without concern for the oracle.
 
-## Folder and File Structure
+## Folder and file structure
 
 The [`certora/specs`](./specs) folder contains the following files:
 
@@ -93,7 +99,7 @@ Notably, this allows handling the fact that library functions should be called f
 
 The [`certora/dispatch`](./dispatch) folder contains different contracts similar to the ones that are expected to be called from Morpho Blue.
 
-## Usage
+## Getting started
 
 To verify specification files, run the corresponding script in the [`certora/scripts`](./scripts) folder.
 It requires having set the `CERTORAKEY` environment variable to a valid Certora key.
