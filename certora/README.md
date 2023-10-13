@@ -109,13 +109,40 @@ invariant alwaysCollateralized(MorphoHarness.Id id, address borrower)
 
 More generally, this means that the result of liquidating a position multiple times eventually lead to a healthy position (possibly empty).
 
+## Authorization
+
+Morpho Blue also defines primitive authorization system, where users can authorize an account to fully manage their position.
+This allows to rebuild more granular control of the position on top by authorizing an immutable contract with limited capabilities.
+The authorization is verified to be sound in the sense that no user can modify the position of another user without proper authorization (except when liquidating).
+
+Let's detail the rule that makes sure that the supply side stays consistent.
+
+```solidity
+rule userCannotLoseSupplyShares(env e, method f, calldataarg data)
+filtered { f -> !f.isView }
+{
+    MorphoHarness.Id id;
+    address user;
+
+    // Assume that the e.msg.sender is not authorized.
+    require !isAuthorized(user, e.msg.sender);
+    require user != e.msg.sender;
+
+    mathint sharesBefore = supplyShares(id, user);
+
+    f(e, data);
+
+    mathint sharesAfter = supplyShares(id, user);
+
+    assert sharesAfter >= sharesBefore;
+}
+```
+
+In the previous rule, an arbitrary function of Morpho Blue `f` is called with arbitrary `data`.
+Shares of `user` on the market identified by `id` are recorded before and after this call.
+In this way, it is checked that the supply shares are increasing when the caller of the function is neither the owner of those shares (`user != e.msg.sender`) nor authorized (`!isAuthorized(user, e.msg.sender)`).
+
 ## Safety
-
-### Authorization
-
-Morpho Blue also defines a sound authorization system where users cannot modify positions of other users without proper authorization (except when liquidating).
-
-Positions of users are also independent, so loans cannot be impacted by loans from other users.
 
 ### Others
 
