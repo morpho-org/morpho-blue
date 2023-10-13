@@ -16,7 +16,7 @@ The protocol is described in detail in the [Morpho Blue Whitepaper](./morpho-blu
 [`Morpho.sol`](./src/Morpho.sol) contains most of the source code of the core contract of Morpho Blue.
 It solely relies on internal libraries in the [`src/libraries`](./src/libraries) subdirectory.
 
-Libaries in the [`src/libraries/periphery`](./src/libraries/periphery) directory are not used by Morpho Blue.
+Libraries in the [`src/libraries/periphery`](./src/libraries/periphery) directory are not used by Morpho Blue.
 They are useful helpers that integrators can reuse or adapt to their own needs.
 
 The [`src/mocks`](./src/mocks) directory contains contracts designed exclusively for testing.
