@@ -90,7 +90,7 @@ invariant sumSupplySharesCorrect(MorphoHarness.Id id)
 
 where `sumSupplyShares` only exists in the specification, and is defined to be automatically updated whenever any of the shares of the users are modified.
 
-## Health
+## Positions health and liquidations
 
 To ensure proper collateralization, a liquidation system is put in place, where unhealthy positions can be liquidated.
 A position is said to be healthy if the ratio of the borrowed value over collateral value is smaller than the liquidation loan-to-value (LLTV) of that market.
@@ -198,7 +198,15 @@ The previous rule checks that the `supply` function reverts whenever the `onBeha
 
 ## Liveness properties
 
-Other liveness properties are verified as well, in particular it is always possible to exit a position without concern for the oracle.
+On top of verifying that the protocol is secured, the verification also proves that it is usable.
+Such properties are called liveness properties, and it is notably checked that the accounting is done when an interaction goes through.
+As an example, the `withdrawChangesTokensAndShares` rule checks that calling the `withdraw` function successfully will decrease the shares of the concerned account and increase the balance of the receiver.
+
+Other liveness properties are verified as well.
+Notably, it's also verified that it is always possible to exit a position without concern for the oracle.
+This is done through the verification of two rules: the `canRepayAll` rule and the `canWithdrawCollateralAll` rule.
+The `canRepayAll` rule ensures that it is always possible to repay the full debt of a position, leaving the account without any oustanding debt.
+The `canWithdrawCollateralAll` rule ensures that in the case where the account has no outstanding debt, then it is possible to withdraw the full collateral.
 
 ## Protection against common attack vectors
 
