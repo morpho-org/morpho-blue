@@ -210,9 +210,31 @@ The `canWithdrawCollateralAll` rule ensures that in the case where the account h
 
 ## Protection against common attack vectors
 
+Other common and known attack vectors are verified to not be possible on the Morpho Blue protocol.
+
 ### Reentrancy
 
+Reentrancy is a common attack vector that happen when a call to a contract allows, when in a temporary state, to call the same contract again.
+The state of the contract usually refers to the storage variables, which can typically hold values that are meant to be used only after the full execution of the current function.
+The Morpho Blue contract is verified to not be vulnerable to this kind of reentrancy attack thanks to the rule `reentrancySafe`.
+
 ### Extraction of value
+
+The Morpho Blue protocol uses a conservative approach to handle arithmetic operations.
+Rounding is done such that potential (small) errors are in favor of the protocol, which ensures that it is not possible to extract value from other users.
+
+The rule `supplyWithdraw` handles the simple scenario of a supply followed by a withdraw, and has the following check.
+
+```solidity
+assert withdrawnAssets <= suppliedAssets;
+```
+
+The rule `withdrawLiquidity` is more general and defines `owedAssets` as the assets that are owed to the user, rounding in favor of the protocol.
+This rule has the following check to ensure that no more than the owed assets can be withdrawn.
+
+```solidity
+assert withdrawnAssets <= owedAssets;
+```
 
 # Folder and file structure
 
@@ -249,5 +271,5 @@ It requires having set the `CERTORAKEY` environment variable to a valid Certora 
 You can pass arguments to the script, which allows you to verify specific properties. For example, at the root of the repository:
 
 ```
-./certora/scripts/verifyConsistentState.sh --rule borrowLessSupply
+./certora/scripts/verifyConsistentState.sh --rule borrowLessThanSupply
 ```
