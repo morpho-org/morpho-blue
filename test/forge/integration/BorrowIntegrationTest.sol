@@ -72,7 +72,7 @@ contract BorrowIntegrationTest is BaseTest {
         amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
         _supply(amountSupplied);
 
-        oracle.setPrice(priceCollateral);
+        oracle.setPrice(address(loanToken), address(collateralToken), priceCollateral);
 
         collateralToken.setBalance(BORROWER, amountCollateral);
 
@@ -95,7 +95,7 @@ contract BorrowIntegrationTest is BaseTest {
         amountSupplied = bound(amountSupplied, 1, amountBorrowed - 1);
         _supply(amountSupplied);
 
-        oracle.setPrice(priceCollateral);
+        oracle.setPrice(address(loanToken), address(collateralToken), priceCollateral);
 
         collateralToken.setBalance(BORROWER, amountCollateral);
 
@@ -118,7 +118,7 @@ contract BorrowIntegrationTest is BaseTest {
         amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
         _supply(amountSupplied);
 
-        oracle.setPrice(priceCollateral);
+        oracle.setPrice(address(loanToken), address(collateralToken), priceCollateral);
 
         collateralToken.setBalance(BORROWER, amountCollateral);
 
@@ -161,7 +161,7 @@ contract BorrowIntegrationTest is BaseTest {
         amountSupplied = bound(amountSupplied, expectedAmountBorrowed, MAX_TEST_AMOUNT);
         _supply(amountSupplied);
 
-        oracle.setPrice(priceCollateral);
+        oracle.setPrice(address(loanToken), address(collateralToken), priceCollateral);
 
         collateralToken.setBalance(BORROWER, amountCollateral);
 
@@ -195,7 +195,7 @@ contract BorrowIntegrationTest is BaseTest {
         amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
         _supply(amountSupplied);
 
-        oracle.setPrice(priceCollateral);
+        oracle.setPrice(address(loanToken), address(collateralToken), priceCollateral);
 
         collateralToken.setBalance(ONBEHALF, amountCollateral);
 
@@ -241,7 +241,7 @@ contract BorrowIntegrationTest is BaseTest {
         amountSupplied = bound(amountSupplied, expectedAmountBorrowed, MAX_TEST_AMOUNT);
         _supply(amountSupplied);
 
-        oracle.setPrice(priceCollateral);
+        oracle.setPrice(address(loanToken), address(collateralToken), priceCollateral);
 
         collateralToken.setBalance(ONBEHALF, amountCollateral);
 

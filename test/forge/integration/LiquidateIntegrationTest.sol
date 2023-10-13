@@ -51,7 +51,7 @@ contract LiquidateIntegrationTest is BaseTest {
 
         amountSeized = bound(amountSeized, 1, amountCollateral);
 
-        oracle.setPrice(priceCollateral);
+        oracle.setPrice(address(loanToken), address(collateralToken), priceCollateral);
 
         loanToken.setBalance(LIQUIDATOR, amountBorrowed);
         collateralToken.setBalance(BORROWER, amountCollateral);
@@ -94,14 +94,14 @@ contract LiquidateIntegrationTest is BaseTest {
         loanToken.setBalance(LIQUIDATOR, amountBorrowed);
         collateralToken.setBalance(BORROWER, amountCollateral);
 
-        oracle.setPrice(type(uint256).max / amountCollateral);
+        oracle.setPrice(address(loanToken), address(collateralToken), type(uint256).max / amountCollateral);
 
         vm.startPrank(BORROWER);
         morpho.supplyCollateral(marketParams, amountCollateral, BORROWER, hex"");
         morpho.borrow(marketParams, amountBorrowed, 0, BORROWER, BORROWER);
         vm.stopPrank();
 
-        oracle.setPrice(priceCollateral);
+        oracle.setPrice(address(loanToken), address(collateralToken), priceCollateral);
 
         uint256 expectedRepaidShares =
             expectedRepaid.toSharesDown(morpho.totalBorrowAssets(id), morpho.totalBorrowShares(id));
@@ -162,14 +162,14 @@ contract LiquidateIntegrationTest is BaseTest {
         loanToken.setBalance(LIQUIDATOR, amountBorrowed);
         collateralToken.setBalance(BORROWER, amountCollateral);
 
-        oracle.setPrice(type(uint256).max / amountCollateral);
+        oracle.setPrice(address(loanToken), address(collateralToken), type(uint256).max / amountCollateral);
 
         vm.startPrank(BORROWER);
         morpho.supplyCollateral(marketParams, amountCollateral, BORROWER, hex"");
         morpho.borrow(marketParams, amountBorrowed, 0, BORROWER, BORROWER);
         vm.stopPrank();
 
-        oracle.setPrice(priceCollateral);
+        oracle.setPrice(address(loanToken), address(collateralToken), priceCollateral);
 
         vm.prank(LIQUIDATOR);
 
@@ -235,14 +235,14 @@ contract LiquidateIntegrationTest is BaseTest {
         loanToken.setBalance(LIQUIDATOR, amountBorrowed);
         collateralToken.setBalance(BORROWER, amountCollateral);
 
-        oracle.setPrice(type(uint256).max / amountCollateral);
+        oracle.setPrice(address(loanToken), address(collateralToken), type(uint256).max / amountCollateral);
 
         vm.startPrank(BORROWER);
         morpho.supplyCollateral(marketParams, amountCollateral, BORROWER, hex"");
         morpho.borrow(marketParams, amountBorrowed, 0, BORROWER, BORROWER);
         vm.stopPrank();
 
-        oracle.setPrice(priceCollateral);
+        oracle.setPrice(address(loanToken), address(collateralToken), priceCollateral);
 
         params.expectedRepaidShares =
             params.expectedRepaid.toSharesDown(morpho.totalBorrowAssets(id), morpho.totalBorrowShares(id));

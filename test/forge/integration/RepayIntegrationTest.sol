@@ -47,7 +47,7 @@ contract RepayIntegrationTest is BaseTest {
         amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
         _supply(amountSupplied);
 
-        oracle.setPrice(priceCollateral);
+        oracle.setPrice(address(loanToken), address(collateralToken), priceCollateral);
 
         amountRepaid = bound(amountRepaid, 1, amountBorrowed);
         uint256 expectedBorrowShares = amountBorrowed.toSharesUp(0, 0);
@@ -90,7 +90,7 @@ contract RepayIntegrationTest is BaseTest {
         amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
         _supply(amountSupplied);
 
-        oracle.setPrice(priceCollateral);
+        oracle.setPrice(address(loanToken), address(collateralToken), priceCollateral);
 
         uint256 expectedBorrowShares = amountBorrowed.toSharesUp(0, 0);
         sharesRepaid = bound(sharesRepaid, 1, expectedBorrowShares);

@@ -344,9 +344,7 @@ contract Morpho is IMorpho {
 
         _accrueInterest(marketParams, id);
 
-        uint256 collateralPrice = IOracle(marketParams.oracle).price();
-
-        require(!_isHealthy(marketParams, id, borrower, collateralPrice), ErrorsLib.HEALTHY_POSITION);
+        require(!_isHealthy(marketParams, id, borrower), ErrorsLib.HEALTHY_POSITION);
 
         uint256 repaidAssets;
         {
@@ -357,13 +355,19 @@ contract Morpho is IMorpho {
             );
 
             if (seizedAssets > 0) {
-                repaidAssets =
-                    seizedAssets.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(liquidationIncentiveFactor);
+                repaidAssets = IOracle(marketParams.oracle).value(
+                    marketParams.collateralToken,
+                    marketParams.loanToken,
+                    seizedAssets
+                ).wDivUp(liquidationIncentiveFactor);
                 repaidShares = repaidAssets.toSharesDown(market[id].totalBorrowAssets, market[id].totalBorrowShares);
             } else {
                 repaidAssets = repaidShares.toAssetsUp(market[id].totalBorrowAssets, market[id].totalBorrowShares);
-                seizedAssets =
-                    repaidAssets.wMulDown(liquidationIncentiveFactor).mulDivDown(ORACLE_PRICE_SCALE, collateralPrice);
+                seizedAssets = IOracle(marketParams.oracle).value(
+                    marketParams.loanToken,
+                    marketParams.collateralToken,
+                    repaidAssets.wMulDown(liquidationIncentiveFactor)
+                );
             }
         }
 
@@ -480,28 +484,19 @@ contract Morpho is IMorpho {
 
     /// @dev Returns whether the position of `borrower` in the given market `marketParams` is healthy.
     /// @dev Assumes that the inputs `marketParams` and `id` match.
+    /// @dev Rounds in favor of the protocol, so one might not be able to borrow exactly `maxBorrow` but one unit less.
     function _isHealthy(MarketParams memory marketParams, Id id, address borrower) internal view returns (bool) {
         if (position[id][borrower].borrowShares == 0) return true;
-
-        uint256 collateralPrice = IOracle(marketParams.oracle).price();
-
-        return _isHealthy(marketParams, id, borrower, collateralPrice);
-    }
-
-    /// @dev Returns whether the position of `borrower` in the given market `marketParams` with the given
-    /// `collateralPrice` is healthy.
-    /// @dev Assumes that the inputs `marketParams` and `id` match.
-    /// @dev Rounds in favor of the protocol, so one might not be able to borrow exactly `maxBorrow` but one unit less.
-    function _isHealthy(MarketParams memory marketParams, Id id, address borrower, uint256 collateralPrice)
-        internal
-        view
-        returns (bool)
-    {
         uint256 borrowed = uint256(position[id][borrower].borrowShares).toAssetsUp(
             market[id].totalBorrowAssets, market[id].totalBorrowShares
         );
-        uint256 maxBorrow = uint256(position[id][borrower].collateral).mulDivDown(collateralPrice, ORACLE_PRICE_SCALE)
-            .wMulDown(marketParams.lltv);
+
+        uint256 collateralValue = IOracle(marketParams.oracle).value(
+            marketParams.collateralToken,
+            marketParams.loanToken,
+            uint256(position[id][borrower].collateral
+        ));
+        uint256 maxBorrow = collateralValue.wMulDown(marketParams.lltv);
 
         return maxBorrow >= borrowed;
     }

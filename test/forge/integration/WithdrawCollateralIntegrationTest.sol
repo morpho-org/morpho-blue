@@ -68,7 +68,7 @@ contract WithdrawCollateralIntegrationTest is BaseTest {
         amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
         _supply(amountSupplied);
 
-        oracle.setPrice(priceCollateral);
+        oracle.setPrice(address(loanToken), address(collateralToken), priceCollateral);
 
         collateralToken.setBalance(BORROWER, amountCollateral);
 
@@ -100,7 +100,7 @@ contract WithdrawCollateralIntegrationTest is BaseTest {
             Math.min(MAX_COLLATERAL_ASSETS - amountCollateral, type(uint256).max / priceCollateral - amountCollateral)
         );
 
-        oracle.setPrice(priceCollateral);
+        oracle.setPrice(address(loanToken), address(collateralToken), priceCollateral);
 
         collateralToken.setBalance(BORROWER, amountCollateral + amountCollateralExcess);
 
@@ -133,7 +133,7 @@ contract WithdrawCollateralIntegrationTest is BaseTest {
         amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
         _supply(amountSupplied);
 
-        oracle.setPrice(priceCollateral);
+        oracle.setPrice(address(loanToken), address(collateralToken), priceCollateral);
 
         amountCollateralExcess = bound(
             amountCollateralExcess,

@@ -76,7 +76,7 @@ contract BaseTest is Test {
 
         oracle = new OracleMock();
 
-        oracle.setPrice(ORACLE_PRICE_SCALE);
+        oracle.setPrice(address(loanToken), address(collateralToken), ORACLE_PRICE_SCALE);
 
         irm = new IrmMock();
 

@@ -11,4 +11,7 @@ interface IOracle {
     /// 10**(loan token decimals) assets of loan token with `36 + loan token decimals - collateral token decimals`
     /// decimals of precision.
     function price() external view returns (uint256);
+
+    /// @notice Returns the value of an amount of base token in terms of quote token.
+    function value(address baseToken, address quoteToken, uint256 baseAmount) external view returns (uint256 quoteAmount);
 }

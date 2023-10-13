@@ -194,7 +194,7 @@ contract MorphoInvariantTest is InvariantTest {
     function setPrice(uint256 price) external {
         price = bound(price, MIN_PRICE, MAX_PRICE);
 
-        oracle.setPrice(price);
+        oracle.setPrice(address(loanToken), address(collateralToken), price);
     }
 
     function setFeeNoRevert(uint256 marketSeed, uint256 newFee) external {
