@@ -35,7 +35,7 @@ The verification is done for the most common implementations of the ERC20 standa
 - [ERC20NoRevert](./dispatch/ERC20NoRevert.sol) which respects the standard but does not revert (and returns false instead).
 - [ERC20USDT](./dispatch/ERC20USDT.sol) which does not strictly respects the standard because it omits the return value of the `transfer` and `transferFrom` functions.
 
-Additionally, Morpho Blue always goes through a custom transfer library to handle tokens in all the above cases.
+Additionally, Morpho Blue always goes through a custom transfer library to handle ERC20 tokens, notably in all the above cases.
 This library reverts when the transfer is not successful, and this is checked for the case of insufficient funds or insufficient allowance.
 The use of the library can make it difficult for the provers, so the summary is sometimes used in other specification files to ease the verification of rules that rely on the transfer of tokens.
 
@@ -92,8 +92,22 @@ where `sumSupplyShares` only exists in the specification, and is defined to be a
 
 ## Health
 
-To ensure proper collateralization, a liquidation system is put in place.
-In the absence of accrued interest, for example when creating a new position or when interacting multiple times in the same block, a position cannot be made unhealthy.
+To ensure proper collateralization, a liquidation system is put in place, where unhealthy positions can be liquidated.
+A position is said to be healthy if the ratio of the borrowed value over collateral value is smaller than the LLTV of that market.
+This leaves a safety buffer before the position can be insolvent, where the aforementioned ratio is above 1.
+To ensure that liquidators have the time to interact with unhealthy positions, it is formally verified that this buffer is respected.
+Notably, it is verified that in the absence of accrued interest, which is the case when creating a new position or when interacting multiple times in the same block, a position cannot be made unhealthy.
+
+Let's define bad debt of a position as the amount borrowed when it is backed by no collateral.
+Morpho Blue automatically realizes the bad debt when liquidating a position, by transferring it to the lenders.
+In effect, this means that there is no bad debt on Morpho Blue, which is verified by the following invariant.
+
+```solidity
+invariant alwaysCollateralized(MorphoHarness.Id id, address borrower)
+    borrowShares(id, borrower) != 0 => collateral(id, borrower) != 0;
+```
+
+More generally, this means that the result of liquidating a position multiple times eventually lead to a healthy position (possibly empty).
 
 ## Safety
 
