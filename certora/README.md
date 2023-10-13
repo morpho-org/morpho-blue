@@ -93,7 +93,7 @@ where `sumSupplyShares` only exists in the specification, and is defined to be a
 ## Health
 
 To ensure proper collateralization, a liquidation system is put in place, where unhealthy positions can be liquidated.
-A position is said to be healthy if the ratio of the borrowed value over collateral value is smaller than the LLTV of that market.
+A position is said to be healthy if the ratio of the borrowed value over collateral value is smaller than the liquidation loan-to-value (LLTV) of that market.
 This leaves a safety buffer before the position can be insolvent, where the aforementioned ratio is above 1.
 To ensure that liquidators have the time to interact with unhealthy positions, it is formally verified that this buffer is respected.
 Notably, it is verified that in the absence of accrued interest, which is the case when creating a new position or when interacting multiple times in the same block, a position cannot be made unhealthy.
@@ -142,17 +142,69 @@ In the previous rule, an arbitrary function of Morpho Blue `f` is called with ar
 Shares of `user` on the market identified by `id` are recorded before and after this call.
 In this way, it is checked that the supply shares are increasing when the caller of the function is neither the owner of those shares (`user != e.msg.sender`) nor authorized (`!isAuthorized(user, e.msg.sender)`).
 
-## Safety
+## Other safety properties
 
-### Others
+### Enabled LLTV and IRM
 
-Other safety properties are verified, particularly regarding reentrancy attacks and about input validation and revert conditions.
+Creating a market is permissionless on Morpho Blue, but some parameters should fall into the range of admitted values.
+Notably, the LLTV value should be enabled beforehand.
+The following rule checks that no market can ever exist with a LLTV that had not been previously approved.
 
-as well as the fact that only market with enabled parameters are created
+```solidity
+invariant onlyEnabledLltv(MorphoHarness.MarketParams marketParams)
+    isCreated(libId(marketParams)) => isLltvEnabled(marketParams.lltv);
+```
 
-## Liveness
+Similarly, the interest rate model (IRM) used for the market must have been previously whitelisted.
+
+### Range of the fee
+
+The governance can choose to set a fee to a given market.
+Fees are guaranteed to never exceed 25% of the interest accrued, and this is verified by the following rule.
+
+```solidity
+invariant feeInRange(MorphoHarness.Id id)
+    fee(id) <= maxFee();
+```
+
+### Sanity checks and input validation
+
+The formal verification is also taking care of other sanity checks, some of which are needed properties to verify other rules.
+For example, the following rule checks that the variable storing the last update time is no more than the current time.
+This is a sanity check, but it is also useful to ensure that there will be no underflow when computing the time elapsed since the last update.
+
+```solidity
+rule noTimeTravel(method f, env e, calldataarg args)
+filtered { f -> !f.isView }
+{
+    MorphoHarness.Id id;
+    // Assume the property before the interaction.
+    require lastUpdate(id) <= e.block.timestamp;
+    f(e, args);
+    assert lastUpdate(id) <= e.block.timestamp;
+}
+```
+
+Additional rules are verified to ensure that the sanitization of inputs is done correctly.
+
+```solidity
+rule supplyInputValidation(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data) {
+    supply@withrevert(e, marketParams, assets, shares, onBehalf, data);
+    assert !exactlyOneZero(assets, shares) || onBehalf == 0 => lastReverted;
+}
+```
+
+The previous rule checks that the `supply` function reverts whenever the `onBehalf` parameter is the address zero, or when either both `assets` and `shares` are zero or both are non-zero.
+
+## Liveness properties
 
 Other liveness properties are verified as well, in particular it is always possible to exit a position without concern for the oracle.
+
+## Protection against common attack vectors
+
+### Reentrancy
+
+### Extraction of value
 
 # Folder and file structure
 
