@@ -28,12 +28,12 @@ jobs:
         run: |
           wget https://github.com/ethereum/solidity/releases/download/v0.8.19/solc-static-linux
           chmod +x solc-static-linux
-          sudo mv solc-static-linux /usr/local/bin/solc8.19
+          sudo mv solc-static-linux /usr/local/bin/solc
 
       - name: Verify rule ${{ matrix.script }}
         run: |
           echo "key length" ${#CERTORAKEY}
-          certoraRun certora/configuration/${{ matrix.conf }} --solc solc8.19
+          certoraRun certora/configuration/${{ matrix.conf }}
         env:
           CERTORAKEY: ${{ secrets.CERTORAKEY }}
 
@@ -42,4 +42,14 @@ jobs:
 
       matrix:
         conf:
-          - ConsistentState.conf
+          - AccrueInterest
+          - ConsistentState
+          - ExactMath
+          - ExitLiquidity
+          - Health
+          - LibSummary
+          - Liveness
+          - RatioMath
+          - Reentrancy
+          - Reverts
+          - Transfer
