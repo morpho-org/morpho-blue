@@ -6,18 +6,18 @@
   "scripts": {
     "postinstall": "husky install && forge install",
     "build:forge": "FOUNDRY_PROFILE=build forge build",
-    "build:hardhat": "npx hardhat compile",
+    "build:hardhat": "hardhat compile",
     "test:forge": "FOUNDRY_PROFILE=test forge test",
     "test:forge:invariant": "FOUNDRY_MATCH_CONTRACT=InvariantTest bun test:forge",
     "test:forge:integration": "FOUNDRY_MATCH_CONTRACT=IntegrationTest bun test:forge",
-    "test:hardhat": "npx hardhat test",
+    "test:hardhat": "hardhat test",
     "lint": "bun lint:forge && bun lint:hardhat",
     "lint:forge": "forge fmt --check",
     "lint:hardhat": "prettier --check test/hardhat",
     "lint:fix": "bun lint:forge:fix && bun lint:hardhat:fix",
     "lint:forge:fix": "forge fmt",
     "lint:hardhat:fix": "prettier --write test/hardhat",
-    "clean": "npx hardhat clean && forge clean"
+    "clean": "hardhat clean && forge clean"
   },
   "dependencies": {
     "ethers": "^6.8.0",
