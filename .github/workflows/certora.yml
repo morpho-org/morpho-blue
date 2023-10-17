@@ -34,6 +34,7 @@ jobs:
         run: |
           echo "key length" ${#CERTORAKEY}
           bash certora/scripts/${{ matrix.script }} --solc solc8.19
+          certoraRun certora/configuration/${{ matrix.conf }} --solc solc8.19
         env:
           CERTORAKEY: ${{ secrets.CERTORAKEY }}
 
@@ -41,9 +42,10 @@ jobs:
       fail-fast: false
 
       matrix:
+        conf:
+          - ConsistentState.conf
         script:
           - verifyAccrueInterest.sh
-          - certoraRun certora/configuration/ConsistentState.conf
           - verifyExactMath.sh
           - verifyExitLiquidity.sh
           - verifyHealth.sh
