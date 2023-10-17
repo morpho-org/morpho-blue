@@ -74,7 +74,9 @@ contract LiquidateIntegrationTest is BaseTest {
         uint256 lltv;
     }
 
-    function testLiquidateSeizedInputNoBadDebt(LiquidateTestParams memory params, uint256 amountSeized) public {
+    function testLiquidateSeizedInputNoBadDebtRealized(LiquidateTestParams memory params, uint256 amountSeized)
+        public
+    {
         _setLltv(_boundTestLltv(params.lltv));
         (params.amountCollateral, params.amountBorrowed, params.priceCollateral) =
             _boundUnhealthyPosition(params.amountCollateral, params.amountBorrowed, params.priceCollateral);
@@ -135,7 +137,9 @@ contract LiquidateIntegrationTest is BaseTest {
         assertEq(collateralToken.balanceOf(LIQUIDATOR), amountSeized, "liquidator collateral balance");
     }
 
-    function testLiquidateSharesInputNoBadDebt(LiquidateTestParams memory params, uint256 sharesRepaid) public {
+    function testLiquidateSharesInputNoBadDebtRealized(LiquidateTestParams memory params, uint256 sharesRepaid)
+        public
+    {
         _setLltv(_boundTestLltv(params.lltv));
         (params.amountCollateral, params.amountBorrowed, params.priceCollateral) =
             _boundUnhealthyPosition(params.amountCollateral, params.amountBorrowed, params.priceCollateral);
@@ -204,7 +208,7 @@ contract LiquidateIntegrationTest is BaseTest {
         uint256 expectedBadDebt;
     }
 
-    function testLiquidateBadDebt(
+    function testLiquidateBadDebtRealized(
         uint256 amountCollateral,
         uint256 amountSupplied,
         uint256 amountBorrowed,
