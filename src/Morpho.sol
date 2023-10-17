@@ -67,8 +67,10 @@ contract Morpho is IMorpho {
     constructor(address newOwner) {
         require(newOwner != address(0), ErrorsLib.ZERO_ADDRESS);
 
-        owner = newOwner;
         DOMAIN_SEPARATOR = keccak256(abi.encode(DOMAIN_TYPEHASH, block.chainid, address(this)));
+        owner = newOwner;
+
+        emit EventsLib.SetOwner(newOwner);
     }
 
     /* MODIFIERS */
