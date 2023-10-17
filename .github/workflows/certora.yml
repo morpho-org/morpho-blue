@@ -22,18 +22,18 @@ jobs:
           python-version: "3.10"
 
       - name: Install certora
-        run: pip install certora-cli-beta
+        run: pip install certora-cli
 
       - name: Install solc
         run: |
           wget https://github.com/ethereum/solidity/releases/download/v0.8.19/solc-static-linux
           chmod +x solc-static-linux
-          sudo mv solc-static-linux /usr/local/bin/solc8.19
+          sudo mv solc-static-linux /usr/local/bin/solc
 
       - name: Verify rule ${{ matrix.script }}
         run: |
           echo "key length" ${#CERTORAKEY}
-          bash certora/scripts/${{ matrix.script }} --solc solc8.19
+          certoraRun certora/configuration/${{ matrix.conf }}.conf
         env:
           CERTORAKEY: ${{ secrets.CERTORAKEY }}
 
@@ -41,15 +41,15 @@ jobs:
       fail-fast: false
 
       matrix:
-        script:
-          - verifyAccrueInterest.sh
-          - verifyConsistentState.sh
-          - verifyExactMath.sh
-          - verifyExitLiquidity.sh
-          - verifyHealth.sh
-          - verifyLibSummary.sh
-          - verifyLiveness.sh
-          - verifyRatioMath.sh
-          - verifyReentrancy.sh
-          - verifyReverts.sh
-          - verifyTransfer.sh
+        conf:
+          - AccrueInterest
+          - ConsistentState
+          - ExactMath
+          - ExitLiquidity
+          - Health
+          - LibSummary
+          - Liveness
+          - RatioMath
+          - Reentrancy
+          - Reverts
+          - Transfer
