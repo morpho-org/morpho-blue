@@ -12,7 +12,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  yarn-test:
+  bun-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -22,14 +22,13 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
 
-      - name: Install node
-        uses: actions/setup-node@v3
+      - name: Install bun
+        uses: oven-sh/setup-bun@v1
         with:
-          node-version: 18
-          cache: yarn
+          bun-version: latest
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: bun install --frozen-lockfile
 
       - name: Save hardhat cache
         uses: actions/cache@v3
@@ -40,4 +39,4 @@ jobs:
           key: ${{ github.ref_name }}-hardhat
 
       - name: Run Hardhat tests
-        run: yarn test:hardhat
+        run: bun test:hardhat

@@ -3,14 +3,11 @@ import "@nomicfoundation/hardhat-ethers";
 import "@nomicfoundation/hardhat-foundry";
 import "@nomicfoundation/hardhat-network-helpers";
 import "@typechain/hardhat";
-import * as dotenv from "dotenv";
 import "ethers-maths";
 import "hardhat-gas-reporter";
 import "hardhat-tracer";
 import { HardhatUserConfig } from "hardhat/config";
 import "solidity-coverage";
-
-dotenv.config();
 
 const config: HardhatUserConfig = {
   defaultNetwork: "hardhat",

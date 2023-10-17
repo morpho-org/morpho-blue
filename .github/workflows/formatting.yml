@@ -19,14 +19,13 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
 
-      - name: Install node
-        uses: actions/setup-node@v3
+      - name: Install bun
+        uses: oven-sh/setup-bun@v1
         with:
-          node-version: 18
-          cache: yarn
+          bun-version: latest
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: bun install --frozen-lockfile
 
       - name: Run Linter
-        run: yarn lint
+        run: bun lint

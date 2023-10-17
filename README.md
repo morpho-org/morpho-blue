@@ -25,11 +25,11 @@ You'll find relevant comments in [`IMorpho.sol`](./src/interfaces/IMorpho.sol), 
 
 ## Getting Started
 
-Install dependencies: `yarn`
+Install dependencies: `bun install`
 
-Run forge tests: `yarn test:forge`
+Run forge tests: `bun test:forge`
 
-Run hardhat tests: `yarn test:hardhat`
+Run hardhat tests: `bun test:hardhat`
 
 You will find other useful commands in the [`package.json`](./package.json) file.
 
