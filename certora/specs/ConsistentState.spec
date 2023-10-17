@@ -37,12 +37,12 @@ ghost mapping(MorphoHarness.Id => mathint) sumCollateral {
     init_state axiom (forall MorphoHarness.Id id. sumCollateral[id] == 0);
 }
 
-ghost mapping(address => mathint) myBalances {
-    init_state axiom (forall address token. myBalances[token] == 0);
+ghost mapping(address => mathint) balance {
+    init_state axiom (forall address token. balance[token] == 0);
 }
 
-ghost mapping(address => mathint) sumAmount {
-    init_state axiom (forall address token. sumAmount[token] == 0);
+ghost mapping(address => mathint) idleAmount {
+    init_state axiom (forall address token. idleAmount[token] == 0);
 }
 
 ghost mapping(MorphoHarness.Id => address) idToBorrowable;
@@ -67,25 +67,25 @@ hook Sstore position[KEY MorphoHarness.Id id][KEY address owner].borrowShares ui
 
 hook Sstore position[KEY MorphoHarness.Id id][KEY address owner].collateral uint128 newAmount (uint128 oldAmount) STORAGE {
     sumCollateral[id] = sumCollateral[id] - oldAmount + newAmount;
-    sumAmount[idToCollateral[id]] = sumAmount[idToCollateral[id]] - oldAmount + newAmount;
+    idleAmount[idToCollateral[id]] = idleAmount[idToCollateral[id]] - oldAmount + newAmount;
 }
 
 hook Sstore market[KEY MorphoHarness.Id id].totalSupplyAssets uint128 newAmount (uint128 oldAmount) STORAGE {
-    sumAmount[idToBorrowable[id]] = sumAmount[idToBorrowable[id]] - oldAmount + newAmount;
+    idleAmount[idToBorrowable[id]] = idleAmount[idToBorrowable[id]] - oldAmount + newAmount;
 }
 
 hook Sstore market[KEY MorphoHarness.Id id].totalBorrowAssets uint128 newAmount (uint128 oldAmount) STORAGE {
-    sumAmount[idToBorrowable[id]] = sumAmount[idToBorrowable[id]] + oldAmount - newAmount;
+    idleAmount[idToBorrowable[id]] = idleAmount[idToBorrowable[id]] + oldAmount - newAmount;
 }
 
 function summarySafeTransferFrom(address token, address from, address to, uint256 amount) {
     if (from == currentContract) {
         // Safe require because the reference implementation would revert.
-        myBalances[token] = require_uint256(myBalances[token] - amount);
+        balance[token] = require_uint256(balance[token] - amount);
     }
     if (to == currentContract) {
         // Safe require because the reference implementation would revert.
-        myBalances[token] = require_uint256(myBalances[token] + amount);
+        balance[token] = require_uint256(balance[token] + amount);
     }
 }
 
@@ -106,7 +106,7 @@ invariant sumBorrowSharesCorrect(MorphoHarness.Id id)
 
 // Check that a market only allows borrows up to the total supply.
 // This invariant shows that markets are independent, tokens from one market cannot be taken by interacting with another market.
-invariant borrowLessSupply(MorphoHarness.Id id)
+invariant borrowLessThanSupply(MorphoHarness.Id id)
     totalBorrowAssets(id) <= totalSupplyAssets(id);
 
 // This invariant is useful in the following rule, to link an id back to a market.
@@ -116,8 +116,8 @@ invariant marketInvariant(MorphoHarness.MarketParams marketParams)
     idToCollateral[libId(marketParams)] == marketParams.collateralToken;
 
 // Check that the idle amount on the singleton is greater to the sum amount, that is the sum over all the markets of the total supply plus the total collateral minus the total borrow.
-invariant isLiquid(address token)
-    sumAmount[token] <= myBalances[token]
+invariant idleAmountLessThanBalance(address token)
+    idleAmount[token] <= balance[token]
 {
     // Safe requires on the sender because the contract cannot call the function itself.
     preserved supply(MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data) with (env e) {

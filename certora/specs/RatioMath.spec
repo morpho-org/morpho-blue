@@ -51,7 +51,7 @@ rule accrueInterestIncreasesSupplyRatio(env e, MorphoHarness.MarketParams market
     mathint assetsAfter = virtualTotalSupplyAssets(id);
     mathint sharesAfter = virtualTotalSupplyShares(id);
 
-    // Check that ratio increases: assetsBefore/sharesBefore <= assetsAfter / sharesAfter.
+    // Check that the ratio increases: assetsBefore/sharesBefore <= assetsAfter / sharesAfter.
     assert assetsBefore * sharesAfter <= assetsAfter * sharesBefore;
 }
 
@@ -69,7 +69,7 @@ rule accrueInterestIncreasesBorrowRatio(env e, MorphoHarness.MarketParams market
     mathint assetsAfter = virtualTotalBorrowAssets(id);
     mathint sharesAfter = virtualTotalBorrowShares(id);
 
-    // Check that ratio increases: assetsBefore/sharesBefore <= assetsAfter / sharesAfter.
+    // Check that the ratio increases: assetsBefore/sharesBefore <= assetsAfter / sharesAfter.
     assert assetsBefore * sharesAfter <= assetsAfter * sharesBefore;
 }
 
@@ -95,7 +95,7 @@ filtered {
     mathint assetsAfter = virtualTotalSupplyAssets(id);
     mathint sharesAfter = virtualTotalSupplyShares(id);
 
-    // Check that ratio increases: assetsBefore/sharesBefore <= assetsAfter / sharesAfter
+    // Check that the ratio increases: assetsBefore/sharesBefore <= assetsAfter / sharesAfter
     assert assetsBefore * sharesAfter <= assetsAfter * sharesBefore;
 }
 
@@ -123,7 +123,7 @@ filtered {
     mathint assetsAfter = virtualTotalBorrowAssets(id);
     mathint sharesAfter = virtualTotalBorrowShares(id);
 
-    // Check that ratio decreases: assetsBefore/sharesBefore >= assetsAfter / sharesAfter
+    // Check that the ratio decreases: assetsBefore/sharesBefore >= assetsAfter / sharesAfter
     assert assetsBefore * sharesAfter >= assetsAfter * sharesBefore;
 }
 
@@ -151,6 +151,6 @@ rule repayDecreasesBorrowRatio(env e, MorphoHarness.MarketParams marketParams, u
     mathint sharesAfter = virtualTotalBorrowShares(id);
 
     assert assetsAfter == assetsBefore - repaidAssets;
-    // Check that ratio decreases: assetsBefore/sharesBefore >= assetsAfter / sharesAfter
+    // Check that the ratio decreases: assetsBefore/sharesBefore >= assetsAfter / sharesAfter
     assert assetsBefore * sharesAfter >= assetsAfter * sharesBefore;
 }
