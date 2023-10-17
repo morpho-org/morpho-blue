@@ -1,15 +1,14 @@
 {
   "compilerOptions": {
     "target": "esnext",
-    "strict": true,
-    "esModuleInterop": true,
     "rootDir": ".",
     "baseUrl": ".",
     "outDir": "dist",
     "moduleResolution": "node",
-    "resolveJsonModule": true,
-    "declaration": true
+    "strict": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true
   },
   "include": ["types", "test/hardhat"],
-  "files": ["./hardhat.config.ts"]
+  "files": ["hardhat.config.ts"]
 }
