@@ -16,6 +16,9 @@ uint256 constant MAX_LIQUIDATION_INCENTIVE_FACTOR = 1.15e18;
 /// @dev The EIP-712 typeHash for EIP712Domain.
 bytes32 constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
 
+/// @dev The EIP-712 domain name.
+string constant DOMAIN_NAME = "Morpho Blue";
+
 /// @dev The EIP-712 typeHash for Authorization.
 bytes32 constant AUTHORIZATION_TYPEHASH =
     keccak256("Authorization(address authorizer,address authorized,bool isAuthorized,uint256 nonce,uint256 deadline)");
