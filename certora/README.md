@@ -266,10 +266,12 @@ The [`certora/dispatch`](./dispatch) folder contains different contracts simil
 
 # Getting started
 
-To verify specification files, run the corresponding script in the [`certora/scripts`](./scripts) folder.
+Install `certoraRun` with `pip install certora-cli`.
+To verify specification files, pass the corresponding configuration file in the [`certora/configuration`](./configuration) folder.
 It requires having set the `CERTORAKEY` environment variable to a valid Certora key.
-You can pass arguments to the script, which allows you to verify specific properties. For example, at the root of the repository:
+You can also pass additional arguments, notably to verify a specific rule.
+For example, at the root of the repository:
 
 ```
-./certora/scripts/verifyConsistentState.sh --rule borrowLessThanSupply
+certoraRun certora/configuration/ConsistentState.conf --rule borrowLessThanSupply
 ```
