@@ -242,9 +242,9 @@
     └── it should transfer assets of token from the sender to Morpho
 .
 └── setAuthorizationWithSig(Authorization memory authorization, Signature calldata signature) external
-    ├── when block.timestamp >= authorization.deadline
+    ├── when block.timestamp > authorization.deadline
     │   └── revert with SIGNATURE_EXPIRED
-    └── when block.timestamp < deadline
+    └── when block.timestamp <= deadline
         ├── when authorization.nonce != nonce[authorization.authorizer]
         │   └── revert with INVALID_NONCE
         └── when authorization.nonce == nonce[authorization.authorizer]

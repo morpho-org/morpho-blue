@@ -420,7 +420,7 @@ contract Morpho is IMorpho {
 
     /// @inheritdoc IMorpho
     function setAuthorizationWithSig(Authorization memory authorization, Signature calldata signature) external {
-        require(block.timestamp < authorization.deadline, ErrorsLib.SIGNATURE_EXPIRED);
+        require(block.timestamp <= authorization.deadline, ErrorsLib.SIGNATURE_EXPIRED);
         require(authorization.nonce == nonce[authorization.authorizer]++, ErrorsLib.INVALID_NONCE);
 
         bytes32 hashStruct = keccak256(abi.encode(AUTHORIZATION_TYPEHASH, authorization));
