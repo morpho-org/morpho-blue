@@ -277,6 +277,11 @@ interface IMorpho {
     /// @notice Executes a flash loan.
     /// @dev Flash loans have access to the whole balance of the contract (the liquidity and deposited collateral of all
     /// markets combined, plus donations).
+    /// @dev Warning: Not ERC-3156 compliant for the following reasons:
+    /// - It would add an unnecessary `flashFee` function since there's no fee on Morpho Blue.
+    /// - `maxFlashLoan` is the token balance of the contract.
+    /// - The receiver of the `assets` is the caller as there's no `receiver` argument in our implementation.
+    /// - The ERC is not widespread.
     /// @param token The token to flash loan.
     /// @param assets The amount of assets to flash loan.
     /// @param data Arbitrary data to pass to the `onMorphoFlashLoan` callback.
