@@ -106,7 +106,7 @@ interface IMorpho {
         view
         returns (address loanToken, address collateralToken, address oracle, address irm, uint256 lltv);
 
-    /// @notice Sets `newOwner` as owner of the contract.
+    /// @notice Sets `newOwner` as `owner` of the contract.
     /// @dev Warning: No two-step transfer ownership.
     /// @dev Warning: The owner can be set to the zero address.
     function setOwner(address newOwner) external;
@@ -123,10 +123,13 @@ interface IMorpho {
     /// @dev Warning: The recipient can be the zero address.
     function setFee(MarketParams memory marketParams, uint256 newFee) external;
 
-    /// @notice Sets `newFeeRecipient` as recipient of the fee.
-    /// @dev Warning: The fee recipient can be set to the zero address.
-    /// @dev Warning: The fee to be accrued on each market won't belong to the old fee recipient after calling this
-    /// function.
+    /// @notice Sets `newFeeRecipient` as `feeRecipient` of the fee.
+    /// @dev Warning: The fee recipient can be set to the zero address. Setting the fee recipient to this address
+    /// would update the zero address position on each market having a fee, thus, burning the fee. It's the owner
+    /// responsibility to make sure no market has a fee before setting the fee recipient to the zero address.
+    /// @dev Warning: When setting a new fee recipient, interest is not accrued on each market having a fee.
+    /// It's the responsibility of the fee recipient to accrue interest on those markets to get the full amount of fees.
+    /// The remainder will go to the new fee recipient.
     function setFeeRecipient(address newFeeRecipient) external;
 
     /// @notice Creates the market `marketParams`.
