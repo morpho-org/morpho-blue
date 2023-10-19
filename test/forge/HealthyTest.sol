@@ -5,13 +5,15 @@ import "forge-std/console.sol";
 import "forge-std/console2.sol";
 
 import "src/mocks/IrmArbitraryMock.sol";
-import "./BaseTest.sol";
+import "./HandlersTest.sol";
 
-contract HealthyTest is BaseTest {
+contract HealthyTest is HandlersTest {
     using MathLib for uint256;
     using SharesMathLib for uint256;
     using MorphoLib for IMorpho;
     using MarketParamsLib for MarketParams;
+
+    address sender;
 
     function setUp() public override {
         super.setUp();
@@ -36,16 +38,12 @@ contract HealthyTest is BaseTest {
         uint256 warp;
     }
 
-    function userOf(Init memory init, uint256 i) internal pure returns (address user) {
-        user = init.user[i];
-        // to avoid too many zero address failures
-        // TODO: test zero address cases separately
-        if (user == address(0)) user = address(1);
-    }
-
     function _setUpMarket(Init memory init) public {
         uint256 maxElapsed = 14 days; // TODO: test with random values
         uint256 maxBorrowMargin = 0.00191e18; // TODO: can be advantageously transformed into a precomputed formula
+
+        sender = userOf(init, 0);
+        _targetSender(sender);
 
         for (uint256 i = 0; i < N; i++) {
             address user = userOf(init, i);
@@ -88,68 +86,33 @@ contract HealthyTest is BaseTest {
         vm.assume(success);
     }
 
-    function testHealthinessPreservation(Init memory init, bool assets_or_shares, uint256 amount, uint256 selector)
-        public
-    {
+    function _targetSender(address _sender) internal {
+        targetSender(_sender);
+
+        vm.startPrank(_sender);
+        loanToken.approve(address(morpho), type(uint256).max);
+        collateralToken.approve(address(morpho), type(uint256).max);
+        vm.stopPrank();
+    }
+
+    function testHealthinessPreservation(Init memory init, uint256 assets, uint256 seed) public {
         setUpMarket(init);
 
-        address sender = userOf(init, 0);
-
-        address onBehalf = sender;
-        address receiver = sender; // TODO: test with other receivers
-
-        bytes memory data = ""; // TODO: test with callbacks
-
-        uint256 assets = 0;
-        uint256 shares = 0;
-        if (assets_or_shares) {
-            assets = bound(amount, 1, 1e33); // round-up(2^128 / 10^6)
-        } else {
-            shares = bound(amount, 1, 1e39); // round-up(2^128)
-        }
+        assets = bound(assets, 1, 1e33); // round-up(2^128 / 10^6)
 
         vm.assume(morphoIsHealthy(marketParams, sender));
 
-        // TODO: can probably be advantageously transformed into an forge invariant
-        selector = selector % 7;
-        if (selector == 0) {
-            loanToken.setBalance(sender, type(uint128).max);
-            vm.prank(sender);
-            morphoSupply(marketParams, assets, shares, onBehalf, data);
-            console2.log("supply", assets, shares);
-        } else if (selector == 1) {
-            vm.prank(sender);
-            morphoWithdraw(marketParams, assets, shares, onBehalf, receiver);
-            console2.log("withdraw", assets, shares);
-        } else if (selector == 2) {
-            vm.prank(sender);
-            morphoBorrow(marketParams, assets, shares, onBehalf, receiver);
-            console2.log("borrow", assets, shares);
-        } else if (selector == 3) {
-            loanToken.setBalance(sender, type(uint128).max);
-            vm.prank(sender);
-            morphoRepay(marketParams, assets, shares, onBehalf, data);
-            console2.log("repay", assets, shares);
-        } else if (selector == 4) {
-            collateralToken.setBalance(sender, type(uint128).max);
-            assets = bound(amount, 1, 1e39); // round-up(2^128)
-            vm.prank(sender);
-            morphoSupplyCollateral(marketParams, assets, onBehalf, data);
-            console2.log("supplyCollateral", assets);
-        } else if (selector == 5) {
-            assets = bound(amount, 1, 1e39); // round-up(2^128)
-            vm.prank(sender);
-            morphoWithdrawCollateral(marketParams, assets, onBehalf, receiver);
-            console2.log("withdrawCollateral", assets);
-        } else {
-            loanToken.setBalance(sender, type(uint128).max);
-            address borrower = userOf(init, 1);
-            vm.prank(sender);
-            morphoLiquidate(marketParams, borrower, assets, shares, data);
-            console2.log("liquidate", assets, shares);
-        }
+        loanToken.setBalance(sender, type(uint128).max);
+        _supplyAssetsOnBehalfNoRevert(marketParams, assets, seed);
 
         assert(morphoIsHealthy(marketParams, sender));
+    }
+
+    function userOf(Init memory init, uint256 i) internal pure returns (address user) {
+        user = init.user[i];
+        // to avoid too many zero address failures
+        // TODO: test zero address cases separately
+        if (user == address(0)) user = address(1);
     }
 
     function morphoIsHealthy(MarketParams memory _marketParams, address borrower) public view returns (bool) {
@@ -159,93 +122,5 @@ contract HealthyTest is BaseTest {
             morpho.borrowShares(_id, borrower).toAssetsUp(morpho.totalBorrowAssets(_id), morpho.totalBorrowShares(_id));
 
         return maxBorrow >= borrowed;
-    }
-
-    function morphoSupply(
-        MarketParams memory marketParams,
-        uint256 assets,
-        uint256 shares,
-        address onBehalf,
-        bytes memory data
-    ) internal returns (uint256, uint256) {
-        bytes memory retdata =
-            _callMorpho(abi.encodeWithSelector(Morpho.supply.selector, marketParams, assets, shares, onBehalf, data));
-        return abi.decode(retdata, (uint256, uint256));
-    }
-
-    function morphoWithdraw(
-        MarketParams memory marketParams,
-        uint256 assets,
-        uint256 shares,
-        address onBehalf,
-        address receiver
-    ) internal returns (uint256, uint256) {
-        bytes memory retdata = _callMorpho(
-            abi.encodeWithSelector(Morpho.withdraw.selector, marketParams, assets, shares, onBehalf, receiver)
-        );
-        return abi.decode(retdata, (uint256, uint256));
-    }
-
-    function morphoBorrow(
-        MarketParams memory marketParams,
-        uint256 assets,
-        uint256 shares,
-        address onBehalf,
-        address receiver
-    ) internal returns (uint256, uint256) {
-        bytes memory retdata = _callMorpho(
-            abi.encodeWithSelector(Morpho.borrow.selector, marketParams, assets, shares, onBehalf, receiver)
-        );
-        return abi.decode(retdata, (uint256, uint256));
-    }
-
-    function morphoRepay(
-        MarketParams memory marketParams,
-        uint256 assets,
-        uint256 shares,
-        address onBehalf,
-        bytes memory data
-    ) internal returns (uint256, uint256) {
-        bytes memory retdata =
-            _callMorpho(abi.encodeWithSelector(Morpho.repay.selector, marketParams, assets, shares, onBehalf, data));
-        return abi.decode(retdata, (uint256, uint256));
-    }
-
-    function morphoSupplyCollateral(
-        MarketParams memory marketParams,
-        uint256 assets,
-        address onBehalf,
-        bytes memory data
-    ) internal {
-        _callMorpho(abi.encodeWithSelector(Morpho.supplyCollateral.selector, marketParams, assets, onBehalf, data));
-    }
-
-    function morphoWithdrawCollateral(
-        MarketParams memory marketParams,
-        uint256 assets,
-        address onBehalf,
-        address receiver
-    ) internal {
-        _callMorpho(
-            abi.encodeWithSelector(Morpho.withdrawCollateral.selector, marketParams, assets, onBehalf, receiver)
-        );
-    }
-
-    function morphoLiquidate(
-        MarketParams memory marketParams,
-        address borrower,
-        uint256 assets,
-        uint256 shares,
-        bytes memory data
-    ) internal returns (uint256, uint256) {
-        bytes memory retdata =
-            _callMorpho(abi.encodeWithSelector(Morpho.liquidate.selector, marketParams, borrower, assets, shares, data));
-        return abi.decode(retdata, (uint256, uint256));
-    }
-
-    function _callMorpho(bytes memory data) internal returns (bytes memory retdata) {
-        bool success;
-        (success, retdata) = address(morpho).call(data);
-        vm.assume(success); // if reverted, discard the current fuzz inputs, and let the fuzzer to start a new fuzz run
     }
 }

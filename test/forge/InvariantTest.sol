@@ -1,15 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import "./BaseTest.sol";
+import "./HandlersTest.sol";
 
-contract InvariantTest is BaseTest {
-    using MathLib for uint256;
-    using SharesMathLib for uint256;
-    using MorphoLib for IMorpho;
-    using MorphoBalancesLib for IMorpho;
-    using MarketParamsLib for MarketParams;
-
+contract InvariantTest is HandlersTest {
     bytes4[] internal selectors;
 
     function setUp() public virtual override {
@@ -21,12 +15,6 @@ contract InvariantTest is BaseTest {
 
         targetContract(address(this));
         targetSelector(FuzzSelector({addr: address(this), selectors: selectors}));
-    }
-
-    modifier logCall(string memory name) {
-        console2.log(msg.sender, "->", name);
-
-        _;
     }
 
     function _targetSenders() internal virtual {
@@ -55,88 +43,11 @@ contract InvariantTest is BaseTest {
         }
     }
 
-    /* HANDLERS */
+    /* SELECTED FUNCTIONS */
 
     function mine(uint256 blocks) external {
         blocks = bound(blocks, 1, 50_400);
 
         _forward(blocks);
-    }
-
-    /* UTILS */
-
-    function _randomSupplier(address[] memory users, MarketParams memory _marketParams, uint256 seed)
-        internal
-        view
-        returns (address)
-    {
-        Id _id = _marketParams.id();
-        address[] memory candidates = new address[](users.length);
-
-        for (uint256 i; i < users.length; ++i) {
-            address user = users[i];
-
-            if (morpho.supplyShares(_id, user) != 0) {
-                candidates[i] = user;
-            }
-        }
-
-        return _randomNonZero(candidates, seed);
-    }
-
-    function _randomBorrower(address[] memory users, MarketParams memory _marketParams, uint256 seed)
-        internal
-        view
-        returns (address)
-    {
-        Id _id = _marketParams.id();
-        address[] memory candidates = new address[](users.length);
-
-        for (uint256 i; i < users.length; ++i) {
-            address user = users[i];
-
-            if (morpho.borrowShares(_id, user) != 0) {
-                candidates[i] = user;
-            }
-        }
-
-        return _randomNonZero(candidates, seed);
-    }
-
-    function _randomHealthyCollateralSupplier(address[] memory users, MarketParams memory _marketParams, uint256 seed)
-        internal
-        view
-        returns (address)
-    {
-        Id _id = _marketParams.id();
-        address[] memory candidates = new address[](users.length);
-
-        for (uint256 i; i < users.length; ++i) {
-            address user = users[i];
-
-            if (morpho.collateral(_id, user) != 0 && _isHealthy(_marketParams, user)) {
-                candidates[i] = user;
-            }
-        }
-
-        return _randomNonZero(candidates, seed);
-    }
-
-    function _randomUnhealthyBorrower(address[] memory users, MarketParams memory _marketParams, uint256 seed)
-        internal
-        view
-        returns (address randomSenderToLiquidate)
-    {
-        address[] memory candidates = new address[](users.length);
-
-        for (uint256 i; i < users.length; ++i) {
-            address user = users[i];
-
-            if (!_isHealthy(_marketParams, user)) {
-                candidates[i] = user;
-            }
-        }
-
-        return _randomNonZero(candidates, seed);
     }
 }
