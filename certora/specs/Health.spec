@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 methods {
-    function extSloads(bytes32[]) external returns bytes32[] => NONDET DELETE(true);
+    function extSloads(bytes32[]) external returns bytes32[] => NONDET DELETE;
     function lastUpdate(MorphoHarness.Id) external returns uint256 envfree;
     function totalBorrowShares(MorphoHarness.Id) external returns uint256 envfree;
     function borrowShares(MorphoHarness.Id, address) external returns uint256 envfree;
