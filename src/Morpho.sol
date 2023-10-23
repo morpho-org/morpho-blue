@@ -380,12 +380,12 @@ contract Morpho is IMorpho {
             position[id][borrower].borrowShares = 0;
 
             uint128 totalBorrowAssets = market[id].totalBorrowAssets;
-            uint256 badDebt = badDebtShares.toAssetsUp(totalBorrowAssets, market[id].totalBorrowShares);
-            uint128 newTotalBorrowAssets = UtilsLib.zeroFloorSub(totalBorrowAssets, badDebt).toUint128();
-            uint128 newBadDebt = totalBorrowAssets - newTotalBorrowAssets;
+            uint128 badDebt = UtilsLib.min(
+                totalBorrowAssets, badDebtShares.toAssetsUp(totalBorrowAssets, market[id].totalBorrowShares)
+            ).toUint128();
 
-            market[id].totalBorrowAssets = newTotalBorrowAssets;
-            market[id].totalSupplyAssets -= newBadDebt;
+            market[id].totalBorrowAssets -= badDebt;
+            market[id].totalSupplyAssets -= badDebt;
             market[id].totalBorrowShares -= badDebtShares.toUint128();
         }
 
