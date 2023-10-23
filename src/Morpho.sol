@@ -377,11 +377,16 @@ contract Morpho is IMorpho {
         uint256 badDebtShares;
         if (position[id][borrower].collateral == 0) {
             badDebtShares = position[id][borrower].borrowShares;
-            uint256 badDebt = badDebtShares.toAssetsUp(market[id].totalBorrowAssets, market[id].totalBorrowShares);
-            market[id].totalSupplyAssets -= badDebt.toUint128();
-            market[id].totalBorrowAssets -= badDebt.toUint128();
-            market[id].totalBorrowShares -= badDebtShares.toUint128();
             position[id][borrower].borrowShares = 0;
+
+            uint128 totalBorrowAssets = market[id].totalBorrowAssets;
+            uint256 badDebt = badDebtShares.toAssetsUp(totalBorrowAssets, market[id].totalBorrowShares);
+            uint128 newTotalBorrowAssets = UtilsLib.zeroFloorSub(totalBorrowAssets, badDebt).toUint128();
+            uint128 newBadDebt = totalBorrowAssets - newTotalBorrowAssets;
+
+            market[id].totalBorrowAssets = newTotalBorrowAssets;
+            market[id].totalSupplyAssets -= newBadDebt;
+            market[id].totalBorrowShares -= badDebtShares.toUint128();
         }
 
         IERC20(marketParams.collateralToken).safeTransfer(msg.sender, seizedAssets);
