@@ -124,7 +124,7 @@ interface IMorpho {
     function setFee(MarketParams memory marketParams, uint256 newFee) external;
 
     /// @notice Sets `newFeeRecipient` as `feeRecipient` of the fee.
-    /// @dev Warning: If the fee recipient is set to the zero address, fees will accrue there.
+    /// @dev Warning: If the fee recipient is set to the zero address, fees will accrue there and will be lost.
     /// @dev Modifying the fee recipient will allow the new recipient to claim any pending fees not yet accrued. To
     /// ensure that the current recipient receives all due fees, accrue interest manually prior to making any changes.
     function setFeeRecipient(address newFeeRecipient) external;
