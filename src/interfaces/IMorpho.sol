@@ -124,12 +124,8 @@ interface IMorpho {
     function setFee(MarketParams memory marketParams, uint256 newFee) external;
 
     /// @notice Sets `newFeeRecipient` as `feeRecipient` of the fee.
-    /// @dev Warning: The fee recipient can be set to the zero address. Setting the fee recipient to this address
-    /// would update the zero address position on each market having a fee, thus, burning the fee. It's the owner
-    /// responsibility to make sure no market has a fee before setting the fee recipient to the zero address.
-    /// @dev Warning: When setting a new fee recipient, interest is not accrued on each market having a fee.
-    /// It's the responsibility of the fee recipient to accrue interest on those markets to get the full amount of fees.
-    /// The remainder will go to the new fee recipient.
+    /// @dev Warning: If the fee recipient is set to the zero address, fees will accrue there.
+    /// @dev Modifying the fee recipient will allow the new recipient to claim any pending fees not yet accrued. To ensure that the current recipient receives all due fees, accrue interest manually prior to making any changes.
     function setFeeRecipient(address newFeeRecipient) external;
 
     /// @notice Creates the market `marketParams`.
