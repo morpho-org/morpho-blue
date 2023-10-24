@@ -52,8 +52,8 @@ struct Signature {
 /// @notice Interface of Morpho.
 interface IMorpho {
     /// @notice The EIP-712 domain separator.
-    /// @dev Warning: In case of a hardfork, every EIP-712 signed message based on this domain separator can be reused
-    /// on the forked chain because the domain separator would be the same.
+    /// @dev Warning: Every EIP-712 signed message based on this domain separator can be reused on another chain sharing
+    /// the same chain id because the domain separator would be the same.
     function DOMAIN_SEPARATOR() external view returns (bytes32);
 
     /// @notice The owner of the contract.
@@ -73,6 +73,11 @@ interface IMorpho {
         returns (uint256 supplyShares, uint128 borrowShares, uint128 collateral);
 
     /// @notice The state of the market corresponding to `id`.
+    /// @dev Warning: `totalSupplyAssets` does not contain the accrued interest since the last interest accrual.
+    /// @dev Warning: `totalBorrowAssets` does not contain the accrued interest since the last interest accrual.
+    /// @dev Warning: `totalSupplyShares` does not contain the additional shares accrued by `feeRecipient` since the
+    /// last
+    /// interest accrual.
     function market(Id id)
         external
         view
@@ -139,6 +144,8 @@ interface IMorpho {
     /// - The token balance of the sender (resp. receiver) should decrease (resp. increase) by exactly the given amount
     /// on `transfer` and `transferFrom`. In particular, tokens with fees on transfer are not supported.
     /// - The IRM should not re-enter Morpho.
+    /// - The oracle should return a price with the correct scaling.
+    /// - The oracle is trusted to handle stale prices and price manipulations if necessary.
     /// @dev Here is a list of properties on the market's dependencies that could break Morpho's liveness properties:
     /// - The token can revert on `transfer` and `transferFrom` for a reason other than an approval or balance issue.
     /// - A very high amount of assets (~1e35) supplied or borrowed can make the computation of `toSharesUp` and
