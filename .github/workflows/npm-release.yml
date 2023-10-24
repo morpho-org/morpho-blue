@@ -1,0 +1,40 @@
+name: Publish on NPM
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: 'Version to release, in valid semver format'
+        required: true
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+
+jobs:
+  publish-to-npm:
+    name: Publish to NPM
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Validate semver format of the provided version
+        run: |
+          if [[ ! "${{ github.event.inputs.version_type }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "Invalid semver format. Please provide a valid semver format (v1.2.3)"
+              exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Bump package.json version
+        run: |
+          version_type=$(echo "${{ steps.determine_version.outputs.version_type }}")
+          yarn version --new-version ${version_type} --no-git-tag-version
+
+      - name: Publish to npm
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
+          yarn publish --access public
