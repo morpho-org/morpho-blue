@@ -297,7 +297,7 @@ contract LiquidateIntegrationTest is BaseTest {
         );
     }
 
-    function testBadDebtDoesNotOverflow() public {
+    function testBadDebtOverTotalBorrowAssets() public {
         uint256 collateralAmount = 10 ether;
         uint256 loanAmount = 1 ether;
         _supply(loanAmount);
