@@ -377,13 +377,16 @@ contract Morpho is IMorpho {
         uint256 badDebtShares;
         if (position[id][borrower].collateral == 0) {
             badDebtShares = position[id][borrower].borrowShares;
-            uint128 badDebt = UtilsLib.min(
-                market[id].totalBorrowAssets,
-                badDebtShares.toAssetsUp(market[id].totalBorrowAssets, market[id].totalBorrowShares)
-            ).toUint128();
+            // Safe "unchecked" cast since badDebt <= totalBorrowAssets <= type(uint128).max
+            uint128 badDebt = uint128(
+                UtilsLib.min(
+                    market[id].totalBorrowAssets,
+                    badDebtShares.toAssetsUp(market[id].totalBorrowAssets, market[id].totalBorrowShares)
+                )
+            );
             market[id].totalBorrowAssets -= badDebt;
             market[id].totalSupplyAssets -= badDebt;
-            market[id].totalBorrowShares -= badDebtShares.toUint128();
+            market[id].totalBorrowShares -= uint128(badDebtShares); // Safe "unchecked" cast.
             position[id][borrower].borrowShares = 0;
         }
 
