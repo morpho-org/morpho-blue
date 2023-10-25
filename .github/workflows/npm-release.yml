@@ -8,15 +8,13 @@ on:
         required: true
         type: string
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
-  cancel-in-progress: true
-
-
 jobs:
   publish-to-npm:
     name: Publish to NPM
     runs-on: ubuntu-latest
+    environment:
+      name: npm
+      url: https://www.npmjs.com/package/@morpho-org/morpho-blue
     steps:
 
       - name: Validate semver format of the provided version
