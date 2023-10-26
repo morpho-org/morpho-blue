@@ -445,6 +445,14 @@ contract Morpho is IMorpho {
 
     /* INTEREST MANAGEMENT */
 
+    /// @inheritdoc IMorpho
+    function accrueInterest(MarketParams memory marketParams) external {
+        Id id = marketParams.id();
+        require(market[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
+
+        _accrueInterest(marketParams, id);
+    }
+
     /// @dev Accrues interest for the given market `marketParams`.
     /// @dev Assumes that the inputs `marketParams` and `id` match.
     function _accrueInterest(MarketParams memory marketParams, Id id) internal {
