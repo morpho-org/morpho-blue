@@ -10,10 +10,6 @@ import {MorphoLib} from "./MorphoLib.sol";
 import {SharesMathLib} from "../SharesMathLib.sol";
 import {MarketParamsLib} from "../MarketParamsLib.sol";
 
-interface IMorphoMarketGetter {
-    function market(Id id) external view returns (Market memory);
-}
-
 /// @title MorphoBalancesLib
 /// @author Morpho Labs
 /// @custom:contact security@morpho.org
@@ -41,7 +37,7 @@ library MorphoBalancesLib {
     {
         Id id = marketParams.id();
 
-        Market memory market = IMorphoMarketGetter(address(morpho)).market(id);
+        Market memory market = morpho.market(id);
 
         uint256 elapsed = block.timestamp - market.lastUpdate;
 
