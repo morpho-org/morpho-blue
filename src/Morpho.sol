@@ -30,6 +30,7 @@ contract Morpho is IMorpho {
     using MathLib for uint128;
     using MathLib for uint256;
     using UtilsLib for uint256;
+    using SharesMathLib for uint128;
     using SharesMathLib for uint256;
     using SafeTransferLib for IERC20;
     using MarketParamsLib for MarketParams;
@@ -272,7 +273,8 @@ contract Morpho is IMorpho {
 
         position[id][onBehalf].borrowShares -= shares.toUint128();
         market[id].totalBorrowShares -= shares.toUint128();
-        market[id].totalBorrowAssets = UtilsLib.zeroFloorSub(market[id].totalBorrowAssets, assets).toUint128();
+        // Safe "unchecked" cast since the value is smaller than totalBorrowAssets.
+        market[id].totalBorrowAssets = uint128(UtilsLib.zeroFloorSub(market[id].totalBorrowAssets, assets));
 
         // `assets` may be greater than `totalBorrowAssets` by 1.
         emit EventsLib.Repay(id, msg.sender, onBehalf, assets, shares);
@@ -369,12 +371,13 @@ contract Morpho is IMorpho {
 
         position[id][borrower].borrowShares -= repaidShares.toUint128();
         market[id].totalBorrowShares -= repaidShares.toUint128();
-        market[id].totalBorrowAssets = UtilsLib.zeroFloorSub(market[id].totalBorrowAssets, repaidAssets).toUint128();
+        // Safe "unchecked" cast since the value is smaller than totalBorrowAssets.
+        market[id].totalBorrowAssets = uint128(UtilsLib.zeroFloorSub(market[id].totalBorrowAssets, repaidAssets));
 
         position[id][borrower].collateral -= seizedAssets.toUint128();
 
         // Realize the bad debt if needed. Note that it saves ~3k gas to do it.
-        uint256 badDebtShares;
+        uint128 badDebtShares;
         if (position[id][borrower].collateral == 0) {
             badDebtShares = position[id][borrower].borrowShares;
             // Safe "unchecked" cast since the value is smaller than totalBorrowAssets.
@@ -386,7 +389,7 @@ contract Morpho is IMorpho {
             );
             market[id].totalBorrowAssets -= badDebt;
             market[id].totalSupplyAssets -= badDebt;
-            market[id].totalBorrowShares -= uint128(badDebtShares); // Safe "unchecked" cast.
+            market[id].totalBorrowShares -= badDebtShares;
             position[id][borrower].borrowShares = 0;
         }
 
