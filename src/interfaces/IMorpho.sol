@@ -46,9 +46,6 @@ struct Signature {
     bytes32 s;
 }
 
-/// @title IMorphoBase
-/// @author Morpho Labs
-/// @custom:contact security@morpho.org
 /// @dev This interface is used for factorizing IMorphoStaticTyping and IMorpho.
 /// @dev Consider using the IMorpho interface instead of this one.
 interface IMorphoBase {
@@ -281,9 +278,6 @@ interface IMorphoBase {
     function extSloads(bytes32[] memory slots) external view returns (bytes32[] memory);
 }
 
-/// @title IMorphoStaticTyping
-/// @author Morpho Labs
-/// @custom:contact security@morpho.org
 /// @dev This interface is inherited by Morpho so that function signatures are checked by the compiler.
 /// @dev Consider using the IMorpho interface instead of this one.
 interface IMorphoStaticTyping is IMorphoBase {
