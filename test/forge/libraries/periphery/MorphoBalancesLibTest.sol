@@ -73,7 +73,7 @@ contract MorphoBalancesLibTest is BaseTest {
     {
         _generatePendingInterest(amountSupplied, amountBorrowed, timeElapsed, fee);
 
-        uint256 expectedSupplyAssets = morpho.expectedSupplyAssets(marketParams, address(this));
+        uint256 expectedSupplyBalance = morpho.expectedSupplyAssets(marketParams, address(this));
 
         _accrueInterest(marketParams);
 
@@ -81,7 +81,7 @@ contract MorphoBalancesLibTest is BaseTest {
             morpho.totalSupplyAssets(id), morpho.totalSupplyShares(id)
         );
 
-        assertEq(expectedSupplyAssets, actualSupplyBalance);
+        assertEq(expectedSupplyBalance, actualSupplyBalance);
     }
 
     function testExpectedBorrowBalance(uint256 amountSupplied, uint256 amountBorrowed, uint256 timeElapsed, uint256 fee)
@@ -89,7 +89,7 @@ contract MorphoBalancesLibTest is BaseTest {
     {
         _generatePendingInterest(amountSupplied, amountBorrowed, timeElapsed, fee);
 
-        uint256 expectedBorrowAssets = morpho.expectedBorrowAssets(marketParams, address(this));
+        uint256 expectedBorrowBalance = morpho.expectedBorrowAssets(marketParams, address(this));
 
         _accrueInterest(marketParams);
 
@@ -97,7 +97,7 @@ contract MorphoBalancesLibTest is BaseTest {
             morpho.totalBorrowAssets(id), morpho.totalBorrowShares(id)
         );
 
-        assertEq(expectedBorrowAssets, actualBorrowBalance);
+        assertEq(expectedBorrowBalance, actualBorrowBalance);
     }
 
     function _generatePendingInterest(uint256 amountSupplied, uint256 amountBorrowed, uint256 blocks, uint256 fee)
