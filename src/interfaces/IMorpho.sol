@@ -76,8 +76,7 @@ interface IMorpho {
     /// @dev Warning: `totalSupplyAssets` does not contain the accrued interest since the last interest accrual.
     /// @dev Warning: `totalBorrowAssets` does not contain the accrued interest since the last interest accrual.
     /// @dev Warning: `totalSupplyShares` does not contain the additional shares accrued by `feeRecipient` since the
-    /// last
-    /// interest accrual.
+    /// last interest accrual.
     function market(Id id)
         external
         view
@@ -145,7 +144,6 @@ interface IMorpho {
     /// on `transfer` and `transferFrom`. In particular, tokens with fees on transfer are not supported.
     /// - The IRM should not re-enter Morpho.
     /// - The oracle should return a price with the correct scaling.
-    /// - The oracle is trusted to handle stale prices and price manipulations if necessary.
     /// @dev Here is a list of properties on the market's dependencies that could break Morpho's liveness properties:
     /// - The token can revert on `transfer` and `transferFrom` for a reason other than an approval or balance issue.
     /// - A very high amount of assets (~1e35) supplied or borrowed can make the computation of `toSharesUp` and
