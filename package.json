@@ -1,8 +1,13 @@
 {
-  "name": "morpho-blue",
+  "name": "@morpho-org/morpho-blue",
   "description": "Morpho Blue Protocol",
   "license": "BUSL-1.1",
-  "version": "1.0.0",
+  "version": "0.1.0",
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "postinstall": "husky install && forge install",
     "build:forge": "FOUNDRY_PROFILE=build forge build",
