@@ -83,7 +83,7 @@ contract CallbacksIntegrationTest is
             morpho.flashLoan(address(loanToken), amount, abi.encode(this.testFlashLoan.selector, hex""));
 
         assertEq(loanToken.balanceOf(address(morpho)), amount, "balanceOf");
-        assertEq(resultData, "Arbitrary data!", "resultData");
+        assertEq(returnData, "Arbitrary data!", "returnData");
     }
 
     function testFlashLoanShouldRevertIfNotReimbursed(uint256 amount) public {
