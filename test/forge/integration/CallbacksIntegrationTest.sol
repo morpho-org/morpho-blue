@@ -67,7 +67,7 @@ contract CallbacksIntegrationTest is
         if (selector == this.testFlashLoan.selector) {
             assertEq(loanToken.balanceOf(address(this)), amount);
             loanToken.approve(address(morpho), amount);
-            resultData = "Arbitrary data!";
+            returnData = "Arbitrary data!";
         }
     }
 
