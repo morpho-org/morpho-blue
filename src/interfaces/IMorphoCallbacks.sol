@@ -48,6 +48,6 @@ interface IMorphoFlashLoanCallback {
     /// @dev The callback is called only if data is not empty.
     /// @param assets The amount of assets that was flash loaned.
     /// @param data Arbitrary data passed to the `flashLoan` function.
-    /// @return resultData Arbitrary data returned by the callback.
-    function onMorphoFlashLoan(uint256 assets, bytes calldata data) external returns (bytes memory resultData);
+    /// @return returnData Arbitrary data returned by the callback.
+    function onMorphoFlashLoan(uint256 assets, bytes calldata data) external returns (bytes memory returnData);
 }
