@@ -8,8 +8,7 @@ import {MorphoStorageLib} from "./MorphoStorageLib.sol";
 /// @author Morpho Labs
 /// @custom:contact security@morpho.org
 /// @notice Helper library to access Morpho storage variables.
-/// @dev Warning: Supply and borrow getters may returned outdated values that do not include accrued interest and fees
-/// for instance.
+/// @dev Warning: Supply and borrow getters may return outdated values that do not include accrued interest.
 library MorphoLib {
     function supplyShares(IMorpho morpho, Id id, address user) internal view returns (uint256) {
         bytes32[] memory slot = _array(MorphoStorageLib.positionSupplySharesSlot(id, user));
