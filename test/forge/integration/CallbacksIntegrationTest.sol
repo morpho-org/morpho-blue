@@ -60,7 +60,7 @@ contract CallbacksIntegrationTest is
         }
     }
 
-    function onMorphoFlashLoan(uint256 amount, bytes memory data) external returns (bytes memory resultData) {
+    function onMorphoFlashLoan(uint256 amount, bytes memory data) external returns (bytes memory returnData) {
         require(msg.sender == address(morpho));
         bytes4 selector;
         (selector, data) = abi.decode(data, (bytes4, bytes));
