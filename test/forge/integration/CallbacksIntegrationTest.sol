@@ -79,7 +79,7 @@ contract CallbacksIntegrationTest is
         loanToken.setBalance(address(this), amount);
         morpho.supply(marketParams, amount, 0, address(this), hex"");
 
-        bytes memory resultData =
+        bytes memory returnData =
             morpho.flashLoan(address(loanToken), amount, abi.encode(this.testFlashLoan.selector, hex""));
 
         assertEq(loanToken.balanceOf(address(morpho)), amount, "balanceOf");
