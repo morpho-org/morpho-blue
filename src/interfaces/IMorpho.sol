@@ -295,7 +295,7 @@ interface IMorpho {
     /// @param signature The signature.
     function setAuthorizationWithSig(Authorization calldata authorization, Signature calldata signature) external;
 
-    /// @notice Accrues interest for `marketParams`.
+    /// @notice Accrues interest for the given market `marketParams`.
     function accrueInterest(MarketParams memory marketParams) external;
 
     /// @notice Returns the data stored on the different `slots`.

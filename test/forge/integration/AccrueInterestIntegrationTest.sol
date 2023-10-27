@@ -93,8 +93,6 @@ contract AccrueInterestIntegrationTest is BaseTest {
         uint256 expectedAccruedInterest =
             totalBorrowBeforeAccrued.wMulDown(borrowRate.wTaylorCompounded(blocks * BLOCK_TIME));
 
-        collateralToken.setBalance(address(this), 1);
-        morpho.supplyCollateral(marketParams, 1, address(this), hex"");
         vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.AccrueInterest(id, borrowRate, expectedAccruedInterest, 0);
         morpho.accrueInterest(marketParams);
@@ -157,8 +155,6 @@ contract AccrueInterestIntegrationTest is BaseTest {
             params.totalSupplySharesBeforeAccrued
         );
 
-        collateralToken.setBalance(address(this), 1);
-        morpho.supplyCollateral(marketParams, 1, address(this), hex"");
         vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.AccrueInterest(id, params.borrowRate, params.expectedAccruedInterest, params.feeShares);
         morpho.accrueInterest(marketParams);
