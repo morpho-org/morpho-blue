@@ -399,7 +399,7 @@ contract Morpho is IMorpho {
     /* FLASH LOANS */
 
     /// @inheritdoc IMorpho
-    function flashLoan(address token, uint256 assets, bytes calldata data) external returns (bytes memory resultData) {
+    function flashLoan(address token, uint256 assets, bytes calldata data) external returns (bytes memory returnData) {
         IERC20(token).safeTransfer(msg.sender, assets);
 
         emit EventsLib.FlashLoan(msg.sender, token, assets);
