@@ -139,11 +139,12 @@ interface IMorpho {
     /// - The token balance of the sender (resp. receiver) should decrease (resp. increase) by exactly the given amount
     /// on `transfer` and `transferFrom`. In particular, tokens with fees on transfer are not supported.
     /// - The IRM should not re-enter Morpho.
-    /// @dev Here is a list of properties on the market's dependencies that could break Morpho's liveness properties:
+    /// @dev Here is a list of properties on the market's dependencies that could break Morpho's liveness properties
+    /// (funds could get stuck):
     /// - The token can revert on `transfer` and `transferFrom` for a reason other than an approval or balance issue.
     /// - A very high amount of assets (~1e35) supplied or borrowed can make the computation of `toSharesUp` and
     /// `toSharesDown` overflow.
-    /// - The IRM can revert on `borrowRate` which means it could lead to funds being stuck.
+    /// - The IRM can revert on `borrowRate`.
     /// - A very high borrow rate returned by the IRM can make the computation of `interest` in `_accrueInterest`
     /// overflow.
     /// - The oracle can revert on `price`. Note that this can be used to prevent `borrow`, `withdrawCollateral` and
