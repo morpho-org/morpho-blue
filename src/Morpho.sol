@@ -230,7 +230,7 @@ contract Morpho is IMorpho {
         require(market[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
         require(UtilsLib.exactlyOneZero(assets, shares), ErrorsLib.INCONSISTENT_INPUT);
         require(receiver != address(0), ErrorsLib.ZERO_ADDRESS);
-        // No need to verify that onBehalf != address(0) thanks to the authorization check.
+        // No need to verify that onBehalf != address(0) thanks to the following authorization check.
         require(_isSenderAuthorized(onBehalf), ErrorsLib.UNAUTHORIZED);
 
         _accrueInterest(marketParams, id);
@@ -314,7 +314,7 @@ contract Morpho is IMorpho {
         require(market[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
         require(assets != 0, ErrorsLib.ZERO_ASSETS);
         require(receiver != address(0), ErrorsLib.ZERO_ADDRESS);
-        // No need to verify that onBehalf != address(0) thanks to the authorization check.
+        // No need to verify that onBehalf != address(0) thanks to the following authorization check.
         require(_isSenderAuthorized(onBehalf), ErrorsLib.UNAUTHORIZED);
 
         _accrueInterest(marketParams, id);
