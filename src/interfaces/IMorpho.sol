@@ -67,7 +67,7 @@ interface IMorpho {
     function feeRecipient() external view returns (address);
 
     /// @notice The state of the position of `user` on the market corresponding to `id`.
-    /// @dev Warning: `supplyShares` does not contain the additional shares accrued by `feeRecipient` since the last
+    /// @dev Warning: For `feeRecipient`, `supplyShares` does not contain the additional shares accrued since the last
     /// interest accrual.
     function position(Id id, address user)
         external
