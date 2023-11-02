@@ -65,7 +65,7 @@ library MorphoBalancesLib {
     }
 
     /// @notice Returns the expected total supply assets of a market after having accrued interest.
-    function expectedTotalSupply(IMorpho morpho, MarketParams memory marketParams)
+    function expectedTotalSupplyAssets(IMorpho morpho, MarketParams memory marketParams)
         internal
         view
         returns (uint256 totalSupplyAssets)
@@ -74,7 +74,7 @@ library MorphoBalancesLib {
     }
 
     /// @notice Returns the expected total borrow assets of a market after having accrued interest.
-    function expectedTotalBorrow(IMorpho morpho, MarketParams memory marketParams)
+    function expectedTotalBorrowAssets(IMorpho morpho, MarketParams memory marketParams)
         internal
         view
         returns (uint256 totalBorrowAssets)
@@ -91,9 +91,9 @@ library MorphoBalancesLib {
         (, totalSupplyShares,,) = expectedMarketBalances(morpho, marketParams);
     }
 
-    /// @notice Returns the expected supply balance of a user on a market after having accrued interest.
+    /// @notice Returns the expected supply assets balance of `user` on a market after having accrued interest.
     /// @dev Warning: Wrong for `feeRecipient` because their supply shares increase is not taken into account.
-    function expectedSupplyBalance(IMorpho morpho, MarketParams memory marketParams, address user)
+    function expectedSupplyAssets(IMorpho morpho, MarketParams memory marketParams, address user)
         internal
         view
         returns (uint256)
@@ -105,8 +105,8 @@ library MorphoBalancesLib {
         return supplyShares.toAssetsDown(totalSupplyAssets, totalSupplyShares);
     }
 
-    /// @notice Returns the expected borrow balance of a user on a market after having accrued interest.
-    function expectedBorrowBalance(IMorpho morpho, MarketParams memory marketParams, address user)
+    /// @notice Returns the expected borrow assets balance of `user` on a market after having accrued interest.
+    function expectedBorrowAssets(IMorpho morpho, MarketParams memory marketParams, address user)
         internal
         view
         returns (uint256)
