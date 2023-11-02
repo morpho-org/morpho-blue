@@ -13,6 +13,6 @@ interface IIrm {
     function borrowRate(MarketParams memory marketParams, Market memory market) external returns (uint256);
 
     /// @notice Returns the borrow rate of the market `marketParams` without modifying any storage.
-    /// @dev Assumes that `market` is related to the correct `marketParams`.
+    /// @dev Assumes that `market` corresponds to `marketParams`.
     function borrowRateView(MarketParams memory marketParams, Market memory market) external view returns (uint256);
 }
