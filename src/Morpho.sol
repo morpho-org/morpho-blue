@@ -119,8 +119,7 @@ contract Morpho is IMorpho {
         // Accrue interest using the previous fee set before changing it.
         _accrueInterest(marketParams, id);
 
-        // Safe "unchecked" cast.
-        market[id].fee = uint128(newFee);
+        market[id].fee = newFee.toUint128();
 
         emit EventsLib.SetFee(id, newFee);
     }
@@ -144,7 +143,7 @@ contract Morpho is IMorpho {
         require(market[id].lastUpdate == 0, ErrorsLib.MARKET_ALREADY_CREATED);
 
         // Safe "unchecked" cast.
-        market[id].lastUpdate = uint128(block.timestamp);
+        market[id].lastUpdate = block.timestamp.toUint128();
         idToMarketParams[id] = marketParams;
 
         emit EventsLib.CreateMarket(id, marketParams);
@@ -378,15 +377,13 @@ contract Morpho is IMorpho {
         if (position[id][borrower].collateral == 0) {
             badDebtShares = position[id][borrower].borrowShares;
             // Safe "unchecked" cast since the value is smaller than totalBorrowAssets.
-            uint128 badDebt = uint128(
-                UtilsLib.min(
-                    market[id].totalBorrowAssets,
-                    badDebtShares.toAssetsUp(market[id].totalBorrowAssets, market[id].totalBorrowShares)
-                )
+            uint256 badDebt = UtilsLib.min(
+                market[id].totalBorrowAssets,
+                badDebtShares.toAssetsUp(market[id].totalBorrowAssets, market[id].totalBorrowShares)
             );
-            market[id].totalBorrowAssets -= badDebt;
-            market[id].totalSupplyAssets -= badDebt;
-            market[id].totalBorrowShares -= uint128(badDebtShares); // Safe "unchecked" cast.
+            market[id].totalBorrowAssets -= badDebt.toUint128();
+            market[id].totalSupplyAssets -= badDebt.toUint128();
+            market[id].totalBorrowShares -= badDebtShares.toUint128();
             position[id][borrower].borrowShares = 0;
         }
 
@@ -479,7 +476,7 @@ contract Morpho is IMorpho {
         }
 
         // Safe "unchecked" cast.
-        market[id].lastUpdate = uint128(block.timestamp);
+        market[id].lastUpdate = block.timestamp.toUint128();
     }
 
     /* HEALTH CHECK */
