@@ -22,7 +22,7 @@ contract AuthorizationIntegrationTest is BaseTest {
         uint256 blocks
     ) public {
         blocks = _boundBlocks(blocks);
-        authorization.deadline = block.timestamp;
+        authorization.deadline = block.timestamp - 1;
 
         // Private key must be less than the secp256k1 curve order.
         privateKey = bound(privateKey, 1, type(uint32).max);
@@ -40,7 +40,7 @@ contract AuthorizationIntegrationTest is BaseTest {
     }
 
     function testAuthorizationWithSigWrongPK(Authorization memory authorization, uint256 privateKey) public {
-        authorization.deadline = bound(authorization.deadline, block.timestamp + 1, type(uint256).max);
+        authorization.deadline = bound(authorization.deadline, block.timestamp, type(uint256).max);
 
         // Private key must be less than the secp256k1 curve order.
         privateKey = bound(privateKey, 1, type(uint32).max);
@@ -55,7 +55,7 @@ contract AuthorizationIntegrationTest is BaseTest {
     }
 
     function testAuthorizationWithSigWrongNonce(Authorization memory authorization, uint256 privateKey) public {
-        authorization.deadline = bound(authorization.deadline, block.timestamp + 1, type(uint256).max);
+        authorization.deadline = bound(authorization.deadline, block.timestamp, type(uint256).max);
         authorization.nonce = bound(authorization.nonce, 1, type(uint256).max);
 
         // Private key must be less than the secp256k1 curve order.
@@ -71,7 +71,7 @@ contract AuthorizationIntegrationTest is BaseTest {
     }
 
     function testAuthorizationWithSig(Authorization memory authorization, uint256 privateKey) public {
-        authorization.deadline = bound(authorization.deadline, block.timestamp + 1, type(uint256).max);
+        authorization.deadline = bound(authorization.deadline, block.timestamp, type(uint256).max);
 
         // Private key must be less than the secp256k1 curve order.
         privateKey = bound(privateKey, 1, type(uint32).max);
@@ -89,7 +89,7 @@ contract AuthorizationIntegrationTest is BaseTest {
     }
 
     function testAuthorizationFailsWithReusedSig(Authorization memory authorization, uint256 privateKey) public {
-        authorization.deadline = bound(authorization.deadline, block.timestamp + 1, type(uint256).max);
+        authorization.deadline = bound(authorization.deadline, block.timestamp, type(uint256).max);
 
         // Private key must be less than the secp256k1 curve order.
         privateKey = bound(privateKey, 1, type(uint32).max);

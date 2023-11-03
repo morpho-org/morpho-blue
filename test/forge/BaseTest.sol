@@ -222,7 +222,7 @@ contract BaseTest is Test {
 
         uint256 collateral = morpho.collateral(_id, onBehalf);
         uint256 collateralPrice = IOracle(_marketParams.oracle).price();
-        uint256 borrowed = morpho.expectedBorrowBalance(_marketParams, onBehalf);
+        uint256 borrowed = morpho.expectedBorrowAssets(_marketParams, onBehalf);
 
         return bound(
             assets,
@@ -236,7 +236,7 @@ contract BaseTest is Test {
         view
         returns (uint256)
     {
-        uint256 supplyBalance = morpho.expectedSupplyBalance(_marketParams, onBehalf);
+        uint256 supplyBalance = morpho.expectedSupplyAssets(_marketParams, onBehalf);
 
         return bound(assets, 0, MAX_TEST_AMOUNT.zeroFloorSub(supplyBalance));
     }
@@ -266,7 +266,7 @@ contract BaseTest is Test {
     {
         Id _id = _marketParams.id();
 
-        uint256 supplyBalance = morpho.expectedSupplyBalance(_marketParams, onBehalf);
+        uint256 supplyBalance = morpho.expectedSupplyAssets(_marketParams, onBehalf);
         uint256 liquidity = morpho.totalSupplyAssets(_id) - morpho.totalBorrowAssets(_id);
 
         return bound(assets, 0, MAX_TEST_AMOUNT.min(supplyBalance).min(liquidity));
@@ -296,7 +296,7 @@ contract BaseTest is Test {
         Id _id = _marketParams.id();
 
         uint256 maxBorrow = _maxBorrow(_marketParams, onBehalf);
-        uint256 borrowed = morpho.expectedBorrowBalance(_marketParams, onBehalf);
+        uint256 borrowed = morpho.expectedBorrowAssets(_marketParams, onBehalf);
         uint256 liquidity = morpho.totalSupplyAssets(_id) - morpho.totalBorrowAssets(_id);
 
         return bound(assets, 0, MAX_TEST_AMOUNT.min(maxBorrow - borrowed).min(liquidity));
@@ -336,7 +336,7 @@ contract BaseTest is Test {
 
         uint256 collateral = morpho.collateral(_id, borrower);
         uint256 collateralPrice = IOracle(_marketParams.oracle).price();
-        uint256 maxRepaidAssets = morpho.expectedBorrowBalance(_marketParams, borrower);
+        uint256 maxRepaidAssets = morpho.expectedBorrowAssets(_marketParams, borrower);
         uint256 maxSeizedAssets = maxRepaidAssets.wMulDown(_liquidationIncentiveFactor(_marketParams.lltv)).mulDivDown(
             ORACLE_PRICE_SCALE, collateralPrice
         );
@@ -372,7 +372,7 @@ contract BaseTest is Test {
 
     function _isHealthy(MarketParams memory _marketParams, address user) internal view returns (bool) {
         uint256 maxBorrow = _maxBorrow(_marketParams, user);
-        uint256 borrowed = morpho.expectedBorrowBalance(_marketParams, user);
+        uint256 borrowed = morpho.expectedBorrowAssets(_marketParams, user);
 
         return maxBorrow >= borrowed;
     }
