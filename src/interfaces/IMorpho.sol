@@ -146,7 +146,8 @@ interface IMorpho {
     /// on `transfer` and `transferFrom`. In particular, tokens with fees on transfer are not supported.
     /// - The IRM should not re-enter Morpho.
     /// - The oracle should return a price with the correct scaling.
-    /// @dev Here is a list of properties on the market's dependencies that could break Morpho's liveness properties:
+    /// @dev Here is a list of properties on the market's dependencies that could break Morpho's liveness properties
+    /// (funds could get stuck):
     /// - The token can revert on `transfer` and `transferFrom` for a reason other than an approval or balance issue.
     /// - A very high amount of assets (~1e35) supplied or borrowed can make the computation of `toSharesUp` and
     /// `toSharesDown` overflow.
@@ -184,6 +185,8 @@ interface IMorpho {
     /// @dev Either `assets` or `shares` should be zero. To withdraw max, pass the `shares`'s balance of `onBehalf`.
     /// @dev `msg.sender` must be authorized to manage `onBehalf`'s positions.
     /// @dev Withdrawing an amount corresponding to more shares than supplied will revert for underflow.
+    /// @dev It is advised to use the `shares` input when withdrawing the full position to avoid reverts due to
+    /// conversion roundings between shares and assets.
     /// @param marketParams The market to withdraw assets from.
     /// @param assets The amount of assets to withdraw.
     /// @param shares The amount of shares to burn.
@@ -224,6 +227,8 @@ interface IMorpho {
     /// `onMorphoReplay` function with the given `data`.
     /// @dev Either `assets` or `shares` should be zero. To repay max, pass the `shares`'s balance of `onBehalf`.
     /// @dev Repaying an amount corresponding to more shares than borrowed will revert for underflow.
+    /// @dev It is advised to use the `shares` input when repaying the full position to avoid reverts due to conversion
+    /// roundings between shares and assets.
     /// @param marketParams The market to repay assets to.
     /// @param assets The amount of assets to repay.
     /// @param shares The amount of shares to burn.
@@ -305,6 +310,9 @@ interface IMorpho {
     /// @param authorization The `Authorization` struct.
     /// @param signature The signature.
     function setAuthorizationWithSig(Authorization calldata authorization, Signature calldata signature) external;
+
+    /// @notice Accrues interest for the given market `marketParams`.
+    function accrueInterest(MarketParams memory marketParams) external;
 
     /// @notice Returns the data stored on the different `slots`.
     function extSloads(bytes32[] memory slots) external view returns (bytes32[] memory);

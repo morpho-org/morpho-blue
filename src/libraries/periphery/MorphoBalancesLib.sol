@@ -93,6 +93,8 @@ library MorphoBalancesLib {
 
     /// @notice Returns the expected supply assets balance of `user` on a market after having accrued interest.
     /// @dev Warning: Wrong for `feeRecipient` because their supply shares increase is not taken into account.
+    /// @dev Warning: Withdrawing a supply position using the expected assets balance can lead to a revert due to
+    /// conversion roundings between shares and assets.
     function expectedSupplyAssets(IMorpho morpho, MarketParams memory marketParams, address user)
         internal
         view
@@ -106,6 +108,8 @@ library MorphoBalancesLib {
     }
 
     /// @notice Returns the expected borrow assets balance of `user` on a market after having accrued interest.
+    /// @dev Warning: repaying a borrow position using the expected assets balance can lead to a revert due to
+    /// conversion roundings between shares and assets.
     function expectedBorrowAssets(IMorpho morpho, MarketParams memory marketParams, address user)
         internal
         view
