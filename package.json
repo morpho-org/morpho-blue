@@ -9,7 +9,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "postinstall": "husky install && forge install",
+    "prepare": "husky install && forge install",
     "build:forge": "FOUNDRY_PROFILE=build forge build",
     "build:hardhat": "npx hardhat compile",
     "test:forge": "FOUNDRY_PROFILE=test forge test",
