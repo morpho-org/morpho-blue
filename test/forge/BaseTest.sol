@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import "../../lib/forge-std/src/Test.sol";
 import "../../lib/forge-std/src/console.sol";
 
+import {IMorpho} from "../../src/interfaces/IMorpho.sol";
 import "../../src/interfaces/IMorphoCallbacks.sol";
 import {IrmMock} from "../../src/mocks/IrmMock.sol";
 import {ERC20Mock} from "../../src/mocks/ERC20Mock.sol";
@@ -66,7 +67,7 @@ contract BaseTest is Test {
         OWNER = makeAddr("Owner");
         FEE_RECIPIENT = makeAddr("FeeRecipient");
 
-        morpho = new Morpho(OWNER);
+        morpho = IMorpho(address(new Morpho(OWNER)));
 
         loanToken = new ERC20Mock();
         vm.label(address(loanToken), "LoanToken");

@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import {MorphoBalancesLib} from "../../../../src/libraries/periphery/MorphoBalancesLib.sol";
-
 import "../../BaseTest.sol";
 
 contract MorphoLibTest is BaseTest {
@@ -50,21 +48,21 @@ contract MorphoLibTest is BaseTest {
     function testSupplyShares(uint256 amountSupplied, uint256 amountBorrowed, uint256 timestamp, uint256 fee) public {
         _testMorphoLibCommon(amountSupplied, amountBorrowed, timestamp, fee);
 
-        (uint256 expectedSupplyShares,,) = morpho.position(id, address(this));
+        uint256 expectedSupplyShares = morpho.position(id, address(this)).supplyShares;
         assertEq(morpho.supplyShares(id, address(this)), expectedSupplyShares);
     }
 
     function testBorrowShares(uint256 amountSupplied, uint256 amountBorrowed, uint256 timestamp, uint256 fee) public {
         _testMorphoLibCommon(amountSupplied, amountBorrowed, timestamp, fee);
 
-        (, uint256 expectedBorrowShares,) = morpho.position(id, BORROWER);
+        uint256 expectedBorrowShares = morpho.position(id, BORROWER).borrowShares;
         assertEq(morpho.borrowShares(id, BORROWER), expectedBorrowShares);
     }
 
     function testCollateral(uint256 amountSupplied, uint256 amountBorrowed, uint256 timestamp, uint256 fee) public {
         _testMorphoLibCommon(amountSupplied, amountBorrowed, timestamp, fee);
 
-        (,, uint256 expectedCollateral) = morpho.position(id, BORROWER);
+        uint256 expectedCollateral = morpho.position(id, BORROWER).collateral;
         assertEq(morpho.collateral(id, BORROWER), expectedCollateral);
     }
 
@@ -73,7 +71,7 @@ contract MorphoLibTest is BaseTest {
     {
         _testMorphoLibCommon(amountSupplied, amountBorrowed, timestamp, fee);
 
-        (uint256 expectedTotalSupplyAssets,,,,,) = morpho.market(id);
+        uint256 expectedTotalSupplyAssets = morpho.market(id).totalSupplyAssets;
         assertEq(morpho.totalSupplyAssets(id), expectedTotalSupplyAssets);
     }
 
@@ -82,7 +80,7 @@ contract MorphoLibTest is BaseTest {
     {
         _testMorphoLibCommon(amountSupplied, amountBorrowed, timestamp, fee);
 
-        (, uint256 expectedTotalSupplyShares,,,,) = morpho.market(id);
+        uint256 expectedTotalSupplyShares = morpho.market(id).totalSupplyShares;
         assertEq(morpho.totalSupplyShares(id), expectedTotalSupplyShares);
     }
 
@@ -91,7 +89,7 @@ contract MorphoLibTest is BaseTest {
     {
         _testMorphoLibCommon(amountSupplied, amountBorrowed, timestamp, fee);
 
-        (,, uint256 expectedTotalBorrowAssets,,,) = morpho.market(id);
+        uint256 expectedTotalBorrowAssets = morpho.market(id).totalBorrowAssets;
         assertEq(morpho.totalBorrowAssets(id), expectedTotalBorrowAssets);
     }
 
@@ -100,21 +98,21 @@ contract MorphoLibTest is BaseTest {
     {
         _testMorphoLibCommon(amountSupplied, amountBorrowed, timestamp, fee);
 
-        (,,, uint256 expectedTotalBorrowShares,,) = morpho.market(id);
+        uint256 expectedTotalBorrowShares = morpho.market(id).totalBorrowShares;
         assertEq(morpho.totalBorrowShares(id), expectedTotalBorrowShares);
     }
 
     function testLastUpdate(uint256 amountSupplied, uint256 amountBorrowed, uint256 timestamp, uint256 fee) public {
         _testMorphoLibCommon(amountSupplied, amountBorrowed, timestamp, fee);
 
-        (,,,, uint256 expectedLastUpdate,) = morpho.market(id);
+        uint256 expectedLastUpdate = morpho.market(id).lastUpdate;
         assertEq(morpho.lastUpdate(id), expectedLastUpdate);
     }
 
     function testFee(uint256 amountSupplied, uint256 amountBorrowed, uint256 timestamp, uint256 fee) public {
         _testMorphoLibCommon(amountSupplied, amountBorrowed, timestamp, fee);
 
-        (,,,,, uint256 expectedFee) = morpho.market(id);
+        uint256 expectedFee = morpho.market(id).fee;
         assertEq(morpho.fee(id), expectedFee);
     }
 }
