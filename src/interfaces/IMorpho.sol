@@ -295,8 +295,8 @@ interface IMorphoBase {
 /// @dev Consider using the IMorpho interface instead of this one.
 interface IMorphoStaticTyping is IMorphoBase {
     /// @notice The state of the position of `user` on the market corresponding to `id`.
-    /// @dev Warning: For `feeRecipient`, `supplyShares` does not contain the additional shares accrued since the last
-    /// interest accrual.
+    /// @dev Warning: For `feeRecipient`, `supplyShares` does not contain the accrued shares since the last interest
+    /// accrual.
     function position(Id id, address user)
         external
         view
@@ -305,8 +305,8 @@ interface IMorphoStaticTyping is IMorphoBase {
     /// @notice The state of the market corresponding to `id`.
     /// @dev Warning: `totalSupplyAssets` does not contain the accrued interest since the last interest accrual.
     /// @dev Warning: `totalBorrowAssets` does not contain the accrued interest since the last interest accrual.
-    /// @dev Warning: `totalSupplyShares` does not contain the additional shares accrued by `feeRecipient` since the
-    /// last interest accrual.
+    /// @dev Warning: `totalSupplyShares` does not contain the accrued shares by `feeRecipient` since the last interest
+    /// accrual.
     function market(Id id)
         external
         view
@@ -326,14 +326,14 @@ interface IMorphoStaticTyping is IMorphoBase {
 /// @dev Use this interface for Morpho to have access to all the functions with the appropriate function signatures.
 interface IMorpho is IMorphoBase {
     /// @notice The state of the position of `user` on the market corresponding to `id`.
-    /// @dev Warning: For `feeRecipient`, `supplyShares` does not contain the additional shares accrued since the last
-    /// interest accrual.
-    function position(Id id, address user) external view returns (Position memory);
+    /// @dev Warning: For `feeRecipient`, `p.supplyShares` does not contain the accrued shares since the last interest
+    /// accrual.
+    function position(Id id, address user) external view returns (Position memory p);
 
     /// @notice The state of the market corresponding to `id`.
-    /// @dev Warning: `totalSupplyAssets` does not contain the accrued interest since the last interest accrual.
-    /// @dev Warning: `totalBorrowAssets` does not contain the accrued interest since the last interest accrual.
-    /// @dev Warning: `totalSupplyShares` does not contain the additional shares accrued by `feeRecipient` since the
-    /// last interest accrual.
-    function market(Id id) external view returns (Market memory);
+    /// @dev Warning: `m.totalSupplyAssets` does not contain the accrued interest since the last interest accrual.
+    /// @dev Warning: `m.totalBorrowAssets` does not contain the accrued interest since the last interest accrual.
+    /// @dev Warning: `m.totalSupplyShares` does not contain the accrued shares by `feeRecipient` since the last
+    /// interest accrual.
+    function market(Id id) external view returns (Market memory m);
 }
