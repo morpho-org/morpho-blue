@@ -46,11 +46,9 @@ struct Signature {
     bytes32 s;
 }
 
-/// @title IMorpho
-/// @author Morpho Labs
-/// @custom:contact security@morpho.org
-/// @notice Interface of Morpho.
-interface IMorpho {
+/// @dev This interface is used for factorizing IMorphoStaticTyping and IMorpho.
+/// @dev Consider using the IMorpho interface instead of this one.
+interface IMorphoBase {
     /// @notice The EIP-712 domain separator.
     /// @dev Warning: Every EIP-712 signed message based on this domain separator can be reused on another chain sharing
     /// the same chain id because the domain separator would be the same.
@@ -65,31 +63,6 @@ interface IMorpho {
     /// @notice The fee recipient of all markets.
     /// @dev The recipient receives the fees of a given market through a supply position on that market.
     function feeRecipient() external view returns (address);
-
-    /// @notice The state of the position of `user` on the market corresponding to `id`.
-    /// @dev Warning: For `feeRecipient`, `supplyShares` does not contain the additional shares accrued since the last
-    /// interest accrual.
-    function position(Id id, address user)
-        external
-        view
-        returns (uint256 supplyShares, uint128 borrowShares, uint128 collateral);
-
-    /// @notice The state of the market corresponding to `id`.
-    /// @dev Warning: `totalSupplyAssets` does not contain the accrued interest since the last interest accrual.
-    /// @dev Warning: `totalBorrowAssets` does not contain the accrued interest since the last interest accrual.
-    /// @dev Warning: `totalSupplyShares` does not contain the additional shares accrued by `feeRecipient` since the
-    /// last interest accrual.
-    function market(Id id)
-        external
-        view
-        returns (
-            uint128 totalSupplyAssets,
-            uint128 totalSupplyShares,
-            uint128 totalBorrowAssets,
-            uint128 totalBorrowShares,
-            uint128 lastUpdate,
-            uint128 fee
-        );
 
     /// @notice Whether the `irm` is enabled.
     function isIrmEnabled(address irm) external view returns (bool);
@@ -316,4 +289,51 @@ interface IMorpho {
 
     /// @notice Returns the data stored on the different `slots`.
     function extSloads(bytes32[] memory slots) external view returns (bytes32[] memory);
+}
+
+/// @dev This interface is inherited by Morpho so that function signatures are checked by the compiler.
+/// @dev Consider using the IMorpho interface instead of this one.
+interface IMorphoStaticTyping is IMorphoBase {
+    /// @notice The state of the position of `user` on the market corresponding to `id`.
+    /// @dev Warning: For `feeRecipient`, `supplyShares` does not contain the additional shares accrued since the last
+    /// interest accrual.
+    function position(Id id, address user)
+        external
+        view
+        returns (uint256 supplyShares, uint128 borrowShares, uint128 collateral);
+
+    /// @notice The state of the market corresponding to `id`.
+    /// @dev Warning: `totalSupplyAssets` does not contain the accrued interest since the last interest accrual.
+    /// @dev Warning: `totalBorrowAssets` does not contain the accrued interest since the last interest accrual.
+    /// @dev Warning: `totalSupplyShares` does not contain the additional shares accrued by `feeRecipient` since the
+    /// last interest accrual.
+    function market(Id id)
+        external
+        view
+        returns (
+            uint128 totalSupplyAssets,
+            uint128 totalSupplyShares,
+            uint128 totalBorrowAssets,
+            uint128 totalBorrowShares,
+            uint128 lastUpdate,
+            uint128 fee
+        );
+}
+
+/// @title IMorpho
+/// @author Morpho Labs
+/// @custom:contact security@morpho.org
+/// @dev Use this interface for Morpho to have access to all the functions with the appropriate function signatures.
+interface IMorpho is IMorphoBase {
+    /// @notice The state of the position of `user` on the market corresponding to `id`.
+    /// @dev Warning: For `feeRecipient`, `supplyShares` does not contain the additional shares accrued since the last
+    /// interest accrual.
+    function position(Id id, address user) external view returns (Position memory);
+
+    /// @notice The state of the market corresponding to `id`.
+    /// @dev Warning: `totalSupplyAssets` does not contain the accrued interest since the last interest accrual.
+    /// @dev Warning: `totalBorrowAssets` does not contain the accrued interest since the last interest accrual.
+    /// @dev Warning: `totalSupplyShares` does not contain the additional shares accrued by `feeRecipient` since the
+    /// last interest accrual.
+    function market(Id id) external view returns (Market memory);
 }

@@ -1,7 +1,16 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.19;
 
-import {Id, IMorpho, MarketParams, Position, Market, Authorization, Signature} from "./interfaces/IMorpho.sol";
+import {
+    Id,
+    IMorphoStaticTyping,
+    IMorphoBase,
+    MarketParams,
+    Position,
+    Market,
+    Authorization,
+    Signature
+} from "./interfaces/IMorpho.sol";
 import {
     IMorphoLiquidateCallback,
     IMorphoRepayCallback,
@@ -26,7 +35,7 @@ import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
 /// @author Morpho Labs
 /// @custom:contact security@morpho.org
 /// @notice The Morpho contract.
-contract Morpho is IMorpho {
+contract Morpho is IMorphoStaticTyping {
     using MathLib for uint128;
     using MathLib for uint256;
     using UtilsLib for uint256;
@@ -36,28 +45,28 @@ contract Morpho is IMorpho {
 
     /* IMMUTABLES */
 
-    /// @inheritdoc IMorpho
+    /// @inheritdoc IMorphoBase
     bytes32 public immutable DOMAIN_SEPARATOR;
 
     /* STORAGE */
 
-    /// @inheritdoc IMorpho
+    /// @inheritdoc IMorphoBase
     address public owner;
-    /// @inheritdoc IMorpho
+    /// @inheritdoc IMorphoBase
     address public feeRecipient;
-    /// @inheritdoc IMorpho
+    /// @inheritdoc IMorphoStaticTyping
     mapping(Id => mapping(address => Position)) public position;
-    /// @inheritdoc IMorpho
+    /// @inheritdoc IMorphoStaticTyping
     mapping(Id => Market) public market;
-    /// @inheritdoc IMorpho
+    /// @inheritdoc IMorphoBase
     mapping(address => bool) public isIrmEnabled;
-    /// @inheritdoc IMorpho
+    /// @inheritdoc IMorphoBase
     mapping(uint256 => bool) public isLltvEnabled;
-    /// @inheritdoc IMorpho
+    /// @inheritdoc IMorphoBase
     mapping(address => mapping(address => bool)) public isAuthorized;
-    /// @inheritdoc IMorpho
+    /// @inheritdoc IMorphoBase
     mapping(address => uint256) public nonce;
-    /// @inheritdoc IMorpho
+    /// @inheritdoc IMorphoBase
     mapping(Id => MarketParams) public idToMarketParams;
 
     /* CONSTRUCTOR */
@@ -82,7 +91,7 @@ contract Morpho is IMorpho {
 
     /* ONLY OWNER FUNCTIONS */
 
-    /// @inheritdoc IMorpho
+    /// @inheritdoc IMorphoBase
     function setOwner(address newOwner) external onlyOwner {
         require(newOwner != owner, ErrorsLib.ALREADY_SET);
 
@@ -91,7 +100,7 @@ contract Morpho is IMorpho {
         emit EventsLib.SetOwner(newOwner);
     }
 
-    /// @inheritdoc IMorpho
+    /// @inheritdoc IMorphoBase
     function enableIrm(address irm) external onlyOwner {
         require(!isIrmEnabled[irm], ErrorsLib.ALREADY_SET);
 
@@ -100,7 +109,7 @@ contract Morpho is IMorpho {
         emit EventsLib.EnableIrm(irm);
     }
 
-    /// @inheritdoc IMorpho
+    /// @inheritdoc IMorphoBase
     function enableLltv(uint256 lltv) external onlyOwner {
         require(!isLltvEnabled[lltv], ErrorsLib.ALREADY_SET);
         require(lltv < WAD, ErrorsLib.MAX_LLTV_EXCEEDED);
@@ -110,7 +119,7 @@ contract Morpho is IMorpho {
         emit EventsLib.EnableLltv(lltv);
     }
 
-    /// @inheritdoc IMorpho
+    /// @inheritdoc IMorphoBase
     function setFee(MarketParams memory marketParams, uint256 newFee) external onlyOwner {
         Id id = marketParams.id();
         require(market[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
@@ -126,7 +135,7 @@ contract Morpho is IMorpho {
         emit EventsLib.SetFee(id, newFee);
     }
 
-    /// @inheritdoc IMorpho
+    /// @inheritdoc IMorphoBase
     function setFeeRecipient(address newFeeRecipient) external onlyOwner {
         require(newFeeRecipient != feeRecipient, ErrorsLib.ALREADY_SET);
 
@@ -137,7 +146,7 @@ contract Morpho is IMorpho {
 
     /* MARKET CREATION */
 
-    /// @inheritdoc IMorpho
+    /// @inheritdoc IMorphoBase
     function createMarket(MarketParams memory marketParams) external {
         Id id = marketParams.id();
         require(isIrmEnabled[marketParams.irm], ErrorsLib.IRM_NOT_ENABLED);
@@ -153,7 +162,7 @@ contract Morpho is IMorpho {
 
     /* SUPPLY MANAGEMENT */
 
-    /// @inheritdoc IMorpho
+    /// @inheritdoc IMorphoBase
     function supply(
         MarketParams memory marketParams,
         uint256 assets,
@@ -184,7 +193,7 @@ contract Morpho is IMorpho {
         return (assets, shares);
     }
 
-    /// @inheritdoc IMorpho
+    /// @inheritdoc IMorphoBase
     function withdraw(
         MarketParams memory marketParams,
         uint256 assets,
@@ -219,7 +228,7 @@ contract Morpho is IMorpho {
 
     /* BORROW MANAGEMENT */
 
-    /// @inheritdoc IMorpho
+    /// @inheritdoc IMorphoBase
     function borrow(
         MarketParams memory marketParams,
         uint256 assets,
@@ -253,7 +262,7 @@ contract Morpho is IMorpho {
         return (assets, shares);
     }
 
-    /// @inheritdoc IMorpho
+    /// @inheritdoc IMorphoBase
     function repay(
         MarketParams memory marketParams,
         uint256 assets,
@@ -287,7 +296,7 @@ contract Morpho is IMorpho {
 
     /* COLLATERAL MANAGEMENT */
 
-    /// @inheritdoc IMorpho
+    /// @inheritdoc IMorphoBase
     function supplyCollateral(MarketParams memory marketParams, uint256 assets, address onBehalf, bytes calldata data)
         external
     {
@@ -307,7 +316,7 @@ contract Morpho is IMorpho {
         IERC20(marketParams.collateralToken).safeTransferFrom(msg.sender, address(this), assets);
     }
 
-    /// @inheritdoc IMorpho
+    /// @inheritdoc IMorphoBase
     function withdrawCollateral(MarketParams memory marketParams, uint256 assets, address onBehalf, address receiver)
         external
     {
@@ -331,7 +340,7 @@ contract Morpho is IMorpho {
 
     /* LIQUIDATION */
 
-    /// @inheritdoc IMorpho
+    /// @inheritdoc IMorphoBase
     function liquidate(
         MarketParams memory marketParams,
         address borrower,
@@ -399,7 +408,7 @@ contract Morpho is IMorpho {
 
     /* FLASH LOANS */
 
-    /// @inheritdoc IMorpho
+    /// @inheritdoc IMorphoBase
     function flashLoan(address token, uint256 assets, bytes calldata data) external {
         IERC20(token).safeTransfer(msg.sender, assets);
 
@@ -412,14 +421,14 @@ contract Morpho is IMorpho {
 
     /* AUTHORIZATION */
 
-    /// @inheritdoc IMorpho
+    /// @inheritdoc IMorphoBase
     function setAuthorization(address authorized, bool newIsAuthorized) external {
         isAuthorized[msg.sender][authorized] = newIsAuthorized;
 
         emit EventsLib.SetAuthorization(msg.sender, msg.sender, authorized, newIsAuthorized);
     }
 
-    /// @inheritdoc IMorpho
+    /// @inheritdoc IMorphoBase
     function setAuthorizationWithSig(Authorization memory authorization, Signature calldata signature) external {
         require(block.timestamp <= authorization.deadline, ErrorsLib.SIGNATURE_EXPIRED);
         require(authorization.nonce == nonce[authorization.authorizer]++, ErrorsLib.INVALID_NONCE);
@@ -517,7 +526,7 @@ contract Morpho is IMorpho {
 
     /* STORAGE VIEW */
 
-    /// @inheritdoc IMorpho
+    /// @inheritdoc IMorphoBase
     function extSloads(bytes32[] calldata slots) external view returns (bytes32[] memory res) {
         uint256 nSlots = slots.length;
 
