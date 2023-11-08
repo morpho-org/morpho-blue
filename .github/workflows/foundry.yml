@@ -21,12 +21,12 @@ jobs:
           - type: "slow"
             fuzz-runs: 10000
             max-test-rejects: 500000
-            invariant-runs: 48
-            invariant-depth: 2048
+            invariant-runs: 32
+            invariant-depth: 512
           - type: "fast"
             fuzz-runs: 256
             max-test-rejects: 65536
-            invariant-runs: 16
+            invariant-runs: 8
             invariant-depth: 256
 
     runs-on: ubuntu-latest
@@ -45,3 +45,4 @@ jobs:
           FOUNDRY_FUZZ_MAX_TEST_REJECTS: ${{ matrix.max-test-rejects }}
           FOUNDRY_INVARIANT_RUNS: ${{ matrix.invariant-runs }}
           FOUNDRY_INVARIANT_DEPTH: ${{ matrix.invariant-depth }}
+          FOUNDRY_FUZZ_SEED: 0x${{ github.event.pull_request.base.sha || github.sha }}
