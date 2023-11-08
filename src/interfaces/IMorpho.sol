@@ -106,7 +106,7 @@ interface IMorpho {
         view
         returns (address loanToken, address collateralToken, address oracle, address irm, uint256 lltv);
 
-    /// @notice Sets `newOwner` as owner of the contract.
+    /// @notice Sets `newOwner` as `owner` of the contract.
     /// @dev Warning: No two-step transfer ownership.
     /// @dev Warning: The owner can be set to the zero address.
     function setOwner(address newOwner) external;
@@ -123,10 +123,10 @@ interface IMorpho {
     /// @dev Warning: The recipient can be the zero address.
     function setFee(MarketParams memory marketParams, uint256 newFee) external;
 
-    /// @notice Sets `newFeeRecipient` as recipient of the fee.
-    /// @dev Warning: The fee recipient can be set to the zero address.
-    /// @dev Warning: The fee to be accrued on each market won't belong to the old fee recipient after calling this
-    /// function.
+    /// @notice Sets `newFeeRecipient` as `feeRecipient` of the fee.
+    /// @dev Warning: If the fee recipient is set to the zero address, fees will accrue there and will be lost.
+    /// @dev Modifying the fee recipient will allow the new recipient to claim any pending fees not yet accrued. To
+    /// ensure that the current recipient receives all due fees, accrue interest manually prior to making any changes.
     function setFeeRecipient(address newFeeRecipient) external;
 
     /// @notice Creates the market `marketParams`.
@@ -177,6 +177,8 @@ interface IMorpho {
     /// @dev Either `assets` or `shares` should be zero. To withdraw max, pass the `shares`'s balance of `onBehalf`.
     /// @dev `msg.sender` must be authorized to manage `onBehalf`'s positions.
     /// @dev Withdrawing an amount corresponding to more shares than supplied will revert for underflow.
+    /// @dev It is advised to use the `shares` input when withdrawing the full position to avoid reverts due to
+    /// conversion roundings between shares and assets.
     /// @param marketParams The market to withdraw assets from.
     /// @param assets The amount of assets to withdraw.
     /// @param shares The amount of shares to burn.
@@ -217,6 +219,8 @@ interface IMorpho {
     /// `onMorphoReplay` function with the given `data`.
     /// @dev Either `assets` or `shares` should be zero. To repay max, pass the `shares`'s balance of `onBehalf`.
     /// @dev Repaying an amount corresponding to more shares than borrowed will revert for underflow.
+    /// @dev It is advised to use the `shares` input when repaying the full position to avoid reverts due to conversion
+    /// roundings between shares and assets.
     /// @param marketParams The market to repay assets to.
     /// @param assets The amount of assets to repay.
     /// @param shares The amount of shares to burn.
@@ -277,6 +281,10 @@ interface IMorpho {
     /// @notice Executes a flash loan.
     /// @dev Flash loans have access to the whole balance of the contract (the liquidity and deposited collateral of all
     /// markets combined, plus donations).
+    /// @dev Warning: Not ERC-3156 compliant but compatibility is easily reached:
+    /// - `flashFee` is zero.
+    /// - `maxFlashLoan` is the token's balance of this contract.
+    /// - The receiver of `assets` is the caller.
     /// @param token The token to flash loan.
     /// @param assets The amount of assets to flash loan.
     /// @param data Arbitrary data to pass to the `onMorphoFlashLoan` callback.
