@@ -146,13 +146,14 @@ interface IMorphoBase {
     /// @param data Arbitrary data to pass to the `onMorphoSupply` callback. Pass empty data if not needed.
     /// @return assetsSupplied The amount of assets supplied.
     /// @return sharesSupplied The amount of shares minted.
+    /// @return returnData The data returned by the callback.
     function supply(
         MarketParams memory marketParams,
         uint256 assets,
         uint256 shares,
         address onBehalf,
         bytes memory data
-    ) external returns (uint256 assetsSupplied, uint256 sharesSupplied);
+    ) external returns (uint256 assetsSupplied, uint256 sharesSupplied, bytes memory returnData);
 
     /// @notice Withdraws `assets` or `shares` on behalf of `onBehalf` to `receiver`.
     /// @dev Either `assets` or `shares` should be zero. To withdraw max, pass the `shares`'s balance of `onBehalf`.
@@ -209,13 +210,14 @@ interface IMorphoBase {
     /// @param data Arbitrary data to pass to the `onMorphoRepay` callback. Pass empty data if not needed.
     /// @return assetsRepaid The amount of assets repaid.
     /// @return sharesRepaid The amount of shares burned.
+    /// @return returnData The data returned by the callback.
     function repay(
         MarketParams memory marketParams,
         uint256 assets,
         uint256 shares,
         address onBehalf,
         bytes memory data
-    ) external returns (uint256 assetsRepaid, uint256 sharesRepaid);
+    ) external returns (uint256 assetsRepaid, uint256 sharesRepaid, bytes memory returnData);
 
     /// @notice Supplies `assets` of collateral on behalf of `onBehalf`, optionally calling back the caller's
     /// `onMorphoSupplyCollateral` function with the given `data`.
@@ -225,8 +227,10 @@ interface IMorphoBase {
     /// @param assets The amount of collateral to supply.
     /// @param onBehalf The address that will own the increased collateral position.
     /// @param data Arbitrary data to pass to the `onMorphoSupplyCollateral` callback. Pass empty data if not needed.
+    /// @return returnData The data returned by the callback.
     function supplyCollateral(MarketParams memory marketParams, uint256 assets, address onBehalf, bytes memory data)
-        external;
+        external
+        returns (bytes memory returnData);
 
     /// @notice Withdraws `assets` of collateral on behalf of `onBehalf` to `receiver`.
     /// @dev `msg.sender` must be authorized to manage `onBehalf`'s positions.
@@ -251,13 +255,14 @@ interface IMorphoBase {
     /// @param data Arbitrary data to pass to the `onMorphoLiquidate` callback. Pass empty data if not needed.
     /// @return The amount of assets seized.
     /// @return The amount of assets repaid.
+    /// @return The data returned by the callback.
     function liquidate(
         MarketParams memory marketParams,
         address borrower,
         uint256 seizedAssets,
         uint256 repaidShares,
         bytes memory data
-    ) external returns (uint256, uint256);
+    ) external returns (uint256, uint256, bytes memory);
 
     /// @notice Executes a flash loan.
     /// @dev Flash loans have access to the whole balance of the contract (the liquidity and deposited collateral of all

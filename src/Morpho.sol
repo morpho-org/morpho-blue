@@ -169,7 +169,7 @@ contract Morpho is IMorphoStaticTyping {
         uint256 shares,
         address onBehalf,
         bytes calldata data
-    ) external returns (uint256, uint256) {
+    ) external returns (uint256, uint256, bytes memory) {
         Id id = marketParams.id();
         require(market[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
         require(UtilsLib.exactlyOneZero(assets, shares), ErrorsLib.INCONSISTENT_INPUT);
@@ -186,11 +186,13 @@ contract Morpho is IMorphoStaticTyping {
 
         emit EventsLib.Supply(id, msg.sender, onBehalf, assets, shares);
 
-        if (data.length > 0) IMorphoSupplyCallback(msg.sender).onMorphoSupply(assets, data);
+        bytes memory returnData;
+
+        if (data.length > 0) returnData = IMorphoSupplyCallback(msg.sender).onMorphoSupply(assets, data);
 
         IERC20(marketParams.loanToken).safeTransferFrom(msg.sender, address(this), assets);
 
-        return (assets, shares);
+        return (assets, shares, returnData);
     }
 
     /// @inheritdoc IMorphoBase
@@ -269,7 +271,7 @@ contract Morpho is IMorphoStaticTyping {
         uint256 shares,
         address onBehalf,
         bytes calldata data
-    ) external returns (uint256, uint256) {
+    ) external returns (uint256, uint256, bytes memory) {
         Id id = marketParams.id();
         require(market[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
         require(UtilsLib.exactlyOneZero(assets, shares), ErrorsLib.INCONSISTENT_INPUT);
@@ -287,11 +289,13 @@ contract Morpho is IMorphoStaticTyping {
         // `assets` may be greater than `totalBorrowAssets` by 1.
         emit EventsLib.Repay(id, msg.sender, onBehalf, assets, shares);
 
-        if (data.length > 0) IMorphoRepayCallback(msg.sender).onMorphoRepay(assets, data);
+        bytes memory returnData;
+
+        if (data.length > 0) returnData = IMorphoRepayCallback(msg.sender).onMorphoRepay(assets, data);
 
         IERC20(marketParams.loanToken).safeTransferFrom(msg.sender, address(this), assets);
 
-        return (assets, shares);
+        return (assets, shares, returnData);
     }
 
     /* COLLATERAL MANAGEMENT */
@@ -299,6 +303,7 @@ contract Morpho is IMorphoStaticTyping {
     /// @inheritdoc IMorphoBase
     function supplyCollateral(MarketParams memory marketParams, uint256 assets, address onBehalf, bytes calldata data)
         external
+        returns (bytes memory returnData)
     {
         Id id = marketParams.id();
         require(market[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
@@ -311,7 +316,9 @@ contract Morpho is IMorphoStaticTyping {
 
         emit EventsLib.SupplyCollateral(id, msg.sender, onBehalf, assets);
 
-        if (data.length > 0) IMorphoSupplyCollateralCallback(msg.sender).onMorphoSupplyCollateral(assets, data);
+        if (data.length > 0) {
+            returnData = IMorphoSupplyCollateralCallback(msg.sender).onMorphoSupplyCollateral(assets, data);
+        }
 
         IERC20(marketParams.collateralToken).safeTransferFrom(msg.sender, address(this), assets);
     }
@@ -347,7 +354,7 @@ contract Morpho is IMorphoStaticTyping {
         uint256 seizedAssets,
         uint256 repaidShares,
         bytes calldata data
-    ) external returns (uint256, uint256) {
+    ) external returns (uint256, uint256, bytes memory) {
         Id id = marketParams.id();
         require(market[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
         require(UtilsLib.exactlyOneZero(seizedAssets, repaidShares), ErrorsLib.INCONSISTENT_INPUT);
@@ -403,11 +410,13 @@ contract Morpho is IMorphoStaticTyping {
         // `repaidAssets` may be greater than `totalBorrowAssets` by 1.
         emit EventsLib.Liquidate(id, msg.sender, borrower, repaidAssets, repaidShares, seizedAssets, badDebtShares);
 
-        if (data.length > 0) IMorphoLiquidateCallback(msg.sender).onMorphoLiquidate(repaidAssets, data);
+        bytes memory returnData;
+
+        if (data.length > 0) returnData = IMorphoLiquidateCallback(msg.sender).onMorphoLiquidate(repaidAssets, data);
 
         IERC20(marketParams.loanToken).safeTransferFrom(msg.sender, address(this), repaidAssets);
 
-        return (seizedAssets, repaidAssets);
+        return (seizedAssets, repaidAssets, returnData);
     }
 
     /* FLASH LOANS */

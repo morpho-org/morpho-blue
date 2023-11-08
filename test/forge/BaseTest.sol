@@ -48,6 +48,8 @@ contract BaseTest is Test {
     address internal OWNER;
     address internal FEE_RECIPIENT;
 
+    bytes internal RETURN_DATA;
+
     IMorpho internal morpho;
     ERC20Mock internal loanToken;
     ERC20Mock internal collateralToken;
@@ -66,6 +68,8 @@ contract BaseTest is Test {
         LIQUIDATOR = makeAddr("Liquidator");
         OWNER = makeAddr("Owner");
         FEE_RECIPIENT = makeAddr("FeeRecipient");
+
+        RETURN_DATA = abi.encode(keccak256(abi.encode("Return data")));
 
         morpho = IMorpho(address(new Morpho(OWNER)));
 
