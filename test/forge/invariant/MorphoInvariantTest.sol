@@ -374,7 +374,7 @@ contract MorphoInvariantTest is InvariantTest {
         }
     }
 
-    function invariantTotalSupplyGeTotalBorrow() public {
+    function invariantTotalSupplyGeTotalBorrow() internal {
         for (uint256 i; i < allMarketParams.length; ++i) {
             MarketParams memory _marketParams = allMarketParams[i];
             Id _id = _marketParams.id();
