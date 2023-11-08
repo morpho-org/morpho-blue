@@ -142,7 +142,6 @@ contract Morpho is IMorpho {
         require(isLltvEnabled[marketParams.lltv], ErrorsLib.LLTV_NOT_ENABLED);
         require(market[id].lastUpdate == 0, ErrorsLib.MARKET_ALREADY_CREATED);
 
-        // Safe "unchecked" cast.
         market[id].lastUpdate = block.timestamp.toUint128();
         idToMarketParams[id] = marketParams;
 
@@ -376,7 +375,6 @@ contract Morpho is IMorpho {
         uint256 badDebtShares;
         if (position[id][borrower].collateral == 0) {
             badDebtShares = position[id][borrower].borrowShares;
-            // Safe "unchecked" cast since the value is smaller than totalBorrowAssets.
             uint256 badDebt = UtilsLib.min(
                 market[id].totalBorrowAssets,
                 badDebtShares.toAssetsUp(market[id].totalBorrowAssets, market[id].totalBorrowShares)
@@ -475,7 +473,6 @@ contract Morpho is IMorpho {
             emit EventsLib.AccrueInterest(id, borrowRate, interest, feeShares);
         }
 
-        // Safe "unchecked" cast.
         market[id].lastUpdate = block.timestamp.toUint128();
     }
 
