@@ -187,7 +187,6 @@ contract Morpho is IMorphoStaticTyping {
         emit EventsLib.Supply(id, msg.sender, onBehalf, assets, shares);
 
         bytes memory returnData;
-
         if (data.length > 0) returnData = IMorphoSupplyCallback(msg.sender).onMorphoSupply(assets, data);
 
         IERC20(marketParams.loanToken).safeTransferFrom(msg.sender, address(this), assets);
@@ -290,7 +289,6 @@ contract Morpho is IMorphoStaticTyping {
         emit EventsLib.Repay(id, msg.sender, onBehalf, assets, shares);
 
         bytes memory returnData;
-
         if (data.length > 0) returnData = IMorphoRepayCallback(msg.sender).onMorphoRepay(assets, data);
 
         IERC20(marketParams.loanToken).safeTransferFrom(msg.sender, address(this), assets);
@@ -411,7 +409,6 @@ contract Morpho is IMorphoStaticTyping {
         emit EventsLib.Liquidate(id, msg.sender, borrower, repaidAssets, repaidShares, seizedAssets, badDebtShares);
 
         bytes memory returnData;
-
         if (data.length > 0) returnData = IMorphoLiquidateCallback(msg.sender).onMorphoLiquidate(repaidAssets, data);
 
         IERC20(marketParams.loanToken).safeTransferFrom(msg.sender, address(this), repaidAssets);
