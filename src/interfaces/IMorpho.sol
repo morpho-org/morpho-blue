@@ -50,8 +50,8 @@ struct Signature {
 /// @dev Consider using the IMorpho interface instead of this one.
 interface IMorphoBase {
     /// @notice The EIP-712 domain separator.
-    /// @dev Warning: In case of a hardfork, every EIP-712 signed message based on this domain separator can be reused
-    /// on the forked chain because the domain separator would be the same.
+    /// @dev Warning: Every EIP-712 signed message based on this domain separator can be reused on another chain sharing
+    /// the same chain id because the domain separator would be the same.
     function DOMAIN_SEPARATOR() external view returns (bytes32);
 
     /// @notice The owner of the contract.
@@ -118,6 +118,7 @@ interface IMorphoBase {
     /// - The token balance of the sender (resp. receiver) should decrease (resp. increase) by exactly the given amount
     /// on `transfer` and `transferFrom`. In particular, tokens with fees on transfer are not supported.
     /// - The IRM should not re-enter Morpho.
+    /// - The oracle should return a price with the correct scaling.
     /// @dev Here is a list of properties on the market's dependencies that could break Morpho's liveness properties
     /// (funds could get stuck):
     /// - The token can revert on `transfer` and `transferFrom` for a reason other than an approval or balance issue.
@@ -294,12 +295,18 @@ interface IMorphoBase {
 /// @dev Consider using the IMorpho interface instead of this one.
 interface IMorphoStaticTyping is IMorphoBase {
     /// @notice The state of the position of `user` on the market corresponding to `id`.
+    /// @dev Warning: For `feeRecipient`, `supplyShares` does not contain the accrued shares since the last interest
+    /// accrual.
     function position(Id id, address user)
         external
         view
         returns (uint256 supplyShares, uint128 borrowShares, uint128 collateral);
 
     /// @notice The state of the market corresponding to `id`.
+    /// @dev Warning: `totalSupplyAssets` does not contain the accrued interest since the last interest accrual.
+    /// @dev Warning: `totalBorrowAssets` does not contain the accrued interest since the last interest accrual.
+    /// @dev Warning: `totalSupplyShares` does not contain the accrued shares by `feeRecipient` since the last interest
+    /// accrual.
     function market(Id id)
         external
         view
@@ -319,8 +326,14 @@ interface IMorphoStaticTyping is IMorphoBase {
 /// @dev Use this interface for Morpho to have access to all the functions with the appropriate function signatures.
 interface IMorpho is IMorphoBase {
     /// @notice The state of the position of `user` on the market corresponding to `id`.
-    function position(Id id, address user) external view returns (Position memory);
+    /// @dev Warning: For `feeRecipient`, `p.supplyShares` does not contain the accrued shares since the last interest
+    /// accrual.
+    function position(Id id, address user) external view returns (Position memory p);
 
     /// @notice The state of the market corresponding to `id`.
-    function market(Id id) external view returns (Market memory);
+    /// @dev Warning: `m.totalSupplyAssets` does not contain the accrued interest since the last interest accrual.
+    /// @dev Warning: `m.totalBorrowAssets` does not contain the accrued interest since the last interest accrual.
+    /// @dev Warning: `m.totalSupplyShares` does not contain the accrued shares by `feeRecipient` since the last
+    /// interest accrual.
+    function market(Id id) external view returns (Market memory m);
 }
