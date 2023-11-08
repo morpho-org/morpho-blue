@@ -296,4 +296,24 @@ contract LiquidateIntegrationTest is BaseTest {
             morpho.totalSupplyAssets(id), params.totalSupplyBeforeLiquidation - params.expectedBadDebt, "total supply"
         );
     }
+
+    function testBadDebtOverTotalBorrowAssets() public {
+        uint256 collateralAmount = 10 ether;
+        uint256 loanAmount = 1 ether;
+        _supply(loanAmount);
+
+        collateralToken.setBalance(BORROWER, collateralAmount);
+        vm.startPrank(BORROWER);
+        morpho.supplyCollateral(marketParams, collateralAmount, BORROWER, hex"");
+        morpho.borrow(marketParams, loanAmount, 0, BORROWER, BORROWER);
+        // Trick to inflate shares, so that the computed bad debt is greater than the total debt of the market.
+        morpho.borrow(marketParams, 0, 1, BORROWER, BORROWER);
+        vm.stopPrank();
+
+        oracle.setPrice(1e36 / 100);
+
+        loanToken.setBalance(LIQUIDATOR, loanAmount);
+        vm.prank(LIQUIDATOR);
+        morpho.liquidate(marketParams, BORROWER, collateralAmount, 0, hex"");
+    }
 }

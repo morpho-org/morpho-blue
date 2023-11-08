@@ -387,9 +387,13 @@ contract Morpho is IMorphoStaticTyping {
         uint256 badDebtShares;
         if (position[id][borrower].collateral == 0) {
             badDebtShares = position[id][borrower].borrowShares;
-            uint256 badDebt = badDebtShares.toAssetsUp(market[id].totalBorrowAssets, market[id].totalBorrowShares);
-            market[id].totalSupplyAssets -= badDebt.toUint128();
+            uint256 badDebt = UtilsLib.min(
+                market[id].totalBorrowAssets,
+                badDebtShares.toAssetsUp(market[id].totalBorrowAssets, market[id].totalBorrowShares)
+            );
+
             market[id].totalBorrowAssets -= badDebt.toUint128();
+            market[id].totalSupplyAssets -= badDebt.toUint128();
             market[id].totalBorrowShares -= badDebtShares.toUint128();
             position[id][borrower].borrowShares = 0;
         }
