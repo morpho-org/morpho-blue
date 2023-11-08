@@ -342,7 +342,7 @@ contract MorphoInvariantTest is InvariantTest {
 
     /* INVARIANTS */
 
-    function invariantSupplyShares() public {
+    function invariantSupplyShares() internal {
         address[] memory users = targetSenders();
 
         for (uint256 i; i < allMarketParams.length; ++i) {
@@ -358,7 +358,7 @@ contract MorphoInvariantTest is InvariantTest {
         }
     }
 
-    function invariantBorrowShares() public {
+    function invariantBorrowShares() internal {
         address[] memory users = targetSenders();
 
         for (uint256 i; i < allMarketParams.length; ++i) {
@@ -383,7 +383,7 @@ contract MorphoInvariantTest is InvariantTest {
         }
     }
 
-    function invariantMorphoBalance() public {
+    function invariantMorphoBalance() internal {
         for (uint256 i; i < allMarketParams.length; ++i) {
             MarketParams memory _marketParams = allMarketParams[i];
             Id _id = _marketParams.id();
@@ -394,7 +394,7 @@ contract MorphoInvariantTest is InvariantTest {
         }
     }
 
-    function invariantBadDebt() public {
+    function invariantBadDebt() internal {
         address[] memory users = targetSenders();
 
         for (uint256 i; i < allMarketParams.length; ++i) {
