@@ -8,7 +8,7 @@ interface IMorphoLiquidateCallback {
     /// @dev The callback is called only if data is not empty.
     /// @param repaidAssets The amount of repaid assets.
     /// @param data Arbitrary data passed to the `liquidate` function.
-    /// @return returnData The data returned by the callback.
+    /// @return returnData Arbitrary data returned by the callback.
     function onMorphoLiquidate(uint256 repaidAssets, bytes calldata data) external returns (bytes memory returnData);
 }
 
@@ -19,7 +19,7 @@ interface IMorphoRepayCallback {
     /// @dev The callback is called only if data is not empty.
     /// @param assets The amount of repaid assets.
     /// @param data Arbitrary data passed to the `repay` function.
-    /// @return returnData The data returned by the callback.
+    /// @return returnData Arbitrary data returned by the callback.
     function onMorphoRepay(uint256 assets, bytes calldata data) external returns (bytes memory returnData);
 }
 
@@ -30,7 +30,7 @@ interface IMorphoSupplyCallback {
     /// @dev The callback is called only if data is not empty.
     /// @param assets The amount of supplied assets.
     /// @param data Arbitrary data passed to the `supply` function.
-    /// @return returnData The data returned by the callback.
+    /// @return returnData Arbitrary data returned by the callback.
     function onMorphoSupply(uint256 assets, bytes calldata data) external returns (bytes memory returnData);
 }
 
@@ -41,7 +41,7 @@ interface IMorphoSupplyCollateralCallback {
     /// @dev The callback is called only if data is not empty.
     /// @param assets The amount of supplied collateral.
     /// @param data Arbitrary data passed to the `supplyCollateral` function.
-    /// @return returnData The data returned by the callback.
+    /// @return returnData Arbitrary data returned by the callback.
     function onMorphoSupplyCollateral(uint256 assets, bytes calldata data) external returns (bytes memory returnData);
 }
 

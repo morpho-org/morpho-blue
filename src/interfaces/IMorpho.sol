@@ -146,7 +146,7 @@ interface IMorphoBase {
     /// @param data Arbitrary data to pass to the `onMorphoSupply` callback. Pass empty data if not needed.
     /// @return assetsSupplied The amount of assets supplied.
     /// @return sharesSupplied The amount of shares minted.
-    /// @return returnData The data returned by the callback.
+    /// @return returnData Arbitrary data returned by the callback.
     function supply(
         MarketParams memory marketParams,
         uint256 assets,
@@ -210,7 +210,7 @@ interface IMorphoBase {
     /// @param data Arbitrary data to pass to the `onMorphoRepay` callback. Pass empty data if not needed.
     /// @return assetsRepaid The amount of assets repaid.
     /// @return sharesRepaid The amount of shares burned.
-    /// @return returnData The data returned by the callback.
+    /// @return returnData Arbitrary data returned by the callback.
     function repay(
         MarketParams memory marketParams,
         uint256 assets,
@@ -255,7 +255,7 @@ interface IMorphoBase {
     /// @param data Arbitrary data to pass to the `onMorphoLiquidate` callback. Pass empty data if not needed.
     /// @return The amount of assets seized.
     /// @return The amount of assets repaid.
-    /// @return The data returned by the callback.
+    /// @return Arbitrary data returned by the callback.
     function liquidate(
         MarketParams memory marketParams,
         address borrower,
