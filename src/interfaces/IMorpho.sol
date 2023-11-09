@@ -274,7 +274,8 @@ interface IMorphoBase {
     /// @param token The token to flash loan.
     /// @param assets The amount of assets to flash loan.
     /// @param data Arbitrary data to pass to the `onMorphoFlashLoan` callback.
-    function flashLoan(address token, uint256 assets, bytes calldata data) external;
+    /// @return returnData Arbitrary data returned by the callback.
+    function flashLoan(address token, uint256 assets, bytes calldata data) external returns (bytes memory returnData);
 
     /// @notice Sets the authorization for `authorized` to manage `msg.sender`'s positions.
     /// @param authorized The authorized address.
