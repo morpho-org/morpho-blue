@@ -424,7 +424,7 @@ contract Morpho is IMorphoStaticTyping {
 
         emit EventsLib.FlashLoan(msg.sender, token, assets);
 
-        returnData = IMorphoFlashLoanCallback(msg.sender).onMorphoFlashLoan(assets, data);
+        bytes memory returnData = IMorphoFlashLoanCallback(msg.sender).onMorphoFlashLoan(assets, data);
 
         IERC20(token).safeTransferFrom(msg.sender, address(this), assets);
     }

@@ -227,7 +227,7 @@ interface IMorphoBase {
     /// @param assets The amount of collateral to supply.
     /// @param onBehalf The address that will own the increased collateral position.
     /// @param data Arbitrary data to pass to the `onMorphoSupplyCollateral` callback. Pass empty data if not needed.
-    /// @return returnData The data returned by the callback.
+    /// @return returnData Arbitrary data returned by the callback.
     function supplyCollateral(MarketParams memory marketParams, uint256 assets, address onBehalf, bytes memory data)
         external
         returns (bytes memory returnData);
