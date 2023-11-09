@@ -17,16 +17,17 @@ contract CallbacksIntegrationTest is
 
     // Callback functions.
 
-    function onMorphoSupply(uint256 amount, bytes memory data) external {
+    function onMorphoSupply(uint256 amount, bytes memory data) external returns (bytes memory) {
         require(msg.sender == address(morpho));
         bytes4 selector;
         (selector, data) = abi.decode(data, (bytes4, bytes));
         if (selector == this.testSupplyCallback.selector) {
             loanToken.approve(address(morpho), amount);
         }
+        return RETURN_DATA;
     }
 
-    function onMorphoSupplyCollateral(uint256 amount, bytes memory data) external {
+    function onMorphoSupplyCollateral(uint256 amount, bytes memory data) external returns (bytes memory) {
         require(msg.sender == address(morpho));
         bytes4 selector;
         (selector, data) = abi.decode(data, (bytes4, bytes));
@@ -37,9 +38,10 @@ contract CallbacksIntegrationTest is
             collateralToken.setBalance(address(this), amount);
             morpho.borrow(marketParams, toBorrow, 0, address(this), address(this));
         }
+        return RETURN_DATA;
     }
 
-    function onMorphoRepay(uint256 amount, bytes memory data) external {
+    function onMorphoRepay(uint256 amount, bytes memory data) external returns (bytes memory) {
         require(msg.sender == address(morpho));
         bytes4 selector;
         (selector, data) = abi.decode(data, (bytes4, bytes));
@@ -49,15 +51,17 @@ contract CallbacksIntegrationTest is
             uint256 toWithdraw = abi.decode(data, (uint256));
             morpho.withdrawCollateral(marketParams, toWithdraw, address(this), address(this));
         }
+        return RETURN_DATA;
     }
 
-    function onMorphoLiquidate(uint256 repaid, bytes memory data) external {
+    function onMorphoLiquidate(uint256 repaid, bytes memory data) external returns (bytes memory) {
         require(msg.sender == address(morpho));
         bytes4 selector;
         (selector, data) = abi.decode(data, (bytes4, bytes));
         if (selector == this.testLiquidateCallback.selector) {
             loanToken.approve(address(morpho), repaid);
         }
+        return RETURN_DATA;
     }
 
     function onMorphoFlashLoan(uint256 amount, bytes memory data) external returns (bytes memory returnData) {
@@ -108,7 +112,10 @@ contract CallbacksIntegrationTest is
 
         vm.expectRevert();
         morpho.supply(marketParams, amount, 0, address(this), hex"");
-        morpho.supply(marketParams, amount, 0, address(this), abi.encode(this.testSupplyCallback.selector, hex""));
+        (,, bytes memory returnData) =
+            morpho.supply(marketParams, amount, 0, address(this), abi.encode(this.testSupplyCallback.selector, hex""));
+
+        assertEq(returnData, RETURN_DATA, "Return data");
     }
 
     function testSupplyCollateralCallback(uint256 amount) public {
@@ -119,9 +126,11 @@ contract CallbacksIntegrationTest is
 
         vm.expectRevert();
         morpho.supplyCollateral(marketParams, amount, address(this), hex"");
-        morpho.supplyCollateral(
+        bytes memory returnData = morpho.supplyCollateral(
             marketParams, amount, address(this), abi.encode(this.testSupplyCollateralCallback.selector, hex"")
         );
+
+        assertEq(returnData, RETURN_DATA, "Return data");
     }
 
     function testRepayCallback(uint256 loanAmount) public {
@@ -142,7 +151,10 @@ contract CallbacksIntegrationTest is
 
         vm.expectRevert();
         morpho.repay(marketParams, loanAmount, 0, address(this), hex"");
-        morpho.repay(marketParams, loanAmount, 0, address(this), abi.encode(this.testRepayCallback.selector, hex""));
+        (,, bytes memory returnData) =
+            morpho.repay(marketParams, loanAmount, 0, address(this), abi.encode(this.testRepayCallback.selector, hex""));
+
+        assertEq(returnData, RETURN_DATA, "Return data");
     }
 
     function testLiquidateCallback(uint256 loanAmount) public {
@@ -166,9 +178,11 @@ contract CallbacksIntegrationTest is
 
         vm.expectRevert();
         morpho.liquidate(marketParams, address(this), collateralAmount, 0, hex"");
-        morpho.liquidate(
+        (,, bytes memory returnData) = morpho.liquidate(
             marketParams, address(this), collateralAmount, 0, abi.encode(this.testLiquidateCallback.selector, hex"")
         );
+
+        assertEq(returnData, RETURN_DATA, "Return data");
     }
 
     function testFlashActions(uint256 loanAmount) public {

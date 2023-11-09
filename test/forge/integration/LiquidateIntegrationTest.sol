@@ -118,7 +118,7 @@ contract LiquidateIntegrationTest is BaseTest {
 
         vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.Liquidate(id, LIQUIDATOR, BORROWER, expectedRepaid, expectedRepaidShares, amountSeized, 0);
-        (uint256 returnSeized, uint256 returnRepaid) = morpho.liquidate(marketParams, BORROWER, amountSeized, 0, hex"");
+        (uint256 returnSeized, uint256 returnRepaid,) = morpho.liquidate(marketParams, BORROWER, amountSeized, 0, hex"");
 
         uint256 expectedCollateral = params.amountCollateral - amountSeized;
         uint256 expectedBorrowed = params.amountBorrowed - expectedRepaid;
@@ -178,7 +178,7 @@ contract LiquidateIntegrationTest is BaseTest {
 
         vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.Liquidate(id, LIQUIDATOR, BORROWER, expectedRepaid, sharesRepaid, expectedSeized, 0);
-        (uint256 returnSeized, uint256 returnRepaid) = morpho.liquidate(marketParams, BORROWER, 0, sharesRepaid, hex"");
+        (uint256 returnSeized, uint256 returnRepaid,) = morpho.liquidate(marketParams, BORROWER, 0, sharesRepaid, hex"");
 
         uint256 expectedCollateral = params.amountCollateral - expectedSeized;
         uint256 expectedBorrowed = params.amountBorrowed - expectedRepaid;
@@ -268,7 +268,7 @@ contract LiquidateIntegrationTest is BaseTest {
             amountCollateral,
             params.expectedBadDebt * SharesMathLib.VIRTUAL_SHARES
         );
-        (uint256 returnSeized, uint256 returnRepaid) =
+        (uint256 returnSeized, uint256 returnRepaid,) =
             morpho.liquidate(marketParams, BORROWER, amountCollateral, 0, hex"");
 
         assertEq(returnSeized, amountCollateral, "returned seized amount");
@@ -295,5 +295,25 @@ contract LiquidateIntegrationTest is BaseTest {
         assertEq(
             morpho.totalSupplyAssets(id), params.totalSupplyBeforeLiquidation - params.expectedBadDebt, "total supply"
         );
+    }
+
+    function testBadDebtOverTotalBorrowAssets() public {
+        uint256 collateralAmount = 10 ether;
+        uint256 loanAmount = 1 ether;
+        _supply(loanAmount);
+
+        collateralToken.setBalance(BORROWER, collateralAmount);
+        vm.startPrank(BORROWER);
+        morpho.supplyCollateral(marketParams, collateralAmount, BORROWER, hex"");
+        morpho.borrow(marketParams, loanAmount, 0, BORROWER, BORROWER);
+        // Trick to inflate shares, so that the computed bad debt is greater than the total debt of the market.
+        morpho.borrow(marketParams, 0, 1, BORROWER, BORROWER);
+        vm.stopPrank();
+
+        oracle.setPrice(1e36 / 100);
+
+        loanToken.setBalance(LIQUIDATOR, loanAmount);
+        vm.prank(LIQUIDATOR);
+        morpho.liquidate(marketParams, BORROWER, collateralAmount, 0, hex"");
     }
 }

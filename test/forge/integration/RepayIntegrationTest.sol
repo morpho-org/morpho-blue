@@ -64,7 +64,7 @@ contract RepayIntegrationTest is BaseTest {
         vm.prank(REPAYER);
         vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.Repay(id, REPAYER, ONBEHALF, amountRepaid, expectedRepaidShares);
-        (uint256 returnAssets, uint256 returnShares) = morpho.repay(marketParams, amountRepaid, 0, ONBEHALF, hex"");
+        (uint256 returnAssets, uint256 returnShares,) = morpho.repay(marketParams, amountRepaid, 0, ONBEHALF, hex"");
 
         expectedBorrowShares -= expectedRepaidShares;
 
@@ -108,7 +108,7 @@ contract RepayIntegrationTest is BaseTest {
 
         vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.Repay(id, REPAYER, ONBEHALF, expectedAmountRepaid, sharesRepaid);
-        (uint256 returnAssets, uint256 returnShares) = morpho.repay(marketParams, 0, sharesRepaid, ONBEHALF, hex"");
+        (uint256 returnAssets, uint256 returnShares,) = morpho.repay(marketParams, 0, sharesRepaid, ONBEHALF, hex"");
 
         expectedBorrowShares -= sharesRepaid;
 
