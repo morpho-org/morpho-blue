@@ -77,14 +77,6 @@ interface IMorphoBase {
     /// @notice The `authorizer`'s current nonce. Used to prevent replay attacks with EIP-712 signatures.
     function nonce(address authorizer) external view returns (uint256);
 
-    /// @notice The market params corresponding to `id`.
-    /// @dev This mapping is not used in Morpho. It is there to enable reducing the cost associated to calldata on layer
-    /// 2s by creating a wrapper contract with functions that take `id` as input instead of `marketParams`.
-    function idToMarketParams(Id id)
-        external
-        view
-        returns (address loanToken, address collateralToken, address oracle, address irm, uint256 lltv);
-
     /// @notice Sets `newOwner` as `owner` of the contract.
     /// @dev Warning: No two-step transfer ownership.
     /// @dev Warning: The owner can be set to the zero address.
@@ -318,6 +310,14 @@ interface IMorphoStaticTyping is IMorphoBase {
             uint128 lastUpdate,
             uint128 fee
         );
+
+    /// @notice The market params corresponding to `id`.
+    /// @dev This mapping is not used in Morpho. It is there to enable reducing the cost associated to calldata on layer
+    /// 2s by creating a wrapper contract with functions that take `id` as input instead of `marketParams`.
+    function idToMarketParams(Id id)
+        external
+        view
+        returns (address loanToken, address collateralToken, address oracle, address irm, uint256 lltv);
 }
 
 /// @title IMorpho
@@ -336,4 +336,9 @@ interface IMorpho is IMorphoBase {
     /// @dev Warning: `m.totalSupplyShares` does not contain the accrued shares by `feeRecipient` since the last
     /// interest accrual.
     function market(Id id) external view returns (Market memory m);
+
+    /// @notice The market params corresponding to `id`.
+    /// @dev This mapping is not used in Morpho. It is there to enable reducing the cost associated to calldata on layer
+    /// 2s by creating a wrapper contract with functions that take `id` as input instead of `marketParams`.
+    function idToMarketParams(Id id) external view returns (MarketParams memory);
 }

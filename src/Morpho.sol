@@ -66,7 +66,7 @@ contract Morpho is IMorphoStaticTyping {
     mapping(address => mapping(address => bool)) public isAuthorized;
     /// @inheritdoc IMorphoBase
     mapping(address => uint256) public nonce;
-    /// @inheritdoc IMorphoBase
+    /// @inheritdoc IMorphoStaticTyping
     mapping(Id => MarketParams) public idToMarketParams;
 
     /* CONSTRUCTOR */
