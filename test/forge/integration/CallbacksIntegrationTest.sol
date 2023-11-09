@@ -64,15 +64,15 @@ contract CallbacksIntegrationTest is
         return RETURN_DATA;
     }
 
-    function onMorphoFlashLoan(uint256 amount, bytes memory data) external returns (bytes memory returnData) {
+    function onMorphoFlashLoan(uint256 amount, bytes memory data) external returns (bytes memory) {
         require(msg.sender == address(morpho));
         bytes4 selector;
         (selector, data) = abi.decode(data, (bytes4, bytes));
         if (selector == this.testFlashLoan.selector) {
             assertEq(loanToken.balanceOf(address(this)), amount);
             loanToken.approve(address(morpho), amount);
-            returnData = "Arbitrary data!";
         }
+        return RETURN_DATA;
     }
 
     // Tests.
@@ -87,7 +87,7 @@ contract CallbacksIntegrationTest is
             morpho.flashLoan(address(loanToken), amount, abi.encode(this.testFlashLoan.selector, hex""));
 
         assertEq(loanToken.balanceOf(address(morpho)), amount, "balanceOf");
-        assertEq(returnData, "Arbitrary data!", "returnData");
+        assertEq(returnData, RETURN_DATA, "returnData");
     }
 
     function testFlashLoanShouldRevertIfNotReimbursed(uint256 amount) public {

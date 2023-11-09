@@ -69,7 +69,7 @@ contract BaseTest is Test {
         OWNER = makeAddr("Owner");
         FEE_RECIPIENT = makeAddr("FeeRecipient");
 
-        RETURN_DATA = abi.encode(keccak256(abi.encode("Return data")));
+        RETURN_DATA = abi.encode(keccak256(abi.encode("Arbitrary data!")));
 
         morpho = IMorpho(address(new Morpho(OWNER)));
 
