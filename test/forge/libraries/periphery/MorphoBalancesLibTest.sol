@@ -69,7 +69,7 @@ contract MorphoBalancesLibTest is BaseTest {
     }
 
     function testExpectedSupplyBalance(uint256 amountSupplied, uint256 amountBorrowed, uint256 timeElapsed, uint256 fee)
-        internal
+        public
     {
         _generatePendingInterest(amountSupplied, amountBorrowed, timeElapsed, fee);
 
@@ -85,7 +85,7 @@ contract MorphoBalancesLibTest is BaseTest {
     }
 
     function testExpectedBorrowBalance(uint256 amountSupplied, uint256 amountBorrowed, uint256 timeElapsed, uint256 fee)
-        internal
+        public
     {
         _generatePendingInterest(amountSupplied, amountBorrowed, timeElapsed, fee);
 
