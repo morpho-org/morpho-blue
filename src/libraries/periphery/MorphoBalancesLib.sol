@@ -41,6 +41,7 @@ library MorphoBalancesLib {
 
         uint256 elapsed = block.timestamp - market.lastUpdate;
 
+        // Skipped if elapsed == 0 of if totalBorrowAssets == 0 because interest would be null.
         if (elapsed != 0 && market.totalBorrowAssets != 0) {
             uint256 borrowRate = IIrm(marketParams.irm).borrowRateView(marketParams, market);
             uint256 interest = market.totalBorrowAssets.wMulDown(borrowRate.wTaylorCompounded(elapsed));
