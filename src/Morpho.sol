@@ -248,9 +248,11 @@ contract Morpho is IMorphoStaticTyping {
         if (assets > 0) shares = assets.toSharesUp(market[id].totalBorrowAssets, market[id].totalBorrowShares);
         else assets = shares.toAssetsDown(market[id].totalBorrowAssets, market[id].totalBorrowShares);
 
+        uint256 assetsUp = shares.toAssetsUp(market[id].totalBorrowAssets, market[id].totalBorrowShares);
+
         position[id][onBehalf].borrowShares += shares.toUint128();
         market[id].totalBorrowShares += shares.toUint128();
-        market[id].totalBorrowAssets += assets.toUint128();
+        market[id].totalBorrowAssets += assetsUp.toUint128();
 
         require(_isHealthy(marketParams, id, onBehalf), ErrorsLib.INSUFFICIENT_COLLATERAL);
         require(market[id].totalBorrowAssets <= market[id].totalSupplyAssets, ErrorsLib.INSUFFICIENT_LIQUIDITY);
