@@ -46,14 +46,12 @@ struct Signature {
     bytes32 s;
 }
 
-/// @title IMorpho
-/// @author Morpho Labs
-/// @custom:contact security@morpho.org
-/// @notice Interface of Morpho.
-interface IMorpho {
+/// @dev This interface is used for factorizing IMorphoStaticTyping and IMorpho.
+/// @dev Consider using the IMorpho interface instead of this one.
+interface IMorphoBase {
     /// @notice The EIP-712 domain separator.
-    /// @dev Warning: In case of a hardfork, every EIP-712 signed message based on this domain separator can be reused
-    /// on the forked chain because the domain separator would be the same.
+    /// @dev Warning: Every EIP-712 signed message based on this domain separator can be reused on another chain sharing
+    /// the same chain id because the domain separator would be the same.
     function DOMAIN_SEPARATOR() external view returns (bytes32);
 
     /// @notice The owner of the contract.
@@ -65,25 +63,6 @@ interface IMorpho {
     /// @notice The fee recipient of all markets.
     /// @dev The recipient receives the fees of a given market through a supply position on that market.
     function feeRecipient() external view returns (address);
-
-    /// @notice The state of the position of `user` on the market corresponding to `id`.
-    function position(Id id, address user)
-        external
-        view
-        returns (uint256 supplyShares, uint128 borrowShares, uint128 collateral);
-
-    /// @notice The state of the market corresponding to `id`.
-    function market(Id id)
-        external
-        view
-        returns (
-            uint128 totalSupplyAssets,
-            uint128 totalSupplyShares,
-            uint128 totalBorrowAssets,
-            uint128 totalBorrowShares,
-            uint128 lastUpdate,
-            uint128 fee
-        );
 
     /// @notice Whether the `irm` is enabled.
     function isIrmEnabled(address irm) external view returns (bool);
@@ -98,15 +77,7 @@ interface IMorpho {
     /// @notice The `authorizer`'s current nonce. Used to prevent replay attacks with EIP-712 signatures.
     function nonce(address authorizer) external view returns (uint256);
 
-    /// @notice The market params corresponding to `id`.
-    /// @dev This mapping is not used in Morpho. It is there to enable reducing the cost associated to calldata on layer
-    /// 2s by creating a wrapper contract with functions that take `id` as input instead of `marketParams`.
-    function idToMarketParams(Id id)
-        external
-        view
-        returns (address loanToken, address collateralToken, address oracle, address irm, uint256 lltv);
-
-    /// @notice Sets `newOwner` as owner of the contract.
+    /// @notice Sets `newOwner` as `owner` of the contract.
     /// @dev Warning: No two-step transfer ownership.
     /// @dev Warning: The owner can be set to the zero address.
     function setOwner(address newOwner) external;
@@ -123,10 +94,10 @@ interface IMorpho {
     /// @dev Warning: The recipient can be the zero address.
     function setFee(MarketParams memory marketParams, uint256 newFee) external;
 
-    /// @notice Sets `newFeeRecipient` as recipient of the fee.
-    /// @dev Warning: The fee recipient can be set to the zero address.
-    /// @dev Warning: The fee to be accrued on each market won't belong to the old fee recipient after calling this
-    /// function.
+    /// @notice Sets `newFeeRecipient` as `feeRecipient` of the fee.
+    /// @dev Warning: If the fee recipient is set to the zero address, fees will accrue there and will be lost.
+    /// @dev Modifying the fee recipient will allow the new recipient to claim any pending fees not yet accrued. To
+    /// ensure that the current recipient receives all due fees, accrue interest manually prior to making any changes.
     function setFeeRecipient(address newFeeRecipient) external;
 
     /// @notice Creates the market `marketParams`.
@@ -139,7 +110,9 @@ interface IMorpho {
     /// - The token balance of the sender (resp. receiver) should decrease (resp. increase) by exactly the given amount
     /// on `transfer` and `transferFrom`. In particular, tokens with fees on transfer are not supported.
     /// - The IRM should not re-enter Morpho.
-    /// @dev Here is a list of properties on the market's dependencies that could break Morpho's liveness properties:
+    /// - The oracle should return a price with the correct scaling.
+    /// @dev Here is a list of properties on the market's dependencies that could break Morpho's liveness properties
+    /// (funds could get stuck):
     /// - The token can revert on `transfer` and `transferFrom` for a reason other than an approval or balance issue.
     /// - A very high amount of assets (~1e35) supplied or borrowed can make the computation of `toSharesUp` and
     /// `toSharesDown` overflow.
@@ -177,6 +150,8 @@ interface IMorpho {
     /// @dev Either `assets` or `shares` should be zero. To withdraw max, pass the `shares`'s balance of `onBehalf`.
     /// @dev `msg.sender` must be authorized to manage `onBehalf`'s positions.
     /// @dev Withdrawing an amount corresponding to more shares than supplied will revert for underflow.
+    /// @dev It is advised to use the `shares` input when withdrawing the full position to avoid reverts due to
+    /// conversion roundings between shares and assets.
     /// @param marketParams The market to withdraw assets from.
     /// @param assets The amount of assets to withdraw.
     /// @param shares The amount of shares to burn.
@@ -217,6 +192,8 @@ interface IMorpho {
     /// `onMorphoReplay` function with the given `data`.
     /// @dev Either `assets` or `shares` should be zero. To repay max, pass the `shares`'s balance of `onBehalf`.
     /// @dev Repaying an amount corresponding to more shares than borrowed will revert for underflow.
+    /// @dev It is advised to use the `shares` input when repaying the full position to avoid reverts due to conversion
+    /// roundings between shares and assets.
     /// @param marketParams The market to repay assets to.
     /// @param assets The amount of assets to repay.
     /// @param shares The amount of shares to burn.
@@ -277,6 +254,10 @@ interface IMorpho {
     /// @notice Executes a flash loan.
     /// @dev Flash loans have access to the whole balance of the contract (the liquidity and deposited collateral of all
     /// markets combined, plus donations).
+    /// @dev Warning: Not ERC-3156 compliant but compatibility is easily reached:
+    /// - `flashFee` is zero.
+    /// - `maxFlashLoan` is the token's balance of this contract.
+    /// - The receiver of `assets` is the caller.
     /// @param token The token to flash loan.
     /// @param assets The amount of assets to flash loan.
     /// @param data Arbitrary data to pass to the `onMorphoFlashLoan` callback.
@@ -295,6 +276,69 @@ interface IMorpho {
     /// @param signature The signature.
     function setAuthorizationWithSig(Authorization calldata authorization, Signature calldata signature) external;
 
+    /// @notice Accrues interest for the given market `marketParams`.
+    function accrueInterest(MarketParams memory marketParams) external;
+
     /// @notice Returns the data stored on the different `slots`.
     function extSloads(bytes32[] memory slots) external view returns (bytes32[] memory);
+}
+
+/// @dev This interface is inherited by Morpho so that function signatures are checked by the compiler.
+/// @dev Consider using the IMorpho interface instead of this one.
+interface IMorphoStaticTyping is IMorphoBase {
+    /// @notice The state of the position of `user` on the market corresponding to `id`.
+    /// @dev Warning: For `feeRecipient`, `supplyShares` does not contain the accrued shares since the last interest
+    /// accrual.
+    function position(Id id, address user)
+        external
+        view
+        returns (uint256 supplyShares, uint128 borrowShares, uint128 collateral);
+
+    /// @notice The state of the market corresponding to `id`.
+    /// @dev Warning: `totalSupplyAssets` does not contain the accrued interest since the last interest accrual.
+    /// @dev Warning: `totalBorrowAssets` does not contain the accrued interest since the last interest accrual.
+    /// @dev Warning: `totalSupplyShares` does not contain the accrued shares by `feeRecipient` since the last interest
+    /// accrual.
+    function market(Id id)
+        external
+        view
+        returns (
+            uint128 totalSupplyAssets,
+            uint128 totalSupplyShares,
+            uint128 totalBorrowAssets,
+            uint128 totalBorrowShares,
+            uint128 lastUpdate,
+            uint128 fee
+        );
+
+    /// @notice The market params corresponding to `id`.
+    /// @dev This mapping is not used in Morpho. It is there to enable reducing the cost associated to calldata on layer
+    /// 2s by creating a wrapper contract with functions that take `id` as input instead of `marketParams`.
+    function idToMarketParams(Id id)
+        external
+        view
+        returns (address loanToken, address collateralToken, address oracle, address irm, uint256 lltv);
+}
+
+/// @title IMorpho
+/// @author Morpho Labs
+/// @custom:contact security@morpho.org
+/// @dev Use this interface for Morpho to have access to all the functions with the appropriate function signatures.
+interface IMorpho is IMorphoBase {
+    /// @notice The state of the position of `user` on the market corresponding to `id`.
+    /// @dev Warning: For `feeRecipient`, `p.supplyShares` does not contain the accrued shares since the last interest
+    /// accrual.
+    function position(Id id, address user) external view returns (Position memory p);
+
+    /// @notice The state of the market corresponding to `id`.
+    /// @dev Warning: `m.totalSupplyAssets` does not contain the accrued interest since the last interest accrual.
+    /// @dev Warning: `m.totalBorrowAssets` does not contain the accrued interest since the last interest accrual.
+    /// @dev Warning: `m.totalSupplyShares` does not contain the accrued shares by `feeRecipient` since the last
+    /// interest accrual.
+    function market(Id id) external view returns (Market memory m);
+
+    /// @notice The market params corresponding to `id`.
+    /// @dev This mapping is not used in Morpho. It is there to enable reducing the cost associated to calldata on layer
+    /// 2s by creating a wrapper contract with functions that take `id` as input instead of `marketParams`.
+    function idToMarketParams(Id id) external view returns (MarketParams memory);
 }

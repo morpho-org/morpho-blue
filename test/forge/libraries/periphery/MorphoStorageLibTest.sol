@@ -93,17 +93,12 @@ contract MorphoStorageLibTest is BaseTest {
         assertEq(abi.decode(abi.encode(values[9]), (bool)), morpho.isAuthorized(authorizer, BORROWER));
         assertEq(uint256(values[10]), morpho.nonce(authorizer));
 
-        (
-            address expectedloanToken,
-            address expectedCollateralToken,
-            address expectedOracle,
-            address expectedIrm,
-            uint256 expectedLltv
-        ) = morpho.idToMarketParams(id);
-        assertEq(abi.decode(abi.encode(values[11]), (address)), expectedloanToken);
-        assertEq(abi.decode(abi.encode(values[12]), (address)), expectedCollateralToken);
-        assertEq(abi.decode(abi.encode(values[13]), (address)), expectedOracle);
-        assertEq(abi.decode(abi.encode(values[14]), (address)), expectedIrm);
-        assertEq(uint256(values[15]), expectedLltv);
+        MarketParams memory expectedParams = morpho.idToMarketParams(id);
+
+        assertEq(abi.decode(abi.encode(values[11]), (address)), expectedParams.loanToken);
+        assertEq(abi.decode(abi.encode(values[12]), (address)), expectedParams.collateralToken);
+        assertEq(abi.decode(abi.encode(values[13]), (address)), expectedParams.oracle);
+        assertEq(abi.decode(abi.encode(values[14]), (address)), expectedParams.irm);
+        assertEq(uint256(values[15]), expectedParams.lltv);
     }
 }
