@@ -383,7 +383,6 @@ contract Morpho is IMorphoStaticTyping {
 
         position[id][borrower].collateral -= seizedAssets.toUint128();
 
-        // Realize the bad debt if needed. Note that it saves ~3k gas to do it.
         uint256 badDebtShares;
         if (position[id][borrower].collateral == 0) {
             badDebtShares = position[id][borrower].borrowShares;
