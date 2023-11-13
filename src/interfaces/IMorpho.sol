@@ -123,6 +123,8 @@ interface IMorphoBase {
     /// `liquidate` from being used under certain market conditions.
     /// - A very high price returned by the oracle can make the computation of `maxBorrow` in `_isHealthy` overflow, or
     /// the computation of `assetsRepaid` in `liquidate` overflow.
+    /// @dev The borrow share price of a market with less than 1e4 assets borrowed can be decreased by manipulations, to
+    /// the point where `totalBorrowShares` is very large and borrowing overflows.
     function createMarket(MarketParams memory marketParams) external;
 
     /// @notice Supplies `assets` or `shares` on behalf of `onBehalf`, optionally calling back the caller's
