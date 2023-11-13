@@ -130,7 +130,8 @@ interface IMorphoBase {
     /// @dev Either `assets` or `shares` should be zero. Most usecases should rely on `assets` as an input so the caller
     /// is guaranteed to have `assets` tokens pulled from their balance, but the possibility to mint a specific amount
     /// of shares is given for full compatibility and precision.
-    /// @dev When withdrawing all supply shares, the supply share price instantly resets to `VIRTUAL_ASSETS`:`VIRTUAL_SHARES`.
+    /// @dev When withdrawing all supply shares, the supply share price instantly resets to
+    /// `VIRTUAL_ASSETS`:`VIRTUAL_SHARES`.
     /// @dev Supplying a large amount can revert for overflow.
     /// @param marketParams The market to supply assets to.
     /// @param assets The amount of assets to supply.
@@ -172,7 +173,8 @@ interface IMorphoBase {
     /// @dev Either `assets` or `shares` should be zero. Most usecases should rely on `assets` as an input so the caller
     /// is guaranteed to borrow `assets` of tokens, but the possibility to mint a specific amount of shares is given for
     /// full compatibility and precision.
-    /// @dev When repaying all borrow shares, the borrow share price instantly resets to `VIRTUAL_ASSETS`:`VIRTUAL_SHARES`.
+    /// @dev When repaying all borrow shares, the borrow share price instantly resets to
+    /// `VIRTUAL_ASSETS`:`VIRTUAL_SHARES`.
     /// @dev `msg.sender` must be authorized to manage `onBehalf`'s positions.
     /// @dev Borrowing a large amount can revert for overflow.
     /// @param marketParams The market to borrow assets from.
