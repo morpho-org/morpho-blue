@@ -1,13 +1,14 @@
 {
   "compilerOptions": {
-    "target": "esnext",
-    "rootDir": ".",
-    "baseUrl": ".",
+    "target": "es6",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
     "outDir": "dist",
-    "moduleResolution": "node",
+    "baseUrl": ".",
     "strict": true,
     "esModuleInterop": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "declaration": true
   },
   "include": ["types", "test/hardhat"],
   "files": ["hardhat.config.ts"]

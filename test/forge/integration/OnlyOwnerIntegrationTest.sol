@@ -12,6 +12,12 @@ contract OnlyOwnerIntegrationTest is BaseTest {
         new Morpho(address(0));
     }
 
+    function testDeployEmitOwner() public {
+        vm.expectEmit();
+        emit EventsLib.SetOwner(OWNER);
+        new Morpho(OWNER);
+    }
+
     function testSetOwnerWhenNotOwner(address addressFuzz) public {
         vm.assume(addressFuzz != OWNER);
 
