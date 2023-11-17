@@ -17,8 +17,6 @@ contract InvariantTest is BaseTest {
 
         _targetSenders();
 
-        _weightSelector(this.mine.selector, 100);
-
         targetContract(address(this));
         targetSelector(FuzzSelector({addr: address(this), selectors: selectors}));
     }
@@ -58,7 +56,7 @@ contract InvariantTest is BaseTest {
     /* HANDLERS */
 
     function mine(uint256 blocks) external {
-        blocks = bound(blocks, 1, 50_400);
+        blocks = bound(blocks, 1, 7 days / BLOCK_TIME);
 
         _forward(blocks);
     }
