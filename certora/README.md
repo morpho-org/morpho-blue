@@ -257,7 +257,7 @@ The [`certora/specs`](./specs) folder contains the following files:
 - [`Reverts.spec`](./specs/Reverts.spec) checks the condition for reverts and that inputs are correctly validated.
 - [`Transfer.spec`](./specs/Transfer.spec) checks the summarization of the safe transfer library functions that are used in other specification files.
 
-The [`certora/scripts`](./scripts) folder contains a script for each corresponding specification file.
+The [`certora/confs`](./confs) folder contains a configuration file for each corresponding specification file.
 
 The [`certora/harness`](./harness) folder contains contracts that enable the verification of Morpho Blue.
 Notably, this allows handling the fact that library functions should be called from a contract to be verified independently, and it allows defining needed getters.
@@ -267,11 +267,11 @@ The [`certora/dispatch`](./dispatch) folder contains different contracts simil
 # Getting started
 
 Install `certoraRun` with `pip install certora-cli`.
-To verify specification files, pass the corresponding configuration file in the [`certora/configuration`](./configuration) folder.
+To verify specification files, pass the corresponding configuration file in the [`certora/confs`](./confs) folder.
 It requires having set the `CERTORAKEY` environment variable to a valid Certora key.
 You can also pass additional arguments, notably to verify a specific rule.
 For example, at the root of the repository:
 
 ```
-certoraRun certora/configuration/ConsistentState.conf --rule borrowLessThanSupply
+certoraRun certora/confs/ConsistentState.conf --rule borrowLessThanSupply
 ```
