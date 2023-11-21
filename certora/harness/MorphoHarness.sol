@@ -78,19 +78,12 @@ contract MorphoHarness is Morpho {
         marketParamsId = Id.wrap(keccak256(abi.encode(marketParams)));
     }
 
-    function libMulDivUp(uint256 x, uint256 y, uint256 d) public pure returns (uint256) {
+    function libMulDivUp(uint256 x, uint256 y, uint256 d) external pure returns (uint256) {
         return MathLib.mulDivUp(x, y, d);
     }
 
-    function libMulDivDown(uint256 x, uint256 y, uint256 d) public pure returns (uint256) {
+    function libMulDivDown(uint256 x, uint256 y, uint256 d) external pure returns (uint256) {
         return MathLib.mulDivDown(x, y, d);
-    }
-
-    function accrueInterest(MarketParams memory marketParams) external {
-        Id id = marketParams.id();
-        require(market[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
-
-        _accrueInterest(marketParams, id);
     }
 
     function isHealthy(MarketParams memory marketParams, address user) external view returns (bool) {
