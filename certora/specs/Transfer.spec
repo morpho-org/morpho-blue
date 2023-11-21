@@ -68,7 +68,7 @@ rule transferRevertCondition(address token, address to, uint256 amount) {
 
     libSafeTransfer@withrevert(token, to, amount);
 
-    assert lastReverted == (initialBalance < amount);
+    assert lastReverted <=> initialBalance < amount;
 }
 
 // Check the revert condition of the summary of safeTransferFrom.
@@ -83,5 +83,5 @@ rule transferFromRevertCondition(address token, address from, address to, uint25
 
     libSafeTransferFrom@withrevert(token, from, to, amount);
 
-    assert lastReverted == (initialBalance < amount) || allowance < amount;
+    assert lastReverted <=> initialBalance < amount || allowance < amount;
 }
