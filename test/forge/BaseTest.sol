@@ -310,8 +310,12 @@ contract BaseTest is Test {
     {
         Id _id = _marketParams.id();
 
+        uint256 borrowShares = morpho.borrowShares(_id, onBehalf);
+
         (,, uint256 totalBorrowAssets, uint256 totalBorrowShares) = morpho.expectedMarketBalances(_marketParams);
-        uint256 maxRepayAssets = morpho.borrowShares(_id, onBehalf).toAssetsDown(totalBorrowAssets, totalBorrowShares);
+        // Rounding assets up can yield a value larger than `totalBorrowAssets` in case `totalBorrowAssets` is zero.
+        uint256 maxRepayAssets =
+            UtilsLib.min(borrowShares.toAssetsUp(totalBorrowAssets, totalBorrowShares), totalBorrowAssets);
 
         return bound(assets, 0, maxRepayAssets);
     }
@@ -335,12 +339,19 @@ contract BaseTest is Test {
     {
         Id _id = _marketParams.id();
 
-        uint256 collateral = morpho.collateral(_id, borrower);
+        uint256 borrowShares = morpho.borrowShares(_id, borrower);
+
+        (,, uint256 totalBorrowAssets, uint256 totalBorrowShares) = morpho.expectedMarketBalances(_marketParams);
+        // Rounding assets up can yield a value larger than `totalBorrowAssets` in case `totalBorrowAssets` is zero.
+        uint256 maxRepaidAssets =
+            UtilsLib.min(borrowShares.toAssetsUp(totalBorrowAssets, totalBorrowShares), totalBorrowAssets);
+
         uint256 collateralPrice = IOracle(_marketParams.oracle).price();
-        uint256 maxRepaidAssets = morpho.expectedBorrowAssets(_marketParams, borrower);
         uint256 maxSeizedAssets = maxRepaidAssets.wMulDown(_liquidationIncentiveFactor(_marketParams.lltv)).mulDivDown(
             ORACLE_PRICE_SCALE, collateralPrice
         );
+
+        uint256 collateral = morpho.collateral(_id, borrower);
 
         return bound(seizedAssets, 0, Math.min(collateral, maxSeizedAssets));
     }

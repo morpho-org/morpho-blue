@@ -294,10 +294,10 @@ contract BaseMorphoInvariantTest is InvariantTest {
         _withdrawCollateral(_marketParams, assets, onBehalf, receiver);
     }
 
-    function liquidateSeizedAssetsNoRevert(uint256 marketSeed, uint256 seizedAssets, uint256 onBehalfSeed) external {
+    function liquidateSeizedAssetsNoRevert(uint256 marketSeed, uint256 seizedAssets, uint256 borrowerSeed) external {
         MarketParams memory _marketParams = _randomMarket(marketSeed);
 
-        address borrower = _randomUnhealthyBorrower(targetSenders(), _marketParams, onBehalfSeed);
+        address borrower = _randomUnhealthyBorrower(targetSenders(), _marketParams, borrowerSeed);
         if (borrower == address(0)) return;
 
         seizedAssets = _boundLiquidateSeizedAssets(_marketParams, borrower, seizedAssets);
@@ -306,10 +306,10 @@ contract BaseMorphoInvariantTest is InvariantTest {
         _liquidateSeizedAssets(_marketParams, borrower, seizedAssets);
     }
 
-    function liquidateRepaidSharesNoRevert(uint256 marketSeed, uint256 repaidShares, uint256 onBehalfSeed) external {
+    function liquidateRepaidSharesNoRevert(uint256 marketSeed, uint256 repaidShares, uint256 borrowerSeed) external {
         MarketParams memory _marketParams = _randomMarket(marketSeed);
 
-        address borrower = _randomUnhealthyBorrower(targetSenders(), _marketParams, onBehalfSeed);
+        address borrower = _randomUnhealthyBorrower(targetSenders(), _marketParams, borrowerSeed);
         if (borrower == address(0)) return;
 
         repaidShares = _boundLiquidateRepaidShares(_marketParams, borrower, repaidShares);
