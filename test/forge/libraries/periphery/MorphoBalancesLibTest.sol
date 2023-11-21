@@ -21,7 +21,7 @@ contract MorphoBalancesLibTest is BaseTest {
             uint256 virtualTotalBorrowShares
         ) = morpho.expectedMarketBalances(marketParams);
 
-        _accrueInterest(marketParams);
+        morpho.accrueInterest(marketParams);
 
         assertEq(virtualTotalSupplyAssets, morpho.totalSupplyAssets(id), "total supply assets");
         assertEq(virtualTotalBorrowAssets, morpho.totalBorrowAssets(id), "total borrow assets");
@@ -34,11 +34,11 @@ contract MorphoBalancesLibTest is BaseTest {
     {
         _generatePendingInterest(amountSupplied, amountBorrowed, timeElapsed, fee);
 
-        uint256 expectedTotalSupply = morpho.expectedTotalSupply(marketParams);
+        uint256 expectedTotalSupplyAssets = morpho.expectedTotalSupplyAssets(marketParams);
 
-        _accrueInterest(marketParams);
+        morpho.accrueInterest(marketParams);
 
-        assertEq(expectedTotalSupply, morpho.totalSupplyAssets(id));
+        assertEq(expectedTotalSupplyAssets, morpho.totalSupplyAssets(id));
     }
 
     function testExpectedTotalBorrow(uint256 amountSupplied, uint256 amountBorrowed, uint256 timeElapsed, uint256 fee)
@@ -46,11 +46,11 @@ contract MorphoBalancesLibTest is BaseTest {
     {
         _generatePendingInterest(amountSupplied, amountBorrowed, timeElapsed, fee);
 
-        uint256 expectedTotalBorrow = morpho.expectedTotalBorrow(marketParams);
+        uint256 expectedTotalBorrowAssets = morpho.expectedTotalBorrowAssets(marketParams);
 
-        _accrueInterest(marketParams);
+        morpho.accrueInterest(marketParams);
 
-        assertEq(expectedTotalBorrow, morpho.totalBorrowAssets(id));
+        assertEq(expectedTotalBorrowAssets, morpho.totalBorrowAssets(id));
     }
 
     function testExpectedTotalSupplyShares(
@@ -63,19 +63,19 @@ contract MorphoBalancesLibTest is BaseTest {
 
         uint256 expectedTotalSupplyShares = morpho.expectedTotalSupplyShares(marketParams);
 
-        _accrueInterest(marketParams);
+        morpho.accrueInterest(marketParams);
 
         assertEq(expectedTotalSupplyShares, morpho.totalSupplyShares(id));
     }
 
     function testExpectedSupplyBalance(uint256 amountSupplied, uint256 amountBorrowed, uint256 timeElapsed, uint256 fee)
-        internal
+        public
     {
         _generatePendingInterest(amountSupplied, amountBorrowed, timeElapsed, fee);
 
-        uint256 expectedSupplyBalance = morpho.expectedSupplyBalance(marketParams, address(this));
+        uint256 expectedSupplyBalance = morpho.expectedSupplyAssets(marketParams, address(this));
 
-        _accrueInterest(marketParams);
+        morpho.accrueInterest(marketParams);
 
         uint256 actualSupplyBalance = morpho.supplyShares(id, address(this)).toAssetsDown(
             morpho.totalSupplyAssets(id), morpho.totalSupplyShares(id)
@@ -85,13 +85,13 @@ contract MorphoBalancesLibTest is BaseTest {
     }
 
     function testExpectedBorrowBalance(uint256 amountSupplied, uint256 amountBorrowed, uint256 timeElapsed, uint256 fee)
-        internal
+        public
     {
         _generatePendingInterest(amountSupplied, amountBorrowed, timeElapsed, fee);
 
-        uint256 expectedBorrowBalance = morpho.expectedBorrowBalance(marketParams, address(this));
+        uint256 expectedBorrowBalance = morpho.expectedBorrowAssets(marketParams, address(this));
 
-        _accrueInterest(marketParams);
+        morpho.accrueInterest(marketParams);
 
         uint256 actualBorrowBalance = morpho.borrowShares(id, address(this)).toAssetsUp(
             morpho.totalBorrowAssets(id), morpho.totalBorrowShares(id)
