@@ -434,7 +434,9 @@ contract Morpho is IMorphoStaticTyping {
     /// @inheritdoc IMorphoBase
     function setAuthorizationWithSig(Authorization memory authorization, Signature calldata signature) external {
         require(block.timestamp <= authorization.deadline, ErrorsLib.SIGNATURE_EXPIRED);
-        require(authorization.nonce == nonce[authorization.authorizer]++, ErrorsLib.INVALID_NONCE);
+        /// UnaryOperatorMutation(`++` |==> `--`) of: `require(authorization.nonce == nonce[authorization.authorizer]++,
+        /// ErrorsLib.INVALID_NONCE);`
+        require(authorization.nonce == nonce[authorization.authorizer]--, ErrorsLib.INVALID_NONCE);
 
         bytes32 hashStruct = keccak256(abi.encode(AUTHORIZATION_TYPEHASH, authorization));
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, hashStruct));
