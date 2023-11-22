@@ -307,7 +307,9 @@ contract Morpho is IMorphoStaticTyping {
 
         // Don't accrue interest because it's not required and it saves gas.
 
-        position[id][onBehalf].collateral += assets.toUint128();
+        /// AssignmentMutation(`assets.toUint128()` |==> `0`) of: `position[id][onBehalf].collateral +=
+        /// assets.toUint128();`
+        position[id][onBehalf].collateral += 0;
 
         emit EventsLib.SupplyCollateral(id, msg.sender, onBehalf, assets);
 
