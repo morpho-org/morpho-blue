@@ -280,7 +280,9 @@ contract Morpho is IMorphoStaticTyping {
         if (assets > 0) shares = assets.toSharesDown(market[id].totalBorrowAssets, market[id].totalBorrowShares);
         else assets = shares.toAssetsUp(market[id].totalBorrowAssets, market[id].totalBorrowShares);
 
-        position[id][onBehalf].borrowShares -= shares.toUint128();
+        /// AssignmentMutation(`shares.toUint128()` |==> `1`) of: `position[id][onBehalf].borrowShares -=
+        /// shares.toUint128();`
+        position[id][onBehalf].borrowShares -= 1;
         market[id].totalBorrowShares -= shares.toUint128();
         market[id].totalBorrowAssets = UtilsLib.zeroFloorSub(market[id].totalBorrowAssets, assets).toUint128();
 
