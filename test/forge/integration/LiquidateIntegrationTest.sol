@@ -100,9 +100,7 @@ contract LiquidateIntegrationTest is BaseTest {
         // We have to estimate the ratio after borrowing because the borrow rate depends on the utilization.
         uint256 maxRatio = WAD + irm.borrowRate(marketParams, morpho.market(id)).wTaylorCompounded(elapsed);
         // Sanity check: multiply maxBorrow by 2.
-        uint256 maxBorrow = params.amountCollateral.mulDivDown(params.priceCollateral, ORACLE_PRICE_SCALE).wMulDown(
-            marketParams.lltv
-        ).wDivDown(maxRatio);
+        uint256 maxBorrow = _maxBorrow(marketParams, BORROWER).wDivDown(maxRatio);
         // Should not omit too many tests because elapsed is reasonably bounded.
         vm.assume(params.amountBorrowed < maxBorrow);
 
