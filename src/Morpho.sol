@@ -363,7 +363,9 @@ contract Morpho is IMorphoStaticTyping {
             // The liquidation incentive factor is min(maxLiquidationIncentiveFactor, 1/(1 - cursor*(1 - lltv))).
             uint256 liquidationIncentiveFactor = UtilsLib.min(
                 MAX_LIQUIDATION_INCENTIVE_FACTOR,
-                WAD.wDivDown(WAD - LIQUIDATION_CURSOR.wMulDown(WAD - marketParams.lltv))
+                /// BinaryOpMutation(`-` |==> `+`) of: `WAD.wDivDown(WAD - LIQUIDATION_CURSOR.wMulDown(WAD -
+                /// marketParams.lltv))`
+                WAD.wDivDown(WAD - LIQUIDATION_CURSOR.wMulDown(WAD + marketParams.lltv))
             );
 
             if (seizedAssets > 0) {
