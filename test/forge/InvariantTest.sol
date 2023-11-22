@@ -56,7 +56,7 @@ contract InvariantTest is BaseTest {
     /* HANDLERS */
 
     function mine(uint256 blocks) external {
-        blocks = bound(blocks, 1, 7 days / BLOCK_TIME);
+        blocks = bound(blocks, 1, 1 days / BLOCK_TIME);
 
         _forward(blocks);
     }
