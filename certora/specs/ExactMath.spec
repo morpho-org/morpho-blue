@@ -118,3 +118,34 @@ rule withdrawSupply() {
 
     assert suppliedAssets == withdrawnAssets && withdrawnShares >= suppliedShares;
 }
+
+rule borrowRepay() {
+    MorphoHarness.MarketParams marketParams;
+    MorphoHarness.Id id = libId(marketParams);
+    uint256 assets;
+    uint256 shares;
+    address onbehalf;
+    address receiver;
+    bytes data;
+    env e1;
+    env e2;
+
+    // Assume interactions to happen at the same block.
+    require e1.block.timestamp == e2.block.timestamp;
+    // Safe require because timestamps cannot realistically be that large.
+    require e1.block.timestamp < 2^128;
+
+    uint256 borrowedAssets;
+    uint256 borrowedShares;
+    borrowedAssets, borrowedShares = borrow(e2, marketParams, assets, shares, onbehalf, receiver);
+
+    // Hints for the prover.
+    assert borrowedAssets * (virtualTotalSupplyShares(id) + borrowedShares) <= borrowedShares * (virtualTotalSupplyAssets(id) + borrowedAssets);
+    assert borrowedAssets * virtualTotalSupplyShares(id) <= borrowedShares * virtualTotalSupplyAssets(id);
+
+    uint256 repaidAssets;
+    uint256 repaidShares;
+    repaidAssets, repaidShares = repay(e1, marketParams, borrowedAssets, 0, onbehalf, data);
+
+    assert repaidAssets == borrowedAssets && borrowedShares >= repaidShares;
+}
