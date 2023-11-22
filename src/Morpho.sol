@@ -253,7 +253,9 @@ contract Morpho is IMorphoStaticTyping {
         market[id].totalBorrowAssets += assets.toUint128();
 
         require(_isHealthy(marketParams, id, onBehalf), ErrorsLib.INSUFFICIENT_COLLATERAL);
-        require(market[id].totalBorrowAssets <= market[id].totalSupplyAssets, ErrorsLib.INSUFFICIENT_LIQUIDITY);
+        /// RequireMutation(`market[id].totalBorrowAssets <= market[id].totalSupplyAssets` |==> `true`) of:
+        /// `require(market[id].totalBorrowAssets <= market[id].totalSupplyAssets, ErrorsLib.INSUFFICIENT_LIQUIDITY);`
+        require(true, ErrorsLib.INSUFFICIENT_LIQUIDITY);
 
         emit EventsLib.Borrow(id, msg.sender, onBehalf, receiver, assets, shares);
 
