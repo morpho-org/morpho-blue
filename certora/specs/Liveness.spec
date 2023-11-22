@@ -98,8 +98,7 @@ rule supplyChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams marke
 // Check that you can supply non-zero tokens by passing shares.
 rule canSupplyByPassingShares(env e, MorphoInternalAccess.MarketParams marketParams, uint256 shares, address onBehalf, bytes data) {
     uint256 suppliedAssets;
-    uint256 suppliedShares;
-    suppliedAssets, suppliedShares = supply(e, marketParams, 0, shares, onBehalf, data);
+    suppliedAssets, _ = supply(e, marketParams, 0, shares, onBehalf, data);
 
     satisfy suppliedAssets != 0;
 }
@@ -135,8 +134,7 @@ rule withdrawChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams mar
 // Check that you can withdraw non-zero tokens by passing shares.
 rule canWithdrawByPassingShares(env e, MorphoInternalAccess.MarketParams marketParams, uint256 shares, address onBehalf, address receiver) {
     uint256 withdrawnAssets;
-    uint256 withdrawnShares;
-    withdrawnAssets, withdrawnShares = withdraw(e, marketParams, 0, shares, onBehalf, receiver);
+    withdrawnAssets, _ = withdraw(e, marketParams, 0, shares, onBehalf, receiver);
 
     satisfy withdrawnAssets != 0;
 }
@@ -172,8 +170,7 @@ rule borrowChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams marke
 // Check that you can borrow non-zero tokens by passing shares.
 rule canBorrowByPassingShares(env e, MorphoInternalAccess.MarketParams marketParams, uint256 shares, address onBehalf, address receiver) {
     uint256 borrowedAssets;
-    uint256 borrowedShares;
-    borrowedAssets, borrowedShares = borrow(e, marketParams, 0, shares, onBehalf, receiver);
+    borrowedAssets, _ = borrow(e, marketParams, 0, shares, onBehalf, receiver);
 
     satisfy borrowedAssets != 0;
 }
@@ -212,8 +209,7 @@ rule repayChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams market
 // Check that you can repay non-zero tokens by passing shares.
 rule canRepayByPassingShares(env e, MorphoInternalAccess.MarketParams marketParams, uint256 shares, address onBehalf, bytes data) {
     uint256 repaidAssets;
-    uint256 repaidShares;
-    repaidAssets, repaidShares = repay(e, marketParams, 0, shares, onBehalf, data);
+    repaidAssets, _ = repay(e, marketParams, 0, shares, onBehalf, data);
 
     satisfy repaidAssets != 0;
 }
