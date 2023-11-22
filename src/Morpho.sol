@@ -246,7 +246,10 @@ contract Morpho is IMorphoStaticTyping {
         _accrueInterest(marketParams, id);
 
         if (assets > 0) shares = assets.toSharesUp(market[id].totalBorrowAssets, market[id].totalBorrowShares);
-        else assets = shares.toAssetsDown(market[id].totalBorrowAssets, market[id].totalBorrowShares);
+        /// DeleteExpressionMutation(`assets = shares.toAssetsDown(market[id].totalBorrowAssets,
+        /// market[id].totalBorrowShares)` |==> `assert(true)`) of: `else assets =
+        /// shares.toAssetsDown(market[id].totalBorrowAssets, market[id].totalBorrowShares);`
+        else assert(true);
 
         position[id][onBehalf].borrowShares += shares.toUint128();
         market[id].totalBorrowShares += shares.toUint128();
