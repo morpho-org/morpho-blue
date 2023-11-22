@@ -392,7 +392,9 @@ contract Morpho is IMorphoStaticTyping {
             );
 
             market[id].totalBorrowAssets -= badDebt.toUint128();
-            market[id].totalSupplyAssets -= badDebt.toUint128();
+            /// AssignmentMutation(`badDebt.toUint128()` |==> `1`) of: `market[id].totalSupplyAssets -=
+            /// badDebt.toUint128();`
+            market[id].totalSupplyAssets -= 1;
             market[id].totalBorrowShares -= badDebtShares.toUint128();
             position[id][borrower].borrowShares = 0;
         }
