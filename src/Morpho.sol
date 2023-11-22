@@ -151,7 +151,9 @@ contract Morpho is IMorphoStaticTyping {
         Id id = marketParams.id();
         require(isIrmEnabled[marketParams.irm], ErrorsLib.IRM_NOT_ENABLED);
         require(isLltvEnabled[marketParams.lltv], ErrorsLib.LLTV_NOT_ENABLED);
-        require(market[id].lastUpdate == 0, ErrorsLib.MARKET_ALREADY_CREATED);
+        /// RequireMutation(`market[id].lastUpdate == 0` |==> `true`) of: `require(market[id].lastUpdate == 0,
+        /// ErrorsLib.MARKET_ALREADY_CREATED);`
+        require(true, ErrorsLib.MARKET_ALREADY_CREATED);
 
         // Safe "unchecked" cast.
         market[id].lastUpdate = uint128(block.timestamp);
