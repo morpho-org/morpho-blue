@@ -469,7 +469,8 @@ contract Morpho is IMorphoStaticTyping {
     /// @dev Accrues interest for the given market `marketParams`.
     /// @dev Assumes that the inputs `marketParams` and `id` match.
     function _accrueInterest(MarketParams memory marketParams, Id id) internal {
-        uint256 elapsed = block.timestamp - market[id].lastUpdate;
+        /// BinaryOpMutation(`-` |==> `+`) of: `uint256 elapsed = block.timestamp - market[id].lastUpdate;`
+        uint256 elapsed = block.timestamp + market[id].lastUpdate;
 
         if (elapsed == 0) return;
 
