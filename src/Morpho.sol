@@ -491,7 +491,9 @@ contract Morpho is IMorphoStaticTyping {
         emit EventsLib.AccrueInterest(id, borrowRate, interest, feeShares);
 
         // Safe "unchecked" cast.
-        market[id].lastUpdate = uint128(block.timestamp);
+        /// AssignmentMutation(`uint128(block.timestamp)` |==> `0`) of: `market[id].lastUpdate =
+        /// uint128(block.timestamp);`
+        market[id].lastUpdate = 0;
     }
 
     /* HEALTH CHECK */
