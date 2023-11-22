@@ -18,17 +18,17 @@ interface IERC20Internal {
 /// @dev It is the responsibility of the market creator to make sure that the address of the token has non-zero code.
 library SafeTransferLib {
     /// @dev Warning: It does not revert on `token` with no code.
-    function safeTransfer(IERC20 token, address to, uint256 value) internal {
+    function safeTransfer(IERC20 token, address to, uint256 value, bytes4 selector) internal {
         (bool success, bytes memory returndata) =
-            address(token).call(abi.encodeCall(IERC20Internal.transfer, (to, value)));
+            address(token).call(abi.encodeWithSelector(IERC20Internal.transfer.selector, to, value, selector));
         require(success, ErrorsLib.TRANSFER_REVERTED);
         require(returndata.length == 0 || abi.decode(returndata, (bool)), ErrorsLib.TRANSFER_RETURNED_FALSE);
     }
 
     /// @dev Warning: It does not revert on `token` with no code.
-    function safeTransferFrom(IERC20 token, address from, address to, uint256 value) internal {
+    function safeTransferFrom(IERC20 token, address from, address to, uint256 value, bytes4 selector) internal {
         (bool success, bytes memory returndata) =
-            address(token).call(abi.encodeCall(IERC20Internal.transferFrom, (from, to, value)));
+            address(token).call(abi.encodeWithSelector(IERC20Internal.transferFrom.selector, from, to, value, selector));
         require(success, ErrorsLib.TRANSFER_FROM_REVERTED);
         require(returndata.length == 0 || abi.decode(returndata, (bool)), ErrorsLib.TRANSFER_FROM_RETURNED_FALSE);
     }

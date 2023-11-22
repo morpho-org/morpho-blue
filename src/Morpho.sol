@@ -188,7 +188,7 @@ contract Morpho is IMorphoStaticTyping {
 
         if (data.length > 0) IMorphoSupplyCallback(msg.sender).onMorphoSupply(assets, data);
 
-        IERC20(marketParams.loanToken).safeTransferFrom(msg.sender, address(this), assets);
+        IERC20(marketParams.loanToken).safeTransferFrom(msg.sender, address(this), assets, Morpho.supply.selector);
 
         return (assets, shares);
     }
@@ -221,7 +221,7 @@ contract Morpho is IMorphoStaticTyping {
 
         emit EventsLib.Withdraw(id, msg.sender, onBehalf, receiver, assets, shares);
 
-        IERC20(marketParams.loanToken).safeTransfer(receiver, assets);
+        IERC20(marketParams.loanToken).safeTransfer(receiver, assets, Morpho.withdraw.selector);
 
         return (assets, shares);
     }
@@ -257,7 +257,7 @@ contract Morpho is IMorphoStaticTyping {
 
         emit EventsLib.Borrow(id, msg.sender, onBehalf, receiver, assets, shares);
 
-        IERC20(marketParams.loanToken).safeTransfer(receiver, assets);
+        IERC20(marketParams.loanToken).safeTransfer(receiver, assets, Morpho.borrow.selector);
 
         return (assets, shares);
     }
@@ -289,7 +289,7 @@ contract Morpho is IMorphoStaticTyping {
 
         if (data.length > 0) IMorphoRepayCallback(msg.sender).onMorphoRepay(assets, data);
 
-        IERC20(marketParams.loanToken).safeTransferFrom(msg.sender, address(this), assets);
+        IERC20(marketParams.loanToken).safeTransferFrom(msg.sender, address(this), assets, Morpho.repay.selector);
 
         return (assets, shares);
     }
@@ -313,7 +313,9 @@ contract Morpho is IMorphoStaticTyping {
 
         if (data.length > 0) IMorphoSupplyCollateralCallback(msg.sender).onMorphoSupplyCollateral(assets, data);
 
-        IERC20(marketParams.collateralToken).safeTransferFrom(msg.sender, address(this), assets);
+        IERC20(marketParams.collateralToken).safeTransferFrom(
+            msg.sender, address(this), assets, Morpho.supplyCollateral.selector
+        );
     }
 
     /// @inheritdoc IMorphoBase
@@ -335,7 +337,7 @@ contract Morpho is IMorphoStaticTyping {
 
         emit EventsLib.WithdrawCollateral(id, msg.sender, onBehalf, receiver, assets);
 
-        IERC20(marketParams.collateralToken).safeTransfer(receiver, assets);
+        IERC20(marketParams.collateralToken).safeTransfer(receiver, assets, Morpho.withdrawCollateral.selector);
     }
 
     /* LIQUIDATION */
@@ -398,14 +400,16 @@ contract Morpho is IMorphoStaticTyping {
             position[id][borrower].borrowShares = 0;
         }
 
-        IERC20(marketParams.collateralToken).safeTransfer(msg.sender, seizedAssets);
+        IERC20(marketParams.collateralToken).safeTransfer(msg.sender, seizedAssets, Morpho.liquidate.selector);
 
         // `repaidAssets` may be greater than `totalBorrowAssets` by 1.
         emit EventsLib.Liquidate(id, msg.sender, borrower, repaidAssets, repaidShares, seizedAssets, badDebtShares);
 
         if (data.length > 0) IMorphoLiquidateCallback(msg.sender).onMorphoLiquidate(repaidAssets, data);
 
-        IERC20(marketParams.loanToken).safeTransferFrom(msg.sender, address(this), repaidAssets);
+        IERC20(marketParams.loanToken).safeTransferFrom(
+            msg.sender, address(this), repaidAssets, Morpho.liquidate.selector
+        );
 
         return (seizedAssets, repaidAssets);
     }
@@ -414,13 +418,13 @@ contract Morpho is IMorphoStaticTyping {
 
     /// @inheritdoc IMorphoBase
     function flashLoan(address token, uint256 assets, bytes calldata data) external {
-        IERC20(token).safeTransfer(msg.sender, assets);
+        IERC20(token).safeTransfer(msg.sender, assets, Morpho.flashLoan.selector);
 
         emit EventsLib.FlashLoan(msg.sender, token, assets);
 
         IMorphoFlashLoanCallback(msg.sender).onMorphoFlashLoan(assets, data);
 
-        IERC20(token).safeTransferFrom(msg.sender, address(this), assets);
+        IERC20(token).safeTransferFrom(msg.sender, address(this), assets, Morpho.flashLoan.selector);
     }
 
     /* AUTHORIZATION */

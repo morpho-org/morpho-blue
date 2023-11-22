@@ -86,10 +86,10 @@ contract SafeTransferLibTest is Test {
     }
 
     function safeTransfer(address token, address to, uint256 amount) external {
-        IERC20(token).safeTransfer(to, amount);
+        IERC20(token).safeTransfer(to, amount, 0x00000000);
     }
 
     function safeTransferFrom(address token, address from, address to, uint256 amount) external {
-        IERC20(token).safeTransferFrom(from, to, amount);
+        IERC20(token).safeTransferFrom(from, to, amount, 0x00000000);
     }
 }
