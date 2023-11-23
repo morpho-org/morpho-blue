@@ -3,15 +3,12 @@ pragma solidity ^0.8.0;
 
 import "../InvariantTest.sol";
 
-contract MorphoInvariantTest is InvariantTest {
+contract BaseMorphoInvariantTest is InvariantTest {
     using MathLib for uint256;
     using SharesMathLib for uint256;
     using MorphoLib for IMorpho;
     using MorphoBalancesLib for IMorpho;
     using MarketParamsLib for MarketParams;
-
-    uint256 internal immutable MIN_PRICE = ORACLE_PRICE_SCALE / 10;
-    uint256 internal immutable MAX_PRICE = ORACLE_PRICE_SCALE * 10;
 
     address internal immutable USER;
 
@@ -22,19 +19,6 @@ contract MorphoInvariantTest is InvariantTest {
     }
 
     function setUp() public virtual override {
-        _weightSelector(this.setPrice.selector, 10);
-        _weightSelector(this.setFeeNoRevert.selector, 5);
-        _weightSelector(this.supplyAssetsOnBehalfNoRevert.selector, 100);
-        _weightSelector(this.supplySharesOnBehalfNoRevert.selector, 100);
-        _weightSelector(this.withdrawAssetsOnBehalfNoRevert.selector, 50);
-        _weightSelector(this.borrowAssetsOnBehalfNoRevert.selector, 75);
-        _weightSelector(this.repayAssetsOnBehalfNoRevert.selector, 35);
-        _weightSelector(this.repaySharesOnBehalfNoRevert.selector, 35);
-        _weightSelector(this.supplyCollateralOnBehalfNoRevert.selector, 100);
-        _weightSelector(this.withdrawCollateralOnBehalfNoRevert.selector, 50);
-        _weightSelector(this.liquidateSeizedAssetsNoRevert.selector, 5);
-        _weightSelector(this.liquidateRepaidSharesNoRevert.selector, 5);
-
         super.setUp();
 
         allMarketParams.push(marketParams);
@@ -191,12 +175,6 @@ contract MorphoInvariantTest is InvariantTest {
 
     /* HANDLERS */
 
-    function setPrice(uint256 price) external {
-        price = bound(price, MIN_PRICE, MAX_PRICE);
-
-        oracle.setPrice(price);
-    }
-
     function setFeeNoRevert(uint256 marketSeed, uint256 newFee) external {
         MarketParams memory _marketParams = _randomMarket(marketSeed);
         Id _id = _marketParams.id();
@@ -316,10 +294,10 @@ contract MorphoInvariantTest is InvariantTest {
         _withdrawCollateral(_marketParams, assets, onBehalf, receiver);
     }
 
-    function liquidateSeizedAssetsNoRevert(uint256 marketSeed, uint256 seizedAssets, uint256 onBehalfSeed) external {
+    function liquidateSeizedAssetsNoRevert(uint256 marketSeed, uint256 seizedAssets, uint256 borrowerSeed) external {
         MarketParams memory _marketParams = _randomMarket(marketSeed);
 
-        address borrower = _randomUnhealthyBorrower(targetSenders(), _marketParams, onBehalfSeed);
+        address borrower = _randomUnhealthyBorrower(targetSenders(), _marketParams, borrowerSeed);
         if (borrower == address(0)) return;
 
         seizedAssets = _boundLiquidateSeizedAssets(_marketParams, borrower, seizedAssets);
@@ -328,90 +306,15 @@ contract MorphoInvariantTest is InvariantTest {
         _liquidateSeizedAssets(_marketParams, borrower, seizedAssets);
     }
 
-    function liquidateRepaidSharesNoRevert(uint256 marketSeed, uint256 repaidShares, uint256 onBehalfSeed) external {
+    function liquidateRepaidSharesNoRevert(uint256 marketSeed, uint256 repaidShares, uint256 borrowerSeed) external {
         MarketParams memory _marketParams = _randomMarket(marketSeed);
 
-        address borrower = _randomUnhealthyBorrower(targetSenders(), _marketParams, onBehalfSeed);
+        address borrower = _randomUnhealthyBorrower(targetSenders(), _marketParams, borrowerSeed);
         if (borrower == address(0)) return;
 
         repaidShares = _boundLiquidateRepaidShares(_marketParams, borrower, repaidShares);
         if (repaidShares == 0) return;
 
         _liquidateRepaidShares(_marketParams, borrower, repaidShares);
-    }
-
-    /* INVARIANTS */
-
-    function invariantSupplyShares() public {
-        address[] memory users = targetSenders();
-
-        for (uint256 i; i < allMarketParams.length; ++i) {
-            MarketParams memory _marketParams = allMarketParams[i];
-            Id _id = _marketParams.id();
-
-            uint256 sumSupplyShares = morpho.supplyShares(_id, FEE_RECIPIENT);
-            for (uint256 j; j < users.length; ++j) {
-                sumSupplyShares += morpho.supplyShares(_id, users[j]);
-            }
-
-            assertEq(sumSupplyShares, morpho.totalSupplyShares(_id), vm.toString(_marketParams.lltv));
-        }
-    }
-
-    function invariantBorrowShares() public {
-        address[] memory users = targetSenders();
-
-        for (uint256 i; i < allMarketParams.length; ++i) {
-            MarketParams memory _marketParams = allMarketParams[i];
-            Id _id = _marketParams.id();
-
-            uint256 sumBorrowShares;
-            for (uint256 j; j < users.length; ++j) {
-                sumBorrowShares += morpho.borrowShares(_id, users[j]);
-            }
-
-            assertEq(sumBorrowShares, morpho.totalBorrowShares(_id), vm.toString(_marketParams.lltv));
-        }
-    }
-
-    function invariantTotalSupplyGeTotalBorrow() public {
-        for (uint256 i; i < allMarketParams.length; ++i) {
-            MarketParams memory _marketParams = allMarketParams[i];
-            Id _id = _marketParams.id();
-
-            assertGe(morpho.totalSupplyAssets(_id), morpho.totalBorrowAssets(_id));
-        }
-    }
-
-    function invariantMorphoBalance() public {
-        for (uint256 i; i < allMarketParams.length; ++i) {
-            MarketParams memory _marketParams = allMarketParams[i];
-            Id _id = _marketParams.id();
-
-            assertGe(
-                loanToken.balanceOf(address(morpho)) + morpho.totalBorrowAssets(_id), morpho.totalSupplyAssets(_id)
-            );
-        }
-    }
-
-    function invariantBadDebt() public {
-        address[] memory users = targetSenders();
-
-        for (uint256 i; i < allMarketParams.length; ++i) {
-            MarketParams memory _marketParams = allMarketParams[i];
-            Id _id = _marketParams.id();
-
-            for (uint256 j; j < users.length; ++j) {
-                address user = users[j];
-
-                if (morpho.collateral(_id, user) == 0) {
-                    assertEq(
-                        morpho.borrowShares(_id, user),
-                        0,
-                        string.concat(vm.toString(_marketParams.lltv), ":", vm.toString(user))
-                    );
-                }
-            }
-        }
     }
 }
