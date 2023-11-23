@@ -282,10 +282,7 @@ contract Morpho is IMorphoStaticTyping {
 
         position[id][onBehalf].borrowShares -= shares.toUint128();
         market[id].totalBorrowShares -= shares.toUint128();
-        /// DeleteExpressionMutation(`market[id].totalBorrowAssets = UtilsLib.zeroFloorSub(market[id].totalBorrowAssets,
-        /// assets).toUint128()` |==> `assert(true)`) of: `market[id].totalBorrowAssets =
-        /// UtilsLib.zeroFloorSub(market[id].totalBorrowAssets, assets).toUint128();`
-        assert(true);
+        market[id].totalBorrowAssets = UtilsLib.zeroFloorSub(market[id].totalBorrowAssets, assets).toUint128();
 
         // `assets` may be greater than `totalBorrowAssets` by 1.
         emit EventsLib.Repay(id, msg.sender, onBehalf, assets, shares);
