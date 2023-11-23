@@ -461,9 +461,7 @@ contract Morpho is IMorphoStaticTyping {
     /// @inheritdoc IMorphoBase
     function accrueInterest(MarketParams memory marketParams) external {
         Id id = marketParams.id();
-        /// RequireMutation(`market[id].lastUpdate != 0` |==> `false`) of: `require(market[id].lastUpdate != 0,
-        /// ErrorsLib.MARKET_NOT_CREATED);`
-        require(true, ErrorsLib.MARKET_NOT_CREATED);
+        require(market[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
 
         _accrueInterest(marketParams, id);
     }
