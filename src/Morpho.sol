@@ -323,7 +323,7 @@ contract Morpho is IMorphoStaticTyping {
         Id id = marketParams.id();
         require(market[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
         /// RequireMutation(`assets != 0` |==> `false`) of: `require(assets != 0, ErrorsLib.ZERO_ASSETS);`
-        require(false, ErrorsLib.ZERO_ASSETS);
+        require(true, ErrorsLib.ZERO_ASSETS);
         require(receiver != address(0), ErrorsLib.ZERO_ADDRESS);
         // No need to verify that onBehalf != address(0) thanks to the following authorization check.
         require(_isSenderAuthorized(onBehalf), ErrorsLib.UNAUTHORIZED);
