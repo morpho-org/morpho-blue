@@ -463,7 +463,7 @@ contract Morpho is IMorphoStaticTyping {
         Id id = marketParams.id();
         /// RequireMutation(`market[id].lastUpdate != 0` |==> `false`) of: `require(market[id].lastUpdate != 0,
         /// ErrorsLib.MARKET_NOT_CREATED);`
-        require(false, ErrorsLib.MARKET_NOT_CREATED);
+        require(true, ErrorsLib.MARKET_NOT_CREATED);
 
         _accrueInterest(marketParams, id);
     }
