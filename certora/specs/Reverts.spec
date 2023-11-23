@@ -168,7 +168,7 @@ rule liquidateInputValidation(env e, MorphoHarness.MarketParams marketParams, ad
 rule setAuthorizationWithSigInputValidation(env e, MorphoHarness.Authorization authorization, MorphoHarness.Signature signature) {
     uint256 nonceBefore = nonce(authorization.authorizer);
     setAuthorizationWithSig@withrevert(e, authorization, signature);
-    assert e.block.timestamp <= authorization.deadline || authorization.nonce != nonceBefore => lastReverted;
+    assert e.block.timestamp > authorization.deadline || authorization.nonce != nonceBefore => lastReverted;
 }
 
 // Check that accrueInterest reverts when its inputs are not validated.
