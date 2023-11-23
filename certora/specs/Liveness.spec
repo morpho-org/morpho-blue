@@ -39,6 +39,10 @@ function summarySafeTransferFrom(address token, address from, address to, uint25
     }
 }
 
+function min(mathint a, mathint b) returns mathint {
+    return a < b ? a : b;
+}
+
 // Assume no fee.
 // Summarize the accrue interest to avoid having to deal with reverts with absurdly high borrow rates.
 function summaryAccrueInterest(env e, MorphoInternalAccess.MarketParams marketParams, MorphoInternalAccess.Id id) {
@@ -157,6 +161,8 @@ rule repayChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams market
     mathint balanceBefore = myBalances[marketParams.loanToken];
     mathint liquidityBefore = totalSupplyAssets(id) - totalBorrowAssets(id);
 
+    mathint borrowAssetsBefore = totalBorrowAssets(id);
+
     uint256 repaidAssets;
     uint256 repaidShares;
     repaidAssets, repaidShares = repay(e, marketParams, assets, shares, onBehalf, data);
@@ -169,8 +175,8 @@ rule repayChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams market
     assert assets == 0 => repaidShares == shares;
     assert sharesAfter == sharesBefore - repaidShares;
     assert balanceAfter == balanceBefore + repaidAssets;
-    // Added condition to omit the floor case of the subtraction in totaBorrowAssets.
-    assert totalBorrowAssets(id) != 0 => liquidityAfter == liquidityBefore + repaidAssets;
+    // Taking the min to handle the zeroFloorSub in the code.
+    assert liquidityAfter == liquidityBefore + min(repaidAssets, borrowAssetsBefore);
 }
 
 // Check that tokens and balances are properly accounted following a supplyCollateral.
