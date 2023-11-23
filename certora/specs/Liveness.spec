@@ -80,7 +80,7 @@ rule supplyChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams marke
     mathint balanceAfter = myBalances[marketParams.loanToken];
 
     assert assets != 0 => suppliedAssets == assets;
-    assert assets == 0 => suppliedShares == shares;
+    assert shares != 0 => suppliedShares == shares;
     assert sharesAfter == sharesBefore + suppliedShares;
     assert balanceAfter == balanceBefore + suppliedAssets;
 }
@@ -105,7 +105,7 @@ rule withdrawChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams mar
     mathint balanceAfter = myBalances[marketParams.loanToken];
 
     assert assets != 0 => withdrawnAssets == assets;
-    assert assets == 0 => withdrawnShares == shares;
+    assert shares != 0 => withdrawnShares == shares;
     assert sharesAfter == sharesBefore - withdrawnShares;
     assert balanceAfter == balanceBefore - withdrawnAssets;
 }
@@ -130,7 +130,7 @@ rule borrowChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams marke
     mathint balanceAfter = myBalances[marketParams.loanToken];
 
     assert assets != 0 => borrowedAssets == assets;
-    assert assets == 0 => borrowedShares == shares;
+    assert shares != 0 => borrowedShares == shares;
     assert sharesAfter == sharesBefore + borrowedShares;
     assert balanceAfter == balanceBefore - borrowedAssets;
 }
@@ -155,7 +155,7 @@ rule repayChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams market
     mathint balanceAfter = myBalances[marketParams.loanToken];
 
     assert assets != 0 => repaidAssets == assets;
-    assert assets == 0 => repaidShares == shares;
+    assert shares != 0 => repaidShares == shares;
     assert sharesAfter == sharesBefore - repaidShares;
     assert balanceAfter == balanceBefore + repaidAssets;
 }
