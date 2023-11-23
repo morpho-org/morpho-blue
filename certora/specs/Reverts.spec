@@ -161,3 +161,10 @@ rule liquidateInputValidation(env e, MorphoHarness.MarketParams marketParams, ad
     liquidate@withrevert(e, marketParams, borrower, seizedAssets, repaidShares, data);
     assert !exactlyOneZero(seizedAssets, repaidShares) => lastReverted;
 }
+
+// Check that accrueInterest reverts when its inputs are not validated.
+rule accrueInterestInputValidation(env e, MorphoHarness.MarketParams marketParams) {
+    uint256 lastUpdate = lastUpdate(libId(marketParams));
+    accrueInterest@withrevert(e, marketParams);
+    assert lastUpdate == 0 => lastReverted;
+}
