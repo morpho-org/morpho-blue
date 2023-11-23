@@ -225,6 +225,8 @@ rule liquidateChangesTokens(env e, MorphoInternalAccess.MarketParams marketParam
 
     // Safe require because Morpho cannot call such functions by itself.
     require currentContract != e.msg.sender;
+    // Assumption to simplify the balance specification in the rest of this rule.
+    require marketParams.loanToken != marketParams.collateralToken;
     // Assumption to ensure that no interest is accumulated.
     require lastUpdate(id) == e.block.timestamp;
 
