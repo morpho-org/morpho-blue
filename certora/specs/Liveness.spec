@@ -85,6 +85,15 @@ rule supplyChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams marke
     assert balanceAfter == balanceBefore + suppliedAssets;
 }
 
+// Check that you can supply non-zero tokens by passing shares.
+rule canSupplyByPassingShares(env e, MorphoInternalAccess.MarketParams marketParams, uint256 shares, address onBehalf, bytes data) {
+    uint256 suppliedAssets;
+    uint256 suppliedShares;
+    suppliedAssets, suppliedShares = supply(e, marketParams, 0, shares, onBehalf, data);
+
+    satisfy suppliedAssets != 0;
+}
+
 // Check that tokens and shares are properly accounted following a withdraw.
 rule withdrawChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, address receiver) {
     MorphoInternalAccess.Id id = libId(marketParams);
@@ -108,6 +117,15 @@ rule withdrawChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams mar
     assert assets == 0 => withdrawnShares == shares;
     assert sharesAfter == sharesBefore - withdrawnShares;
     assert balanceAfter == balanceBefore - withdrawnAssets;
+}
+
+// Check that you can withdraw non-zero tokens by passing shares.
+rule canWithdrawByPassingShares(env e, MorphoInternalAccess.MarketParams marketParams, uint256 shares, address onBehalf, address receiver) {
+    uint256 withdrawnAssets;
+    uint256 withdrawnShares;
+    withdrawnAssets, withdrawnShares = withdraw(e, marketParams, 0, shares, onBehalf, receiver);
+
+    satisfy withdrawnAssets != 0;
 }
 
 // Check that tokens and shares are properly accounted following a borrow.
@@ -135,6 +153,15 @@ rule borrowChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams marke
     assert balanceAfter == balanceBefore - borrowedAssets;
 }
 
+// Check that you can borrow non-zero tokens by passing shares.
+rule canBorrowByPassingShares(env e, MorphoInternalAccess.MarketParams marketParams, uint256 shares, address onBehalf, address receiver) {
+    uint256 borrowedAssets;
+    uint256 borrowedShares;
+    borrowedAssets, borrowedShares = borrow(e, marketParams, 0, shares, onBehalf, receiver);
+
+    satisfy borrowedAssets != 0;
+}
+
 // Check that tokens and shares are properly accounted following a repay.
 rule repayChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data) {
     MorphoInternalAccess.Id id = libId(marketParams);
@@ -158,6 +185,15 @@ rule repayChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams market
     assert assets == 0 => repaidShares == shares;
     assert sharesAfter == sharesBefore - repaidShares;
     assert balanceAfter == balanceBefore + repaidAssets;
+}
+
+// Check that you can repay non-zero tokens by passing shares.
+rule canRepayByPassingShares(env e, MorphoInternalAccess.MarketParams marketParams, uint256 shares, address onBehalf, bytes data) {
+    uint256 repaidAssets;
+    uint256 repaidShares;
+    repaidAssets, repaidShares = repay(e, marketParams, 0, shares, onBehalf, data);
+
+    satisfy repaidAssets != 0;
 }
 
 // Check that tokens and balances are properly accounted following a supplyCollateral.
