@@ -71,6 +71,7 @@ rule supplyChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams marke
 
     mathint sharesBefore = supplyShares(id, onBehalf);
     mathint balanceBefore = myBalances[marketParams.loanToken];
+    mathint liquidityBefore = totalSupplyAssets(id) - totalBorrowAssets(id);
 
     uint256 suppliedAssets;
     uint256 suppliedShares;
@@ -78,11 +79,13 @@ rule supplyChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams marke
 
     mathint sharesAfter = supplyShares(id, onBehalf);
     mathint balanceAfter = myBalances[marketParams.loanToken];
+    mathint liquidityAfter = totalSupplyAssets(id) - totalBorrowAssets(id);
 
     assert assets != 0 => suppliedAssets == assets;
     assert assets == 0 => suppliedShares == shares;
     assert sharesAfter == sharesBefore + suppliedShares;
     assert balanceAfter == balanceBefore + suppliedAssets;
+    assert liquidityAfter == liquidityBefore + suppliedAssets;
 }
 
 // Check that tokens and shares are properly accounted following a withdraw.
@@ -96,6 +99,7 @@ rule withdrawChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams mar
 
     mathint sharesBefore = supplyShares(id, onBehalf);
     mathint balanceBefore = myBalances[marketParams.loanToken];
+    mathint liquidityBefore = totalSupplyAssets(id) - totalBorrowAssets(id);
 
     uint256 withdrawnAssets;
     uint256 withdrawnShares;
@@ -103,11 +107,13 @@ rule withdrawChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams mar
 
     mathint sharesAfter = supplyShares(id, onBehalf);
     mathint balanceAfter = myBalances[marketParams.loanToken];
+    mathint liquidityAfter = totalSupplyAssets(id) - totalBorrowAssets(id);
 
     assert assets != 0 => withdrawnAssets == assets;
     assert assets == 0 => withdrawnShares == shares;
     assert sharesAfter == sharesBefore - withdrawnShares;
     assert balanceAfter == balanceBefore - withdrawnAssets;
+    assert liquidityAfter == liquidityBefore - withdrawnAssets;
 }
 
 // Check that tokens and shares are properly accounted following a borrow.
@@ -121,6 +127,7 @@ rule borrowChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams marke
 
     mathint sharesBefore = borrowShares(id, onBehalf);
     mathint balanceBefore = myBalances[marketParams.loanToken];
+    mathint liquidityBefore = totalSupplyAssets(id) - totalBorrowAssets(id);
 
     uint256 borrowedAssets;
     uint256 borrowedShares;
@@ -128,11 +135,13 @@ rule borrowChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams marke
 
     mathint sharesAfter = borrowShares(id, onBehalf);
     mathint balanceAfter = myBalances[marketParams.loanToken];
+    mathint liquidityAfter = totalSupplyAssets(id) - totalBorrowAssets(id);
 
     assert assets != 0 => borrowedAssets == assets;
     assert assets == 0 => borrowedShares == shares;
     assert sharesAfter == sharesBefore + borrowedShares;
     assert balanceAfter == balanceBefore - borrowedAssets;
+    assert liquidityAfter == liquidityBefore - borrowedAssets;
 }
 
 // Check that tokens and shares are properly accounted following a repay.
@@ -146,6 +155,7 @@ rule repayChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams market
 
     mathint sharesBefore = borrowShares(id, onBehalf);
     mathint balanceBefore = myBalances[marketParams.loanToken];
+    mathint liquidityBefore = totalSupplyAssets(id) - totalBorrowAssets(id);
 
     uint256 repaidAssets;
     uint256 repaidShares;
@@ -153,11 +163,14 @@ rule repayChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams market
 
     mathint sharesAfter = borrowShares(id, onBehalf);
     mathint balanceAfter = myBalances[marketParams.loanToken];
+    mathint liquidityAfter = totalSupplyAssets(id) - totalBorrowAssets(id);
 
     assert assets != 0 => repaidAssets == assets;
     assert assets == 0 => repaidShares == shares;
     assert sharesAfter == sharesBefore - repaidShares;
     assert balanceAfter == balanceBefore + repaidAssets;
+    // Added condition to omit the floor case of the subtraction in totaBorrowAssets.
+    assert totalBorrowAssets(id) != 0 => liquidityAfter == liquidityBefore + repaidAssets;
 }
 
 // Check that tokens and balances are properly accounted following a supplyCollateral.
