@@ -220,7 +220,7 @@ rule withdrawCollateralChangesTokensAndBalance(env e, MorphoInternalAccess.Marke
 }
 
 // Check that tokens are properly accounted following a liquidate.
-rule liquidateChangesTokens(env e, MorphoInternalAccess.MarketParams marketParams, address borrower, uint256 seized, uint256 repaid, bytes data) {
+rule liquidateChangesTokens(env e, MorphoInternalAccess.MarketParams marketParams, address borrower, uint256 seized, uint256 repaidShares, bytes data) {
     MorphoInternalAccess.Id id = libId(marketParams);
 
     // Safe require because Morpho cannot call such functions by itself.
@@ -237,7 +237,7 @@ rule liquidateChangesTokens(env e, MorphoInternalAccess.MarketParams marketParam
 
     uint256 seizedAssets;
     uint256 repaidAssets;
-    seizedAssets, repaidAssets = liquidate(e, marketParams, borrower, seized, repaid, data);
+    seizedAssets, repaidAssets = liquidate(e, marketParams, borrower, seized, repaidShares, data);
 
     mathint collateralAfter = collateral(id, borrower);
     mathint balanceLoanAfter = myBalances[marketParams.loanToken];
@@ -245,8 +245,6 @@ rule liquidateChangesTokens(env e, MorphoInternalAccess.MarketParams marketParam
     mathint liquidityAfter = totalSupplyAssets(id) - totalBorrowAssets(id);
 
     assert seized != 0 => seizedAssets == seized;
-    assert repaid != 0 => repaidAssets == repaid;
-    // Added collateralbefore > seizedAssets condition to omit bad debt scenarios.
     assert collateralBefore > to_mathint(seizedAssets) => collateralAfter == collateralBefore - seizedAssets;
     assert balanceLoanAfter == balanceLoanBefore + repaidAssets;
     assert balanceCollateralAfter == balanceCollateralBefore - seizedAssets;
