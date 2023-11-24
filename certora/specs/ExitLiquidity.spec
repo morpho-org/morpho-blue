@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 methods {
     function extSloads(bytes32[]) external returns bytes32[] => NONDET DELETE;
+
     function supplyShares(MorphoHarness.Id, address) external returns uint256 envfree;
     function borrowShares(MorphoHarness.Id, address) external returns uint256 envfree;
     function collateral(MorphoHarness.Id, address) external returns uint256 envfree;
@@ -8,7 +9,6 @@ methods {
     function virtualTotalSupplyShares(MorphoHarness.Id) external returns uint256 envfree;
     function virtualTotalBorrowAssets(MorphoHarness.Id) external returns uint256 envfree;
     function virtualTotalBorrowShares(MorphoHarness.Id) external returns uint256 envfree;
-
     function lastUpdate(MorphoHarness.Id) external returns uint256 envfree;
 
     function libMulDivDown(uint256, uint256, uint256) external returns uint256 envfree;

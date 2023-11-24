@@ -1,15 +1,18 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 methods {
     function extSloads(bytes32[]) external returns bytes32[] => NONDET DELETE;
+    function supplyShares(MorphoInternalAccess.Id, address) external returns uint256 envfree;
+    function borrowShares(MorphoInternalAccess.Id, address) external returns uint256 envfree;
+    function collateral(MorphoInternalAccess.Id, address) external returns uint256 envfree;
     function totalSupplyAssets(MorphoInternalAccess.Id) external returns uint256 envfree;
     function totalSupplyShares(MorphoInternalAccess.Id) external returns uint256 envfree;
     function totalBorrowAssets(MorphoInternalAccess.Id) external returns uint256 envfree;
     function totalBorrowShares(MorphoInternalAccess.Id) external returns uint256 envfree;
-    function supplyShares(MorphoInternalAccess.Id, address) external returns uint256 envfree;
-    function borrowShares(MorphoInternalAccess.Id, address) external returns uint256 envfree;
-    function collateral(MorphoInternalAccess.Id, address) external returns uint256 envfree;
     function fee(MorphoInternalAccess.Id) external returns uint256 envfree;
     function lastUpdate(MorphoInternalAccess.Id) external returns uint256 envfree;
+    function nonce(address) external returns uint256 envfree;
+    function isAuthorized(address, address) external returns bool envfree;
+
     function libId(MorphoInternalAccess.MarketParams) external returns MorphoInternalAccess.Id envfree;
     function refId(MorphoInternalAccess.MarketParams) external returns MorphoInternalAccess.Id envfree;
 
@@ -288,6 +291,18 @@ rule liquidateChangesTokens(env e, MorphoInternalAccess.MarketParams marketParam
     assert balanceCollateralAfter == balanceCollateralBefore - seizedAssets;
     // Taking the min to handle the zeroFloorSub in the code.
     assert liquidityAfter == liquidityBefore + min(repaidAssets, borrowLoanAssetsBefore);
+}
+
+// Check that nonce and authorization are properly updated with calling setAuthorizationWithSig.
+rule setAuthorizationWithSigChangesNonceAndAuthorizes(env e, MorphoInternalAccess.Authorization authorization, MorphoInternalAccess.Signature signature) {
+    mathint nonceBefore = nonce(authorization.authorizer);
+
+    setAuthorizationWithSig(e, authorization, signature);
+
+    mathint nonceAfter = nonce(authorization.authorizer);
+
+    assert nonceAfter == nonceBefore + 1;
+    assert isAuthorized(authorization.authorizer, authorization.authorized) == authorization.isAuthorized;
 }
 
 // Check that one can always repay the debt in full.

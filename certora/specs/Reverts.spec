@@ -1,19 +1,21 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 methods {
     function extSloads(bytes32[]) external returns bytes32[] => NONDET DELETE;
+
     function owner() external returns address envfree;
+    function feeRecipient() external returns address envfree;
     function totalSupplyAssets(MorphoHarness.Id) external returns uint256 envfree;
     function totalBorrowAssets(MorphoHarness.Id) external returns uint256 envfree;
     function totalSupplyShares(MorphoHarness.Id) external returns uint256 envfree;
     function totalBorrowShares(MorphoHarness.Id) external returns uint256 envfree;
     function lastUpdate(MorphoHarness.Id) external returns uint256 envfree;
-
-    function feeRecipient() external returns address envfree;
-    function isLltvEnabled(uint256) external returns bool envfree;
     function isIrmEnabled(address) external returns bool envfree;
+    function isLltvEnabled(uint256) external returns bool envfree;
     function isAuthorized(address, address) external returns bool envfree;
+    function nonce(address) external returns uint256 envfree;
 
     function libId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
+
     function maxFee() external returns uint256 envfree;
     function wad() external returns uint256 envfree;
 }
@@ -156,10 +158,17 @@ rule withdrawCollateralInputValidation(env e, MorphoHarness.MarketParams marketP
     assert assets == 0 || onBehalf == 0 => lastReverted;
 }
 
-// Check that liqudiate reverts when its inputs are not validated.
+// Check that liquidate reverts when its inputs are not validated.
 rule liquidateInputValidation(env e, MorphoHarness.MarketParams marketParams, address borrower, uint256 seizedAssets, uint256 repaidShares, bytes data) {
     liquidate@withrevert(e, marketParams, borrower, seizedAssets, repaidShares, data);
     assert !exactlyOneZero(seizedAssets, repaidShares) => lastReverted;
+}
+
+// Check that setAuthorizationWithSig reverts when its inputs are not validated.
+rule setAuthorizationWithSigInputValidation(env e, MorphoHarness.Authorization authorization, MorphoHarness.Signature signature) {
+    uint256 nonceBefore = nonce(authorization.authorizer);
+    setAuthorizationWithSig@withrevert(e, authorization, signature);
+    assert e.block.timestamp > authorization.deadline || authorization.nonce != nonceBefore => lastReverted;
 }
 
 // Check that accrueInterest reverts when its inputs are not validated.
