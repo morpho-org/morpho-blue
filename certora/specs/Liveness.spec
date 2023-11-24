@@ -219,6 +219,41 @@ rule withdrawCollateralChangesTokensAndBalance(env e, MorphoInternalAccess.Marke
     assert balanceAfter == balanceBefore - assets;
 }
 
+// Check that tokens are properly accounted following a liquidate.
+rule liquidateChangesTokens(env e, MorphoInternalAccess.MarketParams marketParams, address borrower, uint256 seized, uint256 repaidShares, bytes data) {
+    MorphoInternalAccess.Id id = libId(marketParams);
+
+    // Safe require because Morpho cannot call such functions by itself.
+    require currentContract != e.msg.sender;
+    // Assumption to simplify the balance specification in the rest of this rule.
+    require marketParams.loanToken != marketParams.collateralToken;
+    // Assumption to ensure that no interest is accumulated.
+    require lastUpdate(id) == e.block.timestamp;
+
+    mathint collateralBefore = collateral(id, borrower);
+    mathint balanceLoanBefore = myBalances[marketParams.loanToken];
+    mathint balanceCollateralBefore = myBalances[marketParams.collateralToken];
+    mathint liquidityBefore = totalSupplyAssets(id) - totalBorrowAssets(id);
+
+    mathint borrowLoanAssetsBefore = totalBorrowAssets(id);
+
+    uint256 seizedAssets;
+    uint256 repaidAssets;
+    seizedAssets, repaidAssets = liquidate(e, marketParams, borrower, seized, repaidShares, data);
+
+    mathint collateralAfter = collateral(id, borrower);
+    mathint balanceLoanAfter = myBalances[marketParams.loanToken];
+    mathint balanceCollateralAfter = myBalances[marketParams.collateralToken];
+    mathint liquidityAfter = totalSupplyAssets(id) - totalBorrowAssets(id);
+
+    assert seized != 0 => seizedAssets == seized;
+    assert collateralBefore > to_mathint(seizedAssets) => collateralAfter == collateralBefore - seizedAssets;
+    assert balanceLoanAfter == balanceLoanBefore + repaidAssets;
+    assert balanceCollateralAfter == balanceCollateralBefore - seizedAssets;
+    // Taking the min to handle the zeroFloorSub in the code.
+    assert liquidityAfter == liquidityBefore + min(repaidAssets, borrowLoanAssetsBefore);
+}
+
 // Check that one can always repay the debt in full.
 rule canRepayAll(env e, MorphoInternalAccess.MarketParams marketParams, uint256 shares, bytes data) {
     MorphoInternalAccess.Id id = libId(marketParams);
