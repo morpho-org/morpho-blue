@@ -30,7 +30,7 @@ function summaryMulDivDown(uint256 x, uint256 y, uint256 d) returns uint256 {
 
 // Check that when not accruing interest, and when repaying all, the borrow ratio is at least reset to the initial ratio.
 // More details on the purpose of this rule in RatioMath.spec.
-rule repayAllResetsBorrowRatio(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onbehalf, bytes data) {
+rule repayAllResetsBorrowRatio(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data) {
     MorphoHarness.Id id = libId(marketParams);
     // Safe require because this invariant is checked in ConsistentState.spec
     require fee(id) <= maxFee();
@@ -42,7 +42,7 @@ rule repayAllResetsBorrowRatio(env e, MorphoHarness.MarketParams marketParams, u
     require lastUpdate(id) == e.block.timestamp;
 
     mathint repaidAssets;
-    repaidAssets, _ = repay(e, marketParams, assets, shares, onbehalf, data);
+    repaidAssets, _ = repay(e, marketParams, assets, shares, onBehalf, data);
 
     // Check the case where the market is fully repaid.
     require repaidAssets >= assetsBefore;
@@ -60,7 +60,7 @@ rule supplyWithdraw() {
     MorphoHarness.Id id = libId(marketParams);
     uint256 assets;
     uint256 shares;
-    address onbehalf;
+    address onBehalf;
     address receiver;
     bytes data;
     env e1;
@@ -73,7 +73,7 @@ rule supplyWithdraw() {
 
     uint256 suppliedAssets;
     uint256 suppliedShares;
-    suppliedAssets, suppliedShares = supply(e1, marketParams, assets, shares, onbehalf, data);
+    suppliedAssets, suppliedShares = supply(e1, marketParams, assets, shares, onBehalf, data);
 
     // Hints for the prover.
     assert suppliedAssets * (virtualTotalSupplyShares(id) - suppliedShares) >= suppliedShares * (virtualTotalSupplyAssets(id) - suppliedAssets);
@@ -81,7 +81,7 @@ rule supplyWithdraw() {
 
     uint256 withdrawnAssets;
     uint256 withdrawnShares;
-    withdrawnAssets, withdrawnShares = withdraw(e2, marketParams, 0, suppliedShares, onbehalf, receiver);
+    withdrawnAssets, withdrawnShares = withdraw(e2, marketParams, 0, suppliedShares, onBehalf, receiver);
 
     assert withdrawnShares == suppliedShares;
     assert withdrawnAssets <= suppliedAssets;
@@ -93,7 +93,7 @@ rule withdrawSupply() {
     MorphoHarness.Id id = libId(marketParams);
     uint256 assets;
     uint256 shares;
-    address onbehalf;
+    address onBehalf;
     address receiver;
     bytes data;
     env e1;
@@ -106,7 +106,7 @@ rule withdrawSupply() {
 
     uint256 withdrawnAssets;
     uint256 withdrawnShares;
-    withdrawnAssets, withdrawnShares = withdraw(e2, marketParams, assets, shares, onbehalf, receiver);
+    withdrawnAssets, withdrawnShares = withdraw(e2, marketParams, assets, shares, onBehalf, receiver);
 
     // Hints for the prover.
     assert withdrawnAssets * (virtualTotalSupplyShares(id) + withdrawnShares) <= withdrawnShares * (virtualTotalSupplyAssets(id) + withdrawnAssets);
@@ -114,17 +114,19 @@ rule withdrawSupply() {
 
     uint256 suppliedAssets;
     uint256 suppliedShares;
-    suppliedAssets, suppliedShares = supply(e1, marketParams, withdrawnAssets, 0, onbehalf, data);
+    suppliedAssets, suppliedShares = supply(e1, marketParams, withdrawnAssets, 0, onBehalf, data);
 
-    assert suppliedAssets == withdrawnAssets && withdrawnShares >= suppliedShares;
+    assert withdrawnShares >= suppliedShares;
+    assert suppliedAssets == withdrawnAssets;
 }
 
+// There should be no profit from borrow followed immediately by repay.
 rule borrowRepay() {
     MorphoHarness.MarketParams marketParams;
     MorphoHarness.Id id = libId(marketParams);
     uint256 assets;
     uint256 shares;
-    address onbehalf;
+    address onBehalf;
     address receiver;
     bytes data;
     env e1;
@@ -137,7 +139,7 @@ rule borrowRepay() {
 
     uint256 borrowedAssets;
     uint256 borrowedShares;
-    borrowedAssets, borrowedShares = borrow(e2, marketParams, assets, shares, onbehalf, receiver);
+    borrowedAssets, borrowedShares = borrow(e2, marketParams, assets, shares, onBehalf, receiver);
 
     // Hints for the prover.
     assert borrowedAssets * (virtualTotalBorrowShares(id) + borrowedShares) <= borrowedShares * (virtualTotalBorrowAssets(id) + borrowedAssets);
@@ -145,7 +147,41 @@ rule borrowRepay() {
 
     uint256 repaidAssets;
     uint256 repaidShares;
-    repaidAssets, repaidShares = repay(e1, marketParams, borrowedAssets, 0, onbehalf, data);
+    repaidAssets, repaidShares = repay(e1, marketParams, borrowedAssets, 0, onBehalf, data);
 
-    assert repaidAssets == borrowedAssets && borrowedShares >= repaidShares;
+    assert borrowedShares >= repaidShares;
+    assert repaidAssets == borrowedAssets;
+}
+
+// There should be no profit from repay followed immediately by borrow.
+rule repayBorrow() {
+    MorphoHarness.MarketParams marketParams;
+    MorphoHarness.Id id = libId(marketParams);
+    uint256 assets;
+    uint256 shares;
+    address onBehalf;
+    address receiver;
+    bytes data;
+    env e1;
+    env e2;
+
+    // Assume that interactions to happen at the same block.
+    require e1.block.timestamp == e2.block.timestamp;
+    // Safe require because timestamps cannot realistically be that large.
+    require e1.block.timestamp < 2^128;
+
+    uint256 repaidAssets;
+    uint256 repaidShares;
+    repaidAssets, repaidShares = repay(e1, marketParams, assets, shares, onBehalf, data);
+
+    // Hints for the prover.
+    assert repaidAssets * (virtualTotalBorrowShares(id) - repaidShares) >= repaidShares * (virtualTotalBorrowAssets(id) - repaidAssets);
+    assert repaidAssets * virtualTotalBorrowShares(id) >= repaidShares * virtualTotalBorrowAssets(id);
+
+    uint256 borrowedAssets;
+    uint256 borrowedShares;
+    borrowedAssets, borrowedShares = withdraw(e2, marketParams, 0, repaidShares, onBehalf, receiver);
+
+    assert borrowedShares == repaidShares;
+    assert borrowedAssets <= repaidAssets;
 }
