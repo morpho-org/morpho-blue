@@ -140,8 +140,8 @@ rule borrowRepay() {
     borrowedAssets, borrowedShares = borrow(e2, marketParams, assets, shares, onbehalf, receiver);
 
     // Hints for the prover.
-    assert borrowedAssets * (virtualTotalSupplyShares(id) + borrowedShares) <= borrowedShares * (virtualTotalSupplyAssets(id) + borrowedAssets);
-    assert borrowedAssets * virtualTotalSupplyShares(id) <= borrowedShares * virtualTotalSupplyAssets(id);
+    assert borrowedAssets * (virtualTotalBorrowShares(id) + borrowedShares) <= borrowedShares * (virtualTotalBorrowAssets(id) + borrowedAssets);
+    assert borrowedAssets * virtualTotalBorrowShares(id) <= borrowedShares * virtualTotalBorrowAssets(id);
 
     uint256 repaidAssets;
     uint256 repaidShares;
