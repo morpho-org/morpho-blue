@@ -1,25 +1,25 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 methods {
     function extSloads(bytes32[]) external returns bytes32[] => NONDET DELETE;
+
+    function supplyShares(MorphoHarness.Id, address) external returns uint256 envfree;
+    function borrowShares(MorphoHarness.Id, address) external returns uint256 envfree;
+    function collateral(MorphoHarness.Id, address) external returns uint256 envfree;
     function totalSupplyAssets(MorphoHarness.Id) external returns uint256 envfree;
     function totalSupplyShares(MorphoHarness.Id) external returns uint256 envfree;
     function totalBorrowAssets(MorphoHarness.Id) external returns uint256 envfree;
     function totalBorrowShares(MorphoHarness.Id) external returns uint256 envfree;
-    function supplyShares(MorphoHarness.Id, address) external returns uint256 envfree;
-    function borrowShares(MorphoHarness.Id, address) external returns uint256 envfree;
-    function collateral(MorphoHarness.Id, address) external returns uint256 envfree;
     function fee(MorphoHarness.Id) external returns uint256 envfree;
     function lastUpdate(MorphoHarness.Id) external returns uint256 envfree;
-    function libId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
-
-    function isAuthorized(address, address) external returns bool envfree;
-    function isLltvEnabled(uint256) external returns bool envfree;
     function isIrmEnabled(address) external returns bool envfree;
-
-    function _.borrowRate(MorphoHarness.MarketParams, MorphoHarness.Market) external => HAVOC_ECF;
+    function isLltvEnabled(uint256) external returns bool envfree;
+    function isAuthorized(address, address) external returns bool envfree;
 
     function maxFee() external returns uint256 envfree;
     function wad() external returns uint256 envfree;
+    function libId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
+
+    function _.borrowRate(MorphoHarness.MarketParams, MorphoHarness.Market) external => HAVOC_ECF;
 
     function SafeTransferLib.safeTransfer(address token, address to, uint256 value) internal => summarySafeTransferFrom(token, currentContract, to, value);
     function SafeTransferLib.safeTransferFrom(address token, address from, address to, uint256 value) internal => summarySafeTransferFrom(token, from, to, value);

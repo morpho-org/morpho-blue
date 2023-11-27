@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 methods {
     function extSloads(bytes32[]) external returns bytes32[] => NONDET DELETE;
+
     function _.borrowRate(MorphoHarness.MarketParams marketParams, MorphoHarness.Market) external => summaryBorrowRate() expect uint256;
 }
 

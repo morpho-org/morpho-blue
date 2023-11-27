@@ -13,7 +13,7 @@ The Morpho Blue protocol allows users to take out collateralized loans on ERC20 
 For a given market, Morpho Blue relies on the fact that the tokens involved respect the ERC20 standard.
 In particular, in case of a transfer, it is assumed that the balance of Morpho Blue increases or decreases (depending if its the recipient or the sender) of the amount transferred.
 
-The file [Transfer.spec](./specs/Transfer.spec) defines a summary of the transfer functions.
+The file [Transfer.spec](specs/Transfer.spec) defines a summary of the transfer functions.
 This summary is taken as the reference implementation to check that the balance of the Morpho Blue contract changes as expected.
 
 ```solidity
@@ -31,9 +31,9 @@ where `balance` is the ERC20 balance of the Morpho Blue contract.
 
 The verification is done for the most common implementations of the ERC20 standard, for which we distinguish three different implementations:
 
-- [ERC20Standard](./dispatch/ERC20Standard.sol) which respects the standard and reverts in case of insufficient funds or in case of insufficient allowance.
-- [ERC20NoRevert](./dispatch/ERC20NoRevert.sol) which respects the standard but does not revert (and returns false instead).
-- [ERC20USDT](./dispatch/ERC20USDT.sol) which does not strictly respects the standard because it omits the return value of the `transfer` and `transferFrom` functions.
+- [ERC20Standard](dispatch/ERC20Standard.sol) which respects the standard and reverts in case of insufficient funds or in case of insufficient allowance.
+- [ERC20NoRevert](dispatch/ERC20NoRevert.sol) which respects the standard but does not revert (and returns false instead).
+- [ERC20USDT](dispatch/ERC20USDT.sol) which does not strictly respects the standard because it omits the return value of the `transfer` and `transferFrom` functions.
 
 Additionally, Morpho Blue always goes through a custom transfer library to handle ERC20 tokens, notably in all the above cases.
 This library reverts when the transfer is not successful, and this is checked for the case of insufficient funds or insufficient allowance.
@@ -238,40 +238,49 @@ assert withdrawnAssets <= owedAssets;
 
 # Folder and file structure
 
-The [`certora/specs`](./specs) folder contains the following files:
+The [`certora/specs`](specs) folder contains the following files:
 
-- [`AccrueInterest.spec`](./specs/AccrueInterest.spec) checks that the main functions accrue interest at the start of the interaction.
+- [`AccrueInterest.spec`](specs/AccrueInterest.spec) checks that the main functions accrue interest at the start of the interaction.
   This is done by ensuring that accruing interest before calling the function does not change the outcome compared to just calling the function.
   View functions do not necessarily respect this property (for example, `totalSupplyShares`), and are filtered out.
-- [`ConsistentState.spec`](./specs/ConsistentState.spec) checks that the state (storage) of the Morpho contract is consistent.
+- [`ConsistentState.spec`](specs/ConsistentState.spec) checks that the state (storage) of the Morpho contract is consistent.
   This includes checking that the accounting of the total amount and shares is correct, that markets are independent from each other, that only enabled IRMs and LLTVs can be used, and that users cannot have their position made worse by an unauthorized account.
-- [`ExactMath.spec`](./specs/ExactMath.spec) checks precise properties when taking into account exact multiplication and division.
+- [`ExactMath.spec`](specs/ExactMath.spec) checks precise properties when taking into account exact multiplication and division.
   Notably, this file specifies that using supply and withdraw in the same block cannot yield more funds than at the start.
-- [`ExitLiquidity.spec`](./specs/ExitLiquidity.spec) checks that when exiting a position with withdraw, withdrawCollateral, or repay, the user cannot get more than what was owed.
-- [`Health.spec`](./specs/Health.spec) checks properties about the health of the positions.
+- [`ExitLiquidity.spec`](specs/ExitLiquidity.spec) checks that when exiting a position with withdraw, withdrawCollateral, or repay, the user cannot get more than what was owed.
+- [`Health.spec`](specs/Health.spec) checks properties about the health of the positions.
   Notably, functions cannot render an account unhealthy, and debt positions always have some collateral (thanks to the bad debt realization mechanism).
-- [`LibSummary.spec`](./specs/LibSummary.spec) checks the summarization of the library functions that are used in other specification files.
-- [`Liveness.spec`](./specs/Liveness.spec) checks that main functions change the owner of funds and the amount of shares as expected, and that it's always possible to exit a position.
-- [`RatioMath.spec`](./specs/RatioMath.spec) checks that the ratio between shares and assets evolves predictably over time.
-- [`Reentrancy.spec`](./specs/Reentrancy.spec) checks that the contract is immune to a particular class of reentrancy issues.
-- [`Reverts.spec`](./specs/Reverts.spec) checks the condition for reverts and that inputs are correctly validated.
-- [`Transfer.spec`](./specs/Transfer.spec) checks the summarization of the safe transfer library functions that are used in other specification files.
+- [`LibSummary.spec`](specs/LibSummary.spec) checks the summarization of the library functions that are used in other specification files.
+- [`Liveness.spec`](specs/Liveness.spec) checks that main functions change the owner of funds and the amount of shares as expected, and that it's always possible to exit a position.
+- [`RatioMath.spec`](specs/RatioMath.spec) checks that the ratio between shares and assets evolves predictably over time.
+- [`Reentrancy.spec`](specs/Reentrancy.spec) checks that the contract is immune to a particular class of reentrancy issues.
+- [`Reverts.spec`](specs/Reverts.spec) checks the condition for reverts and that inputs are correctly validated.
+- [`Transfer.spec`](specs/Transfer.spec) checks the summarization of the safe transfer library functions that are used in other specification files.
 
-The [`certora/confs`](./confs) folder contains a configuration file for each corresponding specification file.
+The [`certora/confs`](confs) folder contains a configuration file for each corresponding specification file.
 
-The [`certora/harness`](./harness) folder contains contracts that enable the verification of Morpho Blue.
+The [`certora/harness`](harness) folder contains contracts that enable the verification of Morpho Blue.
 Notably, this allows handling the fact that library functions should be called from a contract to be verified independently, and it allows defining needed getters.
 
-The [`certora/dispatch`](./dispatch) folder contains different contracts similar to the ones that are expected to be called from Morpho Blue.
+The [`certora/dispatch`](dispatch) folder contains different contracts similar to the ones that are expected to be called from Morpho Blue.
 
 # Getting started
 
-Install `certoraRun` with `pip install certora-cli`.
-To verify specification files, pass the corresponding configuration file in the [`certora/confs`](./confs) folder.
+Install `certora-cli` package with `pip install certora-cli`.
+To verify specification files, pass to `certoraRun` the corresponding configuration file in the [`certora/confs`](confs) folder.
 It requires having set the `CERTORAKEY` environment variable to a valid Certora key.
 You can also pass additional arguments, notably to verify a specific rule.
 For example, at the root of the repository:
 
 ```
 certoraRun certora/confs/ConsistentState.conf --rule borrowLessThanSupply
+```
+
+The `certora-cli` package also includes a `certoraMutate` binary.
+The file [`gambit.conf`](gambit.conf) provides a default configuration of the mutations.
+You can test to mutate the code and check it against a particular specification.
+For example, at the root of the repository:
+
+```
+certoraMutate --prover_conf certora/confs/ConsistentState.conf --mutation_conf certora/gambit.conf
 ```

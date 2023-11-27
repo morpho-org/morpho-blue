@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 methods {
     function extSloads(bytes32[]) external returns bytes32[] => NONDET DELETE;
+
     function libMulDivUp(uint256, uint256, uint256) external returns uint256 envfree;
     function libMulDivDown(uint256, uint256, uint256) external returns uint256 envfree;
     function libId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
