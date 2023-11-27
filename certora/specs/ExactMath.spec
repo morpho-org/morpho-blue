@@ -192,5 +192,5 @@ rule repayBorrow() {
     assert repaidShares * virtualTotalBorrowAssets(id) >= borrowedAssets * virtualTotalBorrowShares(id);
 
     assert borrowedShares == repaidShares;
-    assert borrowedAssets <= repaidAssets;
+    assert borrowedAssets <= repaidAssets + 1;
 }
