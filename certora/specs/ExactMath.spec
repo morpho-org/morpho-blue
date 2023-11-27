@@ -66,7 +66,7 @@ rule supplyWithdraw() {
     env e1;
     env e2;
 
-    // Assume that interactions to happen at the same block.
+    // Assume that interactions happen at the same block.
     require e1.block.timestamp == e2.block.timestamp;
     // Safe require because timestamps cannot realistically be that large.
     require e1.block.timestamp < 2^128;
@@ -99,7 +99,7 @@ rule withdrawSupply() {
     env e1;
     env e2;
 
-    // Assume interactions to happen at the same block.
+    // Assume interactions happen at the same block.
     require e1.block.timestamp == e2.block.timestamp;
     // Safe require because timestamps cannot realistically be that large.
     require e1.block.timestamp < 2^128;
@@ -132,7 +132,7 @@ rule borrowRepay() {
     env e1;
     env e2;
 
-    // Assume interactions to happen at the same block.
+    // Assume interactions happen at the same block.
     require e1.block.timestamp == e2.block.timestamp;
     // Safe require because timestamps cannot realistically be that large.
     require e1.block.timestamp < 2^128;
@@ -142,7 +142,7 @@ rule borrowRepay() {
     borrowedAssets, borrowedShares = borrow(e2, marketParams, assets, shares, onBehalf, receiver);
 
     // Hints for the prover.
-    assert borrowedAssets * (virtualTotalBorrowShares(id) + borrowedShares) <= borrowedShares * (virtualTotalBorrowAssets(id) + borrowedAssets);
+    assert borrowedAssets * (virtualTotalBorrowShares(id) - borrowedShares) <= borrowedShares * (virtualTotalBorrowAssets(id) - borrowedAssets);
     assert borrowedAssets * virtualTotalBorrowShares(id) <= borrowedShares * virtualTotalBorrowAssets(id);
 
     uint256 repaidAssets;
@@ -165,22 +165,31 @@ rule repayBorrow() {
     env e1;
     env e2;
 
-    // Assume that interactions to happen at the same block.
+    // Assume that interactions happen at the same block.
     require e1.block.timestamp == e2.block.timestamp;
     // Safe require because timestamps cannot realistically be that large.
     require e1.block.timestamp < 2^128;
 
-    uint256 repaidAssets;
+    mathint previousTotalBorrowAssets = virtualTotalBorrowAssets(id);
+
+    mathint repaidAssets;
     uint256 repaidShares;
     repaidAssets, repaidShares = repay(e1, marketParams, assets, shares, onBehalf, data);
 
-    // Hints for the prover.
-    assert repaidAssets * (virtualTotalBorrowShares(id) - repaidShares) >= repaidShares * (virtualTotalBorrowAssets(id) - repaidAssets);
-    assert repaidAssets * virtualTotalBorrowShares(id) >= repaidShares * virtualTotalBorrowAssets(id);
+    // Can be smaller than repaidAssets because of the zeroFloorSub operation.
+    mathint repaidFromTotal = previousTotalBorrowAssets - virtualTotalBorrowAssets(id);
 
-    uint256 borrowedAssets;
+    // Hints for the prover.
+    assert repaidFromTotal <= repaidAssets;
+    assert repaidAssets * (virtualTotalBorrowShares(id) + repaidShares) >= repaidShares * previousTotalBorrowAssets;
+    assert repaidAssets * (virtualTotalBorrowShares(id) + repaidShares) >= repaidShares * (virtualTotalBorrowAssets(id) + repaidFromTotal);
+    assert repaidAssets * virtualTotalBorrowShares(id) + repaidShares >= repaidShares * virtualTotalBorrowAssets(id);
+
+    mathint borrowedAssets;
     uint256 borrowedShares;
-    borrowedAssets, borrowedShares = withdraw(e2, marketParams, 0, repaidShares, onBehalf, receiver);
+    borrowedAssets, borrowedShares = borrow(e2, marketParams, 0, repaidShares, onBehalf, receiver);
+
+    assert repaidShares * virtualTotalBorrowAssets(id) >= borrowedAssets * virtualTotalBorrowShares(id);
 
     assert borrowedShares == repaidShares;
     assert borrowedAssets <= repaidAssets;
