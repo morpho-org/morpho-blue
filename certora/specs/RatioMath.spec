@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 methods {
     function extSloads(bytes32[]) external returns bytes32[] => NONDET DELETE;
-    function libId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
     function virtualTotalSupplyAssets(MorphoHarness.Id) external returns uint256 envfree;
     function virtualTotalSupplyShares(MorphoHarness.Id) external returns uint256 envfree;
     function virtualTotalBorrowAssets(MorphoHarness.Id) external returns uint256 envfree;
@@ -9,13 +8,15 @@ methods {
     function fee(MorphoHarness.Id) external returns uint256 envfree;
     function lastUpdate(MorphoHarness.Id) external returns uint256 envfree;
 
+    function maxFee() external returns uint256 envfree;
+    function libId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
+
     function MathLib.mulDivDown(uint256 a, uint256 b, uint256 c) internal returns uint256 => summaryMulDivDown(a,b,c);
     function MathLib.mulDivUp(uint256 a, uint256 b, uint256 c) internal returns uint256 => summaryMulDivUp(a,b,c);
     function MathLib.wTaylorCompounded(uint256, uint256) internal returns uint256 => NONDET;
 
     function _.borrowRate(MorphoHarness.MarketParams, MorphoHarness.Market) external => HAVOC_ECF;
 
-    function maxFee() external returns uint256 envfree;
 }
 
 invariant feeInRange(MorphoHarness.Id id)
