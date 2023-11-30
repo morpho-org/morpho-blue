@@ -103,6 +103,6 @@ filtered { f -> !f.isView }
 }
 
 // Check that users without collateral also have no debt.
-// This invariant ensures that bad debt is always accounted.
+// This invariant ensures that bad debt realization cannot be bypassed.
 invariant alwaysCollateralized(MorphoHarness.Id id, address borrower)
     borrowShares(id, borrower) != 0 => collateral(id, borrower) != 0;
