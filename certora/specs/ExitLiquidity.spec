@@ -16,7 +16,7 @@ methods {
     function libId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
 }
 
-// Check that it's not possible to withdraw more assets than what the user has supplied.
+// Check that it's not possible to withdraw more assets than what the user owns.
 rule withdrawLiquidity(MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, address receiver) {
     env e;
     MorphoHarness.Id id = libId(marketParams);
@@ -27,27 +27,27 @@ rule withdrawLiquidity(MorphoHarness.MarketParams marketParams, uint256 assets, 
     uint256 initialShares = supplyShares(id, onBehalf);
     uint256 initialTotalSupply = virtualTotalSupplyAssets(id);
     uint256 initialTotalSupplyShares = virtualTotalSupplyShares(id);
-    uint256 owedAssets = libMulDivDown(initialShares, initialTotalSupply, initialTotalSupplyShares);
+    uint256 ownedAssets = libMulDivDown(initialShares, initialTotalSupply, initialTotalSupplyShares);
 
     uint256 withdrawnAssets;
     withdrawnAssets, _ = withdraw(e, marketParams, assets, shares, onBehalf, receiver);
 
-    assert withdrawnAssets <= owedAssets;
+    assert withdrawnAssets <= ownedAssets;
 }
 
-// Check that it's not possible to withdraw more collateral than what the user has supplied.
-rule withdrawCollateralLiquidity(MorphoHarness.MarketParams marketParams, uint256 assets, address onBehalf, address receiver) {
+// Check that it's not possible to withdraw more collateral than what the user owns.
+rule withdrawCollateralLiquidity(MorphoHarness.MarketParams marketParams, uint256 withdrawnAssets, address onBehalf, address receiver) {
     env e;
     MorphoHarness.Id id = libId(marketParams);
 
-    uint256 initialCollateral = collateral(id, onBehalf);
+    uint256 ownedAssets = collateral(id, onBehalf);
 
-    withdrawCollateral(e, marketParams, assets, onBehalf, receiver);
+    withdrawCollateral(e, marketParams, withdrawnAssets, onBehalf, receiver);
 
-    assert assets <= initialCollateral;
+    assert withdrawnAssets <= ownedAssets;
 }
 
-// Check than when repaying the full outstanding debt requires more assets than what was borrowed.
+// Check than when repaying the full outstanding debt requires more assets than what the user owes.
 rule repayLiquidity(MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data) {
     env e;
     MorphoHarness.Id id = libId(marketParams);
@@ -58,7 +58,7 @@ rule repayLiquidity(MorphoHarness.MarketParams marketParams, uint256 assets, uin
     uint256 initialShares = borrowShares(id, onBehalf);
     uint256 initialTotalBorrow = virtualTotalBorrowAssets(id);
     uint256 initialTotalBorrowShares = virtualTotalBorrowShares(id);
-    uint256 assetsDue = libMulDivUp(initialShares, initialTotalBorrow, initialTotalBorrowShares);
+    uint256 owedAssets = libMulDivUp(initialShares, initialTotalBorrow, initialTotalBorrowShares);
 
     uint256 repaidAssets;
     repaidAssets, _ = repay(e, marketParams, assets, shares, onBehalf, data);
@@ -66,5 +66,5 @@ rule repayLiquidity(MorphoHarness.MarketParams marketParams, uint256 assets, uin
     // Assume a full repay.
     require borrowShares(id, onBehalf) == 0;
 
-    assert repaidAssets >= assetsDue;
+    assert repaidAssets >= owedAssets;
 }
