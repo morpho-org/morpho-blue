@@ -63,8 +63,6 @@ rule transferRevertCondition(address token, address to, uint256 amount) {
     uint256 toInitialBalance = balanceOf(token, to);
     // Safe require because the total supply is greater than the sum of the balance of any two accounts.
     require to != currentContract => initialBalance + toInitialBalance <= to_mathint(totalSupply(token));
-    // Some tokens revert when either the sender or the receiver is the zero address.
-    require currentContract != 0 && to != 0;
 
     libSafeTransfer@withrevert(token, to, amount);
 
@@ -78,8 +76,6 @@ rule transferFromRevertCondition(address token, address from, address to, uint25
     uint256 allowance = allowance(token, from, currentContract);
     // Safe require because the total supply is greater than the sum of the balance of any two accounts.
     require to != from => initialBalance + toInitialBalance <= to_mathint(totalSupply(token));
-    // Some tokens revert when either the sender or the receiver is the zero address.
-    require from != 0 && to != 0;
 
     libSafeTransferFrom@withrevert(token, from, to, amount);
 

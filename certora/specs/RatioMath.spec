@@ -75,7 +75,7 @@ rule accrueInterestIncreasesBorrowRatio(env e, MorphoHarness.MarketParams market
 }
 
 
-// Check that excepti for liquidate, every function increases the value of supply shares.
+// Check that except when not accruing interest and except for liquidate, every function increases the value of supply shares.
 rule onlyLiquidateCanDecreaseSupplyRatio(env e, method f, calldataarg args)
 filtered {
     f -> !f.isView && f.selector != sig:liquidate(MorphoHarness.MarketParams, address, uint256, uint256, bytes).selector

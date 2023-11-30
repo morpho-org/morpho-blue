@@ -30,13 +30,13 @@ function mockPrice() returns uint256 {
 }
 
 function summaryMulDivUp(uint256 x, uint256 y, uint256 d) returns uint256 {
-    // Safe requires because the reference implementation would revert.
+    // Safe require because the reference implementation would revert.
     require d != 0;
     return require_uint256((x * y + (d - 1)) / d);
 }
 
 function summaryMulDivDown(uint256 x, uint256 y, uint256 d) returns uint256 {
-    // Safe requires because the reference implementation would revert.
+    // Safe require because the reference implementation would revert.
     require d != 0;
     return require_uint256((x * y) / d);
 }
@@ -103,6 +103,6 @@ filtered { f -> !f.isView }
 }
 
 // Check that users without collateral also have no debt.
-// This invariant ensures that bad debt is always accounted.
+// This invariant ensures that bad debt realization cannot be bypassed.
 invariant alwaysCollateralized(MorphoHarness.Id id, address borrower)
     borrowShares(id, borrower) != 0 => collateral(id, borrower) != 0;
