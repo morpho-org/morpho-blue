@@ -5,11 +5,14 @@ methods {
     function _.borrowRate(MorphoHarness.MarketParams marketParams, MorphoHarness.Market) external => summaryBorrowRate() expect uint256;
 }
 
-ghost bool hasAccessedStorage;
-ghost bool hasCallAfterAccessingStorage;
-ghost bool hasReentrancyUnsafeCall;
-ghost bool delegate_call;
+ghost bool delegateCall;
 ghost bool callIsBorrowRate;
+// True if storage has been accessed with either a SSTORE or a SLOAD.
+ghost bool hasAccessedStorage;
+// True when a CALL has been done after storage has been accessed.
+ghost bool hasCallAfterAccessingStorage;
+// True when storage has been accessed, after which an external call is made, followed by accessing storage again.
+ghost bool hasReentrancyUnsafeCall;
 
 function summaryBorrowRate() returns uint256 {
     uint256 result;
@@ -31,14 +34,13 @@ hook CALL(uint g, address addr, uint value, uint argsOffset, uint argsLength, ui
     if (callIsBorrowRate) {
         // The calls to borrow rate are trusted and don't count.
         callIsBorrowRate = false;
-        hasCallAfterAccessingStorage = hasCallAfterAccessingStorage;
     } else {
         hasCallAfterAccessingStorage = hasAccessedStorage;
     }
 }
 
 hook DELEGATECALL(uint g, address addr, uint argsOffset, uint argsLength, uint retOffset, uint retLength) uint rc {
-    delegate_call = true;
+    delegateCall = true;
 }
 
 // Check that no function is accessing storage, then making an external CALL other than to the IRM, and accessing storage again.
@@ -53,7 +55,7 @@ rule reentrancySafe(method f, env e, calldataarg data) {
 // Check that the contract is truly immutable.
 rule noDelegateCalls(method f, env e, calldataarg data) {
     // Set up the initial state.
-    require !delegate_call;
+    require !delegateCall;
     f(e,data);
-    assert !delegate_call;
+    assert !delegateCall;
 }
