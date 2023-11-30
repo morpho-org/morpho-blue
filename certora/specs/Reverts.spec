@@ -125,7 +125,7 @@ rule withdrawInputValidation(env e, MorphoHarness.MarketParams marketParams, uin
     require e.msg.sender != 0;
     requireInvariant zeroDoesNotAuthorize(e.msg.sender);
     withdraw@withrevert(e, marketParams, assets, shares, onBehalf, receiver);
-    assert !exactlyOneZero(assets, shares) || onBehalf == 0 => lastReverted;
+    assert !exactlyOneZero(assets, shares) || onBehalf == 0 || receiver == 0 => lastReverted;
 }
 
 // Check that borrow reverts when its inputs are not validated.
@@ -140,7 +140,7 @@ rule borrowInputValidation(env e, MorphoHarness.MarketParams marketParams, uint2
 // Check that repay reverts when its inputs are not validated.
 rule repayInputValidation(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data) {
     repay@withrevert(e, marketParams, assets, shares, onBehalf, data);
-    assert !exactlyOneZero(assets, shares) || onBehalf == 0 => lastReverted;
+    assert !exactlyOneZero(assets, shares) || onBehalf == 0 || receiver == 0 => lastReverted;
 }
 
 // Check that supplyCollateral reverts when its inputs are not validated.
@@ -155,7 +155,7 @@ rule withdrawCollateralInputValidation(env e, MorphoHarness.MarketParams marketP
     require e.msg.sender != 0;
     requireInvariant zeroDoesNotAuthorize(e.msg.sender);
     withdrawCollateral@withrevert(e, marketParams, assets, onBehalf, receiver);
-    assert assets == 0 || onBehalf == 0 => lastReverted;
+    assert assets == 0 || onBehalf == 0 || receiver == 0 => lastReverted;
 }
 
 // Check that liquidate reverts when its inputs are not validated.
