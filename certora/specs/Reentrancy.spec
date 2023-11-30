@@ -7,7 +7,7 @@ methods {
 
 ghost bool delegateCall;
 ghost bool callIsBorrowRate;
-// True if storage has been accessed with either a SSTORE or a SLOAD.
+// True when storage has been accessed with either a SSTORE or a SLOAD.
 ghost bool hasAccessedStorage;
 // True when a CALL has been done after storage has been accessed.
 ghost bool hasCallAfterAccessingStorage;
