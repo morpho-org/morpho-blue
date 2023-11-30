@@ -42,7 +42,7 @@ definition exactlyOneZero(uint256 assets, uint256 shares) returns bool =
     (assets == 0 && shares != 0) || (assets != 0 && shares == 0);
 
 // This invariant catches bugs when not checking that the market is created with lastUpdate.
-invariant notInitializedEmpty(MorphoHarness.Id id)
+invariant notCreatedIsEmpty(MorphoHarness.Id id)
     !isCreated(id) => emptyMarket(id)
 {
     preserved with (env e) {
@@ -108,9 +108,9 @@ rule createMarketRevertCondition(env e, MorphoHarness.MarketParams marketParams)
     MorphoHarness.Id id = libId(marketParams);
     bool irmEnabled = isIrmEnabled(marketParams.irm);
     bool lltvEnabled = isLltvEnabled(marketParams.lltv);
-    uint256 lastUpdated = lastUpdate(id);
+    bool wasCreated = isCreated(id);
     createMarket@withrevert(e, marketParams);
-    assert lastReverted <=> e.msg.value != 0 || !irmEnabled || !lltvEnabled || lastUpdated != 0;
+    assert lastReverted <=> e.msg.value != 0 || !irmEnabled || !lltvEnabled || wasCreated;
 }
 
 // Check that supply reverts when its input are not validated.
@@ -173,7 +173,7 @@ rule setAuthorizationWithSigInputValidation(env e, MorphoHarness.Authorization a
 
 // Check that accrueInterest reverts when its inputs are not validated.
 rule accrueInterestInputValidation(env e, MorphoHarness.MarketParams marketParams) {
-    uint256 lastUpdate = lastUpdate(libId(marketParams));
+    bool wasCreated = isCreated(libId(marketParams));
     accrueInterest@withrevert(e, marketParams);
-    assert lastUpdate == 0 => lastReverted;
+    assert !wasCreated => lastReverted;
 }
