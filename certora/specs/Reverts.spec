@@ -134,13 +134,13 @@ rule borrowInputValidation(env e, MorphoHarness.MarketParams marketParams, uint2
     require e.msg.sender != 0;
     requireInvariant zeroDoesNotAuthorize(e.msg.sender);
     borrow@withrevert(e, marketParams, assets, shares, onBehalf, receiver);
-    assert !exactlyOneZero(assets, shares) || onBehalf == 0 => lastReverted;
+    assert !exactlyOneZero(assets, shares) || onBehalf == 0  || receiver == 0 => lastReverted;
 }
 
 // Check that repay reverts when its inputs are not validated.
 rule repayInputValidation(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data) {
     repay@withrevert(e, marketParams, assets, shares, onBehalf, data);
-    assert !exactlyOneZero(assets, shares) || onBehalf == 0 || receiver == 0 => lastReverted;
+    assert !exactlyOneZero(assets, shares) || onBehalf == 0 => lastReverted;
 }
 
 // Check that supplyCollateral reverts when its inputs are not validated.
