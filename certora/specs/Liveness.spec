@@ -293,6 +293,15 @@ rule liquidateChangesTokens(env e, MorphoInternalAccess.MarketParams marketParam
     assert liquidityAfter == liquidityBefore + min(repaidAssets, borrowLoanAssetsBefore);
 }
 
+// Check that you can liquidate non-zero tokens by passing shares.
+rule canLiquidateByPassingShares(env e, MorphoInternalAccess.MarketParams marketParams, address borrower, uint256 repaidShares, bytes data) {
+    uint256 seizedAssets;
+    uint256 repaidAssets;
+    seizedAssets, repaidAssets = liquidate(e, marketParams, borrower, 0, repaidShares,  data);
+
+    satisfy seizedAssets != 0 && repaidAssets != 0;
+}
+
 // Check that nonce and authorization are properly updated with calling setAuthorizationWithSig.
 rule setAuthorizationWithSigChangesNonceAndAuthorizes(env e, MorphoInternalAccess.Authorization authorization, MorphoInternalAccess.Signature signature) {
     mathint nonceBefore = nonce(authorization.authorizer);
