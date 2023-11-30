@@ -30,13 +30,13 @@ function mockPrice() returns uint256 {
 }
 
 function summaryMulDivUp(uint256 x, uint256 y, uint256 d) returns uint256 {
-    // Safe requires because the reference implementation would revert.
+    // Safe require because the reference implementation would revert.
     require d != 0;
     return require_uint256((x * y + (d - 1)) / d);
 }
 
 function summaryMulDivDown(uint256 x, uint256 y, uint256 d) returns uint256 {
-    // Safe requires because the reference implementation would revert.
+    // Safe require because the reference implementation would revert.
     require d != 0;
     return require_uint256((x * y) / d);
 }
