@@ -2,14 +2,15 @@
 methods {
     function extSloads(bytes32[]) external returns bytes32[] => NONDET DELETE;
 
+    function feeRecipient() external returns address envfree;
     function supplyShares(MorphoHarness.Id, address) external returns uint256 envfree;
     function borrowShares(MorphoHarness.Id, address) external returns uint256 envfree;
     function virtualTotalSupplyAssets(MorphoHarness.Id) external returns uint256 envfree;
     function virtualTotalSupplyShares(MorphoHarness.Id) external returns uint256 envfree;
     function virtualTotalBorrowAssets(MorphoHarness.Id) external returns uint256 envfree;
     function virtualTotalBorrowShares(MorphoHarness.Id) external returns uint256 envfree;
-    function fee(MorphoHarness.Id) external returns uint256 envfree;
     function lastUpdate(MorphoHarness.Id) external returns uint256 envfree;
+    function fee(MorphoHarness.Id) external returns uint256 envfree;
 
     function maxFee() external returns uint256 envfree;
     function libId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
@@ -69,6 +70,8 @@ rule supplyWithdraw() {
     require e1.block.timestamp == e2.block.timestamp;
     // Assume that the user starts without any supply position.
     require supplyShares(id, onBehalf) == 0;
+    // Assume that the user is not the fee recipient, otherwise the gain can come from the fee.
+    require onBehalf != feeRecipient();
     // Safe require because timestamps cannot realistically be that large.
     require e1.block.timestamp < 2^128;
 
@@ -88,7 +91,7 @@ rule supplyWithdraw() {
     assert withdrawnAssets <= suppliedAssets;
 }
 
-// There should be no profit from borrow followed immediately by repay.
+// There should be no profit from borrow followed immediately by repaying all.
 rule borrowRepay() {
     MorphoHarness.MarketParams marketParams;
     MorphoHarness.Id id = libId(marketParams);
@@ -112,9 +115,9 @@ rule borrowRepay() {
     assert borrowedAssets * (virtualTotalBorrowShares(id) - borrowedShares) <= borrowedShares * (virtualTotalBorrowAssets(id) - borrowedAssets);
     assert borrowedAssets * virtualTotalBorrowShares(id) <= borrowedShares * virtualTotalBorrowAssets(id);
 
-    uint256 repayAssets; uint256 repayShares; bytes data;
+    bytes data;
     uint256 repaidAssets;
-    repaidAssets, _ = repay(e1, marketParams, repayAssets, repayShares, onBehalf, data);
+    repaidAssets, _ = repay(e1, marketParams, 0, borrowedShares, onBehalf, data);
 
     assert borrowedAssets <= repaidAssets;
 }
