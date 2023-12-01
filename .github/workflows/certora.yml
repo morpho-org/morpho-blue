@@ -11,32 +11,6 @@ jobs:
   verify:
     runs-on: ubuntu-latest
 
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
-
-      - name: Install python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
-
-      - name: Install certora
-        run: pip install certora-cli
-
-      - name: Install solc
-        run: |
-          wget https://github.com/ethereum/solidity/releases/download/v0.8.19/solc-static-linux
-          chmod +x solc-static-linux
-          sudo mv solc-static-linux /usr/local/bin/solc
-
-      - name: Verify rule ${{ matrix.script }}
-        run: |
-          echo "key length" ${#CERTORAKEY}
-          certoraRun certora/confs/${{ matrix.conf }}.conf
-        env:
-          CERTORAKEY: ${{ secrets.CERTORAKEY }}
-
     strategy:
       fail-fast: false
 
@@ -53,3 +27,25 @@ jobs:
           - Reentrancy
           - Reverts
           - Transfer
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Install python
+        uses: actions/setup-python@v4
+
+      - name: Install certora
+        run: pip install certora-cli
+
+      - name: Install solc
+        run: |
+          wget https://github.com/ethereum/solidity/releases/download/v0.8.19/solc-static-linux
+          chmod +x solc-static-linux
+          sudo mv solc-static-linux /usr/local/bin/solc
+
+      - name: Verify ${{ matrix.conf }}
+        run: certoraRun certora/confs/${{ matrix.conf }}.conf
+        env:
+          CERTORAKEY: ${{ secrets.CERTORAKEY }}
