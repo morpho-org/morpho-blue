@@ -16,6 +16,10 @@ docs/
 # Node modules
 /node_modules
 
+# Certora
+.certora**
+emv-*-certora*
+
 # Hardhat
 /types
 /cache_hardhat
