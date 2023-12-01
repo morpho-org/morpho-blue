@@ -23,8 +23,8 @@ methods {
     function SafeTransferLib.safeTransferFrom(address token, address from, address to, uint256 value) internal => summarySafeTransferFrom(token, from, to, value);
 }
 
-ghost mapping(address => mathint) myBalances {
-    init_state axiom (forall address token. myBalances[token] == 0);
+ghost mapping(address => mathint) balance {
+    init_state axiom (forall address token. balance[token] == 0);
 }
 
 function summaryId(MorphoInternalAccess.MarketParams marketParams) returns MorphoInternalAccess.Id {
@@ -34,11 +34,11 @@ function summaryId(MorphoInternalAccess.MarketParams marketParams) returns Morph
 function summarySafeTransferFrom(address token, address from, address to, uint256 amount) {
     if (from == currentContract) {
         // Safe require because the reference implementation would revert.
-        myBalances[token] = require_uint256(myBalances[token] - amount);
+        balance[token] = require_uint256(balance[token] - amount);
     }
     if (to == currentContract) {
         // Safe require because the reference implementation would revert.
-        myBalances[token] = require_uint256(myBalances[token] + amount);
+        balance[token] = require_uint256(balance[token] + amount);
     }
 }
 
@@ -75,7 +75,7 @@ rule supplyChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams marke
     require lastUpdate(id) == e.block.timestamp;
 
     mathint sharesBefore = supplyShares(id, onBehalf);
-    mathint balanceBefore = myBalances[marketParams.loanToken];
+    mathint balanceBefore = balance[marketParams.loanToken];
     mathint liquidityBefore = totalSupplyAssets(id) - totalBorrowAssets(id);
 
     uint256 suppliedAssets;
@@ -83,7 +83,7 @@ rule supplyChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams marke
     suppliedAssets, suppliedShares = supply(e, marketParams, assets, shares, onBehalf, data);
 
     mathint sharesAfter = supplyShares(id, onBehalf);
-    mathint balanceAfter = myBalances[marketParams.loanToken];
+    mathint balanceAfter = balance[marketParams.loanToken];
     mathint liquidityAfter = totalSupplyAssets(id) - totalBorrowAssets(id);
 
     assert assets != 0 => suppliedAssets == assets;
@@ -111,7 +111,7 @@ rule withdrawChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams mar
     require lastUpdate(id) == e.block.timestamp;
 
     mathint sharesBefore = supplyShares(id, onBehalf);
-    mathint balanceBefore = myBalances[marketParams.loanToken];
+    mathint balanceBefore = balance[marketParams.loanToken];
     mathint liquidityBefore = totalSupplyAssets(id) - totalBorrowAssets(id);
 
     uint256 withdrawnAssets;
@@ -119,7 +119,7 @@ rule withdrawChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams mar
     withdrawnAssets, withdrawnShares = withdraw(e, marketParams, assets, shares, onBehalf, receiver);
 
     mathint sharesAfter = supplyShares(id, onBehalf);
-    mathint balanceAfter = myBalances[marketParams.loanToken];
+    mathint balanceAfter = balance[marketParams.loanToken];
     mathint liquidityAfter = totalSupplyAssets(id) - totalBorrowAssets(id);
 
     assert assets != 0 => withdrawnAssets == assets;
@@ -147,7 +147,7 @@ rule borrowChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams marke
     require lastUpdate(id) == e.block.timestamp;
 
     mathint sharesBefore = borrowShares(id, onBehalf);
-    mathint balanceBefore = myBalances[marketParams.loanToken];
+    mathint balanceBefore = balance[marketParams.loanToken];
     mathint liquidityBefore = totalSupplyAssets(id) - totalBorrowAssets(id);
 
     uint256 borrowedAssets;
@@ -155,7 +155,7 @@ rule borrowChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams marke
     borrowedAssets, borrowedShares = borrow(e, marketParams, assets, shares, onBehalf, receiver);
 
     mathint sharesAfter = borrowShares(id, onBehalf);
-    mathint balanceAfter = myBalances[marketParams.loanToken];
+    mathint balanceAfter = balance[marketParams.loanToken];
     mathint liquidityAfter = totalSupplyAssets(id) - totalBorrowAssets(id);
 
     assert assets != 0 => borrowedAssets == assets;
@@ -183,7 +183,7 @@ rule repayChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams market
     require lastUpdate(id) == e.block.timestamp;
 
     mathint sharesBefore = borrowShares(id, onBehalf);
-    mathint balanceBefore = myBalances[marketParams.loanToken];
+    mathint balanceBefore = balance[marketParams.loanToken];
     mathint liquidityBefore = totalSupplyAssets(id) - totalBorrowAssets(id);
 
     mathint borrowAssetsBefore = totalBorrowAssets(id);
@@ -193,7 +193,7 @@ rule repayChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams market
     repaidAssets, repaidShares = repay(e, marketParams, assets, shares, onBehalf, data);
 
     mathint sharesAfter = borrowShares(id, onBehalf);
-    mathint balanceAfter = myBalances[marketParams.loanToken];
+    mathint balanceAfter = balance[marketParams.loanToken];
     mathint liquidityAfter = totalSupplyAssets(id) - totalBorrowAssets(id);
 
     assert assets != 0 => repaidAssets == assets;
@@ -220,12 +220,12 @@ rule supplyCollateralChangesTokensAndBalance(env e, MorphoInternalAccess.MarketP
     require currentContract != e.msg.sender;
 
     mathint collateralBefore = collateral(id, onBehalf);
-    mathint balanceBefore = myBalances[marketParams.collateralToken];
+    mathint balanceBefore = balance[marketParams.collateralToken];
 
     supplyCollateral(e, marketParams, assets, onBehalf, data);
 
     mathint collateralAfter = collateral(id, onBehalf);
-    mathint balanceAfter = myBalances[marketParams.collateralToken];
+    mathint balanceAfter = balance[marketParams.collateralToken];
 
     assert collateralAfter == collateralBefore + assets;
     assert balanceAfter == balanceBefore + assets;
@@ -241,12 +241,12 @@ rule withdrawCollateralChangesTokensAndBalance(env e, MorphoInternalAccess.Marke
     require lastUpdate(id) == e.block.timestamp;
 
     mathint collateralBefore = collateral(id, onBehalf);
-    mathint balanceBefore = myBalances[marketParams.collateralToken];
+    mathint balanceBefore = balance[marketParams.collateralToken];
 
     withdrawCollateral(e, marketParams, assets, onBehalf, receiver);
 
     mathint collateralAfter = collateral(id, onBehalf);
-    mathint balanceAfter = myBalances[marketParams.collateralToken];
+    mathint balanceAfter = balance[marketParams.collateralToken];
 
     assert collateralAfter == collateralBefore - assets;
     assert balanceAfter == balanceBefore - assets;
@@ -264,8 +264,8 @@ rule liquidateChangesTokens(env e, MorphoInternalAccess.MarketParams marketParam
     require lastUpdate(id) == e.block.timestamp;
 
     mathint collateralBefore = collateral(id, borrower);
-    mathint balanceLoanBefore = myBalances[marketParams.loanToken];
-    mathint balanceCollateralBefore = myBalances[marketParams.collateralToken];
+    mathint balanceLoanBefore = balance[marketParams.loanToken];
+    mathint balanceCollateralBefore = balance[marketParams.collateralToken];
     mathint liquidityBefore = totalSupplyAssets(id) - totalBorrowAssets(id);
 
     mathint borrowLoanAssetsBefore = totalBorrowAssets(id);
@@ -275,8 +275,8 @@ rule liquidateChangesTokens(env e, MorphoInternalAccess.MarketParams marketParam
     seizedAssets, repaidAssets = liquidate(e, marketParams, borrower, seized, repaidShares, data);
 
     mathint collateralAfter = collateral(id, borrower);
-    mathint balanceLoanAfter = myBalances[marketParams.loanToken];
-    mathint balanceCollateralAfter = myBalances[marketParams.collateralToken];
+    mathint balanceLoanAfter = balance[marketParams.loanToken];
+    mathint balanceCollateralAfter = balance[marketParams.collateralToken];
     mathint liquidityAfter = totalSupplyAssets(id) - totalBorrowAssets(id);
 
     assert seized != 0 => seizedAssets == seized;
