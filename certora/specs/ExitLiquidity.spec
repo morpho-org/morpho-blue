@@ -16,9 +16,28 @@ methods {
     function libId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
 }
 
-// Check that it's not possible to withdraw more assets than what the user owns.
-rule withdrawLiquidity(MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, address receiver) {
-    env e;
+// Check that the assets supplied are greater than the assets owned in the end.
+rule supplyLiquidity(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data) {
+    MorphoHarness.Id id = libId(marketParams);
+
+    // Assume no interest as it would increase the total supply assets.
+    require lastUpdate(id) == e.block.timestamp;
+    // Assume no supply position to begin with.
+    require supplyShares(id, onBehalf) == 0;
+
+    uint256 suppliedAssets;
+    suppliedAssets, _ = supply(e, marketParams, assets, shares, onBehalf, data);
+
+    uint256 finalShares = supplyShares(id, onBehalf);
+    uint256 finalTotalSupply = virtualTotalSupplyAssets(id);
+    uint256 finalTotalSupplyShares = virtualTotalSupplyShares(id);
+    uint256 ownedAssets = libMulDivDown(finalShares, finalTotalSupply, finalTotalSupplyShares);
+
+    assert suppliedAssets >= ownedAssets;
+}
+
+// Check that the assets withdrawn are less than the assets owned initially.
+rule withdrawLiquidity(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, address receiver) {
     MorphoHarness.Id id = libId(marketParams);
 
     // Assume no interest as it would increase the total supply assets.
@@ -35,9 +54,8 @@ rule withdrawLiquidity(MorphoHarness.MarketParams marketParams, uint256 assets, 
     assert withdrawnAssets <= ownedAssets;
 }
 
-// Check that it's not possible to withdraw more collateral than what the user owns.
-rule withdrawCollateralLiquidity(MorphoHarness.MarketParams marketParams, uint256 withdrawnAssets, address onBehalf, address receiver) {
-    env e;
+// Check that the collateral assets withdrawn are less than the assets owned initially.
+rule withdrawCollateralLiquidity(env e, MorphoHarness.MarketParams marketParams, uint256 withdrawnAssets, address onBehalf, address receiver) {
     MorphoHarness.Id id = libId(marketParams);
 
     uint256 ownedAssets = collateral(id, onBehalf);
@@ -47,9 +65,8 @@ rule withdrawCollateralLiquidity(MorphoHarness.MarketParams marketParams, uint25
     assert withdrawnAssets <= ownedAssets;
 }
 
-// Check than when repaying the full outstanding debt requires more assets than what the user owes.
-rule repayLiquidity(MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data) {
-    env e;
+// Check that the assets repaid are greater than the assets owed initially.
+rule repayLiquidity(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data) {
     MorphoHarness.Id id = libId(marketParams);
 
     // Assume no interest as it would increase the total borrowed assets.
