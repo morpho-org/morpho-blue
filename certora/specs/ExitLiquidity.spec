@@ -16,8 +16,24 @@ methods {
     function libId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
 }
 
+function ownedSupplyAssets(MorphoHarness.Id id, address user) returns uint256 {
+    uint256 userShares = supplyShares(id, user);
+    uint256 totalSupplyAssets = virtualTotalSupplyAssets(id);
+    uint256 totalSupplyShares = virtualTotalSupplyShares(id);
+
+    return libMulDivDown(userShares, totalSupplyAssets, totalSupplyShares);
+}
+
+function owedBorrowAssets(MorphoHarness.Id id, address user) returns uint256 {
+    uint256 userShares = borrowShares(id, user);
+    uint256 totalBorrowAssets = virtualTotalBorrowAssets(id);
+    uint256 totalBorrowShares = virtualTotalBorrowShares(id);
+
+    return libMulDivUp(userShares, totalBorrowAssets, totalBorrowShares);
+}
+
 // Check that the assets supplied are greater than the assets owned in the end.
-rule supplyLiquidity(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data) {
+rule supplyAssetsAccounting(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data) {
     MorphoHarness.Id id = libId(marketParams);
 
     // Assume no interest as it would increase the total supply assets.
@@ -28,25 +44,19 @@ rule supplyLiquidity(env e, MorphoHarness.MarketParams marketParams, uint256 ass
     uint256 suppliedAssets;
     suppliedAssets, _ = supply(e, marketParams, assets, shares, onBehalf, data);
 
-    uint256 finalShares = supplyShares(id, onBehalf);
-    uint256 finalTotalSupply = virtualTotalSupplyAssets(id);
-    uint256 finalTotalSupplyShares = virtualTotalSupplyShares(id);
-    uint256 ownedAssets = libMulDivDown(finalShares, finalTotalSupply, finalTotalSupplyShares);
+    uint256 ownedAssets = ownedSupplyAssets(id, onBehalf);
 
     assert suppliedAssets >= ownedAssets;
 }
 
 // Check that the assets withdrawn are less than the assets owned initially.
-rule withdrawLiquidity(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, address receiver) {
+rule withdrawAssetsAccounting(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, address receiver) {
     MorphoHarness.Id id = libId(marketParams);
 
     // Assume no interest as it would increase the total supply assets.
     require lastUpdate(id) == e.block.timestamp;
 
-    uint256 initialShares = supplyShares(id, onBehalf);
-    uint256 initialTotalSupply = virtualTotalSupplyAssets(id);
-    uint256 initialTotalSupplyShares = virtualTotalSupplyShares(id);
-    uint256 ownedAssets = libMulDivDown(initialShares, initialTotalSupply, initialTotalSupplyShares);
+    uint256 ownedAssets = ownedSupplyAssets(id, onBehalf);
 
     uint256 withdrawnAssets;
     withdrawnAssets, _ = withdraw(e, marketParams, assets, shares, onBehalf, receiver);
@@ -54,8 +64,22 @@ rule withdrawLiquidity(env e, MorphoHarness.MarketParams marketParams, uint256 a
     assert withdrawnAssets <= ownedAssets;
 }
 
+// Check that the collateral assets supplied are greater than the assets owned in the end.
+rule supplyCollateralAssetsAccounting(env e, MorphoHarness.MarketParams marketParams, uint256 suppliedAssets, address onBehalf, bytes data) {
+    MorphoHarness.Id id = libId(marketParams);
+
+    // Assume no collateral to begin with.
+    require collateral(id, onBehalf) == 0;
+
+    supplyCollateral(e, marketParams, suppliedAssets, onBehalf, data);
+
+    uint256 ownedAssets = collateral(id, onBehalf);
+
+    assert suppliedAssets >= ownedAssets;
+}
+
 // Check that the collateral assets withdrawn are less than the assets owned initially.
-rule withdrawCollateralLiquidity(env e, MorphoHarness.MarketParams marketParams, uint256 withdrawnAssets, address onBehalf, address receiver) {
+rule withdrawCollateralAssetsAccounting(env e, MorphoHarness.MarketParams marketParams, uint256 withdrawnAssets, address onBehalf, address receiver) {
     MorphoHarness.Id id = libId(marketParams);
 
     uint256 ownedAssets = collateral(id, onBehalf);
@@ -65,17 +89,31 @@ rule withdrawCollateralLiquidity(env e, MorphoHarness.MarketParams marketParams,
     assert withdrawnAssets <= ownedAssets;
 }
 
+// Check that the assets borrowed are less than the assets owed in the end.
+rule borrowAssetsAccounting(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, address receiver) {
+    MorphoHarness.Id id = libId(marketParams);
+
+    // Assume no interest as it would increase the total borrowed assets.
+    require lastUpdate(id) == e.block.timestamp;
+    // Assume no outstanding debt to begin with.
+    require borrowShares(id, onBehalf) == 0;
+
+    uint256 borrowedAssets;
+    borrowedAssets, _ = borrow(e, marketParams, assets, shares, onBehalf, receiver);
+
+    uint256 owedAssets = owedBorrowAssets(id, onBehalf);
+
+    assert borrowedAssets <= owedAssets;
+}
+
 // Check that the assets repaid are greater than the assets owed initially.
-rule repayLiquidity(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data) {
+rule repayAssetsAccounting(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data) {
     MorphoHarness.Id id = libId(marketParams);
 
     // Assume no interest as it would increase the total borrowed assets.
     require lastUpdate(id) == e.block.timestamp;
 
-    uint256 initialShares = borrowShares(id, onBehalf);
-    uint256 initialTotalBorrow = virtualTotalBorrowAssets(id);
-    uint256 initialTotalBorrowShares = virtualTotalBorrowShares(id);
-    uint256 owedAssets = libMulDivUp(initialShares, initialTotalBorrow, initialTotalBorrowShares);
+    uint256 owedAssets = owedBorrowAssets(id, onBehalf);
 
     uint256 repaidAssets;
     repaidAssets, _ = repay(e, marketParams, assets, shares, onBehalf, data);
