@@ -65,7 +65,7 @@ rule withdrawAssetsAccounting(env e, MorphoHarness.MarketParams marketParams, ui
 }
 
 // Check that the assets borrowed are less than the assets owed in the end.
-rule borrowAssetsAccounting(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, address receiver) {
+rule borrowAssetsAccounting(env e, MorphoHarness.MarketParams marketParams, uint256 shares, address onBehalf, address receiver) {
     MorphoHarness.Id id = libId(marketParams);
 
     // Assume no interest as it would increase the total borrowed assets.
@@ -73,8 +73,9 @@ rule borrowAssetsAccounting(env e, MorphoHarness.MarketParams marketParams, uint
     // Assume no outstanding debt to begin with.
     require borrowShares(id, onBehalf) == 0;
 
+    // The borrow call is restricted to shares as input to make it easier on the prover.
     uint256 borrowedAssets;
-    borrowedAssets, _ = borrow(e, marketParams, assets, shares, onBehalf, receiver);
+    borrowedAssets, _ = borrow(e, marketParams, 0, shares, onBehalf, receiver);
 
     uint256 owedAssets = owedBorrowAssets(id, onBehalf);
 
