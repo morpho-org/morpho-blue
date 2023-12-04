@@ -64,31 +64,6 @@ rule withdrawAssetsAccounting(env e, MorphoHarness.MarketParams marketParams, ui
     assert withdrawnAssets <= ownedAssets;
 }
 
-// Check that the collateral assets supplied are greater than the assets owned in the end.
-rule supplyCollateralAssetsAccounting(env e, MorphoHarness.MarketParams marketParams, uint256 suppliedAssets, address onBehalf, bytes data) {
-    MorphoHarness.Id id = libId(marketParams);
-
-    // Assume no collateral to begin with.
-    require collateral(id, onBehalf) == 0;
-
-    supplyCollateral(e, marketParams, suppliedAssets, onBehalf, data);
-
-    uint256 ownedAssets = collateral(id, onBehalf);
-
-    assert suppliedAssets >= ownedAssets;
-}
-
-// Check that the collateral assets withdrawn are less than the assets owned initially.
-rule withdrawCollateralAssetsAccounting(env e, MorphoHarness.MarketParams marketParams, uint256 withdrawnAssets, address onBehalf, address receiver) {
-    MorphoHarness.Id id = libId(marketParams);
-
-    uint256 ownedAssets = collateral(id, onBehalf);
-
-    withdrawCollateral(e, marketParams, withdrawnAssets, onBehalf, receiver);
-
-    assert withdrawnAssets <= ownedAssets;
-}
-
 // Check that the assets borrowed are less than the assets owed in the end.
 rule borrowAssetsAccounting(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, address receiver) {
     MorphoHarness.Id id = libId(marketParams);
@@ -122,4 +97,29 @@ rule repayAssetsAccounting(env e, MorphoHarness.MarketParams marketParams, uint2
     require borrowShares(id, onBehalf) == 0;
 
     assert repaidAssets >= owedAssets;
+}
+
+// Check that the collateral assets supplied are greater than the assets owned in the end.
+rule supplyCollateralAssetsAccounting(env e, MorphoHarness.MarketParams marketParams, uint256 suppliedAssets, address onBehalf, bytes data) {
+    MorphoHarness.Id id = libId(marketParams);
+
+    // Assume no collateral to begin with.
+    require collateral(id, onBehalf) == 0;
+
+    supplyCollateral(e, marketParams, suppliedAssets, onBehalf, data);
+
+    uint256 ownedAssets = collateral(id, onBehalf);
+
+    assert suppliedAssets >= ownedAssets;
+}
+
+// Check that the collateral assets withdrawn are less than the assets owned initially.
+rule withdrawCollateralAssetsAccounting(env e, MorphoHarness.MarketParams marketParams, uint256 withdrawnAssets, address onBehalf, address receiver) {
+    MorphoHarness.Id id = libId(marketParams);
+
+    uint256 ownedAssets = collateral(id, onBehalf);
+
+    withdrawCollateral(e, marketParams, withdrawnAssets, onBehalf, receiver);
+
+    assert withdrawnAssets <= ownedAssets;
 }
