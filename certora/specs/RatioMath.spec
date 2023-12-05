@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 methods {
     function extSloads(bytes32[]) external returns bytes32[] => NONDET DELETE;
+
+    function collateral(MorphoHarness.Id, address) external returns uint256 envfree;
     function virtualTotalSupplyAssets(MorphoHarness.Id) external returns uint256 envfree;
     function virtualTotalSupplyShares(MorphoHarness.Id) external returns uint256 envfree;
     function virtualTotalBorrowAssets(MorphoHarness.Id) external returns uint256 envfree;
@@ -95,6 +97,31 @@ filtered {
 
     mathint assetsAfter = virtualTotalSupplyAssets(id);
     mathint sharesAfter = virtualTotalSupplyShares(id);
+
+    // Check that the ratio increases: assetsBefore/sharesBefore <= assetsAfter / sharesAfter
+    assert assetsBefore * sharesAfter <= assetsAfter * sharesBefore;
+}
+
+// Check that when not realizing bad debt in liquidate, the value of supply shares increases.
+rule liquidateWithoutBadDebtRealizationIncreasesSupplyRatio(env e, MorphoHarness.MarketParams marketParams, address borrower, uint256 seizedAssets, uint256 repaidShares, bytes data)
+{
+    MorphoHarness.Id id;
+    requireInvariant feeInRange(id);
+
+    mathint assetsBefore = virtualTotalSupplyAssets(id);
+    mathint sharesBefore = virtualTotalSupplyShares(id);
+
+    // Interest is checked separately by the rules above.
+    // Here we assume interest has already been accumulated for this block.
+    require lastUpdate(id) == e.block.timestamp;
+
+    liquidate(e, marketParams, borrower, seizedAssets, repaidShares, data);
+
+    mathint assetsAfter = virtualTotalSupplyAssets(id);
+    mathint sharesAfter = virtualTotalSupplyShares(id);
+
+    // Trick to ensure that no bad debt realization happened.
+    require collateral(id, borrower) != 0;
 
     // Check that the ratio increases: assetsBefore/sharesBefore <= assetsAfter / sharesAfter
     assert assetsBefore * sharesAfter <= assetsAfter * sharesBefore;
