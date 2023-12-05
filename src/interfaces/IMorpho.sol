@@ -70,7 +70,7 @@ interface IMorphoBase {
     /// @notice Whether the `lltv` is enabled.
     function isLltvEnabled(uint256 lltv) external view returns (bool);
 
-    /// @notice Whether `authorized` is authorized to modify `authorizer`'s positions on all markets.
+    /// @notice Whether `authorized` is authorized to modify `authorizer`'s position on all markets.
     /// @dev Anyone is authorized to modify their own positions, regardless of this variable.
     function isAuthorized(address authorizer, address authorized) external view returns (bool);
 
