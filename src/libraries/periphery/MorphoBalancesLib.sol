@@ -105,9 +105,9 @@ library MorphoBalancesLib {
     }
 
     /// @notice Returns the expected borrow assets balance of `user` on a market after having accrued interest.
-    /// @dev Warning: The expected balance is rounded up, so it can be greater than the market's expected total supply
+    /// @dev Warning: The expected balance is rounded up, so it can be greater than the market's expected total borrow
     /// assets.
-    /// @dev Warning: Repaying using the expected supply assets can lead to a revert due to conversion roundings from
+    /// @dev Warning: Repaying using the expected borrow assets can lead to a revert due to conversion roundings from
     /// assets to shares.
     function expectedBorrowAssets(IMorpho morpho, MarketParams memory marketParams, address user)
         internal
