@@ -91,6 +91,7 @@ interface IMorphoBase {
     function enableLltv(uint256 lltv) external;
 
     /// @notice Sets the `newFee` for the given market `marketParams`.
+    /// @param newFee The new fee, scaled by wad.
     /// @dev Warning: The recipient can be the zero address.
     function setFee(MarketParams memory marketParams, uint256 newFee) external;
 
