@@ -86,7 +86,7 @@ contract MorphoHarness is Morpho {
         return MathLib.mulDivDown(x, y, d);
     }
 
-    function isHealthy(MarketParams memory marketParams, address user) external view returns (bool) {
+    function isHealthy(MarketParams memory marketParams, address user) external returns (bool) {
         return _isHealthy(marketParams, marketParams.id(), user);
     }
 }
