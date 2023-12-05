@@ -144,6 +144,11 @@ contract BaseTest is Test {
         return address(uint160(bound(uint256(uint160(input)), 1, type(uint160).max)));
     }
 
+    function _setValidTokens(MarketParams memory params) internal view {
+        params.loanToken = address(loanToken);
+        params.collateralToken = address(collateralToken);
+    }
+
     function _supply(uint256 amount) internal {
         loanToken.setBalance(address(this), amount);
         morpho.supply(marketParams, amount, 0, address(this), hex"");
