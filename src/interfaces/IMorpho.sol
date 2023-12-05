@@ -201,6 +201,7 @@ interface IMorphoBase {
     /// @dev Repaying an amount corresponding to more shares than borrowed will revert for underflow.
     /// @dev It is advised to use the `shares` input when repaying the full position to avoid reverts due to conversion
     /// roundings between shares and assets.
+    /// @dev An attacker can front-run a repay with a small repay making the transaction revert for underflow.
     /// @param marketParams The market to repay assets to.
     /// @param assets The amount of assets to repay.
     /// @param shares The amount of shares to burn.
@@ -243,6 +244,7 @@ interface IMorphoBase {
     /// @dev Either `seizedAssets` or `repaidShares` should be zero.
     /// @dev Seizing more than the collateral balance will underflow and revert without any error message.
     /// @dev Repaying more than the borrow balance will underflow and revert without any error message.
+    /// @dev An attacker can front-run a liquidation with a small repay making the transaction revert for underflow.
     /// @param marketParams The market of the position.
     /// @param borrower The owner of the position.
     /// @param seizedAssets The amount of collateral to seize.
