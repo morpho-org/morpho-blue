@@ -28,6 +28,18 @@ contract SupplyCollateralIntegrationTest is BaseTest {
         morpho.supplyCollateral(marketParams, amount, address(0), hex"");
     }
 
+    function testSupplyCollateralTokenNotCreated(uint256 amount, address token) public {
+        amount = bound(amount, 1, MAX_TEST_AMOUNT);
+
+        vm.assume(token.code.length == 0);
+
+        marketParams.collateralToken = token;
+        morpho.createMarket(marketParams);
+
+        vm.expectRevert(bytes(ErrorsLib.NO_CODE));
+        morpho.supplyCollateral(marketParams, amount, ONBEHALF, hex"");
+    }
+
     function testSupplyCollateral(uint256 amount) public {
         amount = bound(amount, 1, MAX_COLLATERAL_ASSETS);
 
