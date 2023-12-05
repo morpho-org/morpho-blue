@@ -216,7 +216,6 @@ contract BaseTest is Test {
 
     function _boundWithdrawCollateralAssets(MarketParams memory _marketParams, address onBehalf, uint256 assets)
         internal
-        view
         returns (uint256)
     {
         Id _id = _marketParams.id();
@@ -291,7 +290,6 @@ contract BaseTest is Test {
 
     function _boundBorrowAssets(MarketParams memory _marketParams, address onBehalf, uint256 assets)
         internal
-        view
         returns (uint256)
     {
         Id _id = _marketParams.id();
@@ -330,7 +328,6 @@ contract BaseTest is Test {
 
     function _boundLiquidateSeizedAssets(MarketParams memory _marketParams, address borrower, uint256 seizedAssets)
         internal
-        view
         returns (uint256)
     {
         Id _id = _marketParams.id();
@@ -347,7 +344,6 @@ contract BaseTest is Test {
 
     function _boundLiquidateRepaidShares(MarketParams memory _marketParams, address borrower, uint256 repaidShares)
         internal
-        view
         returns (uint256)
     {
         Id _id = _marketParams.id();
@@ -363,7 +359,7 @@ contract BaseTest is Test {
         return bound(repaidShares, 0, Math.min(borrowShares, maxRepaidShares));
     }
 
-    function _maxBorrow(MarketParams memory _marketParams, address user) internal view returns (uint256) {
+    function _maxBorrow(MarketParams memory _marketParams, address user) internal returns (uint256) {
         Id _id = _marketParams.id();
 
         uint256 collateralPrice = IOracle(_marketParams.oracle).price();
@@ -371,7 +367,7 @@ contract BaseTest is Test {
         return morpho.collateral(_id, user).mulDivDown(collateralPrice, ORACLE_PRICE_SCALE).wMulDown(_marketParams.lltv);
     }
 
-    function _isHealthy(MarketParams memory _marketParams, address user) internal view returns (bool) {
+    function _isHealthy(MarketParams memory _marketParams, address user) internal returns (bool) {
         uint256 maxBorrow = _maxBorrow(_marketParams, user);
         uint256 borrowed = morpho.expectedBorrowAssets(_marketParams, user);
 

@@ -105,7 +105,6 @@ contract InvariantTest is BaseTest {
 
     function _randomHealthyCollateralSupplier(address[] memory users, MarketParams memory _marketParams, uint256 seed)
         internal
-        view
         returns (address)
     {
         Id _id = _marketParams.id();
@@ -124,7 +123,6 @@ contract InvariantTest is BaseTest {
 
     function _randomUnhealthyBorrower(address[] memory users, MarketParams memory _marketParams, uint256 seed)
         internal
-        view
         returns (address randomSenderToLiquidate)
     {
         address[] memory candidates = new address[](users.length);
