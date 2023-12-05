@@ -16,7 +16,7 @@ methods {
     function libId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
 }
 
-function ownedSupplyAssets(MorphoHarness.Id id, address user) returns uint256 {
+function expectedSupplyAssets(MorphoHarness.Id id, address user) returns uint256 {
     uint256 userShares = supplyShares(id, user);
     uint256 totalSupplyAssets = virtualTotalSupplyAssets(id);
     uint256 totalSupplyShares = virtualTotalSupplyShares(id);
@@ -24,7 +24,7 @@ function ownedSupplyAssets(MorphoHarness.Id id, address user) returns uint256 {
     return libMulDivDown(userShares, totalSupplyAssets, totalSupplyShares);
 }
 
-function owedBorrowAssets(MorphoHarness.Id id, address user) returns uint256 {
+function expectedBorrowAssets(MorphoHarness.Id id, address user) returns uint256 {
     uint256 userShares = borrowShares(id, user);
     uint256 totalBorrowAssets = virtualTotalBorrowAssets(id);
     uint256 totalBorrowShares = virtualTotalBorrowShares(id);
@@ -44,7 +44,7 @@ rule supplyAssetsAccounting(env e, MorphoHarness.MarketParams marketParams, uint
     uint256 suppliedAssets;
     suppliedAssets, _ = supply(e, marketParams, assets, shares, onBehalf, data);
 
-    uint256 ownedAssets = ownedSupplyAssets(id, onBehalf);
+    uint256 ownedAssets = expectedSupplyAssets(id, onBehalf);
 
     assert suppliedAssets >= ownedAssets;
 }
@@ -56,7 +56,7 @@ rule withdrawAssetsAccounting(env e, MorphoHarness.MarketParams marketParams, ui
     // Assume no interest as it would increase the total supply assets.
     require lastUpdate(id) == e.block.timestamp;
 
-    uint256 ownedAssets = ownedSupplyAssets(id, onBehalf);
+    uint256 ownedAssets = expectedSupplyAssets(id, onBehalf);
 
     uint256 withdrawnAssets;
     withdrawnAssets, _ = withdraw(e, marketParams, assets, shares, onBehalf, receiver);
@@ -77,7 +77,7 @@ rule borrowAssetsAccounting(env e, MorphoHarness.MarketParams marketParams, uint
     uint256 borrowedAssets;
     borrowedAssets, _ = borrow(e, marketParams, 0, shares, onBehalf, receiver);
 
-    uint256 owedAssets = owedBorrowAssets(id, onBehalf);
+    uint256 owedAssets = expectedBorrowAssets(id, onBehalf);
 
     assert borrowedAssets <= owedAssets;
 }
@@ -89,7 +89,7 @@ rule repayAssetsAccounting(env e, MorphoHarness.MarketParams marketParams, uint2
     // Assume no interest as it would increase the total borrowed assets.
     require lastUpdate(id) == e.block.timestamp;
 
-    uint256 owedAssets = owedBorrowAssets(id, onBehalf);
+    uint256 owedAssets = expectedBorrowAssets(id, onBehalf);
 
     uint256 repaidAssets;
     repaidAssets, _ = repay(e, marketParams, assets, shares, onBehalf, data);
