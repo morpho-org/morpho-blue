@@ -13,19 +13,18 @@ methods {
     function _.totalSupply() external => DISPATCHER(true);
 }
 
-ghost mapping(address => mathint) myBalances
-{
-    init_state axiom (forall address token. myBalances[token] == 0);
+ghost mapping(address => mathint) balance {
+    init_state axiom (forall address token. balance[token] == 0);
 }
 
 function summarySafeTransferFrom(address token, address from, address to, uint256 amount) {
     if (from == currentContract) {
         // Safe require because the reference implementation would revert.
-        myBalances[token] = require_uint256(myBalances[token] - amount);
+        balance[token] = require_uint256(balance[token] - amount);
     }
     if (to == currentContract) {
         // Safe require because the reference implementation would revert.
-        myBalances[token] = require_uint256(myBalances[token] + amount);
+        balance[token] = require_uint256(balance[token] + amount);
     }
 }
 
@@ -38,9 +37,9 @@ rule checkTransferSummary(address token, address to, uint256 amount) {
     libSafeTransfer(token, to, amount);
     mathint finalBalance = balanceOf(token, currentContract);
 
-    require myBalances[token] == initialBalance;
+    require balance[token] == initialBalance;
     summarySafeTransferFrom(token, currentContract, to, amount);
-    assert myBalances[token] == finalBalance;
+    assert balance[token] == finalBalance;
 }
 
 // Check the functional correctness of the summary of safeTransferFrom.
@@ -52,9 +51,9 @@ rule checkTransferFromSummary(address token, address from, uint256 amount) {
     libSafeTransferFrom(token, from, currentContract, amount);
     mathint finalBalance = balanceOf(token, currentContract);
 
-    require myBalances[token] == initialBalance;
+    require balance[token] == initialBalance;
     summarySafeTransferFrom(token, from, currentContract, amount);
-    assert myBalances[token] == finalBalance;
+    assert balance[token] == finalBalance;
 }
 
 // Check the revert condition of the summary of safeTransfer.
