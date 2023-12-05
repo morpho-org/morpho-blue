@@ -111,7 +111,7 @@ rule supplyCollateralAssetsAccounting(env e, MorphoHarness.MarketParams marketPa
 
     uint256 ownedAssets = collateral(id, onBehalf);
 
-    assert suppliedAssets >= ownedAssets;
+    assert suppliedAssets == ownedAssets;
 }
 
 // Check that the collateral assets withdrawn are less than the assets owned initially.
