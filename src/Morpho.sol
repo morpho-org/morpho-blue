@@ -158,6 +158,9 @@ contract Morpho is IMorphoStaticTyping {
         idToMarketParams[id] = marketParams;
 
         emit EventsLib.CreateMarket(id, marketParams);
+
+        // Call Irm in case it is statefull.
+        IIrm(marketParams.irm).borrowRate(marketParams, market[id]);
     }
 
     /* SUPPLY MANAGEMENT */
