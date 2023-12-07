@@ -475,9 +475,10 @@ contract Morpho is IMorphoStaticTyping {
     /// @dev Accrues interest for the given market `marketParams`.
     /// @dev Assumes that the inputs `marketParams` and `id` match.
     function _accrueInterest(MarketParams memory marketParams, Id id) internal {
-        uint256 elapsed = block.timestamp - market[id].lastUpdate;
+        if (marketParams.irm == address(0)) return;
 
-        if (elapsed == 0 || marketParams.irm == address(0)) return;
+        uint256 elapsed = block.timestamp - market[id].lastUpdate;
+        if (elapsed == 0) return;
 
         uint256 borrowRate = IIrm(marketParams.irm).borrowRate(marketParams, market[id]);
         uint256 interest = market[id].totalBorrowAssets.wMulDown(borrowRate.wTaylorCompounded(elapsed));
