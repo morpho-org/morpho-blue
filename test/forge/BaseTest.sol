@@ -82,7 +82,9 @@ contract BaseTest is Test {
         irm = new IrmMock();
 
         vm.startPrank(OWNER);
+        morpho.enableIrm(address(0));
         morpho.enableIrm(address(irm));
+        morpho.enableLltv(0);
         morpho.setFeeRecipient(FEE_RECIPIENT);
         vm.stopPrank();
 
