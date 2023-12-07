@@ -18,8 +18,8 @@ library SharesMathLib {
 
     /// @dev A number of virtual assets of 1 enforces a conversion rate between shares and assets when a market is
     /// empty.
-    /// @dev Warning: virtual borrow assets behave like bad debt, but it is assumed the borrow share price stays low
-    /// enough to not inflate the virtual borrow assets too much.
+    /// @dev Warning: virtual borrow assets behave like unrealizable bad debt, but it is assumed the borrow share price
+    /// stays low enough to not inflate the virtual borrow assets too much.
     uint256 internal constant VIRTUAL_ASSETS = 1;
 
     /// @dev Calculates the value of `assets` quoted in shares, rounding down.
