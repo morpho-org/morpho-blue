@@ -384,15 +384,16 @@ contract Morpho is IMorphoStaticTyping {
         position[id][borrower].collateral -= seizedAssets.toUint128();
 
         uint256 badDebtShares;
+        uint256 badDebtAssets;
         if (position[id][borrower].collateral == 0) {
             badDebtShares = position[id][borrower].borrowShares;
-            uint256 badDebt = UtilsLib.min(
+            badDebtAssets = UtilsLib.min(
                 market[id].totalBorrowAssets,
                 badDebtShares.toAssetsUp(market[id].totalBorrowAssets, market[id].totalBorrowShares)
             );
 
-            market[id].totalBorrowAssets -= badDebt.toUint128();
-            market[id].totalSupplyAssets -= badDebt.toUint128();
+            market[id].totalBorrowAssets -= badDebtAssets.toUint128();
+            market[id].totalSupplyAssets -= badDebtAssets.toUint128();
             market[id].totalBorrowShares -= badDebtShares.toUint128();
             position[id][borrower].borrowShares = 0;
         }
@@ -400,7 +401,9 @@ contract Morpho is IMorphoStaticTyping {
         IERC20(marketParams.collateralToken).safeTransfer(msg.sender, seizedAssets);
 
         // `repaidAssets` may be greater than `totalBorrowAssets` by 1.
-        emit EventsLib.Liquidate(id, msg.sender, borrower, repaidAssets, repaidShares, seizedAssets, badDebtShares);
+        emit EventsLib.Liquidate(
+            id, msg.sender, borrower, repaidAssets, repaidShares, seizedAssets, badDebtAssets, badDebtShares
+        );
 
         if (data.length > 0) IMorphoLiquidateCallback(msg.sender).onMorphoLiquidate(repaidAssets, data);
 
