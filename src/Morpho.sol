@@ -354,12 +354,12 @@ contract Morpho is IMorphoStaticTyping {
 
         _accrueInterest(marketParams, id);
 
-        uint256 collateralPrice = IOracle(marketParams.oracle).price();
-
-        require(!_isHealthy(marketParams, id, borrower, collateralPrice), ErrorsLib.HEALTHY_POSITION);
-
         uint256 repaidAssets;
         {
+            uint256 collateralPrice = IOracle(marketParams.oracle).price();
+
+            require(!_isHealthy(marketParams, id, borrower, collateralPrice), ErrorsLib.HEALTHY_POSITION);
+
             // The liquidation incentive factor is min(maxLiquidationIncentiveFactor, 1/(1 - cursor*(1 - lltv))).
             uint256 liquidationIncentiveFactor = UtilsLib.min(
                 MAX_LIQUIDATION_INCENTIVE_FACTOR,
