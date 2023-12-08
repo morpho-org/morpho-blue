@@ -340,6 +340,11 @@ contract Morpho is IMorphoStaticTyping {
 
     /* LIQUIDATION */
 
+    struct Vars {
+        uint256 collateralPrice;
+        uint256 liquidationIncentiveFactor;
+    }
+
     /// @inheritdoc IMorphoBase
     function liquidate(
         MarketParams memory marketParams,
@@ -354,25 +359,23 @@ contract Morpho is IMorphoStaticTyping {
 
         _accrueInterest(marketParams, id);
 
-        uint256 collateralPrice = IOracle(marketParams.oracle).price();
+        Vars memory vars;
+        vars.collateralPrice = IOracle(marketParams.oracle).price();
 
-        require(!_isHealthy(marketParams, id, borrower, collateralPrice), ErrorsLib.HEALTHY_POSITION);
+        require(!_isHealthy(marketParams, id, borrower, vars.collateralPrice), ErrorsLib.HEALTHY_POSITION);
 
-        {
-            // The liquidation incentive factor is min(maxLiquidationIncentiveFactor, 1/(1 - cursor*(1 - lltv))).
-            uint256 liquidationIncentiveFactor = UtilsLib.min(
-                MAX_LIQUIDATION_INCENTIVE_FACTOR,
-                WAD.wDivDown(WAD - LIQUIDATION_CURSOR.wMulDown(WAD - marketParams.lltv))
-            );
+        // The liquidation incentive factor is min(maxLiquidationIncentiveFactor, 1/(1 - cursor*(1 - lltv))).
+        vars.liquidationIncentiveFactor = UtilsLib.min(
+            MAX_LIQUIDATION_INCENTIVE_FACTOR, WAD.wDivDown(WAD - LIQUIDATION_CURSOR.wMulDown(WAD - marketParams.lltv))
+        );
 
-            if (seizedAssets > 0) {
-                repaidShares = seizedAssets.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(
-                    liquidationIncentiveFactor
-                ).toSharesDown(market[id].totalBorrowAssets, market[id].totalBorrowShares);
-            } else {
-                seizedAssets = repaidShares.toAssetsDown(market[id].totalBorrowAssets, market[id].totalBorrowShares)
-                    .wMulDown(liquidationIncentiveFactor).mulDivDown(ORACLE_PRICE_SCALE, collateralPrice);
-            }
+        if (seizedAssets > 0) {
+            repaidShares = seizedAssets.mulDivUp(vars.collateralPrice, ORACLE_PRICE_SCALE).wDivUp(
+                vars.liquidationIncentiveFactor
+            ).toSharesDown(market[id].totalBorrowAssets, market[id].totalBorrowShares);
+        } else {
+            seizedAssets = repaidShares.toAssetsDown(market[id].totalBorrowAssets, market[id].totalBorrowShares)
+                .wMulDown(vars.liquidationIncentiveFactor).mulDivDown(ORACLE_PRICE_SCALE, vars.collateralPrice);
         }
         uint256 repaidAssets = repaidShares.toAssetsUp(market[id].totalBorrowAssets, market[id].totalBorrowShares);
 
