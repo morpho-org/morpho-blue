@@ -36,13 +36,12 @@ library MorphoBalancesLib {
         returns (uint256, uint256, uint256, uint256)
     {
         Id id = marketParams.id();
-
         Market memory market = morpho.market(id);
 
         uint256 elapsed = block.timestamp - market.lastUpdate;
 
-        // Skipped if elapsed == 0 or if totalBorrowAssets == 0 because interest would be null.
-        if (elapsed != 0 && market.totalBorrowAssets != 0) {
+        // Skipped if elapsed == 0 or totalBorrowAssets == 0 or irm == address(0) because interest would be null.
+        if (elapsed != 0 && market.totalBorrowAssets != 0 && marketParams.irm != address(0)) {
             uint256 borrowRate = IIrm(marketParams.irm).borrowRateView(marketParams, market);
             uint256 interest = market.totalBorrowAssets.wMulDown(borrowRate.wTaylorCompounded(elapsed));
             market.totalBorrowAssets += interest.toUint128();
