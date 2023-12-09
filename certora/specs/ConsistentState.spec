@@ -176,6 +176,13 @@ rule libIdUnique() {
     assert marketParams1.lltv == marketParams2.lltv;
 }
 
+rule createdMarketIsEmpty(env e, MorphoHarness.MarketParams marketParams) {
+    MorphoHarness.Id id = libId(marketParams);
+    createMarket(e, marketParams);
+    assert totalBorrowAssets(id) == 0;
+    assert totalSupplyAssets(id) == 0;
+}
+
 // Check that only the user is able to change who is authorized to manage his position.
 rule onlyUserCanAuthorizeWithoutSig(env e, method f, calldataarg data)
 filtered {
