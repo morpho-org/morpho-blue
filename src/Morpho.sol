@@ -153,14 +153,10 @@ contract Morpho is IMorphoStaticTyping {
         require(isLltvEnabled[marketParams.lltv], ErrorsLib.LLTV_NOT_ENABLED);
         require(market[id].lastUpdate == 0, ErrorsLib.MARKET_ALREADY_CREATED);
 
-        // Safe "unchecked" cast.
-        market[id].lastUpdate = uint128(block.timestamp);
+        _accrueInterest(marketParams, id);
         idToMarketParams[id] = marketParams;
 
         emit EventsLib.CreateMarket(id, marketParams);
-
-        // Call to initialize the IRM in case it is stateful.
-        IIrm(marketParams.irm).borrowRate(marketParams, market[id]);
     }
 
     /* SUPPLY MANAGEMENT */
@@ -472,29 +468,33 @@ contract Morpho is IMorphoStaticTyping {
     /// @dev Accrues interest for the given market `marketParams`.
     /// @dev Assumes that the inputs `marketParams` and `id` match.
     function _accrueInterest(MarketParams memory marketParams, Id id) internal {
+        // The IRM is always called, useful for stateful IRMs.
+        uint256 borrowRate = IIrm(marketParams.irm).borrowRate(marketParams, market[id]);
+        // At market creation, elapsed==block.timestamp but totalBorrowAssets==0 so no interest is accrued, as expected.
         uint256 elapsed = block.timestamp - market[id].lastUpdate;
 
-        if (elapsed == 0) return;
-
-        uint256 borrowRate = IIrm(marketParams.irm).borrowRate(marketParams, market[id]);
-        uint256 interest = market[id].totalBorrowAssets.wMulDown(borrowRate.wTaylorCompounded(elapsed));
-        market[id].totalBorrowAssets += interest.toUint128();
-        market[id].totalSupplyAssets += interest.toUint128();
-
+        uint256 interest;
         uint256 feeShares;
-        if (market[id].fee != 0) {
-            uint256 feeAmount = interest.wMulDown(market[id].fee);
-            // The fee amount is subtracted from the total supply in this calculation to compensate for the fact
-            // that total supply is already increased by the full interest (including the fee amount).
-            feeShares = feeAmount.toSharesDown(market[id].totalSupplyAssets - feeAmount, market[id].totalSupplyShares);
-            position[id][feeRecipient].supplyShares += feeShares;
-            market[id].totalSupplyShares += feeShares.toUint128();
-        }
+        if (elapsed != 0) {
+            interest = market[id].totalBorrowAssets.wMulDown(borrowRate.wTaylorCompounded(elapsed));
+            market[id].totalBorrowAssets += interest.toUint128();
+            market[id].totalSupplyAssets += interest.toUint128();
 
-        emit EventsLib.AccrueInterest(id, borrowRate, interest, feeShares);
+            if (market[id].fee != 0) {
+                uint256 feeAmount = interest.wMulDown(market[id].fee);
+                // The fee amount is subtracted from the total supply in this calculation to compensate for the fact
+                // that total supply is already increased by the full interest (including the fee amount).
+                feeShares =
+                    feeAmount.toSharesDown(market[id].totalSupplyAssets - feeAmount, market[id].totalSupplyShares);
+                position[id][feeRecipient].supplyShares += feeShares;
+                market[id].totalSupplyShares += feeShares.toUint128();
+            }
+        }
 
         // Safe "unchecked" cast.
         market[id].lastUpdate = uint128(block.timestamp);
+
+        emit EventsLib.AccrueInterest(id, borrowRate, interest, feeShares);
     }
 
     /* HEALTH CHECK */
@@ -502,11 +502,12 @@ contract Morpho is IMorphoStaticTyping {
     /// @dev Returns whether the position of `borrower` in the given market `marketParams` is healthy.
     /// @dev Assumes that the inputs `marketParams` and `id` match.
     function _isHealthy(MarketParams memory marketParams, Id id, address borrower) internal view returns (bool) {
-        if (position[id][borrower].borrowShares == 0) return true;
-
-        uint256 collateralPrice = IOracle(marketParams.oracle).price();
-
-        return _isHealthy(marketParams, id, borrower, collateralPrice);
+        if (position[id][borrower].borrowShares == 0) {
+            return true;
+        } else {
+            uint256 collateralPrice = IOracle(marketParams.oracle).price();
+            return _isHealthy(marketParams, id, borrower, collateralPrice);
+        }
     }
 
     /// @dev Returns whether the position of `borrower` in the given market `marketParams` with the given
