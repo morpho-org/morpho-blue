@@ -153,8 +153,11 @@ contract Morpho is IMorphoStaticTyping {
         require(isLltvEnabled[marketParams.lltv], ErrorsLib.LLTV_NOT_ENABLED);
         require(market[id].lastUpdate == 0, ErrorsLib.MARKET_ALREADY_CREATED);
 
-        _accrueInterest(marketParams, id);
+        // Safe "unchecked" cast.
+        market[id].lastUpdate = uint128(block.timestamp);
         idToMarketParams[id] = marketParams;
+
+        _accrueInterest(marketParams, id);
 
         emit EventsLib.CreateMarket(id, marketParams);
     }
@@ -468,9 +471,8 @@ contract Morpho is IMorphoStaticTyping {
     /// @dev Accrues interest for the given market `marketParams`.
     /// @dev Assumes that the inputs `marketParams` and `id` match.
     function _accrueInterest(MarketParams memory marketParams, Id id) internal {
-        // The IRM is always called, useful for stateful IRMs.
+        // The IRM is called even when elapsed=0. It can be useful for stateful IRMs.
         uint256 borrowRate = IIrm(marketParams.irm).borrowRate(marketParams, market[id]);
-        // At market creation, elapsed==block.timestamp but totalBorrowAssets==0 so no interest is accrued, as expected.
         uint256 elapsed = block.timestamp - market[id].lastUpdate;
 
         uint256 interest;
