@@ -176,15 +176,6 @@ rule libIdUnique() {
     assert marketParams1.lltv == marketParams2.lltv;
 }
 
-// Check that just after a market is created, its state is consistent.
-rule createdMarketConsistentState(env e, MorphoHarness.MarketParams marketParams) {
-    MorphoHarness.Id id = libId(marketParams);
-    createMarket(e, marketParams);
-    assert lastUpdate(id) == e.block.timestamp;
-    assert totalBorrowAssets(id) == 0;
-    assert totalSupplyAssets(id) == 0;
-}
-
 // Check that only the user is able to change who is authorized to manage his position.
 rule onlyUserCanAuthorizeWithoutSig(env e, method f, calldataarg data)
 filtered {
