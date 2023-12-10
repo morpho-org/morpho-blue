@@ -502,11 +502,12 @@ contract Morpho is IMorphoStaticTyping {
     /// @dev Returns whether the position of `borrower` in the given market `marketParams` is healthy.
     /// @dev Assumes that the inputs `marketParams` and `id` match.
     function _isHealthy(MarketParams memory marketParams, Id id, address borrower) internal view returns (bool) {
-        if (position[id][borrower].borrowShares == 0) return true;
-
-        uint256 collateralPrice = IOracle(marketParams.oracle).price();
-
-        return _isHealthy(marketParams, id, borrower, collateralPrice);
+        if (position[id][borrower].borrowShares == 0) {
+            return true;
+        } else {
+            uint256 collateralPrice = IOracle(marketParams.oracle).price();
+            return _isHealthy(marketParams, id, borrower, collateralPrice);
+        }
     }
 
     /// @dev Returns whether the position of `borrower` in the given market `marketParams` with the given
