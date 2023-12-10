@@ -16,6 +16,12 @@ contract AuthorizationIntegrationTest is BaseTest {
         assertFalse(morpho.isAuthorized(address(this), addressFuzz));
     }
 
+    function testAlreadySet(address addressFuzz, bool status) public {
+        morpho.setAuthorization(addressFuzz, status);
+        vm.expectRevert(bytes(ErrorsLib.ALREADY_SET));
+        morpho.setAuthorization(addressFuzz, status);
+    }
+
     function testSetAuthorizationWithSignatureDeadlineOutdated(
         Authorization memory authorization,
         uint256 privateKey,
