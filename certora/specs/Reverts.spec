@@ -103,14 +103,14 @@ rule setFeeRecipientRevertCondition(env e, address newFeeRecipient) {
     assert lastReverted <=> e.msg.value != 0 || e.msg.sender != oldOwner || newFeeRecipient == oldFeeRecipient;
 }
 
-// Check the revert condition for the createMarket function.
-rule createMarketRevertCondition(env e, MorphoHarness.MarketParams marketParams) {
+// Check that createMarket reverts when its input are not validated.
+rule createMarketInputValidation(env e, MorphoHarness.MarketParams marketParams) {
     MorphoHarness.Id id = libId(marketParams);
     bool irmEnabled = isIrmEnabled(marketParams.irm);
     bool lltvEnabled = isLltvEnabled(marketParams.lltv);
     bool wasCreated = isCreated(id);
     createMarket@withrevert(e, marketParams);
-    assert lastReverted <=> e.msg.value != 0 || !irmEnabled || !lltvEnabled || wasCreated;
+    assert e.msg.value != 0 || !irmEnabled || !lltvEnabled || wasCreated => lastReverted;
 }
 
 // Check that supply reverts when its input are not validated.

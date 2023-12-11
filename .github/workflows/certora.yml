@@ -17,9 +17,9 @@ jobs:
       matrix:
         conf:
           - AccrueInterest
+          - AssetsAccounting
           - ConsistentState
           - ExactMath
-          - ExitLiquidity
           - Health
           - LibSummary
           - Liveness

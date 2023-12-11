@@ -107,7 +107,8 @@ library EventsLib {
     /// @param repaidAssets The amount of assets repaid. May be 1 over the corresponding market's `totalBorrowAssets`.
     /// @param repaidShares The amount of shares burned.
     /// @param seizedAssets The amount of collateral seized.
-    /// @param badDebtShares The amount of shares minted as bad debt.
+    /// @param badDebtAssets The amount of assets of bad debt realized.
+    /// @param badDebtShares The amount of borrow shares of bad debt realized.
     event Liquidate(
         Id indexed id,
         address indexed caller,
@@ -115,6 +116,7 @@ library EventsLib {
         uint256 repaidAssets,
         uint256 repaidShares,
         uint256 seizedAssets,
+        uint256 badDebtAssets,
         uint256 badDebtShares
     );
 

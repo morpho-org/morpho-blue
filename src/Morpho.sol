@@ -158,6 +158,9 @@ contract Morpho is IMorphoStaticTyping {
         idToMarketParams[id] = marketParams;
 
         emit EventsLib.CreateMarket(id, marketParams);
+
+        // Call to initialize the IRM in case it is stateful.
+        IIrm(marketParams.irm).borrowRate(marketParams, market[id]);
     }
 
     /* SUPPLY MANAGEMENT */
@@ -354,12 +357,12 @@ contract Morpho is IMorphoStaticTyping {
 
         _accrueInterest(marketParams, id);
 
-        uint256 collateralPrice = IOracle(marketParams.oracle).price();
-
-        require(!_isHealthy(marketParams, id, borrower, collateralPrice), ErrorsLib.HEALTHY_POSITION);
-
         uint256 repaidAssets;
         {
+            uint256 collateralPrice = IOracle(marketParams.oracle).price();
+
+            require(!_isHealthy(marketParams, id, borrower, collateralPrice), ErrorsLib.HEALTHY_POSITION);
+
             // The liquidation incentive factor is min(maxLiquidationIncentiveFactor, 1/(1 - cursor*(1 - lltv))).
             uint256 liquidationIncentiveFactor = UtilsLib.min(
                 MAX_LIQUIDATION_INCENTIVE_FACTOR,
@@ -384,21 +387,24 @@ contract Morpho is IMorphoStaticTyping {
         position[id][borrower].collateral -= seizedAssets.toUint128();
 
         uint256 badDebtShares;
+        uint256 badDebtAssets;
         if (position[id][borrower].collateral == 0) {
             badDebtShares = position[id][borrower].borrowShares;
-            uint256 badDebt = UtilsLib.min(
+            badDebtAssets = UtilsLib.min(
                 market[id].totalBorrowAssets,
                 badDebtShares.toAssetsUp(market[id].totalBorrowAssets, market[id].totalBorrowShares)
             );
 
-            market[id].totalBorrowAssets -= badDebt.toUint128();
-            market[id].totalSupplyAssets -= badDebt.toUint128();
+            market[id].totalBorrowAssets -= badDebtAssets.toUint128();
+            market[id].totalSupplyAssets -= badDebtAssets.toUint128();
             market[id].totalBorrowShares -= badDebtShares.toUint128();
             position[id][borrower].borrowShares = 0;
         }
 
         // `repaidAssets` may be greater than `totalBorrowAssets` by 1.
-        emit EventsLib.Liquidate(id, msg.sender, borrower, repaidAssets, repaidShares, seizedAssets, badDebtShares);
+        emit EventsLib.Liquidate(
+            id, msg.sender, borrower, repaidAssets, repaidShares, seizedAssets, badDebtAssets, badDebtShares
+        );
 
         IERC20(marketParams.collateralToken).safeTransfer(msg.sender, seizedAssets);
 

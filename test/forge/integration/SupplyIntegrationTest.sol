@@ -41,6 +41,18 @@ contract SupplyIntegrationTest is BaseTest {
         morpho.supply(marketParams, amount, shares, address(0), hex"");
     }
 
+    function testSupplyTokenNotCreated(uint256 amount, address token) public {
+        amount = bound(amount, 1, MAX_TEST_AMOUNT);
+
+        vm.assume(token.code.length == 0);
+
+        marketParams.loanToken = token;
+        morpho.createMarket(marketParams);
+
+        vm.expectRevert(bytes(ErrorsLib.NO_CODE));
+        morpho.supply(marketParams, amount, 0, ONBEHALF, hex"");
+    }
+
     function testSupplyAssets(uint256 amount) public {
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 

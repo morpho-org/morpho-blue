@@ -243,11 +243,12 @@ The [`certora/specs`](specs) folder contains the following files:
 - [`AccrueInterest.spec`](specs/AccrueInterest.spec) checks that the main functions accrue interest at the start of the interaction.
   This is done by ensuring that accruing interest before calling the function does not change the outcome compared to just calling the function.
   View functions do not necessarily respect this property (for example, `totalSupplyShares`), and are filtered out.
+- [`AssetsAccounting.spec`](specs/AssetsAccounting.spec) checks that when exiting a position the user cannot get more than what was owed.
+  Similarly, when entering a position, the assets owned as a result are no greater than what was given.
 - [`ConsistentState.spec`](specs/ConsistentState.spec) checks that the state (storage) of the Morpho contract is consistent.
   This includes checking that the accounting of the total amount and shares is correct, that markets are independent from each other, that only enabled IRMs and LLTVs can be used, and that users cannot have their position made worse by an unauthorized account.
 - [`ExactMath.spec`](specs/ExactMath.spec) checks precise properties when taking into account exact multiplication and division.
   Notably, this file specifies that using supply and withdraw in the same block cannot yield more funds than at the start.
-- [`ExitLiquidity.spec`](specs/ExitLiquidity.spec) checks that when exiting a position with withdraw, withdrawCollateral, or repay, the user cannot get more than what was owed.
 - [`Health.spec`](specs/Health.spec) checks properties about the health of the positions.
   Notably, functions cannot render an account unhealthy, and debt positions always have some collateral (thanks to the bad debt realization mechanism).
 - [`LibSummary.spec`](specs/LibSummary.spec) checks the summarization of the library functions that are used in other specification files.

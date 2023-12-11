@@ -47,6 +47,8 @@ contract CreateMarketIntegrationTest is BaseTest {
         if (marketParamsFuzz.irm != marketParams.irm) morpho.enableIrm(marketParamsFuzz.irm);
         if (marketParamsFuzz.lltv != marketParams.lltv) morpho.enableLltv(marketParamsFuzz.lltv);
 
+        vm.mockCall(marketParamsFuzz.irm, abi.encodeWithSelector(IIrm.borrowRate.selector), abi.encode(0));
+
         vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.CreateMarket(marketParamsFuzz.id(), marketParamsFuzz);
         morpho.createMarket(marketParamsFuzz);
@@ -66,6 +68,9 @@ contract CreateMarketIntegrationTest is BaseTest {
         vm.startPrank(OWNER);
         if (marketParamsFuzz.irm != marketParams.irm) morpho.enableIrm(marketParamsFuzz.irm);
         if (marketParamsFuzz.lltv != marketParams.lltv) morpho.enableLltv(marketParamsFuzz.lltv);
+
+        vm.mockCall(marketParamsFuzz.irm, abi.encodeWithSelector(IIrm.borrowRate.selector), abi.encode(0));
+
         morpho.createMarket(marketParamsFuzz);
 
         vm.expectRevert(bytes(ErrorsLib.MARKET_ALREADY_CREATED));
@@ -80,6 +85,8 @@ contract CreateMarketIntegrationTest is BaseTest {
         vm.startPrank(OWNER);
         if (marketParamsFuzz.irm != marketParams.irm) morpho.enableIrm(marketParamsFuzz.irm);
         if (marketParamsFuzz.lltv != marketParams.lltv) morpho.enableLltv(marketParamsFuzz.lltv);
+
+        vm.mockCall(marketParamsFuzz.irm, abi.encodeWithSelector(IIrm.borrowRate.selector), abi.encode(0));
 
         morpho.createMarket(marketParamsFuzz);
         vm.stopPrank();
