@@ -29,7 +29,7 @@ contract AuthorizationIntegrationTest is BaseTest {
 
         authorization.isAuthorized = false;
         authorization.authorizer = address(this);
-        authorization.deadline = block.timestamp - 1;
+        authorization.deadline = block.timestamp;
         authorization.nonce = 0;
         morpho.setAuthorizationWithSig(authorization, sig);
     }
