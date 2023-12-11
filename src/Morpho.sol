@@ -122,7 +122,7 @@ contract Morpho is IMorphoStaticTyping {
     /// @inheritdoc IMorphoBase
     function setFee(MarketParams memory marketParams, uint256 newFee) external onlyOwner {
         Id id = marketParams.id();
-        require(market[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
+        require(idToMarketParams[id].loanToken != address(0), ErrorsLib.MARKET_NOT_CREATED);
         require(newFee != market[id].fee, ErrorsLib.ALREADY_SET);
         require(newFee <= MAX_FEE, ErrorsLib.MAX_FEE_EXCEEDED);
 
@@ -151,16 +151,19 @@ contract Morpho is IMorphoStaticTyping {
         Id id = marketParams.id();
         require(isIrmEnabled[marketParams.irm], ErrorsLib.IRM_NOT_ENABLED);
         require(isLltvEnabled[marketParams.lltv], ErrorsLib.LLTV_NOT_ENABLED);
-        require(market[id].lastUpdate == 0, ErrorsLib.MARKET_ALREADY_CREATED);
+        require(idToMarketParams[id].loanToken == address(0), ErrorsLib.MARKET_ALREADY_CREATED);
 
-        // Safe "unchecked" cast.
-        market[id].lastUpdate = uint128(block.timestamp);
         idToMarketParams[id] = marketParams;
 
         emit EventsLib.CreateMarket(id, marketParams);
 
         // Call to initialize the IRM in case it is stateful.
-        if (marketParams.irm != address(0)) IIrm(marketParams.irm).borrowRate(marketParams, market[id]);
+        if (marketParams.irm != address(0)) {
+            // Safe "unchecked" cast.
+            market[id].lastUpdate = uint128(block.timestamp);
+
+            IIrm(marketParams.irm).borrowRate(marketParams, market[id]);
+        }
     }
 
     /* SUPPLY MANAGEMENT */
@@ -174,7 +177,7 @@ contract Morpho is IMorphoStaticTyping {
         bytes calldata data
     ) external returns (uint256, uint256) {
         Id id = marketParams.id();
-        require(market[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
+        require(idToMarketParams[id].loanToken != address(0), ErrorsLib.MARKET_NOT_CREATED);
         require(UtilsLib.exactlyOneZero(assets, shares), ErrorsLib.INCONSISTENT_INPUT);
         require(onBehalf != address(0), ErrorsLib.ZERO_ADDRESS);
 
@@ -205,7 +208,7 @@ contract Morpho is IMorphoStaticTyping {
         address receiver
     ) external returns (uint256, uint256) {
         Id id = marketParams.id();
-        require(market[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
+        require(idToMarketParams[id].loanToken != address(0), ErrorsLib.MARKET_NOT_CREATED);
         require(UtilsLib.exactlyOneZero(assets, shares), ErrorsLib.INCONSISTENT_INPUT);
         require(receiver != address(0), ErrorsLib.ZERO_ADDRESS);
         // No need to verify that onBehalf != address(0) thanks to the following authorization check.
@@ -240,7 +243,7 @@ contract Morpho is IMorphoStaticTyping {
         address receiver
     ) external returns (uint256, uint256) {
         Id id = marketParams.id();
-        require(market[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
+        require(idToMarketParams[id].loanToken != address(0), ErrorsLib.MARKET_NOT_CREATED);
         require(UtilsLib.exactlyOneZero(assets, shares), ErrorsLib.INCONSISTENT_INPUT);
         require(receiver != address(0), ErrorsLib.ZERO_ADDRESS);
         // No need to verify that onBehalf != address(0) thanks to the following authorization check.
@@ -274,7 +277,7 @@ contract Morpho is IMorphoStaticTyping {
         bytes calldata data
     ) external returns (uint256, uint256) {
         Id id = marketParams.id();
-        require(market[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
+        require(idToMarketParams[id].loanToken != address(0), ErrorsLib.MARKET_NOT_CREATED);
         require(UtilsLib.exactlyOneZero(assets, shares), ErrorsLib.INCONSISTENT_INPUT);
         require(onBehalf != address(0), ErrorsLib.ZERO_ADDRESS);
 
@@ -304,7 +307,7 @@ contract Morpho is IMorphoStaticTyping {
         external
     {
         Id id = marketParams.id();
-        require(market[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
+        require(idToMarketParams[id].loanToken != address(0), ErrorsLib.MARKET_NOT_CREATED);
         require(assets != 0, ErrorsLib.ZERO_ASSETS);
         require(onBehalf != address(0), ErrorsLib.ZERO_ADDRESS);
 
@@ -324,7 +327,7 @@ contract Morpho is IMorphoStaticTyping {
         external
     {
         Id id = marketParams.id();
-        require(market[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
+        require(idToMarketParams[id].loanToken != address(0), ErrorsLib.MARKET_NOT_CREATED);
         require(assets != 0, ErrorsLib.ZERO_ASSETS);
         require(receiver != address(0), ErrorsLib.ZERO_ADDRESS);
         // No need to verify that onBehalf != address(0) thanks to the following authorization check.
@@ -352,7 +355,7 @@ contract Morpho is IMorphoStaticTyping {
         bytes calldata data
     ) external returns (uint256, uint256) {
         Id id = marketParams.id();
-        require(market[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
+        require(idToMarketParams[id].loanToken != address(0), ErrorsLib.MARKET_NOT_CREATED);
         require(UtilsLib.exactlyOneZero(seizedAssets, repaidShares), ErrorsLib.INCONSISTENT_INPUT);
 
         _accrueInterest(marketParams, id);
@@ -467,7 +470,7 @@ contract Morpho is IMorphoStaticTyping {
     /// @inheritdoc IMorphoBase
     function accrueInterest(MarketParams memory marketParams) external {
         Id id = marketParams.id();
-        require(market[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
+        require(idToMarketParams[id].loanToken != address(0), ErrorsLib.MARKET_NOT_CREATED);
 
         _accrueInterest(marketParams, id);
     }
