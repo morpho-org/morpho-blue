@@ -62,15 +62,17 @@ contract MorphoInvariantTest is InvariantTest {
     }
 
     modifier authorized(address onBehalf) {
-        if (onBehalf != msg.sender) {
+        if (onBehalf != msg.sender && !morpho.isAuthorized(onBehalf, msg.sender)) {
             vm.prank(onBehalf);
             morpho.setAuthorization(msg.sender, true);
         }
 
         _;
 
-        vm.prank(onBehalf);
-        morpho.setAuthorization(msg.sender, false);
+        if (morpho.isAuthorized(onBehalf, msg.sender)) {
+            vm.prank(onBehalf);
+            morpho.setAuthorization(msg.sender, false);
+        }
     }
 
     function _randomMarket(uint256 marketSeed) internal view returns (MarketParams memory _marketParams) {
