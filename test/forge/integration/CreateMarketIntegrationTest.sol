@@ -9,7 +9,7 @@ contract CreateMarketIntegrationTest is BaseTest {
     using MarketParamsLib for MarketParams;
 
     function testCreateMarketWithNotEnabledIrmAndNotEnabledLltv(MarketParams memory marketParamsFuzz) public {
-        vm.assume(marketParamsFuzz.irm != address(irm) && marketParamsFuzz.lltv != marketParams.lltv);
+        vm.assume(!morpho.isIrmEnabled(marketParamsFuzz.irm) && !morpho.isLltvEnabled(marketParamsFuzz.lltv));
 
         vm.prank(OWNER);
         vm.expectRevert(bytes(ErrorsLib.IRM_NOT_ENABLED));
@@ -17,11 +17,12 @@ contract CreateMarketIntegrationTest is BaseTest {
     }
 
     function testCreateMarketWithNotEnabledIrmAndEnabledLltv(MarketParams memory marketParamsFuzz) public {
-        vm.assume(marketParamsFuzz.irm != address(irm));
+        vm.assume(!morpho.isIrmEnabled(marketParamsFuzz.irm));
+
         marketParamsFuzz.lltv = _boundValidLltv(marketParamsFuzz.lltv);
 
         vm.startPrank(OWNER);
-        if (marketParamsFuzz.lltv != marketParams.lltv) morpho.enableLltv(marketParamsFuzz.lltv);
+        if (!morpho.isLltvEnabled(marketParamsFuzz.lltv)) morpho.enableLltv(marketParamsFuzz.lltv);
 
         vm.expectRevert(bytes(ErrorsLib.IRM_NOT_ENABLED));
         morpho.createMarket(marketParamsFuzz);
@@ -29,10 +30,10 @@ contract CreateMarketIntegrationTest is BaseTest {
     }
 
     function testCreateMarketWithEnabledIrmAndNotEnabledLltv(MarketParams memory marketParamsFuzz) public {
-        vm.assume(marketParamsFuzz.lltv != marketParams.lltv);
+        vm.assume(!morpho.isLltvEnabled(marketParamsFuzz.lltv));
 
         vm.startPrank(OWNER);
-        if (marketParamsFuzz.irm != marketParams.irm) morpho.enableIrm(marketParamsFuzz.irm);
+        if (!morpho.isIrmEnabled(marketParamsFuzz.irm)) morpho.enableIrm(marketParamsFuzz.irm);
 
         vm.expectRevert(bytes(ErrorsLib.LLTV_NOT_ENABLED));
         morpho.createMarket(marketParamsFuzz);
@@ -44,8 +45,8 @@ contract CreateMarketIntegrationTest is BaseTest {
         Id marketParamsFuzzId = marketParamsFuzz.id();
 
         vm.startPrank(OWNER);
-        if (marketParamsFuzz.irm != marketParams.irm) morpho.enableIrm(marketParamsFuzz.irm);
-        if (marketParamsFuzz.lltv != marketParams.lltv) morpho.enableLltv(marketParamsFuzz.lltv);
+        if (!morpho.isIrmEnabled(marketParamsFuzz.irm)) morpho.enableIrm(marketParamsFuzz.irm);
+        if (!morpho.isLltvEnabled(marketParamsFuzz.lltv)) morpho.enableLltv(marketParamsFuzz.lltv);
 
         vm.mockCall(marketParamsFuzz.irm, abi.encodeWithSelector(IIrm.borrowRate.selector), abi.encode(0));
 
@@ -66,10 +67,12 @@ contract CreateMarketIntegrationTest is BaseTest {
         marketParamsFuzz.lltv = _boundValidLltv(marketParamsFuzz.lltv);
 
         vm.startPrank(OWNER);
-        if (marketParamsFuzz.irm != marketParams.irm) morpho.enableIrm(marketParamsFuzz.irm);
-        if (marketParamsFuzz.lltv != marketParams.lltv) morpho.enableLltv(marketParamsFuzz.lltv);
+        if (!morpho.isIrmEnabled(marketParamsFuzz.irm)) morpho.enableIrm(marketParamsFuzz.irm);
+        if (!morpho.isLltvEnabled(marketParamsFuzz.lltv)) morpho.enableLltv(marketParamsFuzz.lltv);
 
-        vm.mockCall(marketParamsFuzz.irm, abi.encodeWithSelector(IIrm.borrowRate.selector), abi.encode(0));
+        if (marketParamsFuzz.irm != address(0)) {
+            vm.mockCall(marketParamsFuzz.irm, abi.encodeWithSelector(IIrm.borrowRate.selector), abi.encode(0));
+        }
 
         morpho.createMarket(marketParamsFuzz);
 
@@ -83,8 +86,8 @@ contract CreateMarketIntegrationTest is BaseTest {
         Id marketParamsFuzzId = marketParamsFuzz.id();
 
         vm.startPrank(OWNER);
-        if (marketParamsFuzz.irm != marketParams.irm) morpho.enableIrm(marketParamsFuzz.irm);
-        if (marketParamsFuzz.lltv != marketParams.lltv) morpho.enableLltv(marketParamsFuzz.lltv);
+        if (!morpho.isIrmEnabled(marketParamsFuzz.irm)) morpho.enableIrm(marketParamsFuzz.irm);
+        if (!morpho.isLltvEnabled(marketParamsFuzz.lltv)) morpho.enableLltv(marketParamsFuzz.lltv);
 
         vm.mockCall(marketParamsFuzz.irm, abi.encodeWithSelector(IIrm.borrowRate.selector), abi.encode(0));
 
