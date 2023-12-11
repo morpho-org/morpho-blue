@@ -437,6 +437,10 @@ contract Morpho is IMorphoStaticTyping {
 
     /// @inheritdoc IMorphoBase
     function setAuthorizationWithSig(Authorization memory authorization, Signature calldata signature) external {
+        require(
+            authorization.isAuthorized != isAuthorized[authorization.authorizer][authorization.authorized],
+            ErrorsLib.ALREADY_SET
+        );
         require(block.timestamp <= authorization.deadline, ErrorsLib.SIGNATURE_EXPIRED);
         require(authorization.nonce == nonce[authorization.authorizer]++, ErrorsLib.INVALID_NONCE);
 

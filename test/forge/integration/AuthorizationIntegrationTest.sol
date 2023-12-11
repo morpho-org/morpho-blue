@@ -16,10 +16,19 @@ contract AuthorizationIntegrationTest is BaseTest {
         assertFalse(morpho.isAuthorized(address(this), addressFuzz));
     }
 
-    function testAlreadySet(address addressFuzz, bool status) public {
-        morpho.setAuthorization(addressFuzz, status);
+    function testAlreadySet(address addressFuzz) public {
         vm.expectRevert(bytes(ErrorsLib.ALREADY_SET));
-        morpho.setAuthorization(addressFuzz, status);
+        morpho.setAuthorization(addressFuzz, false);
+        morpho.setAuthorization(addressFuzz, true);
+        vm.expectRevert(bytes(ErrorsLib.ALREADY_SET));
+        morpho.setAuthorization(addressFuzz, true);
+    }
+
+    function testAlreadySetWithSig(Authorization memory authorization, Signature memory sig) public {
+        authorization.isAuthorized = false;
+        authorization.authorizer = address(this);
+        morpho.setAuthorization(authorization.authorized, true);
+        morpho.setAuthorizationWithSig(authorization, sig);
     }
 
     function testSetAuthorizationWithSignatureDeadlineOutdated(
@@ -83,6 +92,7 @@ contract AuthorizationIntegrationTest is BaseTest {
         privateKey = bound(privateKey, 1, type(uint32).max);
         authorization.nonce = 0;
         authorization.authorizer = vm.addr(privateKey);
+        authorization.isAuthorized = true;
 
         Signature memory sig;
         bytes32 digest = SigUtils.getTypedDataHash(morpho.DOMAIN_SEPARATOR(), authorization);
@@ -90,7 +100,7 @@ contract AuthorizationIntegrationTest is BaseTest {
 
         morpho.setAuthorizationWithSig(authorization, sig);
 
-        assertEq(morpho.isAuthorized(authorization.authorizer, authorization.authorized), authorization.isAuthorized);
+        assertEq(morpho.isAuthorized(authorization.authorizer, authorization.authorized), true);
         assertEq(morpho.nonce(authorization.authorizer), 1);
     }
 
