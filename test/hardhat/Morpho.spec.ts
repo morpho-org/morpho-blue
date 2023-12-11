@@ -1,7 +1,7 @@
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 import { setNextBlockTimestamp } from "@nomicfoundation/hardhat-network-helpers/dist/src/helpers/time";
 import { expect } from "chai";
-import { AbiCoder, MaxUint256, keccak256, toBigInt } from "ethers";
+import { AbiCoder, MaxUint256, ZeroAddress, keccak256, toBigInt } from "ethers";
 import hre from "hardhat";
 import { Morpho, OracleMock, ERC20Mock, IrmMock } from "types";
 import { MarketParamsStruct } from "types/src/Morpho";
@@ -158,6 +158,36 @@ describe("Morpho", () => {
       await randomForwardTimestamp();
 
       await morpho.connect(borrower).withdrawCollateral(marketParams, assets / 8n, borrower.address, borrower.address);
+    }
+  });
+
+  it("should simulate gas cost [idle]", async () => {
+    updateMarket({
+      loanToken: await loanToken.getAddress(),
+      collateralToken: ZeroAddress,
+      oracle: ZeroAddress,
+      irm: ZeroAddress,
+      lltv: 0,
+    });
+
+    await morpho.enableLltv(0);
+    await morpho.enableIrm(ZeroAddress);
+    await morpho.createMarket(marketParams);
+
+    for (let i = 0; i < suppliers.length; ++i) {
+      logProgress("idle", i, suppliers.length);
+
+      const supplier = suppliers[i];
+
+      let assets = BigInt.WAD * toBigInt(1 + Math.floor(random() * 100));
+
+      await randomForwardTimestamp();
+
+      await morpho.connect(supplier).supply(marketParams, assets, 0, supplier.address, "0x");
+
+      await randomForwardTimestamp();
+
+      await morpho.connect(supplier).withdraw(marketParams, assets / 2n, 0, supplier.address, supplier.address);
     }
   });
 

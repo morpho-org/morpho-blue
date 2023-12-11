@@ -82,7 +82,9 @@ contract BaseTest is Test {
         irm = new IrmMock();
 
         vm.startPrank(OWNER);
+        morpho.enableIrm(address(0));
         morpho.enableIrm(address(irm));
+        morpho.enableLltv(0);
         morpho.setFeeRecipient(FEE_RECIPIENT);
         vm.stopPrank();
 
@@ -133,7 +135,7 @@ contract BaseTest is Test {
     }
 
     /// @dev Bounds the fuzzing input to a realistic number of blocks.
-    function _boundBlocks(uint256 blocks) internal view returns (uint256) {
+    function _boundBlocks(uint256 blocks) internal pure returns (uint256) {
         return bound(blocks, 1, type(uint32).max);
     }
 
@@ -198,7 +200,7 @@ contract BaseTest is Test {
         return (amountCollateral, amountBorrowed, priceCollateral);
     }
 
-    function _boundTestLltv(uint256 lltv) internal view returns (uint256) {
+    function _boundTestLltv(uint256 lltv) internal pure returns (uint256) {
         return bound(lltv, MIN_TEST_LLTV, MAX_TEST_LLTV);
     }
 
@@ -382,7 +384,7 @@ contract BaseTest is Test {
         return Math.min(MAX_LIQUIDATION_INCENTIVE_FACTOR, WAD.wDivDown(WAD - LIQUIDATION_CURSOR.wMulDown(WAD - lltv)));
     }
 
-    function _boundValidLltv(uint256 lltv) internal view returns (uint256) {
+    function _boundValidLltv(uint256 lltv) internal pure returns (uint256) {
         return bound(lltv, 0, WAD - 1);
     }
 
