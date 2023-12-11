@@ -14,8 +14,9 @@ library SharesMathLib {
 
     /// @dev The number of virtual shares has been chosen low enough to prevent overflows, and high enough to ensure
     /// high precision computations.
-    /// @dev Warning: The assets to which virtual borrow shares are entitled behave like unrealizable bad debt, but it
-    /// is assumed the borrow share price stays low enough not to inflate these assets to a significant value.
+    /// @dev Virtual shares can never be redeemed for the assets they are entitled to, but it is assumed the share price
+    /// stays low enough not to inflate these assets to a significant value.
+    /// @dev Warning: The assets to which virtual borrow shares are entitled behave like unrealizable bad debt.
     uint256 internal constant VIRTUAL_SHARES = 1e6;
 
     /// @dev A number of virtual assets of 1 enforces a conversion rate between shares and assets when a market is
