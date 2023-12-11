@@ -35,6 +35,7 @@ library EventsLib {
     event CreateMarket(Id indexed id, MarketParams marketParams);
 
     /// @notice Emitted on supply of assets.
+    /// @dev Warning: `feeRecipient` receives some shares during interest accrual without any supply event emitted.
     /// @param id The market id.
     /// @param caller The caller.
     /// @param onBehalf The owner of the modified position.
