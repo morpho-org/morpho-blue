@@ -25,9 +25,12 @@ contract AuthorizationIntegrationTest is BaseTest {
     }
 
     function testAlreadySetWithSig(Authorization memory authorization, Signature memory sig) public {
+        morpho.setAuthorization(authorization.authorized, true);
+
         authorization.isAuthorized = false;
         authorization.authorizer = address(this);
-        morpho.setAuthorization(authorization.authorized, true);
+        authorization.deadline = block.timestamp - 1;
+        authorization.nonce = 0;
         morpho.setAuthorizationWithSig(authorization, sig);
     }
 
@@ -122,6 +125,7 @@ contract AuthorizationIntegrationTest is BaseTest {
 
         morpho.setAuthorizationWithSig(authorization, sig);
 
+        authorization.isAuthorized = false;
         vm.expectRevert(bytes(ErrorsLib.INVALID_NONCE));
         morpho.setAuthorizationWithSig(authorization, sig);
     }
