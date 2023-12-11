@@ -131,9 +131,8 @@ interface IMorphoBase {
     /// @notice Supplies `assets` or `shares` on behalf of `onBehalf`, optionally calling back the caller's
     /// `onMorphoSupply` function with the given `data`.
     /// @dev Either `assets` or `shares` should be zero. Most use cases should rely on `assets` as an input so the
-    /// caller
-    /// is guaranteed to have `assets` tokens pulled from their balance, but the possibility to mint a specific amount
-    /// of shares is given for full compatibility and precision.
+    /// caller is guaranteed to have `assets` tokens pulled from their balance, but the possibility to mint a specific
+    /// amount of shares is given for full compatibility and precision.
     /// @dev If the supply of a market gets depleted, the supply share price instantly resets to
     /// `VIRTUAL_ASSETS`:`VIRTUAL_SHARES`.
     /// @dev Supplying a large amount can revert for overflow.
@@ -175,9 +174,8 @@ interface IMorphoBase {
 
     /// @notice Borrows `assets` or `shares` on behalf of `onBehalf` to `receiver`.
     /// @dev Either `assets` or `shares` should be zero. Most use cases should rely on `assets` as an input so the
-    /// caller
-    /// is guaranteed to borrow `assets` of tokens, but the possibility to mint a specific amount of shares is given for
-    /// full compatibility and precision.
+    /// caller is guaranteed to borrow `assets` of tokens, but the possibility to mint a specific amount of shares is
+    /// given for full compatibility and precision.
     /// @dev If the borrow of a market gets depleted, the borrow share price instantly resets to
     /// `VIRTUAL_ASSETS`:`VIRTUAL_SHARES`.
     /// @dev `msg.sender` must be authorized to manage `onBehalf`'s positions.
