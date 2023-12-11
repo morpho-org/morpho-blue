@@ -145,7 +145,7 @@ contract WithdrawCollateralIntegrationTest is BaseTest {
 
         vm.startPrank(ONBEHALF);
         morpho.supplyCollateral(marketParams, amountCollateral + amountCollateralExcess, ONBEHALF, hex"");
-        morpho.setAuthorization(BORROWER, true);
+        // BORROWER is already authorized.
         morpho.borrow(marketParams, amountBorrowed, 0, ONBEHALF, ONBEHALF);
         vm.stopPrank();
 

@@ -401,12 +401,12 @@ contract Morpho is IMorphoStaticTyping {
             position[id][borrower].borrowShares = 0;
         }
 
-        IERC20(marketParams.collateralToken).safeTransfer(msg.sender, seizedAssets);
-
         // `repaidAssets` may be greater than `totalBorrowAssets` by 1.
         emit EventsLib.Liquidate(
             id, msg.sender, borrower, repaidAssets, repaidShares, seizedAssets, badDebtAssets, badDebtShares
         );
+
+        IERC20(marketParams.collateralToken).safeTransfer(msg.sender, seizedAssets);
 
         if (data.length > 0) IMorphoLiquidateCallback(msg.sender).onMorphoLiquidate(repaidAssets, data);
 
@@ -419,9 +419,11 @@ contract Morpho is IMorphoStaticTyping {
 
     /// @inheritdoc IMorphoBase
     function flashLoan(address token, uint256 assets, bytes calldata data) external {
-        IERC20(token).safeTransfer(msg.sender, assets);
+        require(assets != 0, ErrorsLib.ZERO_ASSETS);
 
         emit EventsLib.FlashLoan(msg.sender, token, assets);
+
+        IERC20(token).safeTransfer(msg.sender, assets);
 
         IMorphoFlashLoanCallback(msg.sender).onMorphoFlashLoan(assets, data);
 
@@ -432,6 +434,8 @@ contract Morpho is IMorphoStaticTyping {
 
     /// @inheritdoc IMorphoBase
     function setAuthorization(address authorized, bool newIsAuthorized) external {
+        require(newIsAuthorized != isAuthorized[msg.sender][authorized], ErrorsLib.ALREADY_SET);
+
         isAuthorized[msg.sender][authorized] = newIsAuthorized;
 
         emit EventsLib.SetAuthorization(msg.sender, msg.sender, authorized, newIsAuthorized);
@@ -439,11 +443,15 @@ contract Morpho is IMorphoStaticTyping {
 
     /// @inheritdoc IMorphoBase
     function setAuthorizationWithSig(Authorization memory authorization, Signature calldata signature) external {
+        require(
+            authorization.isAuthorized != isAuthorized[authorization.authorizer][authorization.authorized],
+            ErrorsLib.ALREADY_SET
+        );
         require(block.timestamp <= authorization.deadline, ErrorsLib.SIGNATURE_EXPIRED);
         require(authorization.nonce == nonce[authorization.authorizer]++, ErrorsLib.INVALID_NONCE);
 
         bytes32 hashStruct = keccak256(abi.encode(AUTHORIZATION_TYPEHASH, authorization));
-        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, hashStruct));
+        bytes32 digest = keccak256(bytes.concat("\x19\x01", DOMAIN_SEPARATOR, hashStruct));
         address signatory = ecrecover(digest, signature.v, signature.r, signature.s);
 
         require(signatory != address(0) && authorization.authorizer == signatory, ErrorsLib.INVALID_SIGNATURE);

@@ -70,7 +70,7 @@ interface IMorphoBase {
     /// @notice Whether the `lltv` is enabled.
     function isLltvEnabled(uint256 lltv) external view returns (bool);
 
-    /// @notice Whether `authorized` is authorized to modify `authorizer`'s positions.
+    /// @notice Whether `authorized` is authorized to modify `authorizer`'s position on all markets.
     /// @dev Anyone is authorized to modify their own positions, regardless of this variable.
     function isAuthorized(address authorizer, address authorized) external view returns (bool);
 
@@ -91,6 +91,7 @@ interface IMorphoBase {
     function enableLltv(uint256 lltv) external;
 
     /// @notice Sets the `newFee` for the given market `marketParams`.
+    /// @param newFee The new fee, scaled by WAD.
     /// @dev Warning: The recipient can be the zero address.
     function setFee(MarketParams memory marketParams, uint256 newFee) external;
 
@@ -129,9 +130,9 @@ interface IMorphoBase {
 
     /// @notice Supplies `assets` or `shares` on behalf of `onBehalf`, optionally calling back the caller's
     /// `onMorphoSupply` function with the given `data`.
-    /// @dev Either `assets` or `shares` should be zero. Most usecases should rely on `assets` as an input so the caller
-    /// is guaranteed to have `assets` tokens pulled from their balance, but the possibility to mint a specific amount
-    /// of shares is given for full compatibility and precision.
+    /// @dev Either `assets` or `shares` should be zero. Most use cases should rely on `assets` as an input so the
+    /// caller is guaranteed to have `assets` tokens pulled from their balance, but the possibility to mint a specific
+    /// amount of shares is given for full compatibility and precision.
     /// @dev Supplying a large amount can revert for overflow.
     /// @dev Supplying an amount of shares may lead to supply more or fewer assets than expected due to slippage.
     /// Consider using the `assets` parameter to avoid this.
@@ -172,9 +173,9 @@ interface IMorphoBase {
     ) external returns (uint256 assetsWithdrawn, uint256 sharesWithdrawn);
 
     /// @notice Borrows `assets` or `shares` on behalf of `onBehalf` to `receiver`.
-    /// @dev Either `assets` or `shares` should be zero. Most usecases should rely on `assets` as an input so the caller
-    /// is guaranteed to borrow `assets` of tokens, but the possibility to mint a specific amount of shares is given for
-    /// full compatibility and precision.
+    /// @dev Either `assets` or `shares` should be zero. Most use cases should rely on `assets` as an input so the
+    /// caller is guaranteed to borrow `assets` of tokens, but the possibility to mint a specific amount of shares is
+    /// given for full compatibility and precision.
     /// @dev `msg.sender` must be authorized to manage `onBehalf`'s positions.
     /// @dev Borrowing a large amount can revert for overflow.
     /// @dev Borrowing an amount of shares may lead to borrow fewer assets than expected due to slippage.
@@ -200,6 +201,7 @@ interface IMorphoBase {
     /// @dev Repaying an amount corresponding to more shares than borrowed will revert for underflow.
     /// @dev It is advised to use the `shares` input when repaying the full position to avoid reverts due to conversion
     /// roundings between shares and assets.
+    /// @dev An attacker can front-run a repay with a small repay making the transaction revert for underflow.
     /// @param marketParams The market to repay assets to.
     /// @param assets The amount of assets to repay.
     /// @param shares The amount of shares to burn.
@@ -242,6 +244,7 @@ interface IMorphoBase {
     /// @dev Either `seizedAssets` or `repaidShares` should be zero.
     /// @dev Seizing more than the collateral balance will underflow and revert without any error message.
     /// @dev Repaying more than the borrow balance will underflow and revert without any error message.
+    /// @dev An attacker can front-run a liquidation with a small repay making the transaction revert for underflow.
     /// @param marketParams The market of the position.
     /// @param borrower The owner of the position.
     /// @param seizedAssets The amount of collateral to seize.
