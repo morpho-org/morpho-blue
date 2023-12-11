@@ -41,7 +41,7 @@ library MorphoBalancesLib {
 
         uint256 elapsed = block.timestamp - market.lastUpdate;
 
-        // Skipped if elapsed == 0 of if totalBorrowAssets == 0 because interest would be null.
+        // Skipped if elapsed == 0 or if totalBorrowAssets == 0 because interest would be null.
         if (elapsed != 0 && market.totalBorrowAssets != 0) {
             uint256 borrowRate = IIrm(marketParams.irm).borrowRateView(marketParams, market);
             uint256 interest = market.totalBorrowAssets.wMulDown(borrowRate.wTaylorCompounded(elapsed));
@@ -90,8 +90,8 @@ library MorphoBalancesLib {
 
     /// @notice Returns the expected supply assets balance of `user` on a market after having accrued interest.
     /// @dev Warning: Wrong for `feeRecipient` because their supply shares increase is not taken into account.
-    /// @dev Warning: Withdrawing a supply position using the expected assets balance can lead to a revert due to
-    /// conversion roundings between shares and assets.
+    /// @dev Warning: Withdrawing using the expected supply assets can lead to a revert due to conversion roundings from
+    /// assets to shares.
     function expectedSupplyAssets(IMorpho morpho, MarketParams memory marketParams, address user)
         internal
         view
@@ -105,8 +105,8 @@ library MorphoBalancesLib {
     }
 
     /// @notice Returns the expected borrow assets balance of `user` on a market after having accrued interest.
-    /// @dev Warning: repaying a borrow position using the expected assets balance can lead to a revert due to
-    /// conversion roundings between shares and assets.
+    /// @dev Warning: The expected balance is rounded up, so it may be greater than the market's expected total borrow
+    /// assets.
     function expectedBorrowAssets(IMorpho morpho, MarketParams memory marketParams, address user)
         internal
         view
