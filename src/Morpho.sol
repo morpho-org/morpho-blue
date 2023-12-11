@@ -157,9 +157,9 @@ contract Morpho is IMorphoStaticTyping {
         market[id].lastUpdate = uint128(block.timestamp);
         idToMarketParams[id] = marketParams;
 
-        _accrueInterest(marketParams, id);
-
         emit EventsLib.CreateMarket(id, marketParams);
+
+        _accrueInterest(marketParams, id);
     }
 
     /* SUPPLY MANAGEMENT */
