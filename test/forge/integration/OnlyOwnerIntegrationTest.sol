@@ -59,7 +59,7 @@ contract OnlyOwnerIntegrationTest is BaseTest {
     }
 
     function testEnableIrm(address irmFuzz) public {
-        vm.assume(irmFuzz != address(irm));
+        vm.assume(!morpho.isIrmEnabled(irmFuzz));
 
         vm.prank(OWNER);
         vm.expectEmit(true, true, true, true, address(morpho));
@@ -94,7 +94,8 @@ contract OnlyOwnerIntegrationTest is BaseTest {
 
     function testEnableLltv(uint256 lltvFuzz) public {
         lltvFuzz = _boundValidLltv(lltvFuzz);
-        vm.assume(lltvFuzz != marketParams.lltv);
+
+        vm.assume(!morpho.isLltvEnabled(lltvFuzz));
 
         vm.prank(OWNER);
         vm.expectEmit(true, true, true, true, address(morpho));
