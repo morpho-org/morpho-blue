@@ -357,7 +357,6 @@ contract Morpho is IMorphoStaticTyping {
 
         _accrueInterest(marketParams, id);
 
-        uint256 repaidAssets;
         {
             uint256 collateralPrice = IOracle(marketParams.oracle).price();
 
@@ -370,15 +369,15 @@ contract Morpho is IMorphoStaticTyping {
             );
 
             if (seizedAssets > 0) {
-                repaidAssets =
+                uint256 temp =
                     seizedAssets.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(liquidationIncentiveFactor);
-                repaidShares = repaidAssets.toSharesDown(market[id].totalBorrowAssets, market[id].totalBorrowShares);
+                repaidShares = temp.toSharesDown(market[id].totalBorrowAssets, market[id].totalBorrowShares);
             } else {
-                repaidAssets = repaidShares.toAssetsUp(market[id].totalBorrowAssets, market[id].totalBorrowShares);
-                seizedAssets =
-                    repaidAssets.wMulDown(liquidationIncentiveFactor).mulDivDown(ORACLE_PRICE_SCALE, collateralPrice);
+                seizedAssets = repaidShares.toAssetsDown(market[id].totalBorrowAssets, market[id].totalBorrowShares)
+                    .wMulDown(liquidationIncentiveFactor).mulDivDown(ORACLE_PRICE_SCALE, collateralPrice);
             }
         }
+        uint256 repaidAssets = repaidShares.toAssetsUp(market[id].totalBorrowAssets, market[id].totalBorrowShares);
 
         position[id][borrower].borrowShares -= repaidShares.toUint128();
         market[id].totalBorrowShares -= repaidShares.toUint128();
