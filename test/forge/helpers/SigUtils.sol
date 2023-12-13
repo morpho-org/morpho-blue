@@ -12,7 +12,7 @@ library SigUtils {
         pure
         returns (bytes32)
     {
-        return keccak256(abi.encodePacked("\x19\x01", domainSeparator, hashStruct(authorization)));
+        return keccak256(bytes.concat("\x19\x01", domainSeparator, hashStruct(authorization)));
     }
 
     function hashStruct(Authorization memory authorization) internal pure returns (bytes32) {
