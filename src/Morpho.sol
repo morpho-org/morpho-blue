@@ -483,8 +483,7 @@ contract Morpho is IMorphoStaticTyping {
     function _accrueInterest(MarketParams memory marketParams, Id id) internal {
         // The IRM is called even when elapsed=0. It can be useful for stateful IRMs.
         uint256 borrowRate;
-        if (marketParams.irm == address(0)) borrowRate = 0;
-        else borrowRate = IIrm(marketParams.irm).borrowRate(marketParams, market[id]);
+        if (marketParams.irm != address(0)) borrowRate = IIrm(marketParams.irm).borrowRate(marketParams, market[id]);
 
         uint256 elapsed = block.timestamp - market[id].lastUpdate;
 
