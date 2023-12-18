@@ -95,19 +95,19 @@ contract BaseTest is Test {
         loanToken.approve(address(morpho), type(uint256).max);
         collateralToken.approve(address(morpho), type(uint256).max);
 
-        changePrank(BORROWER);
+        vm.startPrank(BORROWER);
         loanToken.approve(address(morpho), type(uint256).max);
         collateralToken.approve(address(morpho), type(uint256).max);
 
-        changePrank(REPAYER);
+        vm.startPrank(REPAYER);
         loanToken.approve(address(morpho), type(uint256).max);
         collateralToken.approve(address(morpho), type(uint256).max);
 
-        changePrank(LIQUIDATOR);
+        vm.startPrank(LIQUIDATOR);
         loanToken.approve(address(morpho), type(uint256).max);
         collateralToken.approve(address(morpho), type(uint256).max);
 
-        changePrank(ONBEHALF);
+        vm.startPrank(ONBEHALF);
         loanToken.approve(address(morpho), type(uint256).max);
         collateralToken.approve(address(morpho), type(uint256).max);
         morpho.setAuthorization(BORROWER, true);
