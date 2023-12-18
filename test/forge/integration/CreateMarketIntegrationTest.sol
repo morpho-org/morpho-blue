@@ -48,7 +48,6 @@ contract CreateMarketIntegrationTest is BaseTest {
         Id marketParamsFuzzId = marketParamsFuzz.id();
 
         vm.startPrank(OWNER);
-        if (!morpho.isIrmEnabled(marketParamsFuzz.irm)) morpho.enableIrm(marketParamsFuzz.irm);
         if (!morpho.isLltvEnabled(marketParamsFuzz.lltv)) morpho.enableLltv(marketParamsFuzz.lltv);
         vm.stopPrank();
 
