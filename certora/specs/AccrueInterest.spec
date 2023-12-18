@@ -108,9 +108,8 @@ rule repayAccruesInterest(env e, MorphoHarness.MarketParams marketParams, uint25
 // We also exclude setFeeRecipient, as it is known to be not commutative.
 rule accrueInterestCommutesExceptForSetFeeRecipient(method f, calldataarg args)
 filtered {
-    f -> !f.isView 
-    && f.selector != sig:setFeeRecipient(address).selector 
-    && f.selector != sig:liquidate(MorphoHarness.MarketParams, address, uint256, uint256, bytes).selector
+    f -> !f.isView
+    && f.selector != sig:setFeeRecipient(address).selector
 }
 {
     env e1;
