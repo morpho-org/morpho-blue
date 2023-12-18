@@ -44,16 +44,13 @@ contract CreateMarketIntegrationTest is BaseTest {
 
     function testCreateMarketWithEnabledIrmAndLltv(MarketParams memory marketParamsFuzz) public {
         marketParamsFuzz.lltv = _boundValidLltv(marketParamsFuzz.lltv);
+        marketParamsFuzz.irm = address(irm);
         Id marketParamsFuzzId = marketParamsFuzz.id();
 
         vm.startPrank(OWNER);
         if (!morpho.isIrmEnabled(marketParamsFuzz.irm)) morpho.enableIrm(marketParamsFuzz.irm);
         if (!morpho.isLltvEnabled(marketParamsFuzz.lltv)) morpho.enableLltv(marketParamsFuzz.lltv);
         vm.stopPrank();
-
-        if (marketParamsFuzz.irm != address(0)) {
-            vm.mockCall(marketParamsFuzz.irm, abi.encodeWithSelector(IIrm.borrowRate.selector), abi.encode(0));
-        }
 
         vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.CreateMarket(marketParamsFuzz.id(), marketParamsFuzz);
