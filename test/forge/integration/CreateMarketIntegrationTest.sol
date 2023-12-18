@@ -112,4 +112,16 @@ contract CreateMarketIntegrationTest is BaseTest {
         assertEq(marketParamsFuzz.irm, params.irm, "irm != irm");
         assertEq(marketParamsFuzz.lltv, params.lltv, "lltv != lltv");
     }
+
+    function testSelectorNotRecognized() public {
+        testIdToMarketParams(
+            MarketParams({
+                loanToken: 0x000000000000000000000000000000000000512A,
+                collateralToken: 0x5204ba5352e19e9Ca134d80680Ea9d4E03695bE4,
+                oracle: 0x0000000000000000000000000000000000005D21,
+                irm: 0x7109709ECfa91a80626fF3989D68f67F5b1DD12D,
+                lltv: 4181247507706918612708086657060782106978229537153335071927346899837548709372
+            })
+        );
+    }
 }
