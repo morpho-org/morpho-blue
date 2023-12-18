@@ -503,10 +503,10 @@ contract Morpho is IMorphoStaticTyping {
                 position[id][feeRecipient].supplyShares += feeShares;
                 market[id].totalSupplyShares += feeShares.toUint128();
             }
-        }
 
-        // Safe "unchecked" cast.
-        market[id].lastUpdate = uint128(block.timestamp);
+            // Safe "unchecked" cast.
+            market[id].lastUpdate = uint128(block.timestamp);
+        }
 
         emit EventsLib.AccrueInterest(id, borrowRate, interest, feeShares);
     }
