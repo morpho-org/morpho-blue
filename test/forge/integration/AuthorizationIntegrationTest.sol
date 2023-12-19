@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import "../BaseTest.sol";
 
 contract AuthorizationIntegrationTest is BaseTest {
-    function testSetAuthorization(address addressFuzz) public {
+    function testAuthorization(address addressFuzz) public {
         vm.assume(addressFuzz != address(this));
 
         morpho.setAuthorization(addressFuzz, true);
@@ -16,7 +16,7 @@ contract AuthorizationIntegrationTest is BaseTest {
         assertFalse(morpho.isAuthorized(address(this), addressFuzz));
     }
 
-    function testAlreadySet(address addressFuzz) public {
+    function testAuthorizationAlreadySet(address addressFuzz) public {
         vm.expectRevert(bytes(ErrorsLib.ALREADY_SET));
         morpho.setAuthorization(addressFuzz, false);
 
@@ -26,7 +26,7 @@ contract AuthorizationIntegrationTest is BaseTest {
         morpho.setAuthorization(addressFuzz, true);
     }
 
-    function testAlreadySetWithSig(Authorization memory authorization, Signature memory sig) public {
+    function testAuthorizationWithSigAlreadySet(Authorization memory authorization, Signature memory sig) public {
         authorization.isAuthorized = false;
         authorization.authorizer = address(this);
         authorization.deadline = block.timestamp;
@@ -42,7 +42,7 @@ contract AuthorizationIntegrationTest is BaseTest {
         morpho.setAuthorizationWithSig(authorization, sig);
     }
 
-    function testSetAuthorizationWithSignatureDeadlineOutdated(
+    function testAuthorizationWithSigDeadlineOutdated(
         Authorization memory authorization,
         uint256 privateKey,
         uint256 blocks
@@ -127,14 +127,23 @@ contract AuthorizationIntegrationTest is BaseTest {
         authorization.nonce = 0;
         authorization.authorizer = vm.addr(privateKey);
 
+        address authorized = _boundAddressNotZero(authorization.authorized);
+        authorization.authorized = address(0);
+
         Signature memory sig;
         bytes32 digest = SigUtils.getTypedDataHash(morpho.DOMAIN_SEPARATOR(), authorization);
         (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
 
         morpho.setAuthorizationWithSig(authorization, sig);
 
-        authorization.isAuthorized = false;
+        authorization.authorized = authorized;
+        digest = SigUtils.getTypedDataHash(morpho.DOMAIN_SEPARATOR(), authorization);
+        (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
+
         vm.expectRevert(bytes(ErrorsLib.INVALID_NONCE));
         morpho.setAuthorizationWithSig(authorization, sig);
+
+        assertTrue(morpho.isAuthorized(authorization.authorizer, address(0)));
+        assertFalse(morpho.isAuthorized(authorization.authorizer, authorization.authorized));
     }
 }
