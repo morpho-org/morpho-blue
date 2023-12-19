@@ -19,12 +19,6 @@ contract CreateMarketIntegrationTest is BaseTest {
     function testCreateMarketWithNotEnabledIrmAndEnabledLltv(MarketParams memory marketParamsFuzz) public {
         vm.assume(!morpho.isIrmEnabled(marketParamsFuzz.irm));
 
-        marketParamsFuzz.lltv = _boundValidLltv(marketParamsFuzz.lltv);
-
-        vm.startPrank(OWNER);
-        if (!morpho.isLltvEnabled(marketParamsFuzz.lltv)) morpho.enableLltv(marketParamsFuzz.lltv);
-        vm.stopPrank();
-
         vm.expectRevert(bytes(ErrorsLib.IRM_NOT_ENABLED));
         vm.prank(OWNER);
         morpho.createMarket(marketParamsFuzz);
@@ -43,17 +37,13 @@ contract CreateMarketIntegrationTest is BaseTest {
     }
 
     function testCreateMarketWithEnabledIrmAndLltv(MarketParams memory marketParamsFuzz) public {
+        marketParamsFuzz.irm = address(irm);
         marketParamsFuzz.lltv = _boundValidLltv(marketParamsFuzz.lltv);
         Id marketParamsFuzzId = marketParamsFuzz.id();
 
         vm.startPrank(OWNER);
-        if (!morpho.isIrmEnabled(marketParamsFuzz.irm)) morpho.enableIrm(marketParamsFuzz.irm);
         if (!morpho.isLltvEnabled(marketParamsFuzz.lltv)) morpho.enableLltv(marketParamsFuzz.lltv);
         vm.stopPrank();
-
-        if (marketParamsFuzz.irm != address(0)) {
-            vm.mockCall(marketParamsFuzz.irm, abi.encodeWithSelector(IIrm.borrowRate.selector), abi.encode(0));
-        }
 
         vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.CreateMarket(marketParamsFuzz.id(), marketParamsFuzz);
@@ -69,16 +59,12 @@ contract CreateMarketIntegrationTest is BaseTest {
     }
 
     function testCreateMarketAlreadyCreated(MarketParams memory marketParamsFuzz) public {
+        marketParamsFuzz.irm = address(irm);
         marketParamsFuzz.lltv = _boundValidLltv(marketParamsFuzz.lltv);
 
         vm.startPrank(OWNER);
-        if (!morpho.isIrmEnabled(marketParamsFuzz.irm)) morpho.enableIrm(marketParamsFuzz.irm);
         if (!morpho.isLltvEnabled(marketParamsFuzz.lltv)) morpho.enableLltv(marketParamsFuzz.lltv);
         vm.stopPrank();
-
-        if (marketParamsFuzz.irm != address(0)) {
-            vm.mockCall(marketParamsFuzz.irm, abi.encodeWithSelector(IIrm.borrowRate.selector), abi.encode(0));
-        }
 
         vm.prank(OWNER);
         morpho.createMarket(marketParamsFuzz);
@@ -89,17 +75,13 @@ contract CreateMarketIntegrationTest is BaseTest {
     }
 
     function testIdToMarketParams(MarketParams memory marketParamsFuzz) public {
+        marketParamsFuzz.irm = address(irm);
         marketParamsFuzz.lltv = _boundValidLltv(marketParamsFuzz.lltv);
         Id marketParamsFuzzId = marketParamsFuzz.id();
 
         vm.startPrank(OWNER);
-        if (!morpho.isIrmEnabled(marketParamsFuzz.irm)) morpho.enableIrm(marketParamsFuzz.irm);
         if (!morpho.isLltvEnabled(marketParamsFuzz.lltv)) morpho.enableLltv(marketParamsFuzz.lltv);
         vm.stopPrank();
-
-        if (marketParamsFuzz.irm != address(0)) {
-            vm.mockCall(marketParamsFuzz.irm, abi.encodeWithSelector(IIrm.borrowRate.selector), abi.encode(0));
-        }
 
         vm.prank(OWNER);
         morpho.createMarket(marketParamsFuzz);
