@@ -151,7 +151,7 @@ interface IMorphoBase {
         bytes memory data
     ) external returns (uint256 assetsSupplied, uint256 sharesSupplied);
 
-    /// @notice Withdraws `assets` or `shares` on behalf of `onBehalf` to `receiver`.
+    /// @notice Withdraws `assets` or `shares` on behalf of `onBehalf` and sends the assets to `receiver`.
     /// @dev Either `assets` or `shares` should be zero. To withdraw max, pass the `shares`'s balance of `onBehalf`.
     /// @dev `msg.sender` must be authorized to manage `onBehalf`'s positions.
     /// @dev Withdrawing an amount corresponding to more shares than supplied will revert for underflow.
@@ -172,7 +172,7 @@ interface IMorphoBase {
         address receiver
     ) external returns (uint256 assetsWithdrawn, uint256 sharesWithdrawn);
 
-    /// @notice Borrows `assets` or `shares` on behalf of `onBehalf` to `receiver`.
+    /// @notice Borrows `assets` or `shares` on behalf of `onBehalf` and sends the assets to `receiver`.
     /// @dev Either `assets` or `shares` should be zero. Most use cases should rely on `assets` as an input so the
     /// caller is guaranteed to borrow `assets` of tokens, but the possibility to mint a specific amount of shares is
     /// given for full compatibility and precision.
@@ -228,7 +228,7 @@ interface IMorphoBase {
     function supplyCollateral(MarketParams memory marketParams, uint256 assets, address onBehalf, bytes memory data)
         external;
 
-    /// @notice Withdraws `assets` of collateral on behalf of `onBehalf` to `receiver`.
+    /// @notice Withdraws `assets` of collateral on behalf of `onBehalf` and sends the assets to `receiver`.
     /// @dev `msg.sender` must be authorized to manage `onBehalf`'s positions.
     /// @dev Withdrawing an amount corresponding to more collateral than supplied will revert for underflow.
     /// @param marketParams The market to withdraw collateral from.
