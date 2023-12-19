@@ -127,6 +127,27 @@ contract AuthorizationIntegrationTest is BaseTest {
         authorization.nonce = 0;
         authorization.authorizer = vm.addr(privateKey);
 
+        Signature memory sig;
+        bytes32 digest = SigUtils.getTypedDataHash(morpho.DOMAIN_SEPARATOR(), authorization);
+        (sig.v, sig.r, sig.s) = vm.sign(privateKey, digest);
+
+        morpho.setAuthorizationWithSig(authorization, sig);
+
+        authorization.isAuthorized = false;
+
+        vm.expectRevert(bytes(ErrorsLib.INVALID_NONCE));
+        morpho.setAuthorizationWithSig(authorization, sig);
+    }
+
+    function testAuthorizationFrontRun(Authorization memory authorization, uint256 privateKey) public {
+        authorization.isAuthorized = true;
+        authorization.deadline = bound(authorization.deadline, block.timestamp, type(uint256).max);
+
+        // Private key must be less than the secp256k1 curve order.
+        privateKey = bound(privateKey, 1, type(uint32).max);
+        authorization.nonce = 0;
+        authorization.authorizer = vm.addr(privateKey);
+
         address authorized = _boundAddressNotZero(authorization.authorized);
         authorization.authorized = address(0);
 
