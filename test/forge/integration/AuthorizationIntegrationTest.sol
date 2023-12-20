@@ -16,20 +16,14 @@ contract AuthorizationIntegrationTest is BaseTest {
         assertFalse(morpho.isAuthorized(address(this), addressFuzz));
     }
 
-    function testAlreadySetWithSig(Authorization memory authorization, Signature memory sig) public {
-        authorization.isAuthorized = false;
-        authorization.authorizer = address(this);
-        authorization.deadline = block.timestamp;
-        authorization.nonce = 0;
+    function testAlreadySet(address addressFuzz) public {
+        vm.expectRevert(bytes(ErrorsLib.ALREADY_SET));
+        morpho.setAuthorization(addressFuzz, false);
+
+        morpho.setAuthorization(addressFuzz, true);
 
         vm.expectRevert(bytes(ErrorsLib.ALREADY_SET));
-        morpho.setAuthorizationWithSig(authorization, sig);
-
-        morpho.setAuthorization(authorization.authorized, true);
-
-        authorization.isAuthorized = true;
-        vm.expectRevert(bytes(ErrorsLib.ALREADY_SET));
-        morpho.setAuthorizationWithSig(authorization, sig);
+        morpho.setAuthorization(addressFuzz, true);
     }
 
     function testSetAuthorizationWithSignatureDeadlineOutdated(
