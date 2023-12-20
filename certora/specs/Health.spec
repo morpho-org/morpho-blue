@@ -106,3 +106,24 @@ filtered { f -> !f.isView }
 // This invariant ensures that bad debt realization cannot be bypassed.
 invariant alwaysCollateralized(MorphoHarness.Id id, address borrower)
     borrowShares(id, borrower) != 0 => collateral(id, borrower) != 0;
+
+// Checks that the debt input or the colleteral input of the liquidate function lead to the same repaid assets amount.
+rule liquidateEquivalentInputDebtAndInputCollateral(env e, MorphoHarness.MarketParams marketParams, address borrower, uint256 seized, uint256 repaidShares, bytes data) {
+    MorphoHarness.Id id = libId(marketParams);
+
+    storage init = lastStorage;
+
+    uint256 seizedAssets1;
+    uint256 repaidAssets1;
+    seizedAssets1, repaidAssets1 = liquidate(e, marketParams, borrower, 0, repaidShares, data);
+
+    uint256 seizedAssets2;
+    uint256 repaidAssets2;
+    seizedAssets2, repaidAssets2 = liquidate(e, marketParams, borrower, seizedAssets1, 0, data) at init;
+
+    // Assume same context, including the oracle answer.
+    require !priceChanged;
+
+    assert seizedAssets1 == seizedAssets2;
+    assert repaidAssets1 == repaidAssets2;
+}
