@@ -444,6 +444,7 @@ contract Morpho is IMorphoStaticTyping {
 
     /// @inheritdoc IMorphoBase
     function setAuthorizationWithSig(Authorization memory authorization, Signature calldata signature) external {
+        /// Do not check whether authorization is already set because the nonce increment is a desired side effect.
         require(block.timestamp <= authorization.deadline, ErrorsLib.SIGNATURE_EXPIRED);
         require(authorization.nonce == nonce[authorization.authorizer]++, ErrorsLib.INVALID_NONCE);
 
