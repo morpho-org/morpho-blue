@@ -108,7 +108,7 @@ invariant alwaysCollateralized(MorphoHarness.Id id, address borrower)
     borrowShares(id, borrower) != 0 => collateral(id, borrower) != 0;
 
 // Checks that the debt input or the colleteral input of the liquidate function lead to the same repaid assets amount.
-rule liquidateEquivalentInputDebtAndInputCollateral(env e, MorphoHarness.MarketParams marketParams, address borrower, uint256 seized, uint256 repaidShares, bytes data) {
+rule liquidateEquivalentInputDebtAndInputCollateral(env e, MorphoHarness.MarketParams marketParams, address borrower, uint256 repaidShares, bytes data) {
     MorphoHarness.Id id = libId(marketParams);
 
     storage init = lastStorage;
