@@ -229,11 +229,11 @@ The rule `supplyWithdraw` handles the simple scenario of a supply followed by a 
 assert withdrawnAssets <= suppliedAssets;
 ```
 
-The rule `withdrawLiquidity` is more general and defines `owedAssets` as the assets that are owed to the user, rounding in favor of the protocol.
-This rule has the following check to ensure that no more than the owed assets can be withdrawn.
+The rule `withdrawAssetsAccounting` is more general and defines `ownedAssets` as the assets that the user owns, rounding in favor of the protocol.
+This rule has the following check to ensure that no more than the owned assets can be withdrawn.
 
 ```solidity
-assert withdrawnAssets <= owedAssets;
+assert withdrawnAssets <= ownedAssets;
 ```
 
 # Folder and file structure
