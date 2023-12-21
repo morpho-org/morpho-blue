@@ -21,12 +21,12 @@ ghost uint256 lastPrice;
 ghost bool priceChanged;
 
 function mockPrice() returns uint256 {
-    uint256 somePrice;
-    if (somePrice != lastPrice) {
+    uint256 newPrice;
+    if (newPrice != lastPrice) {
         priceChanged = true;
-        lastPrice = somePrice;
+        lastPrice = newPrice;
     }
-    return somePrice;
+    return newPrice;
 }
 
 function summaryMulDivUp(uint256 x, uint256 y, uint256 d) returns uint256 {
@@ -116,12 +116,11 @@ rule liquidateEquivalentInputDebtAndInputCollateral(env e, MorphoHarness.MarketP
     uint256 seizedAssets1;
     uint256 repaidAssets1;
     seizedAssets1, repaidAssets1 = liquidate(e, marketParams, borrower, 0, repaidShares, data);
+    require !priceChanged;
 
     uint256 seizedAssets2;
     uint256 repaidAssets2;
     seizedAssets2, repaidAssets2 = liquidate(e, marketParams, borrower, seizedAssets1, 0, data) at init;
-
-    // Assume same context, including the oracle answer.
     require !priceChanged;
 
     assert seizedAssets1 == seizedAssets2;
