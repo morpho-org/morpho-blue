@@ -15,18 +15,19 @@ interface IERC20Internal {
 /// @custom:contact security@morpho.org
 /// @notice Library to manage transfers of tokens, even if calls to the transfer or transferFrom functions are not
 /// returning a boolean.
-/// @dev It is the responsibility of the market creator to make sure that the address of the token has non-zero code.
 library SafeTransferLib {
-    /// @dev Warning: It does not revert on `token` with no code.
     function safeTransfer(IERC20 token, address to, uint256 value) internal {
+        require(address(token).code.length > 0, ErrorsLib.NO_CODE);
+
         (bool success, bytes memory returndata) =
             address(token).call(abi.encodeCall(IERC20Internal.transfer, (to, value)));
         require(success, ErrorsLib.TRANSFER_REVERTED);
         require(returndata.length == 0 || abi.decode(returndata, (bool)), ErrorsLib.TRANSFER_RETURNED_FALSE);
     }
 
-    /// @dev Warning: It does not revert on `token` with no code.
     function safeTransferFrom(IERC20 token, address from, address to, uint256 value) internal {
+        require(address(token).code.length > 0, ErrorsLib.NO_CODE);
+
         (bool success, bytes memory returndata) =
             address(token).call(abi.encodeCall(IERC20Internal.transferFrom, (from, to, value)));
         require(success, ErrorsLib.TRANSFER_FROM_REVERTED);

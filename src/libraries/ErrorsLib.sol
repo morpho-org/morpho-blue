@@ -27,6 +27,9 @@ library ErrorsLib {
     /// @notice Thrown when the market is already created.
     string internal constant MARKET_ALREADY_CREATED = "market already created";
 
+    /// @notice Thrown when a token to transfer doesn't have code.
+    string internal constant NO_CODE = "no code";
+
     /// @notice Thrown when the market is not created.
     string internal constant MARKET_NOT_CREATED = "market not created";
 

@@ -15,6 +15,18 @@ contract AccrueInterestIntegrationTest is BaseTest {
         morpho.accrueInterest(marketParamsFuzz);
     }
 
+    function testAccrueInterestIrmZero(MarketParams memory marketParamsFuzz, uint256 blocks) public {
+        marketParamsFuzz.irm = address(0);
+        marketParamsFuzz.lltv = 0;
+        blocks = _boundBlocks(blocks);
+
+        morpho.createMarket(marketParamsFuzz);
+
+        _forward(blocks);
+
+        morpho.accrueInterest(marketParamsFuzz);
+    }
+
     function testAccrueInterestNoTimeElapsed(uint256 amountSupplied, uint256 amountBorrowed) public {
         uint256 collateralPrice = oracle.price();
         uint256 amountCollateral;

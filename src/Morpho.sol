@@ -158,6 +158,9 @@ contract Morpho is IMorphoStaticTyping {
         idToMarketParams[id] = marketParams;
 
         emit EventsLib.CreateMarket(id, marketParams);
+
+        // Call to initialize the IRM in case it is stateful.
+        if (marketParams.irm != address(0)) IIrm(marketParams.irm).borrowRate(marketParams, market[id]);
     }
 
     /* SUPPLY MANAGEMENT */
@@ -354,12 +357,11 @@ contract Morpho is IMorphoStaticTyping {
 
         _accrueInterest(marketParams, id);
 
-        uint256 collateralPrice = IOracle(marketParams.oracle).price();
-
-        require(!_isHealthy(marketParams, id, borrower, collateralPrice), ErrorsLib.HEALTHY_POSITION);
-
-        uint256 repaidAssets;
         {
+            uint256 collateralPrice = IOracle(marketParams.oracle).price();
+
+            require(!_isHealthy(marketParams, id, borrower, collateralPrice), ErrorsLib.HEALTHY_POSITION);
+
             // The liquidation incentive factor is min(maxLiquidationIncentiveFactor, 1/(1 - cursor*(1 - lltv))).
             uint256 liquidationIncentiveFactor = UtilsLib.min(
                 MAX_LIQUIDATION_INCENTIVE_FACTOR,
@@ -367,15 +369,17 @@ contract Morpho is IMorphoStaticTyping {
             );
 
             if (seizedAssets > 0) {
-                repaidAssets =
-                    seizedAssets.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(liquidationIncentiveFactor);
-                repaidShares = repaidAssets.toSharesDown(market[id].totalBorrowAssets, market[id].totalBorrowShares);
+                uint256 seizedAssetsQuoted = seizedAssets.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE);
+
+                repaidShares = seizedAssetsQuoted.wDivUp(liquidationIncentiveFactor).toSharesUp(
+                    market[id].totalBorrowAssets, market[id].totalBorrowShares
+                );
             } else {
-                repaidAssets = repaidShares.toAssetsUp(market[id].totalBorrowAssets, market[id].totalBorrowShares);
-                seizedAssets =
-                    repaidAssets.wMulDown(liquidationIncentiveFactor).mulDivDown(ORACLE_PRICE_SCALE, collateralPrice);
+                seizedAssets = repaidShares.toAssetsDown(market[id].totalBorrowAssets, market[id].totalBorrowShares)
+                    .wMulDown(liquidationIncentiveFactor).mulDivDown(ORACLE_PRICE_SCALE, collateralPrice);
             }
         }
+        uint256 repaidAssets = repaidShares.toAssetsUp(market[id].totalBorrowAssets, market[id].totalBorrowShares);
 
         position[id][borrower].borrowShares -= repaidShares.toUint128();
         market[id].totalBorrowShares -= repaidShares.toUint128();
@@ -384,23 +388,26 @@ contract Morpho is IMorphoStaticTyping {
         position[id][borrower].collateral -= seizedAssets.toUint128();
 
         uint256 badDebtShares;
+        uint256 badDebtAssets;
         if (position[id][borrower].collateral == 0) {
             badDebtShares = position[id][borrower].borrowShares;
-            uint256 badDebt = UtilsLib.min(
+            badDebtAssets = UtilsLib.min(
                 market[id].totalBorrowAssets,
                 badDebtShares.toAssetsUp(market[id].totalBorrowAssets, market[id].totalBorrowShares)
             );
 
-            market[id].totalBorrowAssets -= badDebt.toUint128();
-            market[id].totalSupplyAssets -= badDebt.toUint128();
+            market[id].totalBorrowAssets -= badDebtAssets.toUint128();
+            market[id].totalSupplyAssets -= badDebtAssets.toUint128();
             market[id].totalBorrowShares -= badDebtShares.toUint128();
             position[id][borrower].borrowShares = 0;
         }
 
-        IERC20(marketParams.collateralToken).safeTransfer(msg.sender, seizedAssets);
-
         // `repaidAssets` may be greater than `totalBorrowAssets` by 1.
-        emit EventsLib.Liquidate(id, msg.sender, borrower, repaidAssets, repaidShares, seizedAssets, badDebtShares);
+        emit EventsLib.Liquidate(
+            id, msg.sender, borrower, repaidAssets, repaidShares, seizedAssets, badDebtAssets, badDebtShares
+        );
+
+        IERC20(marketParams.collateralToken).safeTransfer(msg.sender, seizedAssets);
 
         if (data.length > 0) IMorphoLiquidateCallback(msg.sender).onMorphoLiquidate(repaidAssets, data);
 
@@ -413,9 +420,11 @@ contract Morpho is IMorphoStaticTyping {
 
     /// @inheritdoc IMorphoBase
     function flashLoan(address token, uint256 assets, bytes calldata data) external {
-        IERC20(token).safeTransfer(msg.sender, assets);
+        require(assets != 0, ErrorsLib.ZERO_ASSETS);
 
         emit EventsLib.FlashLoan(msg.sender, token, assets);
+
+        IERC20(token).safeTransfer(msg.sender, assets);
 
         IMorphoFlashLoanCallback(msg.sender).onMorphoFlashLoan(assets, data);
 
@@ -426,6 +435,8 @@ contract Morpho is IMorphoStaticTyping {
 
     /// @inheritdoc IMorphoBase
     function setAuthorization(address authorized, bool newIsAuthorized) external {
+        require(newIsAuthorized != isAuthorized[msg.sender][authorized], ErrorsLib.ALREADY_SET);
+
         isAuthorized[msg.sender][authorized] = newIsAuthorized;
 
         emit EventsLib.SetAuthorization(msg.sender, msg.sender, authorized, newIsAuthorized);
@@ -433,11 +444,12 @@ contract Morpho is IMorphoStaticTyping {
 
     /// @inheritdoc IMorphoBase
     function setAuthorizationWithSig(Authorization memory authorization, Signature calldata signature) external {
+        /// Do not check whether authorization is already set because the nonce increment is a desired side effect.
         require(block.timestamp <= authorization.deadline, ErrorsLib.SIGNATURE_EXPIRED);
         require(authorization.nonce == nonce[authorization.authorizer]++, ErrorsLib.INVALID_NONCE);
 
         bytes32 hashStruct = keccak256(abi.encode(AUTHORIZATION_TYPEHASH, authorization));
-        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, hashStruct));
+        bytes32 digest = keccak256(bytes.concat("\x19\x01", DOMAIN_SEPARATOR, hashStruct));
         address signatory = ecrecover(digest, signature.v, signature.r, signature.s);
 
         require(signatory != address(0) && authorization.authorizer == signatory, ErrorsLib.INVALID_SIGNATURE);
@@ -470,25 +482,27 @@ contract Morpho is IMorphoStaticTyping {
     /// @dev Assumes that the inputs `marketParams` and `id` match.
     function _accrueInterest(MarketParams memory marketParams, Id id) internal {
         uint256 elapsed = block.timestamp - market[id].lastUpdate;
-
         if (elapsed == 0) return;
 
-        uint256 borrowRate = IIrm(marketParams.irm).borrowRate(marketParams, market[id]);
-        uint256 interest = market[id].totalBorrowAssets.wMulDown(borrowRate.wTaylorCompounded(elapsed));
-        market[id].totalBorrowAssets += interest.toUint128();
-        market[id].totalSupplyAssets += interest.toUint128();
+        if (marketParams.irm != address(0)) {
+            uint256 borrowRate = IIrm(marketParams.irm).borrowRate(marketParams, market[id]);
+            uint256 interest = market[id].totalBorrowAssets.wMulDown(borrowRate.wTaylorCompounded(elapsed));
+            market[id].totalBorrowAssets += interest.toUint128();
+            market[id].totalSupplyAssets += interest.toUint128();
 
-        uint256 feeShares;
-        if (market[id].fee != 0) {
-            uint256 feeAmount = interest.wMulDown(market[id].fee);
-            // The fee amount is subtracted from the total supply in this calculation to compensate for the fact
-            // that total supply is already increased by the full interest (including the fee amount).
-            feeShares = feeAmount.toSharesDown(market[id].totalSupplyAssets - feeAmount, market[id].totalSupplyShares);
-            position[id][feeRecipient].supplyShares += feeShares;
-            market[id].totalSupplyShares += feeShares.toUint128();
+            uint256 feeShares;
+            if (market[id].fee != 0) {
+                uint256 feeAmount = interest.wMulDown(market[id].fee);
+                // The fee amount is subtracted from the total supply in this calculation to compensate for the fact
+                // that total supply is already increased by the full interest (including the fee amount).
+                feeShares =
+                    feeAmount.toSharesDown(market[id].totalSupplyAssets - feeAmount, market[id].totalSupplyShares);
+                position[id][feeRecipient].supplyShares += feeShares;
+                market[id].totalSupplyShares += feeShares.toUint128();
+            }
+
+            emit EventsLib.AccrueInterest(id, borrowRate, interest, feeShares);
         }
-
-        emit EventsLib.AccrueInterest(id, borrowRate, interest, feeShares);
 
         // Safe "unchecked" cast.
         market[id].lastUpdate = uint128(block.timestamp);

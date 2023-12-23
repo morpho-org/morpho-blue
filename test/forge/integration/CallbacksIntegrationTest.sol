@@ -83,6 +83,11 @@ contract CallbacksIntegrationTest is
         assertEq(loanToken.balanceOf(address(morpho)), amount, "balanceOf");
     }
 
+    function testFlashLoanZero() public {
+        vm.expectRevert(bytes(ErrorsLib.ZERO_ASSETS));
+        morpho.flashLoan(address(loanToken), 0, abi.encode(this.testFlashLoan.selector, hex""));
+    }
+
     function testFlashLoanShouldRevertIfNotReimbursed(uint256 amount) public {
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
 

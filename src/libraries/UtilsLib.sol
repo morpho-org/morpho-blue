@@ -29,7 +29,7 @@ library UtilsLib {
         return uint128(x);
     }
 
-    /// @dev Returns max(x - y, 0).
+    /// @dev Returns max(0, x - y).
     function zeroFloorSub(uint256 x, uint256 y) internal pure returns (uint256 z) {
         assembly {
             z := mul(gt(x, y), sub(x, y))

@@ -16,11 +16,22 @@ contract AuthorizationIntegrationTest is BaseTest {
         assertFalse(morpho.isAuthorized(address(this), addressFuzz));
     }
 
+    function testAlreadySet(address addressFuzz) public {
+        vm.expectRevert(bytes(ErrorsLib.ALREADY_SET));
+        morpho.setAuthorization(addressFuzz, false);
+
+        morpho.setAuthorization(addressFuzz, true);
+
+        vm.expectRevert(bytes(ErrorsLib.ALREADY_SET));
+        morpho.setAuthorization(addressFuzz, true);
+    }
+
     function testSetAuthorizationWithSignatureDeadlineOutdated(
         Authorization memory authorization,
         uint256 privateKey,
         uint256 blocks
     ) public {
+        authorization.isAuthorized = true;
         blocks = _boundBlocks(blocks);
         authorization.deadline = block.timestamp - 1;
 
@@ -40,6 +51,7 @@ contract AuthorizationIntegrationTest is BaseTest {
     }
 
     function testAuthorizationWithSigWrongPK(Authorization memory authorization, uint256 privateKey) public {
+        authorization.isAuthorized = true;
         authorization.deadline = bound(authorization.deadline, block.timestamp, type(uint256).max);
 
         // Private key must be less than the secp256k1 curve order.
@@ -55,6 +67,7 @@ contract AuthorizationIntegrationTest is BaseTest {
     }
 
     function testAuthorizationWithSigWrongNonce(Authorization memory authorization, uint256 privateKey) public {
+        authorization.isAuthorized = true;
         authorization.deadline = bound(authorization.deadline, block.timestamp, type(uint256).max);
         authorization.nonce = bound(authorization.nonce, 1, type(uint256).max);
 
@@ -71,6 +84,7 @@ contract AuthorizationIntegrationTest is BaseTest {
     }
 
     function testAuthorizationWithSig(Authorization memory authorization, uint256 privateKey) public {
+        authorization.isAuthorized = true;
         authorization.deadline = bound(authorization.deadline, block.timestamp, type(uint256).max);
 
         // Private key must be less than the secp256k1 curve order.
@@ -84,11 +98,12 @@ contract AuthorizationIntegrationTest is BaseTest {
 
         morpho.setAuthorizationWithSig(authorization, sig);
 
-        assertEq(morpho.isAuthorized(authorization.authorizer, authorization.authorized), authorization.isAuthorized);
+        assertEq(morpho.isAuthorized(authorization.authorizer, authorization.authorized), true);
         assertEq(morpho.nonce(authorization.authorizer), 1);
     }
 
     function testAuthorizationFailsWithReusedSig(Authorization memory authorization, uint256 privateKey) public {
+        authorization.isAuthorized = true;
         authorization.deadline = bound(authorization.deadline, block.timestamp, type(uint256).max);
 
         // Private key must be less than the secp256k1 curve order.
@@ -102,6 +117,7 @@ contract AuthorizationIntegrationTest is BaseTest {
 
         morpho.setAuthorizationWithSig(authorization, sig);
 
+        authorization.isAuthorized = false;
         vm.expectRevert(bytes(ErrorsLib.INVALID_NONCE));
         morpho.setAuthorizationWithSig(authorization, sig);
     }

@@ -55,7 +55,7 @@ contract BorrowIntegrationTest is BaseTest {
         collateralToken.approve(address(morpho), amountCollateral);
         morpho.supplyCollateral(marketParams, amountCollateral, supplier, hex"");
 
-        changePrank(attacker);
+        vm.startPrank(attacker);
         vm.expectRevert(bytes(ErrorsLib.UNAUTHORIZED));
         morpho.borrow(marketParams, amountBorrowed, 0, supplier, RECEIVER);
     }
@@ -202,7 +202,7 @@ contract BorrowIntegrationTest is BaseTest {
         vm.startPrank(ONBEHALF);
         collateralToken.approve(address(morpho), amountCollateral);
         morpho.supplyCollateral(marketParams, amountCollateral, ONBEHALF, hex"");
-        morpho.setAuthorization(BORROWER, true);
+        // BORROWER is already authorized.
         vm.stopPrank();
 
         uint256 expectedBorrowShares = amountBorrowed.toSharesUp(0, 0);
@@ -248,7 +248,7 @@ contract BorrowIntegrationTest is BaseTest {
         vm.startPrank(ONBEHALF);
         collateralToken.approve(address(morpho), amountCollateral);
         morpho.supplyCollateral(marketParams, amountCollateral, ONBEHALF, hex"");
-        morpho.setAuthorization(BORROWER, true);
+        // BORROWER is already authorized.
         vm.stopPrank();
 
         vm.prank(BORROWER);
