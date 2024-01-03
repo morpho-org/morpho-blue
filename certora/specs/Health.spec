@@ -41,6 +41,10 @@ function summaryMulDivDown(uint256 x, uint256 y, uint256 d) returns uint256 {
     return require_uint256((x * y) / d);
 }
 
+function summaryMin(uint256 a, uint256 b) returns uint256 {
+    return a < b ? a : b;
+}
+
 // Checks that passing a seized amount input to liquidate leads to repaid shares S and repaid amount A such that liquidating instead with shares S also repays the amount A.
 rule liquidateEquivalentInputDebtAndInputCollateral(env e, MorphoHarness.MarketParams marketParams, address borrower, uint256 seizedAssets, bytes data) {
     MorphoHarness.Id id = libId(marketParams);
