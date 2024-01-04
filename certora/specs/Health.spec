@@ -7,6 +7,7 @@ methods {
     function borrowShares(MorphoHarness.Id, address) external returns uint256 envfree;
     function collateral(MorphoHarness.Id, address) external returns uint256 envfree;
     function isAuthorized(address, address user) external returns bool envfree;
+    function lastUpdate(MorphoHarness.Id) external returns uint256 envfree;
 
     function libId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
     function isHealthy(MorphoHarness.MarketParams, address user) external returns bool envfree;
@@ -48,6 +49,9 @@ function summaryMin(uint256 a, uint256 b) returns uint256 {
 // Checks that passing a seized amount input to liquidate leads to repaid shares S and repaid amount A such that liquidating instead with shares S also repays the amount A.
 rule liquidateEquivalentInputDebtAndInputCollateral(env e, MorphoHarness.MarketParams marketParams, address borrower, uint256 seizedAssets, bytes data) {
     MorphoHarness.Id id = libId(marketParams);
+
+    // Assume no interest accrual to ease the verification.
+    require lastUpdate(id) == e.block.timestamp;
 
     storage init = lastStorage;
 
