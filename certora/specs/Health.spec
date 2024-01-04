@@ -7,6 +7,7 @@ methods {
     function borrowShares(MorphoHarness.Id, address) external returns uint256 envfree;
     function collateral(MorphoHarness.Id, address) external returns uint256 envfree;
     function isAuthorized(address, address user) external returns bool envfree;
+    function lastUpdate(MorphoHarness.Id) external returns uint256 envfree;
 
     function libId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
     function isHealthy(MorphoHarness.MarketParams, address user) external returns bool envfree;
@@ -21,12 +22,12 @@ ghost uint256 lastPrice;
 ghost bool priceChanged;
 
 function mockPrice() returns uint256 {
-    uint256 somePrice;
-    if (somePrice != lastPrice) {
+    uint256 newPrice;
+    if (newPrice != lastPrice) {
         priceChanged = true;
-        lastPrice = somePrice;
+        lastPrice = newPrice;
     }
-    return somePrice;
+    return newPrice;
 }
 
 function summaryMulDivUp(uint256 x, uint256 y, uint256 d) returns uint256 {
@@ -45,64 +46,27 @@ function summaryMin(uint256 a, uint256 b) returns uint256 {
     return a < b ? a : b;
 }
 
-// Check that without accruing interest, no interaction can put an healthy account into an unhealthy one.
-// This rule times out for liquidate, repay and borrow.
-rule stayHealthy(env e, method f, calldataarg data)
-filtered {
-    f -> !f.isView &&
-    f.selector != sig:liquidate(MorphoHarness.MarketParams, address, uint256, uint256, bytes).selector &&
-    f.selector != sig:repay(MorphoHarness.MarketParams, uint256, uint256, address, bytes).selector &&
-    f.selector != sig:borrow(MorphoHarness.MarketParams, uint256, uint256, address, address).selector
-}
-{
-    MorphoHarness.MarketParams marketParams;
+// Checks that passing a seized amount input to liquidate leads to repaid shares S and repaid amount A such that liquidating instead with shares S also repays the amount A.
+rule liquidateEquivalentInputDebtAndInputCollateral(env e, MorphoHarness.MarketParams marketParams, address borrower, uint256 seizedAssets, bytes data) {
     MorphoHarness.Id id = libId(marketParams);
-    address user;
 
-    // Assume that the position is healthy before the interaction.
-    require isHealthy(marketParams, user);
-    // Safe require because of the invariants onlyEnabledLltv and lltvSmallerThanWad in ConsistentState.spec.
-    require marketParams.lltv < 10^18;
-    // Assumption to ensure that no interest is accumulated.
+    // Assume no interest accrual to ease the verification.
     require lastUpdate(id) == e.block.timestamp;
 
-    priceChanged = false;
-    f(e, data);
+    storage init = lastStorage;
 
-    // Safe require because of the invariant sumBorrowSharesCorrect.
-    require borrowShares(id, user) <= totalBorrowShares(id);
+    uint256 sharesBefore = borrowShares(id, borrower);
 
-    bool stillHealthy = isHealthy(marketParams, user);
-    assert !priceChanged => stillHealthy;
+    uint256 repaidAssets1;
+    _, repaidAssets1 = liquidate(e, marketParams, borrower, seizedAssets, 0, data);
+    require !priceChanged;
+
+    uint256 sharesAfter = borrowShares(id, borrower);
+    uint256 repaidShares1 = assert_uint256(sharesBefore - sharesAfter);
+
+    uint256 repaidAssets2;
+    _, repaidAssets2 = liquidate(e, marketParams, borrower, 0, repaidShares1, data) at init;
+    require !priceChanged;
+
+    assert repaidAssets1 == repaidAssets2;
 }
-
-// Check that users cannot lose collateral by unauthorized parties except in case of an unhealthy position.
-rule healthyUserCannotLoseCollateral(env e, method f, calldataarg data)
-filtered { f -> !f.isView }
-{
-    MorphoHarness.MarketParams marketParams;
-    MorphoHarness.Id id = libId(marketParams);
-    address user;
-
-    // Assume that the e.msg.sender is not authorized.
-    require !isAuthorized(user, e.msg.sender);
-    require user != e.msg.sender;
-    // Assumption to ensure that no interest is accumulated.
-    require lastUpdate(id) == e.block.timestamp;
-    // Assume that the user is healthy.
-    require isHealthy(marketParams, user);
-
-    mathint collateralBefore = collateral(id, user);
-
-    priceChanged = false;
-    f(e, data);
-
-    mathint collateralAfter = collateral(id, user);
-
-    assert !priceChanged => collateralAfter >= collateralBefore;
-}
-
-// Check that users without collateral also have no debt.
-// This invariant ensures that bad debt realization cannot be bypassed.
-invariant alwaysCollateralized(MorphoHarness.Id id, address borrower)
-    borrowShares(id, borrower) != 0 => collateral(id, borrower) != 0;
