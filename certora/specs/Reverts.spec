@@ -23,7 +23,7 @@ methods {
 definition isCreated(MorphoHarness.Id id) returns bool =
     (lastUpdate(id) != 0);
 
-ghost mapping(MorphoHarness.Id => mathint) sumCollateral
+persistent ghost mapping(MorphoHarness.Id => mathint) sumCollateral
 {
     init_state axiom (forall MorphoHarness.Id id. sumCollateral[id] == 0);
 }
