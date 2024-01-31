@@ -13,7 +13,7 @@ methods {
     function _.totalSupply() external => DISPATCHER(true);
 }
 
-ghost mapping(address => mathint) balance {
+persistent ghost mapping(address => mathint) balance {
     init_state axiom (forall address token. balance[token] == 0);
 }
 

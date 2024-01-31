@@ -23,7 +23,7 @@ methods {
     function SafeTransferLib.safeTransferFrom(address token, address from, address to, uint256 value) internal => summarySafeTransferFrom(token, from, to, value);
 }
 
-ghost mapping(address => mathint) balance {
+persistent ghost mapping(address => mathint) balance {
     init_state axiom (forall address token. balance[token] == 0);
 }
 
