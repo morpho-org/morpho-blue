@@ -22,12 +22,12 @@ ghost uint256 lastPrice;
 ghost bool priceChanged;
 
 function mockPrice() returns uint256 {
-    uint256 newPrice;
-    if (newPrice != lastPrice) {
+    uint256 updatedPrice;
+    if (updatedPrice != lastPrice) {
         priceChanged = true;
-        lastPrice = newPrice;
+        lastPrice = updatedPrice;
     }
-    return newPrice;
+    return updatedPrice;
 }
 
 function summaryMulDivUp(uint256 x, uint256 y, uint256 d) returns uint256 {
