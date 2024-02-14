@@ -25,29 +25,29 @@ methods {
     function SafeTransferLib.safeTransferFrom(address token, address from, address to, uint256 value) internal => summarySafeTransferFrom(token, from, to, value);
 }
 
-ghost mapping(MorphoHarness.Id => mathint) sumSupplyShares {
+persistent ghost mapping(MorphoHarness.Id => mathint) sumSupplyShares {
     init_state axiom (forall MorphoHarness.Id id. sumSupplyShares[id] == 0);
 }
 
-ghost mapping(MorphoHarness.Id => mathint) sumBorrowShares {
+persistent ghost mapping(MorphoHarness.Id => mathint) sumBorrowShares {
     init_state axiom (forall MorphoHarness.Id id. sumBorrowShares[id] == 0);
 }
 
-ghost mapping(MorphoHarness.Id => mathint) sumCollateral {
+persistent ghost mapping(MorphoHarness.Id => mathint) sumCollateral {
     init_state axiom (forall MorphoHarness.Id id. sumCollateral[id] == 0);
 }
 
-ghost mapping(address => mathint) balance {
+persistent ghost mapping(address => mathint) balance {
     init_state axiom (forall address token. balance[token] == 0);
 }
 
-ghost mapping(address => mathint) idleAmount {
+persistent ghost mapping(address => mathint) idleAmount {
     init_state axiom (forall address token. idleAmount[token] == 0);
 }
 
-ghost mapping(MorphoHarness.Id => address) idToBorrowable;
+persistent ghost mapping(MorphoHarness.Id => address) idToBorrowable;
 
-ghost mapping(MorphoHarness.Id => address) idToCollateral;
+persistent ghost mapping(MorphoHarness.Id => address) idToCollateral;
 
 hook Sstore idToMarketParams[KEY MorphoHarness.Id id].loanToken address token STORAGE {
     idToBorrowable[id] = token;

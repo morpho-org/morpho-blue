@@ -5,14 +5,14 @@ methods {
     function _.borrowRate(MorphoHarness.MarketParams marketParams, MorphoHarness.Market) external => summaryBorrowRate() expect uint256;
 }
 
-ghost bool delegateCall;
-ghost bool callIsBorrowRate;
+persistent ghost bool delegateCall;
+persistent ghost bool callIsBorrowRate;
 // True when storage has been accessed with either a SSTORE or a SLOAD.
-ghost bool hasAccessedStorage;
+persistent ghost bool hasAccessedStorage;
 // True when a CALL has been done after storage has been accessed.
-ghost bool hasCallAfterAccessingStorage;
+persistent ghost bool hasCallAfterAccessingStorage;
 // True when storage has been accessed, after which an external call is made, followed by accessing storage again.
-ghost bool hasReentrancyUnsafeCall;
+persistent ghost bool hasReentrancyUnsafeCall;
 
 function summaryBorrowRate() returns uint256 {
     uint256 result;

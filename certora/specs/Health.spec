@@ -18,8 +18,8 @@ methods {
     function UtilsLib.min(uint256 a, uint256 b) internal returns uint256 => summaryMin(a,b);
 }
 
-ghost uint256 lastPrice;
-ghost bool priceChanged;
+persistent ghost uint256 lastPrice;
+persistent ghost bool priceChanged;
 
 function mockPrice() returns uint256 {
     uint256 updatedPrice;
