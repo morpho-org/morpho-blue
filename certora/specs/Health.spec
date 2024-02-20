@@ -54,13 +54,11 @@ rule liquidateEquivalentInputDebtAndInputCollateral(env e, MorphoHarness.MarketP
     require lastUpdate(id) == e.block.timestamp;
 
     storage init = lastStorage;
-
     uint256 sharesBefore = borrowShares(id, borrower);
 
     uint256 repaidAssets1;
     _, repaidAssets1 = liquidate(e, marketParams, borrower, seizedAssets, 0, data);
     require !priceChanged;
-
     uint256 sharesAfter = borrowShares(id, borrower);
     uint256 repaidShares1 = assert_uint256(sharesBefore - sharesAfter);
 
