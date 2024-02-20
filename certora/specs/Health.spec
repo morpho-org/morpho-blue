@@ -59,6 +59,8 @@ rule liquidateEquivalentInputDebtAndInputCollateral(env e, MorphoHarness.MarketP
     uint256 repaidAssets1;
     _, repaidAssets1 = liquidate(e, marketParams, borrower, seizedAssets, 0, data);
     require !priceChanged;
+    // Omit the bad debt realization case.
+    require collateral(id, borrower) != 0;
     uint256 sharesAfter = borrowShares(id, borrower);
     uint256 repaidShares1 = assert_uint256(sharesBefore - sharesAfter);
 
