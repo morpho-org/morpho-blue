@@ -18,6 +18,10 @@ contract MorphoHarness is Morpho {
         return MAX_FEE;
     }
 
+    function toMarketParams(Id id) external view returns (MarketParams memory) {
+        return idToMarketParams[id];
+    }
+
     function totalSupplyAssets(Id id) external view returns (uint256) {
         return market[id].totalSupplyAssets;
     }
