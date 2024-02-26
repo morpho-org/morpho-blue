@@ -107,7 +107,11 @@ invariant marketParamsOfHash(MorphoHarness.Id id)
 // This invariant is useful in the following rule, to link an id back to a market.
 invariant hashOfMarketParams(MorphoHarness.MarketParams marketParams)
     isCreated(libId(marketParams)) =>
-    toMarketParams(libId(marketParams)) == marketParams;
+    toMarketParams(libId(marketParams)).loanToken == marketParams.loanToken &&
+    toMarketParams(libId(marketParams)).collateralToken == marketParams.collateralToken &&
+    toMarketParams(libId(marketParams)).oracle == marketParams.oracle &&
+    toMarketParams(libId(marketParams)).lltv == marketParams.lltv &&
+    toMarketParams(libId(marketParams)).irm == marketParams.irm;
 
 // Check that the idle amount on the singleton is greater to the sum amount, that is the sum over all the markets of the total supply plus the total collateral minus the total borrow.
 invariant idleAmountLessThanBalance(address token)
