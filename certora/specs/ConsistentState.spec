@@ -98,10 +98,16 @@ invariant sumBorrowSharesCorrect(MorphoHarness.Id id)
 invariant borrowLessThanSupply(MorphoHarness.Id id)
     totalBorrowAssets(id) <= totalSupplyAssets(id);
 
-// This invariant is useful in the following rule, to link an id back to a market.
-invariant marketInvariant(MorphoHarness.Id id)
+// Check correctness of applying idToMarketParams() to an identifier.
+invariant marketParamsOfHash(MorphoHarness.Id id)
     isCreated(id) =>
     libId(toMarketParams(id)) == id;
+
+// Check correctness of applying id() to a market params.
+// This invariant is useful in the following rule, to link an id back to a market.
+invariant hashOfMarketParams(MorphoHarness.MarketParams marketParams)
+    isCreated(libId(marketParams)) =>
+    toMarketParams(libId(marketParams)) == marketParams;
 
 // Check that the idle amount on the singleton is greater to the sum amount, that is the sum over all the markets of the total supply plus the total collateral minus the total borrow.
 invariant idleAmountLessThanBalance(address token)
@@ -109,31 +115,31 @@ invariant idleAmountLessThanBalance(address token)
 {
     // Safe requires on the sender because the contract cannot call the function itself.
     preserved supply(MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data) with (env e) {
-        requireInvariant marketInvariant(libId(marketParams));
+        requireInvariant hashOfMarketParams(marketParams);
         require e.msg.sender != currentContract;
     }
     preserved withdraw(MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, address receiver) with (env e) {
-        requireInvariant marketInvariant(libId(marketParams));
+        requireInvariant hashOfMarketParams(marketParams);
         require e.msg.sender != currentContract;
     }
     preserved borrow(MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, address receiver) with (env e) {
-        requireInvariant marketInvariant(libId(marketParams));
+        requireInvariant hashOfMarketParams(marketParams);
         require e.msg.sender != currentContract;
     }
     preserved repay(MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data) with (env e) {
-        requireInvariant marketInvariant(libId(marketParams));
+        requireInvariant hashOfMarketParams(marketParams);
         require e.msg.sender != currentContract;
     }
     preserved supplyCollateral(MorphoHarness.MarketParams marketParams, uint256 assets, address onBehalf, bytes data) with (env e) {
-        requireInvariant marketInvariant(libId(marketParams));
+        requireInvariant hashOfMarketParams(marketParams);
         require e.msg.sender != currentContract;
     }
     preserved withdrawCollateral(MorphoHarness.MarketParams marketParams, uint256 assets, address onBehalf, address receiver) with (env e) {
-        requireInvariant marketInvariant(libId(marketParams));
+        requireInvariant hashOfMarketParams(marketParams);
         require e.msg.sender != currentContract;
     }
     preserved liquidate(MorphoHarness.MarketParams marketParams, address _b, uint256 shares, uint256 receiver, bytes data) with (env e) {
-        requireInvariant marketInvariant(libId(marketParams));
+        requireInvariant hashOfMarketParams(marketParams);
         require e.msg.sender != currentContract;
     }
 }
