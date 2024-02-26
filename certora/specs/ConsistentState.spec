@@ -45,18 +45,6 @@ persistent ghost mapping(address => mathint) idleAmount {
     init_state axiom (forall address token. idleAmount[token] == 0);
 }
 
-persistent ghost mapping(MorphoHarness.Id => address) idToBorrowable;
-
-persistent ghost mapping(MorphoHarness.Id => address) idToCollateral;
-
-hook Sstore idToMarketParams[KEY MorphoHarness.Id id].loanToken address token STORAGE {
-    idToBorrowable[id] = token;
-}
-
-hook Sstore idToMarketParams[KEY MorphoHarness.Id id].collateralToken address token STORAGE {
-    idToCollateral[id] = token;
-}
-
 hook Sstore position[KEY MorphoHarness.Id id][KEY address owner].supplyShares uint256 newShares (uint256 oldShares) STORAGE {
     sumSupplyShares[id] = sumSupplyShares[id] - oldShares + newShares;
 }
@@ -67,15 +55,15 @@ hook Sstore position[KEY MorphoHarness.Id id][KEY address owner].borrowShares ui
 
 hook Sstore position[KEY MorphoHarness.Id id][KEY address owner].collateral uint128 newAmount (uint128 oldAmount) STORAGE {
     sumCollateral[id] = sumCollateral[id] - oldAmount + newAmount;
-    idleAmount[idToCollateral[id]] = idleAmount[idToCollateral[id]] - oldAmount + newAmount;
+    idleAmount[idToMarketParams[id].collateralToken] = idleAmount[idToMarketParams[id].collateralToken] - oldAmount + newAmount;
 }
 
 hook Sstore market[KEY MorphoHarness.Id id].totalSupplyAssets uint128 newAmount (uint128 oldAmount) STORAGE {
-    idleAmount[idToBorrowable[id]] = idleAmount[idToBorrowable[id]] - oldAmount + newAmount;
+    idleAmount[idToMarketParams[id].loanToken] = idleAmount[idToMarketParams[id].loanToken] - oldAmount + newAmount;
 }
 
 hook Sstore market[KEY MorphoHarness.Id id].totalBorrowAssets uint128 newAmount (uint128 oldAmount) STORAGE {
-    idleAmount[idToBorrowable[id]] = idleAmount[idToBorrowable[id]] + oldAmount - newAmount;
+    idleAmount[idToMarketParams[id].loanToken] = idleAmount[idToMarketParams[id].loanToken] + oldAmount - newAmount;
 }
 
 function summarySafeTransferFrom(address token, address from, address to, uint256 amount) {
@@ -112,8 +100,8 @@ invariant borrowLessThanSupply(MorphoHarness.Id id)
 // This invariant is useful in the following rule, to link an id back to a market.
 invariant marketInvariant(MorphoHarness.MarketParams marketParams)
     isCreated(libId(marketParams)) =>
-    idToBorrowable[libId(marketParams)] == marketParams.loanToken &&
-    idToCollateral[libId(marketParams)] == marketParams.collateralToken;
+    idToMarketParams[libId(marketParams)].loanToken == marketParams.loanToken &&
+    idToMarketParams[libId(marketParams)].collateralToken == marketParams.collateralToken;
 
 // Check that the idle amount on the singleton is greater to the sum amount, that is the sum over all the markets of the total supply plus the total collateral minus the total borrow.
 invariant idleAmountLessThanBalance(address token)
