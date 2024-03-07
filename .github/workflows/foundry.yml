@@ -39,7 +39,7 @@ jobs:
         uses: foundry-rs/foundry-toolchain@v1
 
       - name: Run Forge tests in ${{ matrix.type }} mode
-        run: forge test -vvv
+        run: yarn test:forge -vvv
         env:
           FOUNDRY_FUZZ_RUNS: ${{ matrix.fuzz-runs }}
           FOUNDRY_FUZZ_MAX_TEST_REJECTS: ${{ matrix.max-test-rejects }}
