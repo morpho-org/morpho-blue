@@ -46,24 +46,24 @@ persistent ghost mapping(address => mathint) idleAmount {
     init_state axiom (forall address token. idleAmount[token] == 0);
 }
 
-hook Sstore position[KEY MorphoHarness.Id id][KEY address owner].supplyShares uint256 newShares (uint256 oldShares) STORAGE {
+hook Sstore position[KEY MorphoHarness.Id id][KEY address owner].supplyShares uint256 newShares (uint256 oldShares) {
     sumSupplyShares[id] = sumSupplyShares[id] - oldShares + newShares;
 }
 
-hook Sstore position[KEY MorphoHarness.Id id][KEY address owner].borrowShares uint128 newShares (uint128 oldShares) STORAGE {
+hook Sstore position[KEY MorphoHarness.Id id][KEY address owner].borrowShares uint128 newShares (uint128 oldShares) {
     sumBorrowShares[id] = sumBorrowShares[id] - oldShares + newShares;
 }
 
-hook Sstore position[KEY MorphoHarness.Id id][KEY address owner].collateral uint128 newAmount (uint128 oldAmount) STORAGE {
+hook Sstore position[KEY MorphoHarness.Id id][KEY address owner].collateral uint128 newAmount (uint128 oldAmount) {
     sumCollateral[id] = sumCollateral[id] - oldAmount + newAmount;
     idleAmount[toMarketParams(id).collateralToken] = idleAmount[toMarketParams(id).collateralToken] - oldAmount + newAmount;
 }
 
-hook Sstore market[KEY MorphoHarness.Id id].totalSupplyAssets uint128 newAmount (uint128 oldAmount) STORAGE {
+hook Sstore market[KEY MorphoHarness.Id id].totalSupplyAssets uint128 newAmount (uint128 oldAmount) {
     idleAmount[toMarketParams(id).loanToken] = idleAmount[toMarketParams(id).loanToken] - oldAmount + newAmount;
 }
 
-hook Sstore market[KEY MorphoHarness.Id id].totalBorrowAssets uint128 newAmount (uint128 oldAmount) STORAGE {
+hook Sstore market[KEY MorphoHarness.Id id].totalBorrowAssets uint128 newAmount (uint128 oldAmount) {
     idleAmount[toMarketParams(id).loanToken] = idleAmount[toMarketParams(id).loanToken] + oldAmount - newAmount;
 }
 
@@ -107,11 +107,7 @@ invariant hashOfMarketParamsOf(MorphoHarness.Id id)
 // This invariant is useful in the following rule, to link an id back to a market.
 invariant marketParamsOfHashOf(MorphoHarness.MarketParams marketParams)
     isCreated(libId(marketParams)) =>
-    toMarketParams(libId(marketParams)).loanToken == marketParams.loanToken &&
-    toMarketParams(libId(marketParams)).collateralToken == marketParams.collateralToken &&
-    toMarketParams(libId(marketParams)).oracle == marketParams.oracle &&
-    toMarketParams(libId(marketParams)).lltv == marketParams.lltv &&
-    toMarketParams(libId(marketParams)).irm == marketParams.irm;
+    toMarketParams(libId(marketParams)) == marketParams;
 
 // Check that the idle amount on the singleton is greater to the sum amount, that is the sum over all the markets of the total supply plus the total collateral minus the total borrow.
 invariant idleAmountLessThanBalance(address token)
@@ -167,11 +163,7 @@ rule libIdUnique() {
     // Assume that arguments are the same.
     require libId(marketParams1) == libId(marketParams2);
 
-    assert marketParams1.loanToken == marketParams2.loanToken;
-    assert marketParams1.collateralToken == marketParams2.collateralToken;
-    assert marketParams1.oracle == marketParams2.oracle;
-    assert marketParams1.irm == marketParams2.irm;
-    assert marketParams1.lltv == marketParams2.lltv;
+    assert marketParams1 == marketParams2;
 }
 
 // Check that only the user is able to change who is authorized to manage his position.
