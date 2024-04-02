@@ -13,6 +13,7 @@ import "../../src/Morpho.sol";
 import "../../src/libraries/ConstantsLib.sol";
 import {MorphoLib} from "../../src/libraries/periphery/MorphoLib.sol";
 
+/// @custom:halmos --solver-timeout-assertion 0
 contract HalmosTest is SymTest, Test {
     using MorphoLib for IMorpho;
     using MarketParamsLib for MarketParams;
