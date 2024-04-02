@@ -19,6 +19,9 @@ jobs:
       - name: Install python
         uses: actions/setup-python@v4
 
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
       - name: Install halmos
         run: pip install halmos
 
