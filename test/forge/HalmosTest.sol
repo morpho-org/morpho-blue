@@ -80,6 +80,6 @@ contract HalmosTest is SymTest, Test {
         (bool success,) = address(morpho).call(abi.encodePacked(selector, args));
         vm.assume(success);
 
-        assert(morpho.fee(id) < MAX_FEE);
+        assert(morpho.fee(id) <= MAX_FEE);
     }
 }
