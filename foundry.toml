@@ -1,7 +1,7 @@
 [profile.default]
 names = true
 sizes = true
-via-ir = true
+via-ir = false
 optimizer_runs = 999999 # Etherscan does not support verifying contracts with more optimization runs.
 
 [profile.default.invariant]

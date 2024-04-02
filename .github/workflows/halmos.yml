@@ -1,0 +1,26 @@
+name: Halmos
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Install python
+        uses: actions/setup-python@v4
+
+      - name: Install halmos
+        run: pip install halmos
+
+      - name: Run Halmos
+        run: halmos
