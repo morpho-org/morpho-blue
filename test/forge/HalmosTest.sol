@@ -13,7 +13,7 @@ import "../../src/Morpho.sol";
 import "../../src/libraries/ConstantsLib.sol";
 import {MorphoLib} from "../../src/libraries/periphery/MorphoLib.sol";
 
-/// @custom:halmos --solver-timeout-assertion 0
+/// @custom:halmos --symbolic-storage --solver-timeout-assertion 0
 contract HalmosTest is SymTest, Test {
     using MorphoLib for IMorpho;
     using MarketParamsLib for MarketParams;
@@ -74,7 +74,30 @@ contract HalmosTest is SymTest, Test {
     }
 
     function check_fee(bytes4 selector, address caller) public {
-        bytes memory args = svm.createBytes(1024, "data");
+        vm.assume(selector != morpho.extSloads.selector);
+
+        bytes memory emptyData = hex"";
+        uint256 assets = svm.createUint256("assets");
+        uint256 shares = svm.createUint256("shares");
+        address onBehalf = svm.createAddress("onBehalf");
+
+        bytes memory args;
+
+        if (selector == morpho.supply.selector) {
+            args = abi.encode(marketParams, assets, shares, onBehalf, emptyData);
+        } else if (selector == morpho.repay.selector) {
+            args = abi.encode(marketParams, assets, shares, onBehalf, emptyData);
+        } else if (selector == morpho.supplyCollateral.selector) {
+            args = abi.encode(marketParams, assets, onBehalf, emptyData);
+        } else if (selector == morpho.liquidate.selector) {
+            address borrower = svm.createAddress("borrower");
+            args = abi.encode(marketParams, borrower, assets, shares, emptyData);
+        } else if (selector == morpho.flashLoan.selector) {
+            address token = svm.createAddress("token");
+            args = abi.encode(marketParams, token, assets, emptyData);
+        } else {
+            args = svm.createBytes(1024, "data");
+        }
 
         vm.prank(caller);
         (bool success,) = address(morpho).call(abi.encodePacked(selector, args));
