@@ -75,21 +75,30 @@ contract HalmosTest is SymTest, Test {
 
     function check_fee(bytes4 selector, address caller) public {
         vm.assume(selector != morpho.extSloads.selector);
+        vm.assume(selector != morpho.createMarket.selector);
 
         bytes memory emptyData = hex"";
+        uint256 amount = svm.createUint256("amount");
         uint256 assets = svm.createUint256("assets");
         uint256 shares = svm.createUint256("shares");
         address onBehalf = svm.createAddress("onBehalf");
+        address receiver = svm.createAddress("receiver");
 
         bytes memory args;
 
         // Todo: make it possible to call any market
         if (selector == morpho.supply.selector) {
             args = abi.encode(marketParams, assets, shares, onBehalf, emptyData);
+        } else if (selector == morpho.withdraw.selector) {
+            args = abi.encode(marketParams, assets, shares, onBehalf, receiver);
+        } else if (selector == morpho.borrow.selector) {
+            args = abi.encode(marketParams, assets, shares, onBehalf, receiver);
         } else if (selector == morpho.repay.selector) {
             args = abi.encode(marketParams, assets, shares, onBehalf, emptyData);
         } else if (selector == morpho.supplyCollateral.selector) {
             args = abi.encode(marketParams, assets, onBehalf, emptyData);
+        } else if (selector == morpho.withdrawCollateral.selector) {
+            args = abi.encode(marketParams, assets, onBehalf, receiver);
         } else if (selector == morpho.liquidate.selector) {
             address borrower = svm.createAddress("borrower");
             args = abi.encode(marketParams, borrower, assets, shares, emptyData);
@@ -97,6 +106,10 @@ contract HalmosTest is SymTest, Test {
             // Todo: make it more general
             address token = address(loanToken);
             args = abi.encode(marketParams, token, assets, emptyData);
+        } else if (selector == morpho.accrueInterest.selector) {
+            args = abi.encode(marketParams);
+        } else if (selector == morpho.setFee.selector) {
+            args = abi.encode(marketParams, amount);
         } else {
             args = svm.createBytes(1024, "data");
         }
