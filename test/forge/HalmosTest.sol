@@ -83,6 +83,7 @@ contract HalmosTest is SymTest, Test {
 
         bytes memory args;
 
+        // Todo: make it possible to call any market
         if (selector == morpho.supply.selector) {
             args = abi.encode(marketParams, assets, shares, onBehalf, emptyData);
         } else if (selector == morpho.repay.selector) {
@@ -93,7 +94,8 @@ contract HalmosTest is SymTest, Test {
             address borrower = svm.createAddress("borrower");
             args = abi.encode(marketParams, borrower, assets, shares, emptyData);
         } else if (selector == morpho.flashLoan.selector) {
-            address token = svm.createAddress("token");
+            // Todo: make it more general
+            address token = address(loanToken);
             args = abi.encode(marketParams, token, assets, emptyData);
         } else {
             args = svm.createBytes(1024, "data");
