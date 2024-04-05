@@ -78,7 +78,6 @@ contract HalmosTest is SymTest, Test {
         vm.assume(selector != morpho.createMarket.selector);
 
         bytes memory emptyData = hex"";
-        uint256 amount = svm.createUint256("amount");
         uint256 assets = svm.createUint256("assets");
         uint256 shares = svm.createUint256("shares");
         address onBehalf = svm.createAddress("onBehalf");
@@ -86,7 +85,6 @@ contract HalmosTest is SymTest, Test {
 
         bytes memory args;
 
-        // Todo: make it possible to call any market
         if (selector == morpho.supply.selector) {
             args = abi.encode(marketParams, assets, shares, onBehalf, emptyData);
         } else if (selector == morpho.withdraw.selector) {
@@ -103,8 +101,16 @@ contract HalmosTest is SymTest, Test {
             address borrower = svm.createAddress("borrower");
             args = abi.encode(marketParams, borrower, assets, shares, emptyData);
         } else if (selector == morpho.flashLoan.selector) {
-            // Todo: make it more general
-            address token = address(loanToken);
+            uint256 rand = svm.createUint256("rand");
+            address token;
+            if (rand == 0) {
+                token = address(loanToken);
+            } else if (rand == 1) {
+                token = address(collateralToken);
+            } else {
+                ERC20Mock otherToken = new ERC20Mock();
+                token = address(otherToken);
+            }
             args = abi.encode(marketParams, token, assets, emptyData);
         } else if (selector == morpho.accrueInterest.selector) {
             args = abi.encode(marketParams);
