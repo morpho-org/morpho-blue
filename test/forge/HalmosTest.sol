@@ -115,7 +115,8 @@ contract HalmosTest is SymTest, Test {
         } else if (selector == morpho.accrueInterest.selector) {
             args = abi.encode(marketParams);
         } else if (selector == morpho.setFee.selector) {
-            args = abi.encode(marketParams, amount);
+            uint256 newFee = svm.createUint256("newFee");
+            args = abi.encode(marketParams, newFee);
         } else {
             args = svm.createBytes(1024, "data");
         }
