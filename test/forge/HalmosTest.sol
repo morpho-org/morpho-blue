@@ -145,10 +145,10 @@ contract HalmosTest is SymTest, Test {
         vm.assume(selector != morpho.extSloads.selector);
         vm.assume(selector != morpho.createMarket.selector);
 
-        vm.assume(morpho.lastUpdated(id) != 0);
+        vm.assume(morpho.lastUpdate(id) != 0);
 
         _callMorpho(selector, caller);
 
-        assert(morpho.lastUpdated(id) != 0);
+        assert(morpho.lastUpdate(id) != 0);
     }
 }
