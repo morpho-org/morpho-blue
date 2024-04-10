@@ -37,7 +37,7 @@ jobs:
         uses: actions/setup-python@v4
 
       - name: Install certora
-        run: pip install certora-cli-beta
+        run: pip install certora-cli
 
       - name: Install solc
         run: |
