@@ -73,10 +73,7 @@ contract HalmosTest is SymTest, Test {
         vm.warp(block.timestamp + blocks * BLOCK_TIME);
     }
 
-    function check_fee(bytes4 selector, address caller) public {
-        vm.assume(selector != morpho.extSloads.selector);
-        vm.assume(selector != morpho.createMarket.selector);
-
+    function _callMorpho(bytes4 selector, address caller) internal {
         bytes memory emptyData = hex"";
         uint256 assets = svm.createUint256("assets");
         uint256 shares = svm.createUint256("shares");
@@ -124,7 +121,34 @@ contract HalmosTest is SymTest, Test {
         vm.prank(caller);
         (bool success,) = address(morpho).call(abi.encodePacked(selector, args));
         vm.assume(success);
+    }
+
+    function check_feeInRange(bytes4 selector, address caller) public {
+        vm.assume(selector != morpho.extSloads.selector);
+        vm.assume(selector != morpho.createMarket.selector);
+
+        _callMorpho(selector, caller);
 
         assert(morpho.fee(id) <= MAX_FEE);
+    }
+
+    function check_borrowLessThanSupply(bytes4 selector, address caller) public {
+        vm.assume(selector != morpho.extSloads.selector);
+        vm.assume(selector != morpho.createMarket.selector);
+
+        _callMorpho(selector, caller);
+
+        assert(morpho.totalBorrowAssets(id) <= morpho.totalSupplyAssets(id));
+    }
+
+    function check_lastUpdatedInvariant(bytes4 selector, address caller) public {
+        vm.assume(selector != morpho.extSloads.selector);
+        vm.assume(selector != morpho.createMarket.selector);
+
+        vm.assume(morpho.lastUpdated(id) != 0);
+
+        _callMorpho(selector, caller);
+
+        assert(morpho.lastUpdated(id) != 0);
     }
 }
