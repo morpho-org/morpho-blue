@@ -18,6 +18,8 @@ jobs:
 
       - name: Install python
         uses: actions/setup-python@v4
+        with:
+          python-version: ">=3.9"
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
