@@ -1,4 +1,5 @@
 [profile.default]
+libs = ["lib"]
 names = true
 sizes = true
 via-ir = false
