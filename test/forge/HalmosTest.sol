@@ -19,7 +19,6 @@ contract HalmosTest is SymTest, Test {
     using MarketParamsLib for MarketParams;
 
     uint256 internal constant BLOCK_TIME = 1;
-    uint256 internal constant DEFAULT_TEST_LLTV = 0.8 ether;
 
     address internal OWNER;
     address internal FEE_RECIPIENT;
@@ -52,28 +51,23 @@ contract HalmosTest is SymTest, Test {
         morpho.setFeeRecipient(FEE_RECIPIENT);
         vm.stopPrank();
 
-        _setLltv(DEFAULT_TEST_LLTV);
-    }
-
-    function _setLltv(uint256 lltv) internal {
+        uint256 lltv = svm.createUint256("lltv");
         marketParams = MarketParams(address(loanToken), address(collateralToken), address(oracle), address(irm), lltv);
         id = marketParams.id();
 
         vm.startPrank(OWNER);
-        if (!morpho.isLltvEnabled(lltv)) morpho.enableLltv(lltv);
-        if (morpho.lastUpdate(id) == 0) morpho.createMarket(marketParams);
+        morpho.enableLltv(lltv);
+        morpho.createMarket(marketParams);
         vm.stopPrank();
 
-        _forward(1);
-    }
-
-    /// @dev Rolls & warps the given number of blocks forward the blockchain.
-    function _forward(uint256 blocks) internal {
-        vm.roll(block.number + blocks);
-        vm.warp(block.timestamp + blocks * BLOCK_TIME);
+        vm.roll(block.number + 1);
+        vm.warp(block.timestamp + 1 * BLOCK_TIME);
     }
 
     function _callMorpho(bytes4 selector, address caller) internal {
+        vm.assume(selector != morpho.extSloads.selector);
+        vm.assume(selector != morpho.createMarket.selector);
+
         bytes memory emptyData = hex"";
         uint256 assets = svm.createUint256("assets");
         uint256 shares = svm.createUint256("shares");
@@ -124,27 +118,18 @@ contract HalmosTest is SymTest, Test {
     }
 
     function check_feeInRange(bytes4 selector, address caller) public {
-        vm.assume(selector != morpho.extSloads.selector);
-        vm.assume(selector != morpho.createMarket.selector);
-
         _callMorpho(selector, caller);
 
         assert(morpho.fee(id) <= MAX_FEE);
     }
 
     function check_borrowLessThanSupply(bytes4 selector, address caller) public {
-        vm.assume(selector != morpho.extSloads.selector);
-        vm.assume(selector != morpho.createMarket.selector);
-
         _callMorpho(selector, caller);
 
         assert(morpho.totalBorrowAssets(id) <= morpho.totalSupplyAssets(id));
     }
 
     function check_lastUpdatedInvariant(bytes4 selector, address caller) public {
-        vm.assume(selector != morpho.extSloads.selector);
-        vm.assume(selector != morpho.createMarket.selector);
-
         vm.assume(morpho.lastUpdate(id) != 0);
 
         _callMorpho(selector, caller);
