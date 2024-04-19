@@ -136,4 +136,12 @@ contract HalmosTest is SymTest, Test {
 
         assert(morpho.lastUpdate(id) != 0);
     }
+
+    function check_lltvSmallerThanWad(bytes4 selector, address caller, uint256 lltv) public {
+        vm.assume(!morpho.isLltvEnabled(lltv) || lltv < 1e18);
+
+        _callMorpho(selector, caller);
+
+        assert(!morpho.isLltvEnabled(lltv) || lltv < 1e18);
+    }
 }
