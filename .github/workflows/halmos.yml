@@ -28,4 +28,4 @@ jobs:
         run: pip install halmos
 
       - name: Run Halmos
-        run: halmos
+        run: FOUNDRY_PROFILE=test halmos

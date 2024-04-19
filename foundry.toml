@@ -2,7 +2,7 @@
 libs = ["lib"]
 names = true
 sizes = true
-via-ir = false
+via-ir = true
 optimizer_runs = 999999 # Etherscan does not support verifying contracts with more optimization runs.
 
 [profile.default.invariant]
