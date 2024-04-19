@@ -55,6 +55,7 @@ contract HalmosTest is SymTest, Test {
         marketParams = MarketParams(address(loanToken), address(collateralToken), address(oracle), address(irm), lltv);
         id = marketParams.id();
 
+        vm.assume(block.timestamp != 0);
         vm.startPrank(OWNER);
         morpho.enableLltv(lltv);
         morpho.createMarket(marketParams);
@@ -64,6 +65,7 @@ contract HalmosTest is SymTest, Test {
         vm.warp(block.timestamp + 1 * BLOCK_TIME);
     }
 
+    // Call Morpho, assuming interacting with only the defined market for performance reasons.
     function _callMorpho(bytes4 selector, address caller) internal {
         vm.assume(selector != morpho.extSloads.selector);
         vm.assume(selector != morpho.createMarket.selector);
@@ -117,26 +119,28 @@ contract HalmosTest is SymTest, Test {
         vm.assume(success);
     }
 
+    // Check that the fee is always smaller than the max fee.
     function check_feeInRange(bytes4 selector, address caller) public {
         _callMorpho(selector, caller);
 
         assert(morpho.fee(id) <= MAX_FEE);
     }
 
+    // Check that there is always less borrow than supply on the market.
     function check_borrowLessThanSupply(bytes4 selector, address caller) public {
         _callMorpho(selector, caller);
 
         assert(morpho.totalBorrowAssets(id) <= morpho.totalSupplyAssets(id));
     }
 
-    function check_lastUpdatedInvariant(bytes4 selector, address caller) public {
-        vm.assume(morpho.lastUpdate(id) != 0);
-
+    // Check that the market cannot be "destroyed".
+    function check_lastUpdatedNonZero(bytes4 selector, address caller) public {
         _callMorpho(selector, caller);
 
         assert(morpho.lastUpdate(id) != 0);
     }
 
+    // Check that enabled LLTVs are necessarily less than 1.
     function check_lltvSmallerThanWad(bytes4 selector, address caller, uint256 lltv) public {
         vm.assume(!morpho.isLltvEnabled(lltv) || lltv < 1e18);
 
