@@ -18,10 +18,7 @@ contract HalmosTest is SymTest, Test {
     using MorphoLib for IMorpho;
     using MarketParamsLib for MarketParams;
 
-    uint256 internal constant BLOCK_TIME = 1;
-
-    address internal OWNER;
-    address internal FEE_RECIPIENT;
+    address internal owner;
 
     IMorpho internal morpho;
     ERC20Mock internal loanToken;
@@ -34,10 +31,8 @@ contract HalmosTest is SymTest, Test {
     Id internal id;
 
     function setUp() public virtual {
-        OWNER = address(0x10);
-        FEE_RECIPIENT = address(0x11);
-
-        morpho = IMorpho(address(new Morpho(OWNER)));
+        owner = svm.createAddress("owner");
+        morpho = IMorpho(address(new Morpho(owner)));
 
         loanToken = new ERC20Mock();
         collateralToken = new ERC20Mock();
@@ -49,8 +44,7 @@ contract HalmosTest is SymTest, Test {
         marketParams = MarketParams(address(loanToken), address(collateralToken), address(oracle), address(irm), lltv);
         id = marketParams.id();
 
-        vm.assume(block.timestamp != 0);
-        vm.startPrank(OWNER);
+        vm.startPrank(owner);
         morpho.enableIrm(address(irm));
         morpho.enableLltv(lltv);
         morpho.createMarket(marketParams);
@@ -108,33 +102,39 @@ contract HalmosTest is SymTest, Test {
     }
 
     // Check that the fee is always smaller than the max fee.
-    function check_feeInRange(bytes4 selector, address caller) public {
+    function check_feeInRange(bytes4 selector, address caller, Id _id) public {
+        vm.assume(morpho.fee(_id) <= MAX_FEE);
+
         _callMorpho(selector, caller);
 
-        assert(morpho.fee(id) <= MAX_FEE);
+        assert(morpho.fee(_id) <= MAX_FEE);
     }
 
     // Check that there is always less borrow than supply on the market.
-    function check_borrowLessThanSupply(bytes4 selector, address caller) public {
+    function check_borrowLessThanSupply(bytes4 selector, address caller, Id _id) public {
+        vm.assume(morpho.totalBorrowAssets(_id) <= morpho.totalSupplyAssets(id));
+
         _callMorpho(selector, caller);
 
-        assert(morpho.totalBorrowAssets(id) <= morpho.totalSupplyAssets(id));
+        assert(morpho.totalBorrowAssets(_id) <= morpho.totalSupplyAssets(_id));
     }
 
     // Check that the market cannot be "destroyed".
-    function check_lastUpdateNonZero(bytes4 selector, address caller) public {
+    function check_lastUpdateNonZero(bytes4 selector, address caller, Id _id) public {
+        vm.assume(morpho.lastUpdate(_id) != 0);
+
         _callMorpho(selector, caller);
 
-        assert(morpho.lastUpdate(id) != 0);
+        assert(morpho.lastUpdate(_id) != 0);
     }
 
     // Check that the lastUpdate can only increase.
-    function check_lastUpdateCannotDecrease(bytes4 selector, address caller) public {
-        uint256 lastUpdateBefore = morpho.lastUpdate(id);
+    function check_lastUpdateCannotDecrease(bytes4 selector, address caller, Id _id) public {
+        uint256 lastUpdateBefore = morpho.lastUpdate(_id);
 
         _callMorpho(selector, caller);
 
-        uint256 lastUpdateAfter = morpho.lastUpdate(id);
+        uint256 lastUpdateAfter = morpho.lastUpdate(_id);
         assert(lastUpdateAfter >= lastUpdateBefore);
     }
 
