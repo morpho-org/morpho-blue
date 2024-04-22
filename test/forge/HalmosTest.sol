@@ -28,6 +28,7 @@ contract HalmosTest is SymTest, Test {
     ERC20Mock internal collateralToken;
     OracleMock internal oracle;
     IrmMock internal irm;
+    uint256 internal lltv;
 
     MarketParams internal marketParams;
     Id internal id;
@@ -51,7 +52,7 @@ contract HalmosTest is SymTest, Test {
         morpho.setFeeRecipient(FEE_RECIPIENT);
         vm.stopPrank();
 
-        uint256 lltv = svm.createUint256("lltv");
+        lltv = svm.createUint256("lltv");
         marketParams = MarketParams(address(loanToken), address(collateralToken), address(oracle), address(irm), lltv);
         id = marketParams.id();
 
@@ -134,18 +135,62 @@ contract HalmosTest is SymTest, Test {
     }
 
     // Check that the market cannot be "destroyed".
-    function check_lastUpdatedNonZero(bytes4 selector, address caller) public {
+    function check_lastUpdateNonZero(bytes4 selector, address caller) public {
         _callMorpho(selector, caller);
 
         assert(morpho.lastUpdate(id) != 0);
     }
 
-    // Check that enabled LLTVs are necessarily less than 1.
-    function check_lltvSmallerThanWad(bytes4 selector, address caller, uint256 lltv) public {
-        vm.assume(!morpho.isLltvEnabled(lltv) || lltv < 1e18);
+    // Check that the lastUpdate can only increase.
+    function check_lastUpdateCannotDecrease(bytes4 selector, address caller) public {
+        uint256 lastUpdateBefore = morpho.lastUpdate(id);
 
         _callMorpho(selector, caller);
 
-        assert(!morpho.isLltvEnabled(lltv) || lltv < 1e18);
+        uint256 lastUpdateAfter = morpho.lastUpdate(id);
+        assert(lastUpdateAfter >= lastUpdateBefore);
+    }
+
+    // Check that enabled LLTVs are necessarily less than 1.
+    function check_lltvSmallerThanWad(bytes4 selector, address caller, uint256 _lltv) public {
+        vm.assume(!morpho.isLltvEnabled(_lltv) || _lltv < 1e18);
+
+        _callMorpho(selector, caller);
+
+        assert(!morpho.isLltvEnabled(_lltv) || _lltv < 1e18);
+    }
+
+    // Check that LLTVs can't be disabled.
+    function check_lltvCannotBeDisabled(bytes4 selector, address caller) public {
+        _callMorpho(selector, caller);
+
+        assert(morpho.isLltvEnabled(lltv));
+    }
+
+    // Check that IRMs can't be disabled.
+    // Note: IRM is not symbolic, that is not ideal.
+    function check_irmCannotBeDisabled(bytes4 selector, address caller) public {
+        _callMorpho(selector, caller);
+
+        assert(morpho.isIrmEnabled(address(irm)));
+    }
+
+    // Check that the nonce of users cannot decrease.
+    function check_nonceCannotDecrease(bytes4 selector, address caller, address user) public {
+        uint256 nonceBefore = morpho.nonce(user);
+
+        _callMorpho(selector, caller);
+
+        uint256 nonceAfter = morpho.nonce(user);
+        assert(nonceAfter == nonceBefore || nonceAfter == nonceBefore + 1);
+    }
+
+    function check_idToMarketParamsForCreatedMarketCannotChange(bytes4 selector, address caller) public {
+        MarketParams memory itmpBefore = morpho.idToMarketParams(id);
+
+        _callMorpho(selector, caller);
+
+        MarketParams memory itmpAfter = morpho.idToMarketParams(id);
+        assert(Id.unwrap(itmpBefore.id()) == Id.unwrap(itmpAfter.id()));
     }
 }
