@@ -28,7 +28,6 @@ contract HalmosTest is SymTest, Test {
     uint256 internal lltv;
 
     MarketParams internal marketParams;
-    Id internal id;
 
     function setUp() public virtual {
         owner = svm.createAddress("owner");
@@ -42,7 +41,6 @@ contract HalmosTest is SymTest, Test {
         lltv = svm.createUint256("lltv");
 
         marketParams = MarketParams(address(loanToken), address(collateralToken), address(oracle), address(irm), lltv);
-        id = marketParams.id();
 
         vm.startPrank(owner);
         morpho.enableIrm(address(irm));
@@ -102,39 +100,39 @@ contract HalmosTest is SymTest, Test {
     }
 
     // Check that the fee is always smaller than the max fee.
-    function check_feeInRange(bytes4 selector, address caller, Id _id) public {
-        vm.assume(morpho.fee(_id) <= MAX_FEE);
+    function check_feeInRange(bytes4 selector, address caller, Id id) public {
+        vm.assume(morpho.fee(id) <= MAX_FEE);
 
         _callMorpho(selector, caller);
 
-        assert(morpho.fee(_id) <= MAX_FEE);
+        assert(morpho.fee(id) <= MAX_FEE);
     }
 
     // Check that there is always less borrow than supply on the market.
-    function check_borrowLessThanSupply(bytes4 selector, address caller, Id _id) public {
-        vm.assume(morpho.totalBorrowAssets(_id) <= morpho.totalSupplyAssets(id));
+    function check_borrowLessThanSupply(bytes4 selector, address caller, Id id) public {
+        vm.assume(morpho.totalBorrowAssets(id) <= morpho.totalSupplyAssets(id));
 
         _callMorpho(selector, caller);
 
-        assert(morpho.totalBorrowAssets(_id) <= morpho.totalSupplyAssets(_id));
+        assert(morpho.totalBorrowAssets(id) <= morpho.totalSupplyAssets(id));
     }
 
     // Check that the market cannot be "destroyed".
-    function check_lastUpdateNonZero(bytes4 selector, address caller, Id _id) public {
-        vm.assume(morpho.lastUpdate(_id) != 0);
+    function check_lastUpdateNonZero(bytes4 selector, address caller, Id id) public {
+        vm.assume(morpho.lastUpdate(id) != 0);
 
         _callMorpho(selector, caller);
 
-        assert(morpho.lastUpdate(_id) != 0);
+        assert(morpho.lastUpdate(id) != 0);
     }
 
     // Check that the lastUpdate can only increase.
-    function check_lastUpdateCannotDecrease(bytes4 selector, address caller, Id _id) public {
-        uint256 lastUpdateBefore = morpho.lastUpdate(_id);
+    function check_lastUpdateCannotDecrease(bytes4 selector, address caller, Id id) public {
+        uint256 lastUpdateBefore = morpho.lastUpdate(id);
 
         _callMorpho(selector, caller);
 
-        uint256 lastUpdateAfter = morpho.lastUpdate(_id);
+        uint256 lastUpdateAfter = morpho.lastUpdate(id);
         assert(lastUpdateAfter >= lastUpdateBefore);
     }
 
@@ -174,7 +172,7 @@ contract HalmosTest is SymTest, Test {
 
     // Check that idToMarketParams cannot change.
     // Note: ok because createMarket is never called by _callMorpho.
-    function check_idToMarketParamsForCreatedMarketCannotChange(bytes4 selector, address caller) public {
+    function check_idToMarketParamsForCreatedMarketCannotChange(bytes4 selector, address caller, Id id) public {
         MarketParams memory itmpBefore = morpho.idToMarketParams(id);
 
         _callMorpho(selector, caller);
