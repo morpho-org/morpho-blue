@@ -135,10 +135,20 @@ contract HalmosTest is SymTest, Test {
     }
 
     // Check that the market cannot be "destroyed".
-    function check_lastUpdatedNonZero(bytes4 selector, address caller) public {
+    function check_lastUpdateNonZero(bytes4 selector, address caller) public {
         _callMorpho(selector, caller);
 
         assert(morpho.lastUpdate(id) != 0);
+    }
+
+    // Check that the lastUpdate can only increase.
+    function check_lastUpdateCannotDecrease(bytes4 selector, address caller) public {
+        uint256 lastUpdateBefore = morpho.lastUpdate(id);
+
+        _callMorpho(selector, caller);
+
+        uint256 lastUpdateAfter = morpho.lastUpdate(id);
+        assert(lastUpdateAfter >= lastUpdateBefore);
     }
 
     // Check that enabled LLTVs are necessarily less than 1.
@@ -173,5 +183,14 @@ contract HalmosTest is SymTest, Test {
 
         uint256 nonceAfter = morpho.nonce(user);
         assert(nonceAfter == nonceBefore || nonceAfter == nonceBefore + 1);
+    }
+
+    function check_idToMarketParamsForCreatedMarketCannotChange(bytes4 selector, address caller) public {
+        MarketParams memory itmpBefore = morpho.idToMarketParams(id);
+
+        _callMorpho(selector, caller);
+
+        MarketParams memory itmpAfter = morpho.idToMarketParams(id);
+        assert(Id.unwrap(itmpBefore.id()) == Id.unwrap(itmpAfter.id()));
     }
 }
