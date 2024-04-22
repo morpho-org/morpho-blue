@@ -172,6 +172,8 @@ contract HalmosTest is SymTest, Test {
         assert(nonceAfter == nonceBefore);
     }
 
+    // Check that idToMarketParams cannot change.
+    // Note: ok because createMarket is never called by _callMorpho.
     function check_idToMarketParamsForCreatedMarketCannotChange(bytes4 selector, address caller) public {
         MarketParams memory itmpBefore = morpho.idToMarketParams(id);
 
