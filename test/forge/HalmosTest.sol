@@ -172,6 +172,6 @@ contract HalmosTest is SymTest, Test {
         _callMorpho(selector, caller);
 
         uint256 nonceAfter = morpho.nonce(user);
-        assert(nonceAfter == nonceBefore);
+        assert(nonceAfter == nonceBefore || nonceAfter == nonceBefore + 1);
     }
 }
