@@ -44,26 +44,17 @@ contract HalmosTest is SymTest, Test {
         oracle = new OracleMock();
         oracle.setPrice(ORACLE_PRICE_SCALE);
         irm = new IrmMock();
-
-        vm.startPrank(OWNER);
-        morpho.enableIrm(address(0));
-        morpho.enableIrm(address(irm));
-        morpho.enableLltv(0);
-        morpho.setFeeRecipient(FEE_RECIPIENT);
-        vm.stopPrank();
-
         lltv = svm.createUint256("lltv");
+
         marketParams = MarketParams(address(loanToken), address(collateralToken), address(oracle), address(irm), lltv);
         id = marketParams.id();
 
         vm.assume(block.timestamp != 0);
         vm.startPrank(OWNER);
+        morpho.enableIrm(address(irm));
         morpho.enableLltv(lltv);
         morpho.createMarket(marketParams);
         vm.stopPrank();
-
-        vm.roll(block.number + 1);
-        vm.warp(block.timestamp + 1 * BLOCK_TIME);
     }
 
     // Call Morpho, assuming interacting with only the defined market for performance reasons.
@@ -182,7 +173,7 @@ contract HalmosTest is SymTest, Test {
         _callMorpho(selector, caller);
 
         uint256 nonceAfter = morpho.nonce(user);
-        assert(nonceAfter == nonceBefore || nonceAfter == nonceBefore + 1);
+        assert(nonceAfter == nonceBefore);
     }
 
     function check_idToMarketParamsForCreatedMarketCannotChange(bytes4 selector, address caller) public {
