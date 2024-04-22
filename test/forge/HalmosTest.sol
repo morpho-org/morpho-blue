@@ -164,4 +164,14 @@ contract HalmosTest is SymTest, Test {
 
         assert(morpho.isIrmEnabled(address(irm)));
     }
+
+    // Check that the nonce of users cannot decrease.
+    function check_nonceCannotDecrease(bytes4 selector, address caller, address user) public {
+        uint256 nonceBefore = morpho.nonce(user);
+
+        _callMorpho(selector, caller);
+
+        uint256 nonceAfter = morpho.nonce(user);
+        assert(nonceAfter == nonceBefore);
+    }
 }
