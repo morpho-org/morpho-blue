@@ -70,14 +70,10 @@ contract HalmosTest is SymTest, Test {
 
         bytes memory args;
 
-        if (selector == morpho.supply.selector) {
+        if (selector == morpho.supply.selector || selector == morpho.repay.selector) {
             args = abi.encode(marketParams, assets, shares, onBehalf, emptyData);
-        } else if (selector == morpho.withdraw.selector) {
+        } else if (selector == morpho.withdraw.selector || selector == morpho.borrow.selector) {
             args = abi.encode(marketParams, assets, shares, onBehalf, receiver);
-        } else if (selector == morpho.borrow.selector) {
-            args = abi.encode(marketParams, assets, shares, onBehalf, receiver);
-        } else if (selector == morpho.repay.selector) {
-            args = abi.encode(marketParams, assets, shares, onBehalf, emptyData);
         } else if (selector == morpho.supplyCollateral.selector) {
             args = abi.encode(marketParams, assets, onBehalf, emptyData);
         } else if (selector == morpho.withdrawCollateral.selector) {
