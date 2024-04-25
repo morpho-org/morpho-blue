@@ -73,7 +73,7 @@ The share mechanism is implemented symetrically for the borrow side: a share of 
 The rule `accrueInterestIncreasesSupplyRatio` checks this property for the supply side with the following statement.
 
 ```soldidity
-    // Check that the ratio increases: assetsBefore/sharesBefore <= assetsAfter/sharesAfter.
+    // Check that the ratio increases: assetsBefore/sharesBefore <= assetsAfter/sharesAfter
     assert assetsBefore * sharesAfter <= assetsAfter * sharesBefore;
 ```
 
