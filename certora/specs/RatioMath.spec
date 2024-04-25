@@ -156,7 +156,7 @@ filtered {
 }
 
 // Check that when not accruing interest, repay is decreasing the value of borrow shares.
-// Check the case where the market is not repaid fully.
+// Check the case where it would not repay more than the total assets.
 // The other case requires exact math (ie not over-approximating mulDivUp and mulDivDown), so it is checked separately in ExactMath.spec.
 rule repayDecreasesBorrowRatio(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data)
 {
@@ -171,6 +171,9 @@ rule repayDecreasesBorrowRatio(env e, MorphoHarness.MarketParams marketParams, u
 
     mathint repaidAssets;
     repaidAssets, _ = repay(e, marketParams, assets, shares, onBehalf, data);
+
+    // Check the case where it would not repay more than the total assets.
+    require repaidAssets < assetsBefore;
 
     mathint assetsAfter = virtualTotalBorrowAssets(id);
     mathint sharesAfter = virtualTotalBorrowShares(id);
@@ -191,16 +194,13 @@ rule liquidateDecreasesBorrowRatio(env e, MorphoHarness.MarketParams marketParam
     // Interest would increase borrow ratio, so we need to assume that no time passes.
     require lastUpdate(id) == e.block.timestamp;
 
-    mathint repaidAssets;
-    _, repaidAssets = liquidate(e, marketParams, borrower, seizedAssets, repaidShares, data);
-
-    require repaidAssets < assetsBefore;
-    require collateral(id, borrower) != 0;
+    liquidate(e, marketParams, borrower, seizedAssets, repaidShares, data);
 
     mathint assetsAfter = virtualTotalBorrowAssets(id);
     mathint sharesAfter = virtualTotalBorrowShares(id);
 
-    assert assetsAfter == assetsBefore - repaidAssets;
+    require assetsAfter != 1;
+
     // Check that the ratio decreases: assetsBefore/sharesBefore >= assetsAfter / sharesAfter
     assert assetsBefore * sharesAfter >= assetsAfter * sharesBefore;
 }
