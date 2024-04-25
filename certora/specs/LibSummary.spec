@@ -27,5 +27,6 @@ rule checkSummaryId(MorphoHarness.MarketParams marketParams) {
 }
 
 rule checkSummaryMin(uint256 x, uint256 y) {
-    assert libMin(x, y) == x < y ? x : y;
+    uint256 summaryMin = x < y ? x : y;
+    assert libMin(x, y) == summaryMin;
 }
