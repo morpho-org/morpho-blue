@@ -129,7 +129,7 @@ rule liquidateWithoutBadDebtRealizationIncreasesSupplyRatio(env e, MorphoHarness
 
 // Check that except when not accruing interest, every function is decreasing the value of borrow shares.
 // The repay function is checked separately, see below.
-// The liquidate function is not checked.
+// The liquidate function is checked separately, see below.
 rule onlyAccrueInterestCanIncreaseBorrowRatio(env e, method f, calldataarg args)
 filtered {
     f -> !f.isView &&
@@ -172,8 +172,30 @@ rule repayDecreasesBorrowRatio(env e, MorphoHarness.MarketParams marketParams, u
     mathint repaidAssets;
     repaidAssets, _ = repay(e, marketParams, assets, shares, onBehalf, data);
 
-    // Check the case where the market is not repaid fully.
+    mathint assetsAfter = virtualTotalBorrowAssets(id);
+    mathint sharesAfter = virtualTotalBorrowShares(id);
+
+    assert assetsAfter == assetsBefore - repaidAssets;
+    // Check that the ratio decreases: assetsBefore/sharesBefore >= assetsAfter / sharesAfter
+    assert assetsBefore * sharesAfter >= assetsAfter * sharesBefore;
+}
+
+rule liquidateDecreasesBorrowRatio(env e, MorphoHarness.MarketParams marketParams, address borrower, uint256 seizedAssets, uint256 repaidShares, bytes data)
+{
+    require data.length == 0;
+    MorphoHarness.Id id = libId(marketParams);
+
+    mathint assetsBefore = virtualTotalBorrowAssets(id);
+    mathint sharesBefore = virtualTotalBorrowShares(id);
+
+    // Interest would increase borrow ratio, so we need to assume that no time passes.
+    require lastUpdate(id) == e.block.timestamp;
+
+    mathint repaidAssets;
+    _, repaidAssets = liquidate(e, marketParams, borrower, seizedAssets, repaidShares, data);
+
     require repaidAssets < assetsBefore;
+    require collateral(id, borrower) != 0;
 
     mathint assetsAfter = virtualTotalBorrowAssets(id);
     mathint sharesAfter = virtualTotalBorrowShares(id);
