@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 methods {
-    function extSloads(bytes32[]) external returns(bytes32[]) => NONDET DELETE;
+    function extSloads(bytes32[]) external returns bytes32[] => NONDET DELETE;
 
-    function libMulDivUp(uint256, uint256, uint256) external returns(uint256) envfree;
-    function libMulDivDown(uint256, uint256, uint256) external returns(uint256) envfree;
-    function libId(MorphoHarness.MarketParams) external returns(MorphoHarness.Id) envfree;
-    function refId(MorphoHarness.MarketParams) external returns(MorphoHarness.Id) envfree;
-    function libMin(uint256 x, uint256 y) external returns(uint256) envfree;
+    function libMulDivUp(uint256, uint256, uint256) external returns uint256 envfree;
+    function libMulDivDown(uint256, uint256, uint256) external returns uint256 envfree;
+    function libId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
+    function refId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
+    function libMin(uint256 x, uint256 y) external returns uint256 envfree;
 }
 
 // Check the summary of MathLib.mulDivUp required by RatioMath.spec
