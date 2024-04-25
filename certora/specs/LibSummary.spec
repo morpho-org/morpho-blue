@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 methods {
-    function extSloads(bytes32[]) external returns bytes32[] => NONDET DELETE;
+    function extSloads(bytes32[]) external returns(bytes32[]) => NONDET DELETE;
 
-    function libMulDivUp(uint256, uint256, uint256) external returns uint256 envfree;
-    function libMulDivDown(uint256, uint256, uint256) external returns uint256 envfree;
-    function libId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
-    function refId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
+    function libMulDivUp(uint256, uint256, uint256) external returns(uint256) envfree;
+    function libMulDivDown(uint256, uint256, uint256) external returns(uint256) envfree;
+    function libId(MorphoHarness.MarketParams) external returns(MorphoHarness.Id) envfree;
+    function refId(MorphoHarness.MarketParams) external returns(MorphoHarness.Id) envfree;
+    function libMin(uint256 x, uint256 y) external returns(uint256) envfree;
 }
 
 // Check the summary of MathLib.mulDivUp required by RatioMath.spec
@@ -23,4 +24,8 @@ rule checkSummaryMulDivDown(uint256 x, uint256 y, uint256 d) {
 // Check the summary of MarketParamsLib.id required by Liveness.spec
 rule checkSummaryId(MorphoHarness.MarketParams marketParams) {
     assert libId(marketParams) == refId(marketParams);
+}
+
+rule checkSummaryMin(uint256 x, uint256 y) {
+    assert libMin(x, y) == x < y ? x : y;
 }

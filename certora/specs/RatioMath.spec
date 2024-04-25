@@ -13,6 +13,7 @@ methods {
     function maxFee() external returns uint256 envfree;
     function libId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
 
+    function UtilsLib.min(uint256 x, uint256 y) internal returns uint256 => summaryMin(x, y);
     function MathLib.mulDivDown(uint256 a, uint256 b, uint256 c) internal returns uint256 => summaryMulDivDown(a,b,c);
     function MathLib.mulDivUp(uint256 a, uint256 b, uint256 c) internal returns uint256 => summaryMulDivUp(a,b,c);
     function MathLib.wTaylorCompounded(uint256, uint256) internal returns uint256 => NONDET;
@@ -23,6 +24,10 @@ methods {
 
 invariant feeInRange(MorphoHarness.Id id)
     fee(id) <= maxFee();
+
+function summaryMin(uint256 x, uint256 y) returns uint256 {
+    return x < y ? x : y;
+}
 
 // This is a simple overapproximative summary, stating that it rounds in the right direction.
 function summaryMulDivUp(uint256 x, uint256 y, uint256 d) returns uint256 {
