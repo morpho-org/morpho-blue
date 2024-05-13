@@ -235,7 +235,7 @@ contract MorphoInvariantTest is InvariantTest {
     function withdrawAssetsOnBehalfNoRevert(uint256 marketSeed, uint256 assets, uint256 onBehalfSeed, address receiver)
         external
     {
-        receiver = _boundAddressNotZero(receiver);
+        vm.assume(receiver != address(0));
 
         MarketParams memory _marketParams = _randomMarket(marketSeed);
 
@@ -251,7 +251,7 @@ contract MorphoInvariantTest is InvariantTest {
     function borrowAssetsOnBehalfNoRevert(uint256 marketSeed, uint256 assets, uint256 onBehalfSeed, address receiver)
         external
     {
-        receiver = _boundAddressNotZero(receiver);
+        vm.assume(receiver != address(0));
 
         MarketParams memory _marketParams = _randomMarket(marketSeed);
 
@@ -305,7 +305,7 @@ contract MorphoInvariantTest is InvariantTest {
         uint256 onBehalfSeed,
         address receiver
     ) external {
-        receiver = _boundAddressNotZero(receiver);
+        vm.assume(receiver != address(0));
 
         MarketParams memory _marketParams = _randomMarket(marketSeed);
 

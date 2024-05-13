@@ -139,13 +139,6 @@ contract BaseTest is Test {
         return bound(blocks, 1, type(uint32).max);
     }
 
-    /// @dev Bounds the fuzzing input to a non-zero address.
-    /// @dev This function should be used in place of `vm.assume` in invariant test handler functions:
-    /// https://github.com/foundry-rs/foundry/issues/4190.
-    function _boundAddressNotZero(address input) internal view virtual returns (address) {
-        return address(uint160(bound(uint256(uint160(input)), 1, type(uint160).max)));
-    }
-
     function _supply(uint256 amount) internal {
         loanToken.setBalance(address(this), amount);
         morpho.supply(marketParams, amount, 0, address(this), hex"");
@@ -194,7 +187,7 @@ contract BaseTest is Test {
 
         uint256 maxCollateral =
             amountBorrowed.wDivDown(marketParams.lltv).mulDivDown(ORACLE_PRICE_SCALE, priceCollateral);
-        amountCollateral = bound(amountBorrowed, 0, Math.min(maxCollateral, MAX_COLLATERAL_ASSETS));
+        amountCollateral = bound(amountCollateral, 0, Math.min(maxCollateral, MAX_COLLATERAL_ASSETS));
 
         vm.assume(amountCollateral > 0);
         return (amountCollateral, amountBorrowed, priceCollateral);
