@@ -32,9 +32,9 @@ function summaryMulDivDown(uint256 x, uint256 y, uint256 d) returns uint256 {
     return require_uint256((x * y) / d);
 }
 
-// Check that when not accruing interest, and when repaying all, the borrow ratio is at least reset to the initial ratio.
-// More details on the purpose of this rule in RatioMath.spec.
-rule repayAllResetsBorrowRatio(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data) {
+// Check that when not accruing interest, and when repaying all, the borrow exchange rate is at least reset to the initial exchange rate.
+// More details on the purpose of this rule in ExchangeRate.spec.
+rule repayAllResetsBorrowExchangeRate(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data) {
     MorphoHarness.Id id = libId(marketParams);
     // Safe require because this invariant is checked in ConsistentState.spec
     require fee(id) <= maxFee();

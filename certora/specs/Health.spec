@@ -47,13 +47,11 @@ function summaryMin(uint256 a, uint256 b) returns uint256 {
 }
 
 // Check that without accruing interest, no interaction can put an healthy account into an unhealthy one.
-// This rule times out for liquidate, repay and borrow.
+// The liquidate function times out in this rule, but has been checked separately.
 rule stayHealthy(env e, method f, calldataarg data)
 filtered {
     f -> !f.isView &&
-    f.selector != sig:liquidate(MorphoHarness.MarketParams, address, uint256, uint256, bytes).selector &&
-    f.selector != sig:repay(MorphoHarness.MarketParams, uint256, uint256, address, bytes).selector &&
-    f.selector != sig:borrow(MorphoHarness.MarketParams, uint256, uint256, address, address).selector
+    f.selector != sig:liquidate(MorphoHarness.MarketParams, address, uint256, uint256, bytes).selector
 }
 {
     MorphoHarness.MarketParams marketParams;

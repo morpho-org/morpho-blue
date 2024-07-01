@@ -90,6 +90,10 @@ contract MorphoHarness is Morpho {
         return MathLib.mulDivDown(x, y, d);
     }
 
+    function libMin(uint256 x, uint256 y) external pure returns (uint256) {
+        return UtilsLib.min(x, y);
+    }
+
     function isHealthy(MarketParams memory marketParams, address user) external view returns (bool) {
         return _isHealthy(marketParams, marketParams.id(), user);
     }

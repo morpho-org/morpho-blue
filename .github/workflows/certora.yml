@@ -20,10 +20,10 @@ jobs:
           - AssetsAccounting
           - ConsistentState
           - ExactMath
+          - ExchangeRate
           - Health
           - LibSummary
           - Liveness
-          - RatioMath
           - Reentrancy
           - Reverts
           - Transfer
