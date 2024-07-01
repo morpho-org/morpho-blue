@@ -70,10 +70,10 @@ Said otherwise, markets are independent: tokens from a given market cannot be im
 When supplying on Morpho Blue, interest is earned over time, and the distribution is implemented through a shares mechanism.
 Shares increase in value as interest is accrued.
 The share mechanism is implemented symetrically for the borrow side: a share of borrow increasing in value over time represents additional owed interest.
-The rule `accrueInterestIncreasesSupplyRatio` checks this property for the supply side with the following statement.
+The rule `accrueInterestIncreasesSupplyExchangeRate` checks this property for the supply side with the following statement.
 
 ```soldidity
-    // Check that the ratio increases: assetsBefore/sharesBefore <= assetsAfter/sharesAfter
+    // Check that the exchange rate increases: assetsBefore/sharesBefore <= assetsAfter/sharesAfter
     assert assetsBefore * sharesAfter <= assetsAfter * sharesBefore;
 ```
 
@@ -253,7 +253,7 @@ The [`certora/specs`](specs) folder contains the following files:
   Notably, functions cannot render an account unhealthy, and debt positions always have some collateral (thanks to the bad debt realization mechanism).
 - [`LibSummary.spec`](specs/LibSummary.spec) checks the summarization of the library functions that are used in other specification files.
 - [`Liveness.spec`](specs/Liveness.spec) checks that main functions change the owner of funds and the amount of shares as expected, and that it's always possible to exit a position.
-- [`RatioMath.spec`](specs/RatioMath.spec) checks that the ratio between shares and assets evolves predictably over time.
+- [`ExchangeRate.spec`](specs/ExchangeRate.spec) checks that the exchange rate between shares and assets evolves predictably over time.
 - [`Reentrancy.spec`](specs/Reentrancy.spec) checks that the contract is immune to a particular class of reentrancy issues.
 - [`Reverts.spec`](specs/Reverts.spec) checks the condition for reverts and that inputs are correctly validated.
 - [`Transfer.spec`](specs/Transfer.spec) checks the summarization of the safe transfer library functions that are used in other specification files.
