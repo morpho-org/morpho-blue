@@ -2,7 +2,10 @@
 methods {
     function extSloads(bytes32[]) external returns bytes32[] => NONDET DELETE;
 
+    function totalBorrowAssets(MorphoHarness.Id) external returns uint256 envfree;
     function totalBorrowShares(MorphoHarness.Id) external returns uint256 envfree;
+    function virtualTotalBorrowAssets(MorphoHarness.Id) external returns uint256 envfree;
+    function virtualTotalBorrowShares(MorphoHarness.Id) external returns uint256 envfree;
     function lastUpdate(MorphoHarness.Id) external returns uint256 envfree;
     function borrowShares(MorphoHarness.Id, address) external returns uint256 envfree;
     function collateral(MorphoHarness.Id, address) external returns uint256 envfree;
@@ -73,6 +76,43 @@ filtered {
 
     bool stillHealthy = isHealthy(marketParams, user);
     assert !priceChanged => stillHealthy;
+}
+
+// The general case of liquidate for the stayHealthy rule
+//   - the user checked is not the borrower,
+//   - the market of the liquidation is the market of the user,
+//   - there is still some borrow on the market after liquidation,
+//   - there was no bad debt realization.
+rule stayHealthyLiquidate(env e, MorphoHarness.MarketParams marketParams, address borrower, uint256 seizedAssets, bytes data) {
+    MorphoHarness.Id id = libId(marketParams);
+    address user;
+
+    // Assume that the position is healthy before the interaction.
+    require isHealthy(marketParams, user);
+    uint256 debtSharesBefore = borrowShares(id, user);
+    uint256 debtAssetsBefore = summaryMulDivUp(debtSharesBefore, virtualTotalBorrowAssets(id), virtualTotalBorrowShares(id));
+    // Safe require because of the invariants onlyEnabledLltv and lltvSmallerThanWad in ConsistentState.spec.
+    require marketParams.lltv < 10^18;
+    // Assumption to ensure that no interest is accumulated.
+    require lastUpdate(id) == e.block.timestamp;
+
+    priceChanged = false;
+    liquidate(e, marketParams, borrower, seizedAssets, 0, data);
+    require !priceChanged;
+
+    // Safe require because of the invariant sumBorrowSharesCorrect.
+    require borrowShares(id, user) <= totalBorrowShares(id);
+    // Handle the case where not everything was repaid.
+    require totalBorrowAssets(id) > 0;
+    // Handle the case where the user has some collateral left.
+    require collateral(id, borrower) > 0;
+
+    assert user != borrower;
+    assert debtSharesBefore == borrowShares(id, user);
+    assert debtAssetsBefore >= summaryMulDivUp(debtSharesBefore, virtualTotalBorrowAssets(id), virtualTotalBorrowShares(id));
+
+    bool stillHealthy = isHealthy(marketParams, user);
+    assert stillHealthy;
 }
 
 // Check that users cannot lose collateral by unauthorized parties except in case of an unhealthy position.
