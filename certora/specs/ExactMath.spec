@@ -58,7 +58,7 @@ rule repayAllResetsBorrowExchangeRate(env e, MorphoHarness.MarketParams marketPa
     // There are at least as many shares as virtual shares.
 }
 
-// There should be no profit from supply followed immediately by withdraw.
+// There should be no profit from supply followed immediately by withdrawal.
 rule supplyWithdraw() {
     MorphoHarness.MarketParams marketParams;
     MorphoHarness.Id id = libId(marketParams);
@@ -101,7 +101,7 @@ rule borrowRepay() {
 
     // Assume interactions happen at the same block.
     require e1.block.timestamp == e2.block.timestamp;
-    // Assume that the user starts without any borrow position.
+    // Assume that the user starts without any borrowed position.
     require borrowShares(id, onBehalf) == 0;
     // Safe require because timestamps cannot realistically be that large.
     require e1.block.timestamp < 2^128;
