@@ -46,7 +46,7 @@ interface IMorphoSupplyCollateralCallback {
 interface IMorphoFlashLoanCallback {
     /// @notice Callback called when a flash loan occurs.
     /// @dev The callback is called only if data is not empty.
-    /// @param assets The amount of assets that was flash loaned.
+    /// @param assets The amount of assets that were flash loaned.
     /// @param data Arbitrary data passed to the `flashLoan` function.
     function onMorphoFlashLoan(uint256 assets, bytes calldata data) external;
 }
