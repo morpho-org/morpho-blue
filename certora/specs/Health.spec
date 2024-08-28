@@ -87,6 +87,7 @@ rule stayHealthyLiquidate(env e, MorphoHarness.MarketParams marketParams, addres
     MorphoHarness.Id id = libId(marketParams);
     address user;
 
+    priceChanged = false;
     // Assume that the position is healthy before the interaction.
     require isHealthy(marketParams, user);
     uint256 debtSharesBefore = borrowShares(id, user);
@@ -96,9 +97,7 @@ rule stayHealthyLiquidate(env e, MorphoHarness.MarketParams marketParams, addres
     // Assumption to ensure that no interest is accumulated.
     require lastUpdate(id) == e.block.timestamp;
 
-    priceChanged = false;
     liquidate(e, marketParams, borrower, seizedAssets, 0, data);
-    require !priceChanged;
 
     // Safe require because of the invariant sumBorrowSharesCorrect.
     require borrowShares(id, user) <= totalBorrowShares(id);
@@ -112,6 +111,7 @@ rule stayHealthyLiquidate(env e, MorphoHarness.MarketParams marketParams, addres
     assert debtAssetsBefore >= summaryMulDivUp(debtSharesBefore, virtualTotalBorrowAssets(id), virtualTotalBorrowShares(id));
 
     bool stillHealthy = isHealthy(marketParams, user);
+    require !priceChanged;
     assert stillHealthy;
 }
 
