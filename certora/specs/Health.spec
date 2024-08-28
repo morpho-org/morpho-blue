@@ -98,6 +98,7 @@ rule stayHealthyLiquidate(env e, MorphoHarness.MarketParams marketParams, addres
     require lastUpdate(id) == e.block.timestamp;
 
     liquidate(e, marketParams, borrower, seizedAssets, 0, data);
+    require !priceChanged;
 
     // Safe require because of the invariant sumBorrowSharesCorrect.
     require borrowShares(id, user) <= totalBorrowShares(id);
