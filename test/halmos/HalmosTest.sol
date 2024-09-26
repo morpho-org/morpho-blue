@@ -13,7 +13,7 @@ import "../../src/Morpho.sol";
 import "../../src/libraries/ConstantsLib.sol";
 import {MorphoLib} from "../../src/libraries/periphery/MorphoLib.sol";
 
-/// @custom:halmos --symbolic-storage --solver-timeout-assertion 0
+/// @custom:halmos --solver-timeout-assertion 0
 contract HalmosTest is SymTest, Test {
     using MorphoLib for IMorpho;
     using MarketParamsLib for MarketParams;
@@ -47,6 +47,17 @@ contract HalmosTest is SymTest, Test {
         morpho.enableLltv(lltv);
         morpho.createMarket(marketParams);
         vm.stopPrank();
+
+        // Enable symbolic storage
+        svm.enableSymbolicStorage(address(morpho));
+        svm.enableSymbolicStorage(address(loanToken));
+        svm.enableSymbolicStorage(address(collateralToken));
+        svm.enableSymbolicStorage(address(oracle));
+        svm.enableSymbolicStorage(address(irm));
+
+        // Set symbolic block number and timestamp
+        vm.roll(svm.createUint(64, "block.number"));
+        vm.warp(svm.createUint(64, "block.timestamp"));
     }
 
     // Call Morpho, assuming interacting with only the defined market for performance reasons.
