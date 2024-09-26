@@ -82,12 +82,11 @@ filtered {
 //   - the user checked is not the borrower,
 //   - the market of the liquidation is the market of the user,
 //   - there is still some borrow on the market after liquidation,
-//   - there was no bad debt realization.
+//   - there was no bad debt realization (without this the rule times out).
 rule stayHealthyLiquidate(env e, MorphoHarness.MarketParams marketParams, address borrower, uint256 seizedAssets, bytes data) {
     MorphoHarness.Id id = libId(marketParams);
     address user;
 
-    priceChanged = false;
     // Assume that the position is healthy before the interaction.
     require isHealthy(marketParams, user);
     uint256 debtSharesBefore = borrowShares(id, user);
