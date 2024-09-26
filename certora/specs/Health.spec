@@ -78,11 +78,10 @@ filtered {
     assert !priceChanged => stillHealthy;
 }
 
-// The general case of liquidate for the stayHealthy rule
-//   - the user checked is not the borrower,
+// The liquidate case for the stayHealthy rule, assuming no bad debt realization, otherwise it times out.
+// This particular rule makes the following assumptions:
 //   - the market of the liquidation is the market of the user,
-//   - there is still some borrow on the market after liquidation,
-//   - there was no bad debt realization (without this the rule times out).
+//   - there is still some borrow on the market after liquidation.
 rule stayHealthyLiquidate(env e, MorphoHarness.MarketParams marketParams, address borrower, uint256 seizedAssets, bytes data) {
     MorphoHarness.Id id = libId(marketParams);
     address user;
