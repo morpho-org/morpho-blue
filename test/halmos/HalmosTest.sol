@@ -57,6 +57,7 @@ contract HalmosTest is SymTest, Test {
         flashBorrower = new FlashBorrowerMock(morpho);
 
         // Enable symbolic storage
+        svm.enableSymbolicStorage(address(this));
         svm.enableSymbolicStorage(address(morpho));
         svm.enableSymbolicStorage(address(loanToken));
         svm.enableSymbolicStorage(address(collateralToken));
