@@ -8,12 +8,13 @@ import {IMorpho} from "../../src/interfaces/IMorpho.sol";
 import {IrmMock} from "../../src/mocks/IrmMock.sol";
 import {ERC20Mock} from "../../src/mocks/ERC20Mock.sol";
 import {OracleMock} from "../../src/mocks/OracleMock.sol";
+import {FlashBorrowerMock} from "../../src/mocks/FlashBorrowerMock.sol";
 
 import "../../src/Morpho.sol";
 import "../../src/libraries/ConstantsLib.sol";
 import {MorphoLib} from "../../src/libraries/periphery/MorphoLib.sol";
 
-/// @custom:halmos --symbolic-storage --solver-timeout-assertion 0
+/// @custom:halmos --solver-timeout-assertion 0
 contract HalmosTest is SymTest, Test {
     using MorphoLib for IMorpho;
     using MarketParamsLib for MarketParams;
@@ -28,6 +29,9 @@ contract HalmosTest is SymTest, Test {
     uint256 internal lltv;
 
     MarketParams internal marketParams;
+
+    ERC20Mock internal otherToken;
+    FlashBorrowerMock internal flashBorrower;
 
     function setUp() public virtual {
         owner = svm.createAddress("owner");
@@ -47,6 +51,24 @@ contract HalmosTest is SymTest, Test {
         morpho.enableLltv(lltv);
         morpho.createMarket(marketParams);
         vm.stopPrank();
+
+        // for flashLoan
+        otherToken = new ERC20Mock();
+        flashBorrower = new FlashBorrowerMock(morpho);
+
+        // Enable symbolic storage
+        svm.enableSymbolicStorage(address(this));
+        svm.enableSymbolicStorage(address(morpho));
+        svm.enableSymbolicStorage(address(loanToken));
+        svm.enableSymbolicStorage(address(collateralToken));
+        svm.enableSymbolicStorage(address(oracle));
+        svm.enableSymbolicStorage(address(irm));
+        svm.enableSymbolicStorage(address(otherToken));
+        svm.enableSymbolicStorage(address(flashBorrower));
+
+        // Set symbolic block number and timestamp
+        vm.roll(svm.createUint(64, "block.number"));
+        vm.warp(svm.createUint(64, "block.timestamp"));
     }
 
     // Call Morpho, assuming interacting with only the defined market for performance reasons.
@@ -74,17 +96,9 @@ contract HalmosTest is SymTest, Test {
             address borrower = svm.createAddress("borrower");
             args = abi.encode(marketParams, borrower, assets, shares, emptyData);
         } else if (selector == morpho.flashLoan.selector) {
-            uint256 rand = svm.createUint256("rand");
-            address token;
-            if (rand == 0) {
-                token = address(loanToken);
-            } else if (rand == 1) {
-                token = address(collateralToken);
-            } else {
-                ERC20Mock otherToken = new ERC20Mock();
-                token = address(otherToken);
-            }
-            args = abi.encode(marketParams, token, assets, emptyData);
+            address token = svm.createAddress("token");
+            bytes memory _data = svm.createBytes(1024, "_data");
+            args = abi.encode(token, assets, _data);
         } else if (selector == morpho.accrueInterest.selector) {
             args = abi.encode(marketParams);
         } else if (selector == morpho.setFee.selector) {
