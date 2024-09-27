@@ -1,6 +1,6 @@
 This folder contains the verification of the Morpho Blue protocol using CVL, Certora's Verification Language.
 
-The core concepts of the the Morpho Blue protocol are described in the [Whitepaper](../morpho-blue-whitepaper.pdf).
+The core concepts of the Morpho Blue protocol are described in the [Whitepaper](../morpho-blue-whitepaper.pdf).
 These concepts have been verified using CVL.
 We first give a [high-level description](#high-level-description) of the verification and then describe the [folder and file structure](#folder-and-file-structure) of the specification files.
 
@@ -11,7 +11,7 @@ The Morpho Blue protocol allows users to take out collateralized loans on ERC20 
 ## ERC20 tokens and transfers
 
 For a given market, Morpho Blue relies on the fact that the tokens involved respect the ERC20 standard.
-In particular, in case of a transfer, it is assumed that the balance of Morpho Blue increases or decreases (depending if its the recipient or the sender) of the amount transferred.
+In particular, in case of a transfer, it is assumed that the balance of Morpho Blue increases or decreases (depending if it's the recipient or the sender) of the amount transferred.
 
 The file [Transfer.spec](specs/Transfer.spec) defines a summary of the transfer functions.
 This summary is taken as the reference implementation to check that the balance of the Morpho Blue contract changes as expected.
@@ -33,7 +33,7 @@ The verification is done for the most common implementations of the ERC20 standa
 
 - [ERC20Standard](dispatch/ERC20Standard.sol) which respects the standard and reverts in case of insufficient funds or in case of insufficient allowance.
 - [ERC20NoRevert](dispatch/ERC20NoRevert.sol) which respects the standard but does not revert (and returns false instead).
-- [ERC20USDT](dispatch/ERC20USDT.sol) which does not strictly respects the standard because it omits the return value of the `transfer` and `transferFrom` functions.
+- [ERC20USDT](dispatch/ERC20USDT.sol) which does not strictly respect the standard because it omits the return value of the `transfer` and `transferFrom` functions.
 
 Additionally, Morpho Blue always goes through a custom transfer library to handle ERC20 tokens, notably in all the above cases.
 This library reverts when the transfer is not successful, and this is checked for the case of insufficient funds or insufficient allowance.
@@ -69,7 +69,7 @@ Said otherwise, markets are independent: tokens from a given market cannot be im
 
 When supplying on Morpho Blue, interest is earned over time, and the distribution is implemented through a shares mechanism.
 Shares increase in value as interest is accrued.
-The share mechanism is implemented symetrically for the borrow side: a share of borrow increasing in value over time represents additional owed interest.
+The share mechanism is implemented symmetrically for the borrow side: a share of borrow increasing in value over time represents additional owed interest.
 The rule `accrueInterestIncreasesSupplyExchangeRate` checks this property for the supply side with the following statement.
 
 ```soldidity
@@ -107,7 +107,7 @@ invariant alwaysCollateralized(MorphoHarness.Id id, address borrower)
     borrowShares(id, borrower) != 0 => collateral(id, borrower) != 0;
 ```
 
-More generally, this means that the result of liquidating a position multiple times eventually lead to a healthy position (possibly empty).
+More generally, this means that the result of liquidating a position multiple times eventually leads to a healthy position (possibly empty).
 
 ## Authorization
 
@@ -205,7 +205,7 @@ As an example, the `withdrawChangesTokensAndShares` rule checks that calling the
 Other liveness properties are verified as well.
 Notably, it's also verified that it is always possible to exit a position without concern for the oracle.
 This is done through the verification of two rules: the `canRepayAll` rule and the `canWithdrawCollateralAll` rule.
-The `canRepayAll` rule ensures that it is always possible to repay the full debt of a position, leaving the account without any oustanding debt.
+The `canRepayAll` rule ensures that it is always possible to repay the full debt of a position, leaving the account without any outstanding debt.
 The `canWithdrawCollateralAll` rule ensures that in the case where the account has no outstanding debt, then it is possible to withdraw the full collateral.
 
 ## Protection against common attack vectors
@@ -214,7 +214,7 @@ Other common and known attack vectors are verified to not be possible on the Mor
 
 ### Reentrancy
 
-Reentrancy is a common attack vector that happen when a call to a contract allows, when in a temporary state, to call the same contract again.
+Reentrancy is a common attack vector that happens when a call to a contract allows, when in a temporary state, to call the same contract again.
 The state of the contract usually refers to the storage variables, which can typically hold values that are meant to be used only after the full execution of the current function.
 The Morpho Blue contract is verified to not be vulnerable to this kind of reentrancy attack thanks to the rule `reentrancySafe`.
 

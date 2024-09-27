@@ -55,7 +55,7 @@ rule repayAllResetsBorrowExchangeRate(env e, MorphoHarness.MarketParams marketPa
     mathint sharesAfter = virtualTotalBorrowShares(id);
 
     assert assetsAfter == 1;
-    // There are at least as many shares as virtual shares.
+    // There are at least as many shares as virtual shares, by definition of virtualTotalBorrowShares.
 }
 
 // There should be no profit from supply followed immediately by withdraw.
