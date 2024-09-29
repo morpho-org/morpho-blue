@@ -189,7 +189,7 @@ contract BaseTest is Test {
             amountBorrowed.wDivDown(marketParams.lltv).mulDivDown(ORACLE_PRICE_SCALE, priceCollateral);
         amountCollateral = bound(amountCollateral, 0, Math.min(maxCollateral, MAX_COLLATERAL_ASSETS));
 
-        vm.assume(amountCollateral > 0);
+        vm.assume(amountCollateral > 0 && amountCollateral < maxCollateral);
         return (amountCollateral, amountBorrowed, priceCollateral);
     }
 
