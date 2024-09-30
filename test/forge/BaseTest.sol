@@ -189,7 +189,7 @@ contract BaseTest is Test {
             amountBorrowed.wDivDown(marketParams.lltv).mulDivDown(ORACLE_PRICE_SCALE, priceCollateral);
         amountCollateral = bound(amountCollateral, 0, Math.min(maxCollateral, MAX_COLLATERAL_ASSETS));
 
-        vm.assume(amountCollateral > 0);
+        vm.assume(amountCollateral > 0 && amountCollateral < maxCollateral);
         return (amountCollateral, amountBorrowed, priceCollateral);
     }
 
@@ -330,13 +330,15 @@ contract BaseTest is Test {
     {
         Id _id = _marketParams.id();
 
-        uint256 collateral = morpho.collateral(_id, borrower);
         uint256 collateralPrice = IOracle(_marketParams.oracle).price();
-        uint256 maxRepaidAssets = morpho.expectedBorrowAssets(_marketParams, borrower);
+        uint256 borrowShares = morpho.borrowShares(_id, borrower);
+        (,, uint256 totalBorrowAssets, uint256 totalBorrowShares) = morpho.expectedMarketBalances(_marketParams);
+        uint256 maxRepaidAssets = borrowShares.toAssetsDown(totalBorrowAssets, totalBorrowShares);
         uint256 maxSeizedAssets = maxRepaidAssets.wMulDown(_liquidationIncentiveFactor(_marketParams.lltv)).mulDivDown(
             ORACLE_PRICE_SCALE, collateralPrice
         );
 
+        uint256 collateral = morpho.collateral(_id, borrower);
         return bound(seizedAssets, 0, Math.min(collateral, maxSeizedAssets));
     }
 
