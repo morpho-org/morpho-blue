@@ -99,8 +99,6 @@ rule stayHealthyLiquidateLastBorrow(env e, MorphoHarness.MarketParams marketPara
     // Assume the invariant initially.
     require isHealthy(marketParams, user);
 
-    uint256 debtSharesBefore = borrowShares(id, user);
-    uint256 debtAssetsBefore = summaryMulDivUp(debtSharesBefore, virtualTotalBorrowAssets(id), virtualTotalBorrowShares(id));
     // Safe require because of the invariants onlyEnabledLltv and lltvSmallerThanWad in ConsistentState.spec.
     require marketParams.lltv < 10^18;
     // Assumption to ensure that no interest is accumulated.
