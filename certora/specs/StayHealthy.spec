@@ -20,7 +20,6 @@ filtered {
     // Assumption to ensure that no interest is accumulated.
     require lastUpdate(id) == e.block.timestamp;
 
-    priceChanged = false;
     f(e, data);
 
     // Safe require because of the invariant sumBorrowSharesCorrect.

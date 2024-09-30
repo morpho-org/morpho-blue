@@ -250,12 +250,13 @@ The [`certora/specs`](specs) folder contains the following files:
 - [`ExactMath.spec`](specs/ExactMath.spec) checks precise properties when taking into account exact multiplication and division.
   Notably, this file specifies that using supply and withdraw in the same block cannot yield more funds than at the start.
 - [`Health.spec`](specs/Health.spec) checks properties about the health of the positions.
-  Notably, functions cannot render an account unhealthy, and debt positions always have some collateral (thanks to the bad debt realization mechanism).
+  Notably, debt positions always have some collateral thanks to the bad debt realization mechanism.
 - [`LibSummary.spec`](specs/LibSummary.spec) checks the summarization of the library functions that are used in other specification files.
 - [`Liveness.spec`](specs/Liveness.spec) checks that main functions change the owner of funds and the amount of shares as expected, and that it's always possible to exit a position.
 - [`ExchangeRate.spec`](specs/ExchangeRate.spec) checks that the exchange rate between shares and assets evolves predictably over time.
 - [`Reentrancy.spec`](specs/Reentrancy.spec) checks that the contract is immune to a particular class of reentrancy issues.
 - [`Reverts.spec`](specs/Reverts.spec) checks the condition for reverts and that inputs are correctly validated.
+- [`StayHealthy.spec`](specs/Health.spec) checks that functions cannot render an account unhealthy.
 - [`Transfer.spec`](specs/Transfer.spec) checks the summarization of the safe transfer library functions that are used in other specification files.
 
 The [`certora/confs`](confs) folder contains a configuration file for each corresponding specification file.
