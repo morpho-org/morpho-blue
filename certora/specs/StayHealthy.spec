@@ -111,7 +111,7 @@ rule stayHealthyLiquidateLastBorrow(env e, MorphoHarness.MarketParams marketPara
 
     // Safe require because of the invariant sumBorrowSharesCorrect.
     require borrowShares(id, user) <= totalBorrowShares(id);
-    // Assume that there is still some borrow on the market after liquidation.
+    // Assume that there is no remaining borrow on the market after liquidation.
     require totalBorrowAssets(id) == 0;
 
     bool stillHealthy = isHealthy(marketParams, user);
