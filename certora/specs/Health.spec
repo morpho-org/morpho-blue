@@ -2,7 +2,10 @@
 methods {
     function extSloads(bytes32[]) external returns bytes32[] => NONDET DELETE;
 
+    function totalBorrowAssets(MorphoHarness.Id) external returns uint256 envfree;
     function totalBorrowShares(MorphoHarness.Id) external returns uint256 envfree;
+    function virtualTotalBorrowAssets(MorphoHarness.Id) external returns uint256 envfree;
+    function virtualTotalBorrowShares(MorphoHarness.Id) external returns uint256 envfree;
     function lastUpdate(MorphoHarness.Id) external returns uint256 envfree;
     function borrowShares(MorphoHarness.Id, address) external returns uint256 envfree;
     function collateral(MorphoHarness.Id, address) external returns uint256 envfree;
@@ -44,35 +47,6 @@ function summaryMulDivDown(uint256 x, uint256 y, uint256 d) returns uint256 {
 
 function summaryMin(uint256 a, uint256 b) returns uint256 {
     return a < b ? a : b;
-}
-
-// Check that without accruing interest, no interaction can put an healthy account into an unhealthy one.
-// The liquidate function times out in this rule, but has been checked separately.
-rule stayHealthy(env e, method f, calldataarg data)
-filtered {
-    f -> !f.isView &&
-    f.selector != sig:liquidate(MorphoHarness.MarketParams, address, uint256, uint256, bytes).selector
-}
-{
-    MorphoHarness.MarketParams marketParams;
-    MorphoHarness.Id id = libId(marketParams);
-    address user;
-
-    // Assume that the position is healthy before the interaction.
-    require isHealthy(marketParams, user);
-    // Safe require because of the invariants onlyEnabledLltv and lltvSmallerThanWad in ConsistentState.spec.
-    require marketParams.lltv < 10^18;
-    // Assumption to ensure that no interest is accumulated.
-    require lastUpdate(id) == e.block.timestamp;
-
-    priceChanged = false;
-    f(e, data);
-
-    // Safe require because of the invariant sumBorrowSharesCorrect.
-    require borrowShares(id, user) <= totalBorrowShares(id);
-
-    bool stillHealthy = isHealthy(marketParams, user);
-    assert !priceChanged => stillHealthy;
 }
 
 // Check that users cannot lose collateral by unauthorized parties except in case of an unhealthy position.

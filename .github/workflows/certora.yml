@@ -26,6 +26,7 @@ jobs:
           - Liveness
           - Reentrancy
           - Reverts
+          - StayHealthy
           - Transfer
 
     steps:
