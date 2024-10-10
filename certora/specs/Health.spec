@@ -67,7 +67,6 @@ filtered { f -> !f.isView }
 
     mathint collateralBefore = collateral(id, user);
 
-    priceChanged = false;
     f(e, data);
 
     mathint collateralAfter = collateral(id, user);
