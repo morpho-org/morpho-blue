@@ -10,7 +10,7 @@ contract MorphoHarness is Morpho {
 
     constructor(address newOwner) Morpho(newOwner) {}
 
-    function toMarketParams(Id id) external view returns (MarketParams memory) {
+    function idToMarketParams_(Id id) external view returns (MarketParams memory) {
         return idToMarketParams[id];
     }
 

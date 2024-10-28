@@ -17,7 +17,7 @@ methods {
     function isIrmEnabled(address) external returns bool envfree;
     function isLltvEnabled(uint256) external returns bool envfree;
     function isAuthorized(address, address) external returns bool envfree;
-    function toMarketParams(MorphoHarness.Id) external returns MorphoHarness.MarketParams envfree;
+    function idToMarketParams_(MorphoHarness.Id) external returns MorphoHarness.MarketParams envfree;
 
     function Util.maxFee() external returns uint256 envfree;
     function Util.wad() external returns uint256 envfree;
@@ -59,15 +59,15 @@ hook Sstore position[KEY MorphoHarness.Id id][KEY address owner].borrowShares ui
 
 hook Sstore position[KEY MorphoHarness.Id id][KEY address owner].collateral uint128 newAmount (uint128 oldAmount) {
     sumCollateral[id] = sumCollateral[id] - oldAmount + newAmount;
-    idleAmount[toMarketParams(id).collateralToken] = idleAmount[toMarketParams(id).collateralToken] - oldAmount + newAmount;
+    idleAmount[idToMarketParams_(id).collateralToken] = idleAmount[idToMarketParams_(id).collateralToken] - oldAmount + newAmount;
 }
 
 hook Sstore market[KEY MorphoHarness.Id id].totalSupplyAssets uint128 newAmount (uint128 oldAmount) {
-    idleAmount[toMarketParams(id).loanToken] = idleAmount[toMarketParams(id).loanToken] - oldAmount + newAmount;
+    idleAmount[idToMarketParams_(id).loanToken] = idleAmount[idToMarketParams_(id).loanToken] - oldAmount + newAmount;
 }
 
 hook Sstore market[KEY MorphoHarness.Id id].totalBorrowAssets uint128 newAmount (uint128 oldAmount) {
-    idleAmount[toMarketParams(id).loanToken] = idleAmount[toMarketParams(id).loanToken] + oldAmount - newAmount;
+    idleAmount[idToMarketParams_(id).loanToken] = idleAmount[idToMarketParams_(id).loanToken] + oldAmount - newAmount;
 }
 
 function summarySafeTransferFrom(address token, address from, address to, uint256 amount) {
@@ -104,13 +104,13 @@ invariant borrowLessThanSupply(MorphoHarness.Id id)
 // Check correctness of applying idToMarketParams() to an identifier.
 invariant hashOfMarketParamsOf(MorphoHarness.Id id)
     isCreated(id) =>
-    Util.libId(toMarketParams(id)) == id;
+    Util.libId(idToMarketParams_(id)) == id;
 
 // Check correctness of applying id() to a market params.
 // This invariant is useful in the following rule, to link an id back to a market.
 invariant marketParamsOfHashOf(MorphoHarness.MarketParams marketParams)
     isCreated(Util.libId(marketParams)) =>
-    toMarketParams(Util.libId(marketParams)) == marketParams;
+    idToMarketParams_(Util.libId(marketParams)) == marketParams;
 
 // Check that the idle amount on the singleton is greater to the sum amount, that is the sum over all the markets of the total supply plus the total collateral minus the total borrow.
 invariant idleAmountLessThanBalance(address token)
