@@ -26,7 +26,7 @@ contract MorphoHarness is Morpho {
         return market[id];
     }
 
-    function toPosition(Id id, address borrower) external view returns (Market memory) {
+    function toPosition(Id id, address borrower) external view returns (Position memory) {
         return position[id][borrower];
     }
 
