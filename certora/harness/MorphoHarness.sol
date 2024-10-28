@@ -10,16 +10,16 @@ contract MorphoHarness is Morpho {
 
     constructor(address newOwner) Morpho(newOwner) {}
 
-    function wad() external pure returns (uint256) {
-        return WAD;
-    }
-
-    function maxFee() external pure returns (uint256) {
-        return MAX_FEE;
-    }
-
-    function toMarketParams(Id id) external view returns (MarketParams memory) {
+    function idToMarketParams_(Id id) external view returns (MarketParams memory) {
         return idToMarketParams[id];
+    }
+
+    function market_(Id id) external view returns (Market memory) {
+        return market[id];
+    }
+
+    function position_(Id id, address user) external view returns (Position memory) {
+        return position[id][user];
     }
 
     function totalSupplyAssets(Id id) external view returns (uint256) {
@@ -72,26 +72,6 @@ contract MorphoHarness is Morpho {
 
     function virtualTotalBorrowShares(Id id) external view returns (uint256) {
         return market[id].totalBorrowShares + SharesMathLib.VIRTUAL_SHARES;
-    }
-
-    function libId(MarketParams memory marketParams) external pure returns (Id) {
-        return marketParams.id();
-    }
-
-    function refId(MarketParams memory marketParams) external pure returns (Id marketParamsId) {
-        marketParamsId = Id.wrap(keccak256(abi.encode(marketParams)));
-    }
-
-    function libMulDivUp(uint256 x, uint256 y, uint256 d) external pure returns (uint256) {
-        return MathLib.mulDivUp(x, y, d);
-    }
-
-    function libMulDivDown(uint256 x, uint256 y, uint256 d) external pure returns (uint256) {
-        return MathLib.mulDivDown(x, y, d);
-    }
-
-    function libMin(uint256 x, uint256 y) external pure returns (uint256) {
-        return UtilsLib.min(x, y);
     }
 
     function isHealthy(MarketParams memory marketParams, address user) external view returns (bool) {

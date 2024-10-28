@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
+
+using Util as Util;
+
 methods {
     function extSloads(bytes32[]) external returns bytes32[] => NONDET DELETE;
 
@@ -13,9 +16,9 @@ methods {
     function virtualTotalBorrowShares(MorphoHarness.Id) external returns uint256 envfree;
     function lastUpdate(MorphoHarness.Id) external returns uint256 envfree;
 
-    function libMulDivDown(uint256, uint256, uint256) external returns uint256 envfree;
-    function libMulDivUp(uint256, uint256, uint256) external returns uint256 envfree;
-    function libId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
+    function Util.libMulDivDown(uint256, uint256, uint256) external returns uint256 envfree;
+    function Util.libMulDivUp(uint256, uint256, uint256) external returns uint256 envfree;
+    function Util.libId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
 }
 
 function expectedSupplyAssets(MorphoHarness.Id id, address user) returns uint256 {
@@ -23,7 +26,7 @@ function expectedSupplyAssets(MorphoHarness.Id id, address user) returns uint256
     uint256 totalSupplyAssets = virtualTotalSupplyAssets(id);
     uint256 totalSupplyShares = virtualTotalSupplyShares(id);
 
-    return libMulDivDown(userShares, totalSupplyAssets, totalSupplyShares);
+    return Util.libMulDivDown(userShares, totalSupplyAssets, totalSupplyShares);
 }
 
 function expectedBorrowAssets(MorphoHarness.Id id, address user) returns uint256 {
@@ -31,12 +34,12 @@ function expectedBorrowAssets(MorphoHarness.Id id, address user) returns uint256
     uint256 totalBorrowAssets = virtualTotalBorrowAssets(id);
     uint256 totalBorrowShares = virtualTotalBorrowShares(id);
 
-    return libMulDivUp(userShares, totalBorrowAssets, totalBorrowShares);
+    return Util.libMulDivUp(userShares, totalBorrowAssets, totalBorrowShares);
 }
 
 // Check that the assets supplied are greater than the increase in owned assets.
 rule supplyAssetsAccounting(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data) {
-    MorphoHarness.Id id = libId(marketParams);
+    MorphoHarness.Id id = Util.libId(marketParams);
 
     // Assume no interest as it would increase the total supply assets.
     require lastUpdate(id) == e.block.timestamp;
@@ -55,7 +58,7 @@ rule supplyAssetsAccounting(env e, MorphoHarness.MarketParams marketParams, uint
 
 // Check that the assets withdrawn are less than the assets owned initially.
 rule withdrawAssetsAccounting(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, address receiver) {
-    MorphoHarness.Id id = libId(marketParams);
+    MorphoHarness.Id id = Util.libId(marketParams);
 
     // Assume no interest as it would increase the total supply assets.
     require lastUpdate(id) == e.block.timestamp;
@@ -70,7 +73,7 @@ rule withdrawAssetsAccounting(env e, MorphoHarness.MarketParams marketParams, ui
 
 // Check that the increase of owed assets are greater than the borrowed assets.
 rule borrowAssetsAccounting(env e, MorphoHarness.MarketParams marketParams, uint256 shares, address onBehalf, address receiver) {
-    MorphoHarness.Id id = libId(marketParams);
+    MorphoHarness.Id id = Util.libId(marketParams);
 
     // Assume no interest as it would increase the total borrowed assets.
     require lastUpdate(id) == e.block.timestamp;
@@ -90,7 +93,7 @@ rule borrowAssetsAccounting(env e, MorphoHarness.MarketParams marketParams, uint
 
 // Check that the assets repaid are greater than the assets owed initially.
 rule repayAssetsAccounting(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data) {
-    MorphoHarness.Id id = libId(marketParams);
+    MorphoHarness.Id id = Util.libId(marketParams);
 
     // Assume no interest as it would increase the total borrowed assets.
     require lastUpdate(id) == e.block.timestamp;
@@ -108,7 +111,7 @@ rule repayAssetsAccounting(env e, MorphoHarness.MarketParams marketParams, uint2
 
 // Check that the collateral assets supplied are equal to the increase of owned assets.
 rule supplyCollateralAssetsAccounting(env e, MorphoHarness.MarketParams marketParams, uint256 suppliedAssets, address onBehalf, bytes data) {
-    MorphoHarness.Id id = libId(marketParams);
+    MorphoHarness.Id id = Util.libId(marketParams);
 
     uint256 ownedAssetsBefore = collateral(id, onBehalf);
 
@@ -121,7 +124,7 @@ rule supplyCollateralAssetsAccounting(env e, MorphoHarness.MarketParams marketPa
 
 // Check that the collateral assets withdrawn are less than the assets owned initially.
 rule withdrawCollateralAssetsAccounting(env e, MorphoHarness.MarketParams marketParams, uint256 withdrawnAssets, address onBehalf, address receiver) {
-    MorphoHarness.Id id = libId(marketParams);
+    MorphoHarness.Id id = Util.libId(marketParams);
 
     uint256 ownedAssets = collateral(id, onBehalf);
 
