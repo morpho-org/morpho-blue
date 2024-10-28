@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
+
+using Util as Util;
+
 methods {
     function extSloads(bytes32[]) external returns bytes32[] => NONDET DELETE;
 
@@ -16,9 +19,9 @@ methods {
     function isAuthorized(address, address) external returns bool envfree;
     function toMarketParams(MorphoHarness.Id) external returns MorphoHarness.MarketParams envfree;
 
-    function maxFee() external returns uint256 envfree;
-    function wad() external returns uint256 envfree;
-    function libId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
+    function Util.maxFee() external returns uint256 envfree;
+    function Util.wad() external returns uint256 envfree;
+    function Util.libId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
 
     function _.borrowRate(MorphoHarness.MarketParams, MorphoHarness.Market) external => HAVOC_ECF;
 
@@ -83,7 +86,7 @@ definition isCreated(MorphoHarness.Id id) returns bool =
 
 // Check that the fee is always lower than the max fee constant.
 invariant feeInRange(MorphoHarness.Id id)
-    fee(id) <= maxFee();
+    fee(id) <= Util.maxFee();
 
 // Check that the accounting of totalSupplyShares is correct.
 invariant sumSupplySharesCorrect(MorphoHarness.Id id)
@@ -101,13 +104,13 @@ invariant borrowLessThanSupply(MorphoHarness.Id id)
 // Check correctness of applying idToMarketParams() to an identifier.
 invariant hashOfMarketParamsOf(MorphoHarness.Id id)
     isCreated(id) =>
-    libId(toMarketParams(id)) == id;
+    Util.libId(toMarketParams(id)) == id;
 
 // Check correctness of applying id() to a market params.
 // This invariant is useful in the following rule, to link an id back to a market.
 invariant marketParamsOfHashOf(MorphoHarness.MarketParams marketParams)
-    isCreated(libId(marketParams)) =>
-    toMarketParams(libId(marketParams)) == marketParams;
+    isCreated(Util.libId(marketParams)) =>
+    toMarketParams(Util.libId(marketParams)) == marketParams;
 
 // Check that the idle amount on the singleton is greater to the sum amount, that is the sum over all the markets of the total supply plus the total collateral minus the total borrow.
 invariant idleAmountLessThanBalance(address token)
@@ -146,14 +149,14 @@ invariant idleAmountLessThanBalance(address token)
 
 // Check that a market can only exist if its LLTV is enabled.
 invariant onlyEnabledLltv(MorphoHarness.MarketParams marketParams)
-    isCreated(libId(marketParams)) => isLltvEnabled(marketParams.lltv);
+    isCreated(Util.libId(marketParams)) => isLltvEnabled(marketParams.lltv);
 
 invariant lltvSmallerThanWad(uint256 lltv)
-    isLltvEnabled(lltv) => lltv < wad();
+    isLltvEnabled(lltv) => lltv < Util.wad();
 
 // Check that a market can only exist if its IRM is enabled.
 invariant onlyEnabledIrm(MorphoHarness.MarketParams marketParams)
-    isCreated(libId(marketParams)) => isIrmEnabled(marketParams.irm);
+    isCreated(Util.libId(marketParams)) => isIrmEnabled(marketParams.irm);
 
 // Check the pseudo-injectivity of the hashing function id().
 rule libIdUnique() {
@@ -161,7 +164,7 @@ rule libIdUnique() {
     MorphoHarness.MarketParams marketParams2;
 
     // Assume that arguments are the same.
-    require libId(marketParams1) == libId(marketParams2);
+    require Util.libId(marketParams1) == Util.libId(marketParams2);
 
     assert marketParams1 == marketParams2;
 }

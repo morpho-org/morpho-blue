@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
+
+using Util as Util;
+
 methods {
     function extSloads(bytes32[]) external returns bytes32[] => NONDET DELETE;
 
@@ -10,8 +13,8 @@ methods {
     function fee(MorphoHarness.Id) external returns uint256 envfree;
     function lastUpdate(MorphoHarness.Id) external returns uint256 envfree;
 
-    function maxFee() external returns uint256 envfree;
-    function libId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
+    function Util.maxFee() external returns uint256 envfree;
+    function Util.libId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
 
     function UtilsLib.min(uint256 x, uint256 y) internal returns uint256 => summaryMin(x, y);
     function MathLib.mulDivDown(uint256 a, uint256 b, uint256 c) internal returns uint256 => summaryMulDivDown(a,b,c);
@@ -23,7 +26,7 @@ methods {
 }
 
 invariant feeInRange(MorphoHarness.Id id)
-    fee(id) <= maxFee();
+    fee(id) <= Util.maxFee();
 
 function summaryMin(uint256 x, uint256 y) returns uint256 {
     return x < y ? x : y;
@@ -165,7 +168,7 @@ filtered {
 // The other case requires exact math (ie not over-approximating mulDivUp and mulDivDown), so it is checked separately in ExactMath.spec.
 rule repayDecreasesBorrowExchangeRate(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data)
 {
-    MorphoHarness.Id id = libId(marketParams);
+    MorphoHarness.Id id = Util.libId(marketParams);
     requireInvariant feeInRange(id);
 
     mathint assetsBefore = virtualTotalBorrowAssets(id);
@@ -191,7 +194,7 @@ rule repayDecreasesBorrowExchangeRate(env e, MorphoHarness.MarketParams marketPa
 rule liquidateDecreasesBorrowExchangeRate(env e, MorphoHarness.MarketParams marketParams, address borrower, uint256 seizedAssets, uint256 repaidShares, bytes data)
 {
     require data.length == 0;
-    MorphoHarness.Id id = libId(marketParams);
+    MorphoHarness.Id id = Util.libId(marketParams);
 
     mathint assetsBefore = virtualTotalBorrowAssets(id);
     mathint sharesBefore = virtualTotalBorrowShares(id);

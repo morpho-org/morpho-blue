@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
+
+using Util as Util;
+
 methods {
     function extSloads(bytes32[]) external returns bytes32[] => NONDET DELETE;
 
@@ -12,8 +15,8 @@ methods {
     function lastUpdate(MorphoHarness.Id) external returns uint256 envfree;
     function fee(MorphoHarness.Id) external returns uint256 envfree;
 
-    function maxFee() external returns uint256 envfree;
-    function libId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
+    function Util.maxFee() external returns uint256 envfree;
+    function Util.libId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
 
     function MathLib.mulDivDown(uint256 a, uint256 b, uint256 c) internal returns uint256 => summaryMulDivDown(a,b,c);
     function MathLib.mulDivUp(uint256 a, uint256 b, uint256 c) internal returns uint256 => summaryMulDivUp(a,b,c);
@@ -35,9 +38,9 @@ function summaryMulDivDown(uint256 x, uint256 y, uint256 d) returns uint256 {
 // Check that when not accruing interest, and when repaying all, the borrow exchange rate is at least reset to the initial exchange rate.
 // More details on the purpose of this rule in ExchangeRate.spec.
 rule repayAllResetsBorrowExchangeRate(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data) {
-    MorphoHarness.Id id = libId(marketParams);
+    MorphoHarness.Id id = Util.libId(marketParams);
     // Safe require because this invariant is checked in ConsistentState.spec
-    require fee(id) <= maxFee();
+    require fee(id) <= Util.maxFee();
 
     mathint assetsBefore = virtualTotalBorrowAssets(id);
     mathint sharesBefore = virtualTotalBorrowShares(id);
@@ -61,7 +64,7 @@ rule repayAllResetsBorrowExchangeRate(env e, MorphoHarness.MarketParams marketPa
 // There should be no profit from supply followed immediately by withdraw.
 rule supplyWithdraw() {
     MorphoHarness.MarketParams marketParams;
-    MorphoHarness.Id id = libId(marketParams);
+    MorphoHarness.Id id = Util.libId(marketParams);
     env e1;
     env e2;
     address onBehalf;
@@ -94,7 +97,7 @@ rule supplyWithdraw() {
 // There should be no profit from borrow followed immediately by repaying all.
 rule borrowRepay() {
     MorphoHarness.MarketParams marketParams;
-    MorphoHarness.Id id = libId(marketParams);
+    MorphoHarness.Id id = Util.libId(marketParams);
     address onBehalf;
     env e1;
     env e2;
