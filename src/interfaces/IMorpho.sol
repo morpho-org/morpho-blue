@@ -50,8 +50,8 @@ struct Signature {
 /// @dev Consider using the IMorpho interface instead of this one.
 interface IMorphoBase {
     /// @notice The EIP-712 domain separator.
-    /// @dev Warning: Every EIP-712 signed message based on this domain separator can be reused on forks and chains
-    /// sharing the same chain id because the domain separator would be the same.
+    /// @dev Warning: Every EIP-712 signed message based on this domain separator can be reused on chains sharing the
+    /// same chain id and on forks because the domain separator would be the same.
     function DOMAIN_SEPARATOR() external view returns (bytes32);
 
     /// @notice The owner of the contract.
