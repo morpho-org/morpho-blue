@@ -41,6 +41,7 @@ rule liquidateImprovePosition(MorphoLiquidateHarness.MarketParams marketParams, 
 
     // TODO: use a fixed price oracle instead of passing it to liquidateView.
     uint256 collateralPrice;
+    require collateralPrice > 0;
 
     // TODO: take those directly from the borrower, and manage accrue interest.
     uint256 borrowerShares;
