@@ -7,6 +7,7 @@ methods {
 
     function extSloads(bytes32[]) external returns (bytes32[]) => NONDET DELETE;
 
+    function Util.wad() external returns (uint256) envfree;
     function Util.libId(MorphoLiquidateHarness.MarketParams) external returns (MorphoLiquidateHarness.Id) envfree;
     function Util.oraclePriceScale() external returns (uint256) envfree;
 
@@ -43,7 +44,7 @@ rule liquidateImprovePosition(MorphoLiquidateHarness.MarketParams marketParams, 
     uint256 lif;
     (seizedAssets, repaidShares, repaidAssets, lif) = liquidateView(marketParams, seizedAssetsInput, repaidSharesInput, collateralPrice);
 
-    assert summaryMulDivDown(lif, repaidAssets, WAD) >= summaryMulDivUp(seizedAssets, collateralPrice, oraclePriceScale());
+    assert summaryMulDivDown(lif, repaidAssets, Util.wad()) >= summaryMulDivUp(seizedAssets, collateralPrice, Util.oraclePriceScale());
 
     // assert repaidShares * borrowerCollateral > seizedAssets * borrowerShares;
 }
