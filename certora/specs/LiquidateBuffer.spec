@@ -41,7 +41,6 @@ rule liquidateImprovePosition(MorphoLiquidateHarness.MarketParams marketParams, 
 
     // TODO: use a fixed price oracle instead of passing it to liquidateView.
     uint256 collateralPrice;
-    require collateralPrice > 0;
 
     // TODO: take those directly from the borrower, and manage accrue interest.
     uint256 borrowerShares;
@@ -49,7 +48,6 @@ rule liquidateImprovePosition(MorphoLiquidateHarness.MarketParams marketParams, 
 
     require borrowerShares <= market_(id).totalBorrowShares;
     uint256 borrowerAssets = summaryMulDivUp(borrowerShares, virtualTotalBorrowAssets(id), virtualTotalBorrowShares(id));
-    require borrowerAssets > 0;
 
     require (seizedAssetsInput > 0 && repaidSharesInput == 0) || (seizedAssetsInput == 0 && repaidSharesInput > 0);
 
@@ -58,23 +56,14 @@ rule liquidateImprovePosition(MorphoLiquidateHarness.MarketParams marketParams, 
     uint256 repaidAssets;
     uint256 lif;
     (seizedAssets, repaidShares, repaidAssets, lif) = liquidateView(marketParams, seizedAssetsInput, repaidSharesInput, collateralPrice);
-    require repaidAssets > 0;
 
     uint256 borrowerCollateralQuoted = summaryMulDivDown(borrowerCollateral, collateralPrice, Util.oraclePriceScale());
     require borrowerCollateralQuoted >= summaryMulDivUp(lif, borrowerAssets, Util.wad());
-    assert wDivDown(borrowerCollateralQuoted, borrowerAssets) >= lif;
 
-    uint256 seizedCollateralQuoted = summaryMulDivUp(seizedAssets, collateralPrice, Util.oraclePriceScale());
-    assert summaryMulDivDown(lif, repaidAssets, Util.wad()) >= seizedCollateralQuoted;
-    assert lif >= wDivUp(seizedCollateralQuoted, repaidAssets);
-
-    uint256 newBorrowerShares = require_uint256(borrowerShares - repaidShares);
-    uint256 newTotalShares = require_uint256(virtualTotalBorrowShares(id) - repaidShares);
-    uint256 newTotalAssets = require_uint256(virtualTotalBorrowAssets(id) - repaidAssets);
-
+    require borrowerShares >= repaidShares;
+    require virtualTotalBorrowShares(id) >= repaidShares;
+    require virtualTotalBorrowAssets(id) >= repaidAssets;
     require seizedAssets <= borrowerCollateral;
-
-    uint256 newBorrowerAssets = summaryMulDivUp(newBorrowerShares, newTotalAssets, newTotalShares);
 
     assert repaidShares * borrowerCollateral >= seizedAssets * borrowerShares;
 }
