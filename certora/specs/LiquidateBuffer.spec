@@ -32,6 +32,10 @@ function wDivDown(uint256 x, uint256 y) returns uint256 {
     return summaryMulDivDown(x, Util.wad(), y);
 }
 
+function wDivUp(uint256 x, uint256 y) returns uint256 {
+    return summaryMulDivUp(x, Util.wad(), y);
+}
+
 rule liquidateImprovePosition(MorphoLiquidateHarness.MarketParams marketParams, uint256 seizedAssetsInput, uint256 repaidSharesInput) {
     MorphoLiquidateHarness.Id id = Util.libId(marketParams);
 
@@ -56,13 +60,21 @@ rule liquidateImprovePosition(MorphoLiquidateHarness.MarketParams marketParams, 
     (seizedAssets, repaidShares, repaidAssets, lif) = liquidateView(marketParams, seizedAssetsInput, repaidSharesInput, collateralPrice);
     require repaidAssets > 0;
 
-    uint256 borrowerCollateralQuoted = summaryMulDivUp(borrowerCollateral, collateralPrice, Util.oraclePriceScale());
+    uint256 borrowerCollateralQuoted = summaryMulDivDown(borrowerCollateral, collateralPrice, Util.oraclePriceScale());
     require borrowerCollateralQuoted >= summaryMulDivUp(lif, borrowerAssets, Util.wad());
     assert wDivDown(borrowerCollateralQuoted, borrowerAssets) >= lif;
 
     uint256 seizedCollateralQuoted = summaryMulDivUp(seizedAssets, collateralPrice, Util.oraclePriceScale());
     assert summaryMulDivDown(lif, repaidAssets, Util.wad()) >= seizedCollateralQuoted;
-    assert lif >= wDivDown(seizedCollateralQuoted, repaidAssets);
+    assert lif >= wDivUp(seizedCollateralQuoted, repaidAssets);
 
-    // assert repaidShares * borrowerCollateral > seizedAssets * borrowerShares;
+    uint256 newBorrowerShares = require_uint256(borrowerShares - repaidShares);
+    uint256 newTotalShares = require_uint256(virtualTotalBorrowShares(id) - repaidShares);
+    uint256 newTotalAssets = require_uint256(virtualTotalBorrowAssets(id) - repaidAssets);
+
+    require seizedAssets <= borrowerCollateral;
+
+    uint256 newBorrowerAssets = summaryMulDivUp(newBorrowerShares, newTotalAssets, newTotalShares);
+
+    assert repaidShares * borrowerCollateral >= seizedAssets * borrowerShares;
 }
