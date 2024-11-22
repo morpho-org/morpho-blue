@@ -61,7 +61,7 @@ rule liquidateImprovePosition(MorphoLiquidateHarness.MarketParams marketParams, 
 
     uint256 borrowerCollateralQuoted = summaryMulDivDown(borrowerCollateral, collateralPrice, Util.oraclePriceScale());
     require summaryMulDivUp(lif, borrowerAssets, Util.wad()) <= borrowerCollateralQuoted;
-    assert borrowerCollateral * collateralPrice * virtualTotalBorrowShares(id) * Util.wad()  >= borrowerShares * Util.oraclePriceScale() * virtualTotalBorrowAssets(id) * lif;
+    assert borrowerCollateral * collateralPrice * virtualTotalBorrowShares(id) * Util.wad() >= borrowerShares * Util.oraclePriceScale() * virtualTotalBorrowAssets(id) * lif;
 
     assert repaidShares * Util.oraclePriceScale() * virtualTotalBorrowAssets(id) * lif >= seizedAssets * collateralPrice * virtualTotalBorrowShares(id) * Util.wad();
 
@@ -69,9 +69,9 @@ rule liquidateImprovePosition(MorphoLiquidateHarness.MarketParams marketParams, 
     uint256 newTotalShares = require_uint256(virtualTotalBorrowShares(id) - repaidShares);
     uint256 newTotalAssets = require_uint256(virtualTotalBorrowAssets(id) - repaidAssets);
 
-    require seizedAssets <= borrowerCollateral;
-
     uint256 newBorrowerAssets = summaryMulDivUp(newBorrowerShares, newTotalAssets, newTotalShares);
+    uint256 newBorrowerCollateral = require_uint256(borrowerCollateral - seizedAssets);
 
     assert repaidShares * borrowerCollateral >= seizedAssets * borrowerShares;
+    assert borrowerAssets * newBorrowerCollateral >= newBorrowerAssets * borrowerCollateral;
 }
