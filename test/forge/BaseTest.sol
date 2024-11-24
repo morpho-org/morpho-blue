@@ -353,7 +353,7 @@ contract BaseTest is Test {
         uint256 maxRepaidAssets = morpho.collateral(_id, borrower).mulDivDown(collateralPrice, ORACLE_PRICE_SCALE)
             .wDivDown(_liquidationIncentiveFactor(_marketParams.lltv));
 
-        (,, uint256 totalBorrowAssets, uint256 totalBorrowShares) = morpho.expectedMarketBalances(marketParams);
+        (,, uint256 totalBorrowAssets, uint256 totalBorrowShares) = morpho.expectedMarketBalances(_marketParams);
         uint256 maxRepaidShares = maxRepaidAssets.toSharesDown(totalBorrowAssets, totalBorrowShares);
 
         uint256 borrowShares = morpho.borrowShares(_id, borrower);
