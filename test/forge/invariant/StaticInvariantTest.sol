@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import "./BaseMorphoInvariantTest.sol";
+import "./BaseInvariantTest.sol";
 
-contract MorphoStaticInvariantTest is BaseMorphoInvariantTest {
+contract StaticInvariantTest is BaseInvariantTest {
     /* INVARIANTS */
 
     function invariantHealthy() public {
