@@ -50,8 +50,8 @@ struct Signature {
 /// @dev Consider using the IMorpho interface instead of this one.
 interface IMorphoBase {
     /// @notice The EIP-712 domain separator.
-    /// @dev Warning: Every EIP-712 signed message based on this domain separator can be reused on another chain sharing
-    /// the same chain id because the domain separator would be the same.
+    /// @dev Warning: Every EIP-712 signed message based on this domain separator can be reused on chains sharing the
+    /// same chain id and on forks because the domain separator would be the same.
     function DOMAIN_SEPARATOR() external view returns (bytes32);
 
     /// @notice The owner of the contract.
@@ -196,7 +196,7 @@ interface IMorphoBase {
     ) external returns (uint256 assetsBorrowed, uint256 sharesBorrowed);
 
     /// @notice Repays `assets` or `shares` on behalf of `onBehalf`, optionally calling back the caller's
-    /// `onMorphoReplay` function with the given `data`.
+    /// `onMorphoRepay` function with the given `data`.
     /// @dev Either `assets` or `shares` should be zero. To repay max, pass the `shares`'s balance of `onBehalf`.
     /// @dev Repaying an amount corresponding to more shares than borrowed will revert for underflow.
     /// @dev It is advised to use the `shares` input when repaying the full position to avoid reverts due to conversion

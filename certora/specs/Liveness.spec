@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
+
+using Util as Util;
+
 methods {
     function extSloads(bytes32[]) external returns bytes32[] => NONDET DELETE;
     function supplyShares(MorphoInternalAccess.Id, address) external returns uint256 envfree;
@@ -13,8 +16,8 @@ methods {
     function nonce(address) external returns uint256 envfree;
     function isAuthorized(address, address) external returns bool envfree;
 
-    function libId(MorphoInternalAccess.MarketParams) external returns MorphoInternalAccess.Id envfree;
-    function refId(MorphoInternalAccess.MarketParams) external returns MorphoInternalAccess.Id envfree;
+    function Util.libId(MorphoInternalAccess.MarketParams) external returns MorphoInternalAccess.Id envfree;
+    function Util.refId(MorphoInternalAccess.MarketParams) external returns MorphoInternalAccess.Id envfree;
 
     function _._accrueInterest(MorphoInternalAccess.MarketParams memory marketParams, MorphoInternalAccess.Id id) internal with (env e) => summaryAccrueInterest(e, marketParams, id) expect void;
 
@@ -28,7 +31,7 @@ persistent ghost mapping(address => mathint) balance {
 }
 
 function summaryId(MorphoInternalAccess.MarketParams marketParams) returns MorphoInternalAccess.Id {
-    return refId(marketParams);
+    return Util.refId(marketParams);
 }
 
 function summarySafeTransferFrom(address token, address from, address to, uint256 amount) {
@@ -67,7 +70,7 @@ definition isCreated(MorphoInternalAccess.Id id) returns bool =
 
 // Check that tokens and shares are properly accounted following a supply.
 rule supplyChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data) {
-    MorphoInternalAccess.Id id = libId(marketParams);
+    MorphoInternalAccess.Id id = Util.libId(marketParams);
 
     // Safe require because Morpho cannot call such functions by itself.
     require currentContract != e.msg.sender;
@@ -103,7 +106,7 @@ rule canSupplyByPassingShares(env e, MorphoInternalAccess.MarketParams marketPar
 
 // Check that tokens and shares are properly accounted following a withdraw.
 rule withdrawChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, address receiver) {
-    MorphoInternalAccess.Id id = libId(marketParams);
+    MorphoInternalAccess.Id id = Util.libId(marketParams);
 
     // Assume that Morpho is not the receiver.
     require currentContract != receiver;
@@ -139,7 +142,7 @@ rule canWithdrawByPassingShares(env e, MorphoInternalAccess.MarketParams marketP
 
 // Check that tokens and shares are properly accounted following a borrow.
 rule borrowChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, address receiver) {
-    MorphoInternalAccess.Id id = libId(marketParams);
+    MorphoInternalAccess.Id id = Util.libId(marketParams);
 
     // Assume that Morpho is not the receiver.
     require currentContract != receiver;
@@ -175,7 +178,7 @@ rule canBorrowByPassingShares(env e, MorphoInternalAccess.MarketParams marketPar
 
 // Check that tokens and shares are properly accounted following a repay.
 rule repayChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data) {
-    MorphoInternalAccess.Id id = libId(marketParams);
+    MorphoInternalAccess.Id id = Util.libId(marketParams);
 
     // Safe require because Morpho cannot call such functions by itself.
     require currentContract != e.msg.sender;
@@ -214,7 +217,7 @@ rule canRepayByPassingShares(env e, MorphoInternalAccess.MarketParams marketPara
 
 // Check that tokens and balances are properly accounted following a supplyCollateral.
 rule supplyCollateralChangesTokensAndBalance(env e, MorphoInternalAccess.MarketParams marketParams, uint256 assets, address onBehalf, bytes data) {
-    MorphoInternalAccess.Id id = libId(marketParams);
+    MorphoInternalAccess.Id id = Util.libId(marketParams);
 
     // Safe require because Morpho cannot call such functions by itself.
     require currentContract != e.msg.sender;
@@ -233,7 +236,7 @@ rule supplyCollateralChangesTokensAndBalance(env e, MorphoInternalAccess.MarketP
 
 // Check that tokens and balances are properly accounted following a withdrawCollateral.
 rule withdrawCollateralChangesTokensAndBalance(env e, MorphoInternalAccess.MarketParams marketParams, uint256 assets, address onBehalf, address receiver) {
-    MorphoInternalAccess.Id id = libId(marketParams);
+    MorphoInternalAccess.Id id = Util.libId(marketParams);
 
     // Assume that Morpho is not the receiver.
     require currentContract != receiver;
@@ -254,7 +257,7 @@ rule withdrawCollateralChangesTokensAndBalance(env e, MorphoInternalAccess.Marke
 
 // Check that tokens are properly accounted following a liquidate.
 rule liquidateChangesTokens(env e, MorphoInternalAccess.MarketParams marketParams, address borrower, uint256 seized, uint256 repaidShares, bytes data) {
-    MorphoInternalAccess.Id id = libId(marketParams);
+    MorphoInternalAccess.Id id = Util.libId(marketParams);
 
     // Safe require because Morpho cannot call such functions by itself.
     require currentContract != e.msg.sender;
@@ -310,7 +313,7 @@ rule setAuthorizationWithSigChangesNonceAndAuthorizes(env e, MorphoInternalAcces
 
 // Check that one can always repay the debt in full.
 rule canRepayAll(env e, MorphoInternalAccess.MarketParams marketParams, uint256 shares, bytes data) {
-    MorphoInternalAccess.Id id = libId(marketParams);
+    MorphoInternalAccess.Id id = Util.libId(marketParams);
 
     // Assume no callback, which still allows to repay all.
     require data.length == 0;
@@ -341,7 +344,7 @@ rule canRepayAll(env e, MorphoInternalAccess.MarketParams marketParams, uint256 
 
 // Check the one can always withdraw all, under the condition that there are no outstanding debt on the market.
 rule canWithdrawAll(env e, MorphoInternalAccess.MarketParams marketParams, uint256 shares, address receiver) {
-    MorphoInternalAccess.Id id = libId(marketParams);
+    MorphoInternalAccess.Id id = Util.libId(marketParams);
 
     // Assume a full withdraw.
     require shares == supplyShares(id, e.msg.sender);
@@ -366,7 +369,7 @@ rule canWithdrawAll(env e, MorphoInternalAccess.MarketParams marketParams, uint2
 // Check that a user can always withdraw all, under the condition that this user does not have an outstanding debt.
 // Combined with the canRepayAll rule, this ensures that a borrower can always fully exit a market.
 rule canWithdrawCollateralAll(env e, MorphoInternalAccess.MarketParams marketParams, uint256 assets, address receiver) {
-    MorphoInternalAccess.Id id = libId(marketParams);
+    MorphoInternalAccess.Id id = Util.libId(marketParams);
 
     // Ensure a full withdrawCollateral.
     require assets == collateral(id, e.msg.sender);

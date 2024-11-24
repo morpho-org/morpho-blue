@@ -20,21 +20,24 @@ jobs:
           - AssetsAccounting
           - ConsistentState
           - ExactMath
+          - ExchangeRate
           - Health
           - LibSummary
           - Liveness
-          - RatioMath
           - Reentrancy
           - Reverts
+          - StayHealthy
           - Transfer
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
 
       - name: Install python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
+        with:
+          python-version: ">=3.9"
 
       - name: Install certora
         run: pip install certora-cli
@@ -43,7 +46,7 @@ jobs:
         run: |
           wget https://github.com/ethereum/solidity/releases/download/v0.8.19/solc-static-linux
           chmod +x solc-static-linux
-          sudo mv solc-static-linux /usr/local/bin/solc
+          sudo mv solc-static-linux /usr/local/bin/solc-0.8.19
 
       - name: Verify ${{ matrix.conf }}
         run: certoraRun certora/confs/${{ matrix.conf }}.conf

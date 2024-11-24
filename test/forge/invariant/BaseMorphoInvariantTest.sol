@@ -153,9 +153,12 @@ contract BaseMorphoInvariantTest is InvariantTest {
         logCall("liquidateSeizedAssets")
     {
         uint256 collateralPrice = oracle.price();
-        uint256 repaidAssets = seizedAssets.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE).wDivUp(
-            _liquidationIncentiveFactor(_marketParams.lltv)
-        );
+        uint256 liquidationIncentiveFactor = _liquidationIncentiveFactor(_marketParams.lltv);
+        (,, uint256 totalBorrowAssets, uint256 totalBorrowShares) = morpho.expectedMarketBalances(_marketParams);
+        uint256 seizedAssetsQuoted = seizedAssets.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE);
+        uint256 repaidShares =
+            seizedAssetsQuoted.wDivUp(liquidationIncentiveFactor).toSharesUp(totalBorrowAssets, totalBorrowShares);
+        uint256 repaidAssets = repaidShares.toAssetsUp(totalBorrowAssets, totalBorrowShares);
 
         loanToken.setBalance(msg.sender, repaidAssets);
 
@@ -213,7 +216,7 @@ contract BaseMorphoInvariantTest is InvariantTest {
     function withdrawAssetsOnBehalfNoRevert(uint256 marketSeed, uint256 assets, uint256 onBehalfSeed, address receiver)
         external
     {
-        receiver = _boundAddressNotZero(receiver);
+        vm.assume(receiver != address(0));
 
         MarketParams memory _marketParams = _randomMarket(marketSeed);
 
@@ -229,7 +232,7 @@ contract BaseMorphoInvariantTest is InvariantTest {
     function borrowAssetsOnBehalfNoRevert(uint256 marketSeed, uint256 assets, uint256 onBehalfSeed, address receiver)
         external
     {
-        receiver = _boundAddressNotZero(receiver);
+        vm.assume(receiver != address(0));
 
         MarketParams memory _marketParams = _randomMarket(marketSeed);
 
@@ -283,7 +286,7 @@ contract BaseMorphoInvariantTest is InvariantTest {
         uint256 onBehalfSeed,
         address receiver
     ) external {
-        receiver = _boundAddressNotZero(receiver);
+        vm.assume(receiver != address(0));
 
         MarketParams memory _marketParams = _randomMarket(marketSeed);
 

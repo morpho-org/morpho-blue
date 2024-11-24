@@ -139,13 +139,6 @@ contract BaseTest is Test {
         return bound(blocks, 1, type(uint32).max);
     }
 
-    /// @dev Bounds the fuzzing input to a non-zero address.
-    /// @dev This function should be used in place of `vm.assume` in invariant test handler functions:
-    /// https://github.com/foundry-rs/foundry/issues/4190.
-    function _boundAddressNotZero(address input) internal view virtual returns (address) {
-        return address(uint160(bound(uint256(uint160(input)), 1, type(uint160).max)));
-    }
-
     function _supply(uint256 amount) internal {
         loanToken.setBalance(address(this), amount);
         morpho.supply(marketParams, amount, 0, address(this), hex"");
@@ -194,9 +187,9 @@ contract BaseTest is Test {
 
         uint256 maxCollateral =
             amountBorrowed.wDivDown(marketParams.lltv).mulDivDown(ORACLE_PRICE_SCALE, priceCollateral);
-        amountCollateral = bound(amountBorrowed, 0, Math.min(maxCollateral, MAX_COLLATERAL_ASSETS));
+        amountCollateral = bound(amountCollateral, 0, Math.min(maxCollateral, MAX_COLLATERAL_ASSETS));
 
-        vm.assume(amountCollateral > 0);
+        vm.assume(amountCollateral > 0 && amountCollateral < maxCollateral);
         return (amountCollateral, amountBorrowed, priceCollateral);
     }
 
@@ -312,12 +305,8 @@ contract BaseTest is Test {
     {
         Id _id = _marketParams.id();
 
-        uint256 borrowShares = morpho.borrowShares(_id, onBehalf);
-
         (,, uint256 totalBorrowAssets, uint256 totalBorrowShares) = morpho.expectedMarketBalances(_marketParams);
-        // Rounding assets up can yield a value larger than `totalBorrowAssets` in case `totalBorrowAssets` is zero.
-        uint256 maxRepayAssets =
-            UtilsLib.min(borrowShares.toAssetsUp(totalBorrowAssets, totalBorrowShares), totalBorrowAssets);
+        uint256 maxRepayAssets = morpho.borrowShares(_id, onBehalf).toAssetsDown(totalBorrowAssets, totalBorrowShares);
 
         return bound(assets, 0, maxRepayAssets);
     }
@@ -341,19 +330,16 @@ contract BaseTest is Test {
     {
         Id _id = _marketParams.id();
 
-        (,, uint256 totalBorrowAssets, uint256 totalBorrowShares) = morpho.expectedMarketBalances(_marketParams);
-
-        // Rounding assets up can yield a value larger than `totalBorrowAssets` in case `totalBorrowAssets` is zero.
-        uint256 maxRepaidAssets = UtilsLib.min(
-            morpho.borrowShares(_id, borrower).toAssetsUp(totalBorrowAssets, totalBorrowShares), totalBorrowAssets
-        );
-
         uint256 collateralPrice = IOracle(_marketParams.oracle).price();
+        uint256 borrowShares = morpho.borrowShares(_id, borrower);
+        (,, uint256 totalBorrowAssets, uint256 totalBorrowShares) = morpho.expectedMarketBalances(_marketParams);
+        uint256 maxRepaidAssets = borrowShares.toAssetsDown(totalBorrowAssets, totalBorrowShares);
         uint256 maxSeizedAssets = maxRepaidAssets.wMulDown(_liquidationIncentiveFactor(_marketParams.lltv)).mulDivDown(
             ORACLE_PRICE_SCALE, collateralPrice
         );
 
-        return bound(seizedAssets, 0, Math.min(morpho.collateral(_id, borrower), maxSeizedAssets));
+        uint256 collateral = morpho.collateral(_id, borrower);
+        return bound(seizedAssets, 0, Math.min(collateral, maxSeizedAssets));
     }
 
     function _boundLiquidateRepaidShares(MarketParams memory _marketParams, address borrower, uint256 repaidShares)
@@ -370,7 +356,8 @@ contract BaseTest is Test {
         (,, uint256 totalBorrowAssets, uint256 totalBorrowShares) = morpho.expectedMarketBalances(marketParams);
         uint256 maxRepaidShares = maxRepaidAssets.toSharesDown(totalBorrowAssets, totalBorrowShares);
 
-        return bound(repaidShares, 0, Math.min(morpho.borrowShares(_id, borrower), maxRepaidShares));
+        uint256 borrowShares = morpho.borrowShares(_id, borrower);
+        return bound(repaidShares, 0, Math.min(borrowShares, maxRepaidShares));
     }
 
     function _maxBorrow(MarketParams memory _marketParams, address user) internal view returns (uint256) {

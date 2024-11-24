@@ -2,7 +2,7 @@
 methods {
     function extSloads(bytes32[]) external returns bytes32[] => NONDET DELETE;
 
-    function maxFee() external returns uint256 envfree;
+    function Util.maxFee() external returns uint256 envfree;
 
     function MathLib.mulDivDown(uint256 a, uint256 b, uint256 c) internal returns uint256 => ghostMulDivDown(a,b,c);
     function MathLib.mulDivUp(uint256 a, uint256 b, uint256 c) internal returns uint256 => ghostMulDivUp(a,b,c);
