@@ -4,10 +4,7 @@ pragma solidity ^0.8.0;
 import "./BaseMorphoInvariantTest.sol";
 
 contract MorphoDynamicInvariantTest is BaseMorphoInvariantTest {
-    using MathLib for uint256;
-    using SharesMathLib for uint256;
     using MorphoLib for IMorpho;
-    using MorphoBalancesLib for IMorpho;
     using MarketParamsLib for MarketParams;
 
     uint256 internal immutable MIN_PRICE = ORACLE_PRICE_SCALE / 10;
