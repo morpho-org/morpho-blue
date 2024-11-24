@@ -19,6 +19,15 @@ contract BaseMorphoInvariantTest is InvariantTest {
     }
 
     function setUp() public virtual override {
+        _weightSelector(this.supplyAssetsOnBehalfNoRevert.selector, 15);
+        _weightSelector(this.supplySharesOnBehalfNoRevert.selector, 5);
+        _weightSelector(this.withdrawAssetsOnBehalfNoRevert.selector, 10);
+        _weightSelector(this.borrowAssetsOnBehalfNoRevert.selector, 15);
+        _weightSelector(this.repayAssetsOnBehalfNoRevert.selector, 10);
+        _weightSelector(this.repaySharesOnBehalfNoRevert.selector, 10);
+        _weightSelector(this.supplyCollateralOnBehalfNoRevert.selector, 15);
+        _weightSelector(this.withdrawCollateralOnBehalfNoRevert.selector, 10);
+
         super.setUp();
 
         allMarketParams.push(marketParams);

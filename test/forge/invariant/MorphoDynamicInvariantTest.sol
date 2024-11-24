@@ -14,14 +14,6 @@ contract MorphoDynamicInvariantTest is BaseMorphoInvariantTest {
     uint256 internal immutable MAX_PRICE = ORACLE_PRICE_SCALE * 10;
 
     function setUp() public virtual override {
-        _weightSelector(this.supplyAssetsOnBehalfNoRevert.selector, 15);
-        _weightSelector(this.supplySharesOnBehalfNoRevert.selector, 5);
-        _weightSelector(this.withdrawAssetsOnBehalfNoRevert.selector, 10);
-        _weightSelector(this.borrowAssetsOnBehalfNoRevert.selector, 15);
-        _weightSelector(this.repayAssetsOnBehalfNoRevert.selector, 10);
-        _weightSelector(this.repaySharesOnBehalfNoRevert.selector, 10);
-        _weightSelector(this.supplyCollateralOnBehalfNoRevert.selector, 15);
-        _weightSelector(this.withdrawCollateralOnBehalfNoRevert.selector, 10);
         _weightSelector(this.liquidateSeizedAssetsNoRevert.selector, 2);
         _weightSelector(this.liquidateRepaidSharesNoRevert.selector, 2);
         _weightSelector(this.setFeeNoRevert.selector, 1);
