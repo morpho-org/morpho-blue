@@ -50,6 +50,6 @@ jobs:
           sudo mv solc-static-linux /usr/local/bin/solc-0.8.19
 
       - name: Verify ${{ matrix.conf }}
-        run: certoraRun certora/confs/${{ matrix.conf }}.conf
+        run: certoraRun certora/confs/${{ matrix.conf }}.conf --wait_for_results
         env:
           CERTORAKEY: ${{ secrets.CERTORAKEY }}
