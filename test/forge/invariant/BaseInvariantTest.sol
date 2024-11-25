@@ -19,14 +19,14 @@ contract BaseInvariantTest is InvariantTest {
     }
 
     function setUp() public virtual override {
-        _weightSelector(this.supplyAssetsOnBehalfNoRevert.selector, 15);
-        _weightSelector(this.supplySharesOnBehalfNoRevert.selector, 5);
-        _weightSelector(this.withdrawAssetsOnBehalfNoRevert.selector, 10);
-        _weightSelector(this.borrowAssetsOnBehalfNoRevert.selector, 15);
-        _weightSelector(this.repayAssetsOnBehalfNoRevert.selector, 10);
-        _weightSelector(this.repaySharesOnBehalfNoRevert.selector, 10);
-        _weightSelector(this.supplyCollateralOnBehalfNoRevert.selector, 15);
-        _weightSelector(this.withdrawCollateralOnBehalfNoRevert.selector, 10);
+        selectors.push(this.supplyAssetsOnBehalfNoRevert.selector);
+        selectors.push(this.supplySharesOnBehalfNoRevert.selector);
+        selectors.push(this.withdrawAssetsOnBehalfNoRevert.selector);
+        selectors.push(this.borrowAssetsOnBehalfNoRevert.selector);
+        selectors.push(this.repayAssetsOnBehalfNoRevert.selector);
+        selectors.push(this.repaySharesOnBehalfNoRevert.selector);
+        selectors.push(this.supplyCollateralOnBehalfNoRevert.selector);
+        selectors.push(this.withdrawCollateralOnBehalfNoRevert.selector);
 
         super.setUp();
 

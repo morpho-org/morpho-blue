@@ -47,12 +47,6 @@ contract InvariantTest is BaseTest {
         vm.stopPrank();
     }
 
-    function _weightSelector(bytes4 selector, uint256 weight) internal {
-        for (uint256 i; i < weight; ++i) {
-            selectors.push(selector);
-        }
-    }
-
     /* HANDLERS */
 
     function mine(uint256 blocks) external {

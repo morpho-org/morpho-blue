@@ -11,11 +11,11 @@ contract DynamicInvariantTest is BaseInvariantTest {
     uint256 internal immutable MAX_PRICE = ORACLE_PRICE_SCALE * 10;
 
     function setUp() public virtual override {
-        _weightSelector(this.liquidateSeizedAssetsNoRevert.selector, 2);
-        _weightSelector(this.liquidateRepaidSharesNoRevert.selector, 2);
-        _weightSelector(this.setFeeNoRevert.selector, 1);
-        _weightSelector(this.setPrice.selector, 5);
-        _weightSelector(this.mine.selector, 100);
+        selectors.push(this.liquidateSeizedAssetsNoRevert.selector);
+        selectors.push(this.liquidateRepaidSharesNoRevert.selector);
+        selectors.push(this.setFeeNoRevert.selector);
+        selectors.push(this.setPrice.selector);
+        selectors.push(this.mine.selector);
 
         super.setUp();
     }
