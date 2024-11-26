@@ -61,12 +61,11 @@ rule liquidateImprovePosition(MorphoLiquidateHarness.MarketParams marketParams, 
     uint256 newTotalAssets = require_uint256(virtualTotalBorrowAssets(id) - repaidAssets);
 
     uint256 newBorrowerAssets = summaryMulDivUp(newBorrowerShares, newTotalAssets, newTotalShares);
-    uint256 newBorrowerAssetsDown = summaryMulDivDown(newBorrowerShares, newTotalAssets, newTotalShares);
     uint256 newBorrowerCollateral = require_uint256(borrowerCollateral - seizedAssets);
 
     assert repaidShares * borrowerCollateral >= seizedAssets * borrowerShares;
     assert borrowerShares * newBorrowerCollateral >= newBorrowerShares * borrowerCollateral;
     assert newTotalShares * virtualTotalBorrowAssets(id) >= newTotalAssets * virtualTotalBorrowShares(id);
-    require borrowerShares * virtualTotalBorrowAssets(id) * newTotalShares * newBorrowerCollateral >= newBorrowerShares * virtualTotalBorrowShares(id) * newTotalAssets * borrowerCollateral;
-    assert borrowerAssets * newBorrowerCollateral >= newBorrowerAssetsDown * borrowerCollateral;
+    assert borrowerShares * virtualTotalBorrowAssets(id) * newTotalShares * newBorrowerCollateral >= newBorrowerShares * virtualTotalBorrowShares(id) * newTotalAssets * borrowerCollateral;
+    assert borrowerAssets * newBorrowerCollateral >= newBorrowerAssets * borrowerCollateral;
 }
