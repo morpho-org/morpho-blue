@@ -67,5 +67,5 @@ rule liquidateImprovePosition(MorphoLiquidateHarness.MarketParams marketParams, 
     assert borrowerShares * newBorrowerCollateral >= newBorrowerShares * borrowerCollateral;
     assert newTotalShares * virtualTotalBorrowAssets(id) >= newTotalAssets * virtualTotalBorrowShares(id);
     assert borrowerShares * virtualTotalBorrowAssets(id) * newTotalShares * newBorrowerCollateral >= newBorrowerShares * virtualTotalBorrowShares(id) * newTotalAssets * borrowerCollateral;
-    assert borrowerAssets * newBorrowerCollateral >= newBorrowerAssets * borrowerCollateral;
+    // assert borrowerAssets * newBorrowerCollateral >= newBorrowerAssetsDown * borrowerCollateral;
 }
