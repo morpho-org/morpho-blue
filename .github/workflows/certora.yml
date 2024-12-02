@@ -23,6 +23,7 @@ jobs:
           - ExchangeRate
           - Health
           - LibSummary
+          - LiquidateBuffer
           - Liveness
           - Reentrancy
           - Reverts
