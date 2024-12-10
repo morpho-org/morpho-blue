@@ -31,8 +31,13 @@ rule liquidateImprovePosition(env e, MorphoHarness.MarketParams marketParams, ad
     assert borrowerCollateral * collateralPrice * virtualTotalBorrowShares(id) * Util.wad() >= borrowerShares * Util.oraclePriceScale() * virtualTotalBorrowAssets(id) * lif;
 
     uint256 seizedAssets;
-    uint256 repaidShares;
-    (seizedAssets, repaidShares) = liquidate(e, marketParams, borrower, seizedAssetsInput, repaidSharesInput, data);
+    uint256 repaidAssets;
+    (seizedAssets, repaidAssets) = liquidate(e, marketParams, borrower, seizedAssetsInput, repaidSharesInput, data);
+
+    assert collateral(id, borrower) != 0;
+
+    uint256 newBorrowerShares = borrowShares(id, borrower);
+    uint256 repaidShares = assert_uint256(borrowerShares - newBorrowerShares);
 
     require !priceChanged;
     assert repaidShares * borrowerCollateral >= seizedAssets * borrowerShares;
