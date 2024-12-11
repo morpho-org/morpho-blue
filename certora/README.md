@@ -72,7 +72,7 @@ Shares increase in value as interest is accrued.
 The share mechanism is implemented symmetrically for the borrow side: a share of borrow increasing in value over time represents additional owed interest.
 The rule `accrueInterestIncreasesSupplyExchangeRate` checks this property for the supply side with the following statement.
 
-```soldidity
+```solidity
     // Check that the exchange rate increases: assetsBefore/sharesBefore <= assetsAfter/sharesAfter
     assert assetsBefore * sharesAfter <= assetsAfter * sharesBefore;
 ```
