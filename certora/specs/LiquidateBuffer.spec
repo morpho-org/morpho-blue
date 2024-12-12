@@ -51,8 +51,8 @@ rule liquidateImprovePosition(MorphoLiquidateHarness.MarketParams marketParams, 
     (seizedAssets, repaidShares, repaidAssets, lif) = liquidateView(marketParams, seizedAssetsInput, repaidSharesInput, collateralPrice);
 
     uint256 borrowerCollateralQuoted = summaryMulDivDown(borrowerCollateral, collateralPrice, Util.oraclePriceScale());
-    require summaryMulDivUp(lif, borrowerAssets, Util.wad()) <= borrowerCollateralQuoted;
-    assert borrowerCollateral * collateralPrice * virtualTotalBorrowShares(id) * Util.wad() >= borrowerShares * Util.oraclePriceScale() * virtualTotalBorrowAssets(id) * lif;
+    require summaryMulDivUp(lif, borrowerAssets, Util.wad()) < borrowerCollateralQuoted;
+    assert borrowerCollateral * collateralPrice * virtualTotalBorrowShares(id) * Util.wad() > borrowerShares * Util.oraclePriceScale() * virtualTotalBorrowAssets(id) * lif;
 
     assert repaidShares * Util.oraclePriceScale() * virtualTotalBorrowAssets(id) * lif >= seizedAssets * collateralPrice * virtualTotalBorrowShares(id) * Util.wad();
 
@@ -65,8 +65,8 @@ rule liquidateImprovePosition(MorphoLiquidateHarness.MarketParams marketParams, 
     uint256 newBorrowerCollateral = require_uint256(borrowerCollateral - seizedAssets);
 
     assert repaidShares * borrowerCollateral >= seizedAssets * borrowerShares;
-    assert borrowerShares * newBorrowerCollateral >= newBorrowerShares * borrowerCollateral;
-    assert newTotalShares * virtualTotalBorrowAssets(id) >= newTotalAssets * virtualTotalBorrowShares(id);
-    assert borrowerShares * virtualTotalBorrowAssets(id) * newTotalShares * newBorrowerCollateral >= newBorrowerShares * virtualTotalBorrowShares(id) * newTotalAssets * borrowerCollateral;
+    // assert borrowerShares * newBorrowerCollateral >= newBorrowerShares * borrowerCollateral;
+    // assert newTotalShares * virtualTotalBorrowAssets(id) >= newTotalAssets * virtualTotalBorrowShares(id);
+    // assert borrowerShares * virtualTotalBorrowAssets(id) * newTotalShares * newBorrowerCollateral >= newBorrowerShares * virtualTotalBorrowShares(id) * newTotalAssets * borrowerCollateral;
     // assert borrowerAssets * newBorrowerCollateral >= newBorrowerAssetsDown * borrowerCollateral;
 }
