@@ -1,7 +1,7 @@
 {
   "name": "@morpho-org/morpho-blue",
   "description": "Morpho Blue Protocol",
-  "license": "BUSL-1.1",
+  "license": "SEE LICENSE IN README.md",
   "version": "1.0.0",
   "files": [
     "src",
