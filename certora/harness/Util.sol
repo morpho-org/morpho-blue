@@ -17,6 +17,10 @@ contract Util {
         return MAX_FEE;
     }
 
+    function oraclePriceScale() external pure returns (uint256) {
+        return ORACLE_PRICE_SCALE;
+    }
+
     function libId(MarketParams memory marketParams) external pure returns (Id) {
         return marketParams.id();
     }
