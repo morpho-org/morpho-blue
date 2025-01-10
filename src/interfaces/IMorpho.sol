@@ -112,8 +112,8 @@ interface IMorphoBase {
     /// on `transfer` and `transferFrom`. In particular, tokens with fees on transfer are not supported.
     /// - The IRM should not re-enter Morpho.
     /// - The oracle should return a price with the correct scaling.
-    /// @dev Here is a list of assumptions on the market's dependencies that could break Morpho's liveness properties
-    /// (funds could get stuck):
+    /// @dev Here is a list of assumptions on the market's dependencies which, if broken, could break Morpho's liveness
+    /// properties (funds could get stuck):
     /// - The token should not revert on `transfer` and `transferFrom` if balances and approvals are right.
     /// - The amount of assets supplied and borrowed should not go above ~1e35 (otherwise the computation of
     /// `toSharesUp` and `toSharesDown` can overflow).
