@@ -161,6 +161,12 @@ rule withdrawCollateralInputValidation(env e, MorphoHarness.MarketParams marketP
     assert assets == 0 || onBehalf == 0 || receiver == 0 => lastReverted;
 }
 
+// Check that flashLoan reverts when its inputs are not validated.
+rule flashLoanInputValidation(env e, address token, uint256 assets, bytes data) {
+    flashLoan@withrevert(e, token, assets, data);
+    assert assets == 0 => lastReverted;
+}
+
 // Check that liquidate reverts when its inputs are not validated.
 rule liquidateInputValidation(env e, MorphoHarness.MarketParams marketParams, address borrower, uint256 seizedAssets, uint256 repaidShares, bytes data) {
     liquidate@withrevert(e, marketParams, borrower, seizedAssets, repaidShares, data);
