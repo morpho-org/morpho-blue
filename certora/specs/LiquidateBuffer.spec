@@ -6,6 +6,8 @@ methods {
     function Util.lif(uint256) external returns (uint256) envfree;
     function Util.oraclePriceScale() external returns (uint256) envfree;
     function Util.wad() external returns (uint256) envfree;
+    function Morpho._isHealthy(MorphoHarness.MarketParams memory, MorphoHarness.Id,address) internal returns (bool) => NONDET;
+    function Morpho._accrueInterest(MorphoHarness.MarketParams memory) internal => NONDET;
 }
 
 rule liquidateImprovePosition(env e, MorphoHarness.MarketParams marketParams, address borrower, uint256 seizedAssetsInput, uint256 repaidSharesInput, bytes data) {
@@ -32,9 +34,9 @@ rule liquidateImprovePosition(env e, MorphoHarness.MarketParams marketParams, ad
 
     uint256 seizedAssets;
     uint256 repaidAssets;
-    (seizedAssets, repaidAssets) = liquidate(e, marketParams, borrower, seizedAssetsInput, repaidSharesInput, data);
+    (seizedAssets, _) = liquidate(e, marketParams, borrower, seizedAssetsInput, repaidSharesInput, data);
 
-    uint256 newBorrowerShares = borrowShares(id, borrower);
+    // uint256 newBorrowerShares = borrowShares(id, borrower);
     uint256 repaidShares = assert_uint256(borrowerShares - newBorrowerShares);
 
     require !priceChanged;
