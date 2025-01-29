@@ -65,8 +65,9 @@ rule liquidateImprovePosition(MorphoLiquidateHarness.MarketParams marketParams, 
     uint256 newBorrowerCollateral = require_uint256(borrowerCollateral - seizedAssets);
 
     assert repaidShares * borrowerCollateral >= seizedAssets * borrowerShares;
-    // assert borrowerShares * newBorrowerCollateral >= newBorrowerShares * borrowerCollateral;
-    // assert newTotalShares * virtualTotalBorrowAssets(id) >= newTotalAssets * virtualTotalBorrowShares(id);
-    // assert borrowerShares * virtualTotalBorrowAssets(id) * newTotalShares * newBorrowerCollateral >= newBorrowerShares * virtualTotalBorrowShares(id) * newTotalAssets * borrowerCollateral;
-    // assert borrowerAssets * newBorrowerCollateral >= newBorrowerAssetsDown * borrowerCollateral;
+
+    // Prove that the ratio of shares of debt over collateral is smaller after the liquidation.
+    assert borrowerShares * newBorrowerCollateral >= newBorrowerShares * borrowerCollateral;
+    // Prove that the value of borrow shares is smaller after the liquidation.
+    assert newTotalShares * virtualTotalBorrowAssets(id) >= newTotalAssets * virtualTotalBorrowShares(id);
 }
