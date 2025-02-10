@@ -83,7 +83,7 @@ contract BorrowIntegrationTest is BaseTest {
         vm.stopPrank();
     }
 
-    function testBorrowUnsufficientLiquidity(
+    function testBorrowInsufficientLiquidity(
         uint256 amountCollateral,
         uint256 amountSupplied,
         uint256 amountBorrowed,
