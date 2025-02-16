@@ -1,14 +1,29 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-import "Health.spec";
+using Util as Util;
 
 methods {
+    function extSloads(bytes32[]) external returns (bytes32[]) => NONDET DELETE;
+
+    function lastUpdate(MorphoHarness.Id) external returns (uint256) envfree;
+    function borrowShares(MorphoHarness.Id, address) external returns (uint256) envfree;
+    function collateral(MorphoHarness.Id, address) external returns (uint256) envfree;
+    function totalBorrowShares(MorphoHarness.Id) external returns (uint256) envfree;
+    function virtualTotalBorrowAssets(MorphoHarness.Id) external returns uint256 envfree;
+    function virtualTotalBorrowShares(MorphoHarness.Id) external returns uint256 envfree;
+
+    function Util.libId(MorphoHarness.MarketParams) external returns (MorphoHarness.Id) envfree;
     function Util.lif(uint256) external returns (uint256) envfree;
     function Util.oraclePriceScale() external returns (uint256) envfree;
     function Util.wad() external returns (uint256) envfree;
+
     function Morpho._isHealthy(MorphoHarness.MarketParams memory, MorphoHarness.Id,address) internal returns (bool) => NONDET;
     function Morpho._accrueInterest(MorphoHarness.MarketParams memory, MorphoHarness.Id) internal => NONDET;
+
+    function _.price() external => constantPrice expect uint256;
 }
+
+persistent ghost uint256 constantPrice;
 
 rule liquidateImprovePosition(env e, MorphoHarness.MarketParams marketParams, address borrower, uint256 seizedAssetsInput, uint256 repaidSharesInput, bytes data) {
     // Assume no callback for simplicity.
@@ -23,26 +38,24 @@ rule liquidateImprovePosition(env e, MorphoHarness.MarketParams marketParams, ad
     require borrowerShares <= totalBorrowShares(id);
 
     uint256 borrowerCollateral = collateral(id, borrower);
-    uint256 collateralPrice = mockPrice();
     uint256 lif = Util.lif(marketParams.lltv);
+    uint256 virtualTotalAssets = virtualTotalBorrowAssets(id);
+    uint256 virtualTotalShares = virtualTotalBorrowShares(id);
 
-    uint256 borrowerAssets = summaryMulDivUp(borrowerShares, virtualTotalBorrowAssets(id), virtualTotalBorrowShares(id));
-    uint256 borrowerCollateralQuoted = summaryMulDivDown(borrowerCollateral, collateralPrice, Util.oraclePriceScale());
-
-    require summaryMulDivUp(lif, borrowerAssets, Util.wad()) < borrowerCollateralQuoted;
-    assert borrowerCollateral * collateralPrice * virtualTotalBorrowShares(id) * Util.wad() > borrowerShares * Util.oraclePriceScale() * virtualTotalBorrowAssets(id) * lif;
+    require borrowerCollateral * constantPrice * virtualTotalAssets * Util.wad() > borrowerShares * Util.oraclePriceScale() * virtualTotalShares * lif;
 
     uint256 seizedAssets;
     uint256 repaidAssets;
-    (seizedAssets, _) = liquidate(e, marketParams, borrower, seizedAssetsInput, repaidSharesInput, data);
+    (seizedAssets, repaidAssets) = liquidate(e, marketParams, borrower, seizedAssetsInput, repaidSharesInput, data);
+    assert repaidAssets * lif * Util.oraclePriceScale() >= seizedAssets * constantPrice * Util.wad();
 
-    // uint256 newBorrowerShares = borrowShares(id, borrower);
+    uint256 newBorrowerShares = borrowShares(id, borrower);
+    uint256 newBorrowerCollateral = collateral(id, borrower);
     uint256 repaidShares = assert_uint256(borrowerShares - newBorrowerShares);
+    uint256 newVirtualTotalAssets = virtualTotalBorrowAssets(id);
+    uint256 newVirtualTotalShares = virtualTotalBorrowShares(id);
 
-    require !priceChanged;
     require collateral(id, borrower) != 0;
-    assert repaidShares * borrowerCollateral >= seizedAssets * borrowerShares;
-    // assert borrowerShares * newBorrowerCollateral >= newBorrowerShares * borrowerCollateral;
-    // assert newTotalShares * OldVirtualTotalBorrowAssets >= newTotalAssets * OldVirtualTotalBorrowShares;
-
+    assert borrowerShares * newBorrowerCollateral >= newBorrowerShares * borrowerCollateral;
+    assert  newVirtualTotalShares * virtualTotalAssets >= newVirtualTotalAssets * virtualTotalShares;
 }
