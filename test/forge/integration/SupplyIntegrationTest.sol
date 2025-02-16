@@ -32,7 +32,7 @@ contract SupplyIntegrationTest is BaseTest {
         morpho.supply(marketParams, amount, 0, address(0), hex"");
     }
 
-    function testSupplyInconsistantInput(uint256 amount, uint256 shares) public {
+    function testSupplyInconsistentInput(uint256 amount, uint256 shares) public {
         amount = bound(amount, 1, MAX_TEST_AMOUNT);
         shares = bound(shares, 1, MAX_TEST_SHARES);
 
