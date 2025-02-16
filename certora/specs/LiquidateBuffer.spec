@@ -28,8 +28,6 @@ rule liquidateImprovePosition(MorphoLiquidateHarness.MarketParams marketParams, 
 
     require borrowerShares <= market_(id).totalBorrowShares;
 
-    require (seizedAssetsInput > 0 && repaidSharesInput == 0) || (seizedAssetsInput == 0 && repaidSharesInput > 0);
-
     uint256 seizedAssets;
     uint256 repaidShares;
     uint256 repaidAssets;

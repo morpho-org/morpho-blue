@@ -16,6 +16,7 @@ contract MorphoLiquidateHarness is MorphoHarness {
         returns (uint256, uint256, uint256, uint256)
     {
         Id id = marketParams.id();
+        require(UtilsLib.exactlyOneZero(seizedAssets, repaidShares), ErrorsLib.INCONSISTENT_INPUT);
 
         uint256 collateralPrice = IOracle(marketParams.oracle).price();
 
