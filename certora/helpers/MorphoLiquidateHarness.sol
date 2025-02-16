@@ -10,6 +10,7 @@ contract MorphoLiquidateHarness is MorphoHarness {
     using SharesMathLib for uint256;
 
     struct LiquidateReturnParams {
+        uint256 repaidAssets;
         uint256 liquidationIncentiveFactor;
         uint256 newBorrowerShares;
         uint256 newTotalShares;
@@ -18,6 +19,14 @@ contract MorphoLiquidateHarness is MorphoHarness {
     }
 
     constructor(address newOwner) MorphoHarness(newOwner) {}
+
+    function virtualShares() external pure returns (uint256) {
+        return SharesMathLib.VIRTUAL_SHARES;
+    }
+
+    function virtualAssets() external pure returns (uint256) {
+        return SharesMathLib.VIRTUAL_ASSETS;
+    }
 
     function liquidateView(
         MarketParams memory marketParams,
@@ -46,6 +55,7 @@ contract MorphoLiquidateHarness is MorphoHarness {
         }
         uint256 repaidAssets = repaidShares.toAssetsUp(market[id].totalBorrowAssets, market[id].totalBorrowShares);
 
+        params.repaidAssets = repaidAssets;
         params.liquidationIncentiveFactor = liquidationIncentiveFactor;
         params.newBorrowerShares = position[id][borrower].borrowShares - repaidShares.toUint128();
         params.newTotalShares = market[id].totalBorrowShares - repaidShares.toUint128();

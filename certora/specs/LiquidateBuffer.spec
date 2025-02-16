@@ -9,6 +9,8 @@ methods {
     function collateral(MorphoLiquidateHarness.Id, address) external returns (uint256) envfree;
     function totalBorrowShares(MorphoLiquidateHarness.Id) external returns (uint256) envfree;
     function totalBorrowAssets(MorphoLiquidateHarness.Id) external returns (uint256) envfree;
+    function virtualAssets() external returns uint256 envfree;
+    function virtualShares() external returns uint256 envfree;
     function virtualTotalBorrowAssets(MorphoLiquidateHarness.Id) external returns uint256 envfree;
     function virtualTotalBorrowShares(MorphoLiquidateHarness.Id) external returns uint256 envfree;
     function liquidateView(MorphoLiquidateHarness.MarketParams, address, uint256, uint256) external returns (MorphoLiquidateHarness.LiquidateReturnParams) envfree;
@@ -34,8 +36,8 @@ rule liquidateImprovePosition(MorphoLiquidateHarness.MarketParams marketParams, 
     MorphoLiquidateHarness.LiquidateReturnParams p;
     p = liquidateView(marketParams, borrower, seizedAssets, repaidShares);
 
-    // Needed require, to refactor.
-    require p.newTotalAssets > 0;
+    // Hint for the prover.
+    assert p.repaidAssets * p.liquidationIncentiveFactor * Util.oraclePriceScale() >= seizedAssets * constantPrice * Util.wad();
 
     // Let borrowerAssets = borrowerShares * virtualTotalBorrowAssets(id) / virtualTotalBorrowShares(id)
     // and borrowerCollateralQuoted = borrowerCollateral * constantPrice / Util.oraclePriceScale()
@@ -44,6 +46,8 @@ rule liquidateImprovePosition(MorphoLiquidateHarness.MarketParams marketParams, 
 
     // Prove that the ratio of shares of debt over collateral is smaller after the liquidation.
     assert borrowerShares * p.newBorrowerCollateral >= p.newBorrowerShares * borrowerCollateral;
+
     // Prove that the value of borrow shares is smaller after the liquidation.
-    assert (p.newTotalShares + 1000000) * virtualTotalBorrowAssets(id) >= (p.newTotalAssets + 1) * virtualTotalBorrowShares(id);
+    // Note that this is only shown for the case where there are still borrow positions on the markets.
+    assert p.newTotalAssets > 0 => (p.newTotalShares + virtualShares()) * virtualTotalBorrowAssets(id) >= (p.newTotalAssets + virtualAssets()) * virtualTotalBorrowShares(id);
 }
