@@ -10,13 +10,15 @@ contract MorphoLiquidateHarness is MorphoHarness {
 
     constructor(address newOwner) MorphoHarness(newOwner) {}
 
-    function liquidateView(
-        MarketParams memory marketParams,
-        uint256 seizedAssets,
-        uint256 repaidShares,
-        uint256 collateralPrice
-    ) external view returns (uint256, uint256, uint256, uint256) {
+    function liquidateView(MarketParams memory marketParams, uint256 seizedAssets, uint256 repaidShares)
+        external
+        view
+        returns (uint256, uint256, uint256, uint256)
+    {
         Id id = marketParams.id();
+
+        uint256 collateralPrice = IOracle(marketParams.oracle).price();
+
         uint256 liquidationIncentiveFactor = UtilsLib.min(
             MAX_LIQUIDATION_INCENTIVE_FACTOR, WAD.wDivDown(WAD - LIQUIDATION_CURSOR.wMulDown(WAD - marketParams.lltv))
         );
