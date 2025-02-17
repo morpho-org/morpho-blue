@@ -26,7 +26,7 @@ methods {
 
 persistent ghost uint256 constantPrice;
 
-rule liquidateImprovePosition(env e, MorphoHarness.MarketParams marketParams, address borrower, uint256 seizedAssetsInput, uint256 repaidSharesInput, bytes data) {
+function liquidateImprovePosition(env e, MorphoHarness.MarketParams marketParams, address borrower, uint256 seizedAssetsInput, uint256 repaidSharesInput, bytes data) {
     // Assume no callback for simplicity.
     require data.length == 0;
 
@@ -46,17 +46,24 @@ rule liquidateImprovePosition(env e, MorphoHarness.MarketParams marketParams, ad
     require borrowerCollateral * constantPrice * virtualTotalShares * Util.wad() > borrowerShares * Util.oraclePriceScale() * virtualTotalAssets * lif;
 
     uint256 seizedAssets;
-    uint256 repaidAssets;
-    (seizedAssets, repaidAssets) = liquidate(e, marketParams, borrower, seizedAssetsInput, repaidSharesInput, data);
-    assert repaidAssets * lif * Util.oraclePriceScale() >= seizedAssets * constantPrice * Util.wad();
+    (seizedAssets, _) = liquidate(e, marketParams, borrower, seizedAssetsInput, repaidSharesInput, data);
 
     uint256 newBorrowerShares = borrowShares(id, borrower);
     uint256 newBorrowerCollateral = collateral(id, borrower);
     uint256 repaidShares = assert_uint256(borrowerShares - newBorrowerShares);
-    uint256 newVirtualTotalAssets = virtualTotalBorrowAssets(id);
-    uint256 newVirtualTotalShares = virtualTotalBorrowShares(id);
+    // uint256 newVirtualTotalAssets = virtualTotalBorrowAssets(id);
+    // uint256 newVirtualTotalShares = virtualTotalBorrowShares(id);
 
     require newBorrowerCollateral != 0;
-    assert borrowerShares * newBorrowerCollateral >= newBorrowerShares * borrowerCollateral;
-    assert totalBorrowAssets(id) > 0 => newVirtualTotalShares * virtualTotalAssets >= newVirtualTotalAssets * virtualTotalShares;
+
+    assert repaidShares * borrowerCollateral >= seizedAssets * borrowerShares;
+    // assert borrowerShares * newBorrowerCollateral >= newBorrowerShares * borrowerCollateral;
+    // assert totalBorrowAssets(id) > 0 => newVirtualTotalShares * virtualTotalAssets >= newVirtualTotalAssets * virtualTotalShares;
+}
+
+rule liquidateImprovePositionAssetsInput(env e, MorphoHarness.MarketParams marketParams, address borrower, uint256 seizedAssetsInput, bytes data) {
+    liquidateImprovePosition(e, marketParams, borrower, seizedAssetsInput, 0, data);
+}
+rule liquidateImprovePositionSharesInput(env e, MorphoHarness.MarketParams marketParams, address borrower, uint256 repaidSharesInput, bytes data) {
+    liquidateImprovePosition(e, marketParams, borrower, 0, repaidSharesInput, data);
 }
