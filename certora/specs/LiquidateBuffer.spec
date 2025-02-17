@@ -9,6 +9,7 @@ methods {
     function borrowShares(MorphoHarness.Id, address) external returns (uint256) envfree;
     function collateral(MorphoHarness.Id, address) external returns (uint256) envfree;
     function totalBorrowShares(MorphoHarness.Id) external returns (uint256) envfree;
+    function totalBorrowAssets(MorphoHarness.Id) external returns (uint256) envfree;
     function virtualTotalBorrowAssets(MorphoHarness.Id) external returns uint256 envfree;
     function virtualTotalBorrowShares(MorphoHarness.Id) external returns uint256 envfree;
 
