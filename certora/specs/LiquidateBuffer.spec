@@ -36,9 +36,6 @@ rule liquidateImprovePosition(MorphoLiquidateHarness.MarketParams marketParams, 
     MorphoLiquidateHarness.LiquidateReturnParams p;
     p = liquidateView(marketParams, borrower, seizedAssets, repaidShares);
 
-    // Hint for the prover.
-    assert p.repaidAssets * p.liquidationIncentiveFactor * Util.oraclePriceScale() >= seizedAssets * constantPrice * Util.wad();
-
     // Let borrowerAssets = borrowerShares * virtualTotalBorrowAssets(id) / virtualTotalBorrowShares(id)
     // and borrowerCollateralQuoted = borrowerCollateral * constantPrice / Util.oraclePriceScale()
     // Then the following line is essentially borrowerAssets / borrowerCollateralQuoted < 1 / LIF
