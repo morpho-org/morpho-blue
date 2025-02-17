@@ -42,7 +42,7 @@ rule liquidateImprovePosition(env e, MorphoHarness.MarketParams marketParams, ad
     uint256 virtualTotalAssets = virtualTotalBorrowAssets(id);
     uint256 virtualTotalShares = virtualTotalBorrowShares(id);
 
-    require borrowerCollateral * constantPrice * virtualTotalAssets * Util.wad() > borrowerShares * Util.oraclePriceScale() * virtualTotalShares * lif;
+    require borrowerCollateral * constantPrice * virtualTotalShares * Util.wad() > borrowerShares * Util.oraclePriceScale() * virtualTotalAssets * lif;
 
     uint256 seizedAssets;
     uint256 repaidAssets;
@@ -55,7 +55,7 @@ rule liquidateImprovePosition(env e, MorphoHarness.MarketParams marketParams, ad
     uint256 newVirtualTotalAssets = virtualTotalBorrowAssets(id);
     uint256 newVirtualTotalShares = virtualTotalBorrowShares(id);
 
-    require collateral(id, borrower) != 0;
+    require newBorrowerCollateral != 0;
     assert borrowerShares * newBorrowerCollateral >= newBorrowerShares * borrowerCollateral;
-    assert  newVirtualTotalShares * virtualTotalAssets >= newVirtualTotalAssets * virtualTotalShares;
+    assert totalBorrowAssets(id) > 0 => newVirtualTotalShares * virtualTotalAssets >= newVirtualTotalAssets * virtualTotalShares;
 }
