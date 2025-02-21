@@ -18,34 +18,8 @@ methods {
     function Util.libId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
     function isHealthy(MorphoHarness.MarketParams, address user) external returns bool envfree;
 
-    function _.price() external => mockPrice() expect uint256;
-    function MathLib.mulDivDown(uint256 a, uint256 b, uint256 c) internal returns uint256 => summaryMulDivDown(a,b,c);
-    function MathLib.mulDivUp(uint256 a, uint256 b, uint256 c) internal returns uint256 => summaryMulDivUp(a,b,c);
+    function _.price() external => CONSTANT expect uint256;
     function UtilsLib.min(uint256 a, uint256 b) internal returns uint256 => summaryMin(a,b);
-}
-
-persistent ghost uint256 lastPrice;
-persistent ghost bool priceChanged;
-
-function mockPrice() returns uint256 {
-    uint256 updatedPrice;
-    if (updatedPrice != lastPrice) {
-        priceChanged = true;
-        lastPrice = updatedPrice;
-    }
-    return updatedPrice;
-}
-
-function summaryMulDivUp(uint256 x, uint256 y, uint256 d) returns uint256 {
-    // Safe require because the reference implementation would revert.
-    require d != 0;
-    return require_uint256((x * y + (d - 1)) / d);
-}
-
-function summaryMulDivDown(uint256 x, uint256 y, uint256 d) returns uint256 {
-    // Safe require because the reference implementation would revert.
-    require d != 0;
-    return require_uint256((x * y) / d);
 }
 
 function summaryMin(uint256 a, uint256 b) returns uint256 {
@@ -74,7 +48,7 @@ filtered { f -> !f.isView }
 
     mathint collateralAfter = collateral(id, user);
 
-    assert !priceChanged => collateralAfter >= collateralBefore;
+    assert collateralAfter >= collateralBefore;
 }
 
 // Check that users without collateral also have no debt.
@@ -94,7 +68,6 @@ rule liquidateEquivalentInputDebtAndInputCollateral(env e, MorphoHarness.MarketP
 
     uint256 repaidAssets1;
     _, repaidAssets1 = liquidate(e, marketParams, borrower, seizedAssets, 0, data);
-    require !priceChanged;
     // Omit the bad debt realization case.
     require collateral(id, borrower) != 0;
     uint256 sharesAfter = borrowShares(id, borrower);
@@ -102,7 +75,6 @@ rule liquidateEquivalentInputDebtAndInputCollateral(env e, MorphoHarness.MarketP
 
     uint256 repaidAssets2;
     _, repaidAssets2 = liquidate(e, marketParams, borrower, 0, repaidShares1, data) at init;
-    require !priceChanged;
 
     assert repaidAssets1 == repaidAssets2;
 }
