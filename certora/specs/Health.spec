@@ -18,7 +18,7 @@ methods {
     function Util.libId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
     function isHealthy(MorphoHarness.MarketParams, address user) external returns bool envfree;
 
-    function _.price() external => CONSTANT expect uint256;
+    function _.price() external => CONSTANT;
     function UtilsLib.min(uint256 a, uint256 b) internal returns uint256 => summaryMin(a,b);
 }
 
