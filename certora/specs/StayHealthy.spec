@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 import "Health.spec";
 
+function mulDivUp(uint256 x, uint256 y, uint256 d) returns uint256 {
+    assert d != 0;
+    return assert_uint256((x * y + (d - 1)) / d);
+}
+
 // Check that without accruing interest, no interaction can put an healthy account into an unhealthy one.
 // The liquidate function times out in this rule, but has been checked separately.
 rule stayHealthy(env e, method f, calldataarg data)
@@ -26,11 +31,6 @@ filtered {
     require borrowShares(id, user) <= totalBorrowShares(id);
 
     assert isHealthy(marketParams, user);
-}
-
-function mulDivUp(uint256 x, uint256 y, uint256 d) returns uint256 {
-    assert d != 0;
-    return assert_uint256((x * y + (d - 1)) / d);
 }
 
 // The liquidate case for the stayHealthy rule, assuming no bad debt realization, otherwise it times out.
