@@ -28,6 +28,12 @@ filtered {
     assert isHealthy(marketParams, user);
 }
 
+// Unsafe requires here.
+function mulDivUp(uint256 x, uint256 y, uint256 d) returns uint256 {
+    require d != 0;
+    return require_uint256((x * y + (d - 1)) / d);
+}
+
 // The liquidate case for the stayHealthy rule, assuming no bad debt realization, otherwise it times out.
 // This particular rule makes the following assumptions:
 //   - the market of the liquidation is the market of the user, see the *DifferentMarkets rule,
@@ -40,7 +46,7 @@ rule stayHealthyLiquidate(env e, MorphoHarness.MarketParams marketParams, addres
     require isHealthy(marketParams, user);
 
     uint256 debtSharesBefore = borrowShares(id, user);
-    mathint debtAssetsBefore = (debtSharesBefore * virtualTotalBorrowAssets(id)) / virtualTotalBorrowShares(id);
+    mathint debtAssetsBefore = mulDivUp(debtSharesBefore, virtualTotalBorrowAssets(id), virtualTotalBorrowShares(id));
     // Safe require because of the invariants onlyEnabledLltv and lltvSmallerThanWad in ConsistentState.spec.
     require marketParams.lltv < 10^18;
     // Assumption to ensure that no interest is accumulated.
@@ -57,7 +63,7 @@ rule stayHealthyLiquidate(env e, MorphoHarness.MarketParams marketParams, addres
 
     assert user != borrower;
     assert debtSharesBefore == borrowShares(id, user);
-    assert debtAssetsBefore >= (debtSharesBefore * virtualTotalBorrowAssets(id)) / virtualTotalBorrowShares(id);
+    assert debtAssetsBefore >= mulDivUp(debtSharesBefore, virtualTotalBorrowAssets(id), virtualTotalBorrowShares(id));
 
     assert isHealthy(marketParams, user);
 }
