@@ -42,13 +42,11 @@ filtered { f -> !f.isView }
     // Assume that the user is healthy.
     require isHealthy(marketParams, user);
 
-    mathint collateralBefore = collateral(id, user);
+    uint256 collateralBefore = collateral(id, user);
 
     f(e, data);
 
-    mathint collateralAfter = collateral(id, user);
-
-    assert collateralAfter >= collateralBefore;
+    assert collateral(id, user) >= collateralBefore;
 }
 
 // Check that users without collateral also have no debt.
