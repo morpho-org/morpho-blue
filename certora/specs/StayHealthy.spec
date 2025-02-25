@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 import "Health.spec";
 
+function mulDivUp(uint256 x, uint256 y, uint256 d) returns uint256 {
+    assert d != 0;
+    return assert_uint256((x * y + (d - 1)) / d);
+}
+
 // Check that without accruing interest, no interaction can put an healthy account into an unhealthy one.
 // The liquidate function times out in this rule, but has been checked separately.
 rule stayHealthy(env e, method f, calldataarg data)
@@ -25,8 +30,7 @@ filtered {
     // Safe require because of the invariant sumBorrowSharesCorrect.
     require borrowShares(id, user) <= totalBorrowShares(id);
 
-    bool stillHealthy = isHealthy(marketParams, user);
-    assert !priceChanged => stillHealthy;
+    assert isHealthy(marketParams, user);
 }
 
 // The liquidate case for the stayHealthy rule, assuming no bad debt realization, otherwise it times out.
@@ -41,14 +45,13 @@ rule stayHealthyLiquidate(env e, MorphoHarness.MarketParams marketParams, addres
     require isHealthy(marketParams, user);
 
     uint256 debtSharesBefore = borrowShares(id, user);
-    uint256 debtAssetsBefore = summaryMulDivUp(debtSharesBefore, virtualTotalBorrowAssets(id), virtualTotalBorrowShares(id));
+    uint256 debtAssetsBefore = mulDivUp(debtSharesBefore, virtualTotalBorrowAssets(id), virtualTotalBorrowShares(id));
     // Safe require because of the invariants onlyEnabledLltv and lltvSmallerThanWad in ConsistentState.spec.
     require marketParams.lltv < 10^18;
     // Assumption to ensure that no interest is accumulated.
     require lastUpdate(id) == e.block.timestamp;
 
     liquidate(e, marketParams, borrower, seizedAssets, 0, data);
-    require !priceChanged;
 
     // Safe require because of the invariant sumBorrowSharesCorrect.
     require borrowShares(id, user) <= totalBorrowShares(id);
@@ -57,12 +60,12 @@ rule stayHealthyLiquidate(env e, MorphoHarness.MarketParams marketParams, addres
     // Assume no bad debt realization.
     require collateral(id, borrower) > 0;
 
+    bool stillHealthy = isHealthy(marketParams, user);
+
     assert user != borrower;
     assert debtSharesBefore == borrowShares(id, user);
-    assert debtAssetsBefore >= summaryMulDivUp(debtSharesBefore, virtualTotalBorrowAssets(id), virtualTotalBorrowShares(id));
+    assert debtAssetsBefore >= mulDivUp(debtSharesBefore, virtualTotalBorrowAssets(id), virtualTotalBorrowShares(id));
 
-    bool stillHealthy = isHealthy(marketParams, user);
-    require !priceChanged;
     assert stillHealthy;
 }
 
@@ -82,14 +85,11 @@ rule stayHealthyLiquidateDifferentMarkets(env e, MorphoHarness.MarketParams mark
     require liquidationMarketParams != marketParams;
 
     liquidate(e, liquidationMarketParams, borrower, seizedAssets, 0, data);
-    require !priceChanged;
 
     // Safe require because of the invariant sumBorrowSharesCorrect.
     require borrowShares(id, user) <= totalBorrowShares(id);
 
-    bool stillHealthy = isHealthy(marketParams, user);
-    require !priceChanged;
-    assert stillHealthy;
+    assert isHealthy(marketParams, user);
 }
 
 rule stayHealthyLiquidateLastBorrow(env e, MorphoHarness.MarketParams marketParams, address borrower, uint256 seizedAssets, bytes data) {
@@ -105,14 +105,11 @@ rule stayHealthyLiquidateLastBorrow(env e, MorphoHarness.MarketParams marketPara
     require lastUpdate(id) == e.block.timestamp;
 
     liquidate(e, marketParams, borrower, seizedAssets, 0, data);
-    require !priceChanged;
 
     // Safe require because of the invariant sumBorrowSharesCorrect.
     require borrowShares(id, user) <= totalBorrowShares(id);
     // Assume that there is no remaining borrow on the market after liquidation.
     require totalBorrowAssets(id) == 0;
 
-    bool stillHealthy = isHealthy(marketParams, user);
-    require !priceChanged;
-    assert stillHealthy;
+    assert isHealthy(marketParams, user);
 }
