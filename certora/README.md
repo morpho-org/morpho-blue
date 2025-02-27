@@ -277,12 +277,3 @@ For example, at the root of the repository:
 ```
 certoraRun certora/confs/ConsistentState.conf --rule borrowLessThanSupply
 ```
-
-The `certora-cli` package also includes a `certoraMutate` binary.
-The file [`gambit.conf`](gambit.conf) provides a default configuration of the mutations.
-You can test to mutate the code and check it against a particular specification.
-For example, at the root of the repository:
-
-```
-certoraMutate --prover_conf certora/confs/ConsistentState.conf --mutation_conf certora/gambit.conf
-```
