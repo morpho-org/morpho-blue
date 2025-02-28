@@ -95,7 +95,7 @@ where `sumSupplyShares` only exists in the specification, and is defined to be a
 To ensure proper collateralization, a liquidation system is put in place, where unhealthy positions can be liquidated.
 A position is said to be healthy if the ratio of the borrowed value over collateral value is smaller than the liquidation loan-to-value (LLTV) of that market.
 This leaves a safety buffer before the position can be insolvent, where the aforementioned ratio is above 1.
-To ensure that liquidators have the time to interact with unhealthy positions, it is formally verified that this buffer is respected and that it leaves room healthy liquidations to happen.
+To ensure that liquidators have the time to interact with unhealthy positions, it is formally verified that this buffer is respected and that it leaves room for healthy liquidations to happen.
 Notably, it is verified that in the absence of accrued interest, which is the case when creating a new position or when interacting multiple times in the same block, a position cannot be made unhealthy.
 
 Let's define bad debt of a position as the amount borrowed when it is backed by no collateral.
