@@ -26,6 +26,7 @@ methods {
 
 persistent ghost uint256 constantPrice;
 
+// Check that for a position with LTV < 1 / LIF, its health improves after a liquidation.
 rule liquidateImprovePosition(env e, MorphoHarness.MarketParams marketParams, address borrower, uint256 seizedAssetsInput, uint256 repaidSharesInput, bytes data) {
     // Assume no callback.
     require data.length == 0;
