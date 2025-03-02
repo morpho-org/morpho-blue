@@ -18,21 +18,9 @@ methods {
     function Util.maxFee() external returns uint256 envfree;
     function Util.libId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
 
-    function MathLib.mulDivDown(uint256 a, uint256 b, uint256 c) internal returns uint256 => summaryMulDivDown(a,b,c);
-    function MathLib.mulDivUp(uint256 a, uint256 b, uint256 c) internal returns uint256 => summaryMulDivUp(a,b,c);
     function SafeTransferLib.safeTransfer(address token, address to, uint256 value) internal => NONDET;
     function SafeTransferLib.safeTransferFrom(address token, address from, address to, uint256 value) internal => NONDET;
     function _.onMorphoSupply(uint256 assets, bytes data) external => HAVOC_ECF;
-}
-
-function summaryMulDivUp(uint256 x, uint256 y, uint256 d) returns uint256 {
-    // Safe require because the reference implementation would revert.
-    return require_uint256((x * y + (d - 1)) / d);
-}
-
-function summaryMulDivDown(uint256 x, uint256 y, uint256 d) returns uint256 {
-    // Safe require because the reference implementation would revert.
-    return require_uint256((x * y) / d);
 }
 
 // Check that when not accruing interest, and when repaying all, the borrow exchange rate is at least reset to the initial exchange rate.
