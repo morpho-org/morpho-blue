@@ -112,8 +112,9 @@ interface IMorphoBase {
     /// on `transfer` and `transferFrom`. In particular, tokens with fees on transfer are not supported.
     /// - The IRM should not re-enter Morpho.
     /// - The oracle should return a price with the correct scaling.
-    /// - The oracle should not be able to go down instantly by a multiplier of less than LLTV*LIF. In particular, if
-    /// the loan asset is a vault that can receive donations, the oracle should not price its shares using the AUM.
+    /// - The oracle price should not be able to change instantly such that the new price is less than the old price
+    /// multiplied by LLTV*LIF. In particular, if the loan asset is a vault that can receive donations, the oracle
+    /// should not price its shares using the AUM.
     /// @dev Here is a list of assumptions on the market's dependencies which, if broken, could break Morpho's liveness
     /// properties (funds could get stuck):
     /// - The token should not revert on `transfer` and `transferFrom` if balances and approvals are right.
