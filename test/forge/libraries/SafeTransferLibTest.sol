@@ -61,12 +61,18 @@ contract SafeTransferLibTest is Test {
 
     function testSafeTransfer(address to, uint256 amount) public {
         tokenWithoutBoolean.setBalance(address(this), amount);
+        if(to != address(this) && tokenWithoutBoolean.balanceOf(to) > type(uint256).max - amount) {
+            vm.expectRevert();
+        }
 
         this.safeTransfer(address(tokenWithoutBoolean), to, amount);
     }
 
     function testSafeTransferFrom(address from, address to, uint256 amount) public {
         tokenWithoutBoolean.setBalance(from, amount);
+        if(to != from && tokenWithoutBoolean.balanceOf(to) > type(uint256).max - amount) {
+            vm.expectRevert();
+        }
 
         this.safeTransferFrom(address(tokenWithoutBoolean), from, to, amount);
     }
