@@ -1,4 +1,4 @@
-name: Certora
+name: Certora-Forge
 
 on:
   push:
