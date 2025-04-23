@@ -59,20 +59,18 @@ contract SafeTransferLibTest is Test {
         tokenWithBooleanAlwaysFalse = new ERC20WithBooleanAlwaysFalse();
     }
 
-    function testSafeTransfer(address to, uint256 amount) public {
+    function testSafeTransfer(address to, uint256 amountTo, uint256 amount) public {
+        amountTo = bound(amountTo, 0, type(uint256).max - amount);
+        tokenWithoutBoolean.setBalance(to, amountTo);
         tokenWithoutBoolean.setBalance(address(this), amount);
-        if(to != address(this) && tokenWithoutBoolean.balanceOf(to) > type(uint256).max - amount) {
-            vm.expectRevert();
-        }
 
         this.safeTransfer(address(tokenWithoutBoolean), to, amount);
     }
 
-    function testSafeTransferFrom(address from, address to, uint256 amount) public {
+    function testSafeTransferFrom(address from, address to, uint256 amountTo, uint256 amount) public {
+        amountTo = bound(amountTo, 0, type(uint256).max - amount);
+        tokenWithoutBoolean.setBalance(to, amountTo);
         tokenWithoutBoolean.setBalance(from, amount);
-        if(to != from && tokenWithoutBoolean.balanceOf(to) > type(uint256).max - amount) {
-            vm.expectRevert();
-        }
 
         this.safeTransferFrom(address(tokenWithoutBoolean), from, to, amount);
     }
