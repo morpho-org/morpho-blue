@@ -18,7 +18,7 @@ methods {
     function Util.oraclePriceScale() external returns (uint256) envfree;
     function Util.wad() external returns (uint256) envfree;
 
-    function Morpho._isHealthy(MorphoHarness.MarketParams memory, MorphoHarness.Id,address) internal returns (bool) => NONDET;
+    function Morpho._isHealthy(MorphoHarness.MarketParams memory, MorphoHarness.Id, address) internal returns (bool) => NONDET;
     function Morpho._accrueInterest(MorphoHarness.MarketParams memory, MorphoHarness.Id) internal => NONDET;
 
     function _.price() external => constantPrice expect uint256;

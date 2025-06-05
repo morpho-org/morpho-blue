@@ -17,8 +17,8 @@ methods {
     function Util.libId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
 
     function UtilsLib.min(uint256 x, uint256 y) internal returns uint256 => summaryMin(x, y);
-    function MathLib.mulDivDown(uint256 a, uint256 b, uint256 c) internal returns uint256 => summaryMulDivDown(a,b,c);
-    function MathLib.mulDivUp(uint256 a, uint256 b, uint256 c) internal returns uint256 => summaryMulDivUp(a,b,c);
+    function MathLib.mulDivDown(uint256 a, uint256 b, uint256 c) internal returns uint256 => summaryMulDivDown(a, b, c);
+    function MathLib.mulDivUp(uint256 a, uint256 b, uint256 c) internal returns uint256 => summaryMulDivUp(a, b, c);
     function MathLib.wTaylorCompounded(uint256, uint256) internal returns uint256 => NONDET;
 
     function _.borrowRate(MorphoHarness.MarketParams, MorphoHarness.Market) external => HAVOC_ECF;
@@ -101,7 +101,7 @@ filtered {
     // Here we assume interest has already been accumulated for this block.
     require lastUpdate(id) == e.block.timestamp;
 
-    f(e,args);
+    f(e, args);
 
     mathint assetsAfter = virtualTotalSupplyAssets(id);
     mathint sharesAfter = virtualTotalSupplyShares(id);
@@ -154,7 +154,7 @@ filtered {
     mathint assetsBefore = virtualTotalBorrowAssets(id);
     mathint sharesBefore = virtualTotalBorrowShares(id);
 
-    f(e,args);
+    f(e, args);
 
     mathint assetsAfter = virtualTotalBorrowAssets(id);
     mathint sharesAfter = virtualTotalBorrowShares(id);
