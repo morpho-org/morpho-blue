@@ -115,8 +115,8 @@ interface IMorphoBase {
     /// @dev Here is a list of assumptions on the market's dependencies which, if broken, could break Morpho's liveness
     /// properties (funds could get stuck):
     /// - The token should not revert on `transfer` and `transferFrom` if balances and approvals are right.
-    /// - The amount of assets supplied and borrowed should not go above ~1e35 (otherwise the computation of
-    /// `toSharesUp` and `toSharesDown` can overflow).
+    /// - The amount of assets supplied and borrowed should be too high (max ~1e32), otherwise the number of shares
+    /// might not fit in 128 bits.
     /// - The IRM should not revert on `borrowRate`.
     /// - The IRM should not return a very high borrow rate (otherwise the computation of `interest` in
     /// `_accrueInterest` can overflow).
