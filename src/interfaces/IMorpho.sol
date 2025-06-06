@@ -116,7 +116,7 @@ interface IMorphoBase {
     /// properties (funds could get stuck):
     /// - The token should not revert on `transfer` and `transferFrom` if balances and approvals are right.
     /// - The amount of assets supplied and borrowed should not be too high (max ~1e32), otherwise the number of shares
-    /// might not fit in 128 bits.
+    /// might not fit within 128 bits.
     /// - The IRM should not revert on `borrowRate`.
     /// - The IRM should not return a very high borrow rate (otherwise the computation of `interest` in
     /// `_accrueInterest` can overflow).
