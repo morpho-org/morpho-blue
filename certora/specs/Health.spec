@@ -19,7 +19,7 @@ methods {
     function isHealthy(MorphoHarness.MarketParams, address user) external returns bool envfree;
 
     function _.price() external => CONSTANT;
-    function UtilsLib.min(uint256 a, uint256 b) internal returns uint256 => summaryMin(a,b);
+    function UtilsLib.min(uint256 a, uint256 b) internal returns uint256 => summaryMin(a, b);
 }
 
 function summaryMin(uint256 a, uint256 b) returns uint256 {
