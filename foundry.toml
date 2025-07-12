@@ -9,7 +9,7 @@ bytecode_hash = "none"
 evm_version = "paris"
 
 [profile.default.invariant]
-runs = 32
+runs = 1024
 depth = 32
 fail_on_revert = true
 
