@@ -15,19 +15,6 @@ jobs:
   forge-test:
     strategy:
       fail-fast: true
-      matrix:
-        type: ["slow", "fast"]
-        include:
-          - type: "slow"
-            fuzz-runs: 10000
-            max-test-rejects: 500000
-            invariant-runs: 32
-            invariant-depth: 512
-          - type: "fast"
-            fuzz-runs: 256
-            max-test-rejects: 65536
-            invariant-runs: 16
-            invariant-depth: 256
 
     runs-on: ubuntu-latest
     steps:
@@ -38,11 +25,10 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
 
-      - name: Run Forge tests in ${{ matrix.type }} mode
+      - name: Run Forge tests
         run: yarn test:forge -vvv
         env:
-          FOUNDRY_FUZZ_RUNS: ${{ matrix.fuzz-runs }}
-          FOUNDRY_FUZZ_MAX_TEST_REJECTS: ${{ matrix.max-test-rejects }}
-          FOUNDRY_INVARIANT_RUNS: ${{ matrix.invariant-runs }}
-          FOUNDRY_INVARIANT_DEPTH: ${{ matrix.invariant-depth }}
-          FOUNDRY_FUZZ_SEED: 0x${{ github.event.pull_request.base.sha || github.sha }}
+          FOUNDRY_FUZZ_RUNS: 10000
+          FOUNDRY_FUZZ_MAX_TEST_REJECTS: 500000
+          FOUNDRY_INVARIANT_RUNS: 10000
+          FOUNDRY_INVARIANT_DEPTH: 32
