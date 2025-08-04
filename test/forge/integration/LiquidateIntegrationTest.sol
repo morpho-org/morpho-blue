@@ -263,11 +263,11 @@ contract LiquidateIntegrationTest is BaseTest {
         params.liquidationIncentiveFactor = _liquidationIncentiveFactor(marketParams.lltv);
         params.expectedRepaid =
             amountCollateral.mulDivUp(priceCollateral, ORACLE_PRICE_SCALE).wDivUp(params.liquidationIncentiveFactor);
+        vm.assume(params.expectedRepaid <= MAX_TEST_AMOUNT);
 
-        uint256 minBorrowed = Math.max(params.expectedRepaid, amountBorrowed);
-        amountBorrowed = bound(amountBorrowed, minBorrowed, Math.max(minBorrowed, MAX_TEST_AMOUNT));
+        amountBorrowed = bound(amountBorrowed, params.expectedRepaid, MAX_TEST_AMOUNT);
 
-        amountSupplied = bound(amountSupplied, amountBorrowed, Math.max(amountBorrowed, MAX_TEST_AMOUNT));
+        amountSupplied = bound(amountSupplied, amountBorrowed, MAX_TEST_AMOUNT);
         _supply(amountSupplied);
 
         loanToken.setBalance(LIQUIDATOR, amountBorrowed);
