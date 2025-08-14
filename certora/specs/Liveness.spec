@@ -57,8 +57,11 @@ function summaryAccrueInterest(env e, MorphoInternalAccess.MarketParams marketPa
     if (e.block.timestamp != lastUpdate(id) && totalBorrowAssets(id) != 0) {
         uint128 interest;
         uint256 supply = totalSupplyAssets(id);
-        // Safe require because the reference implementation would revert.
-        require interest + supply < 2^256;
+        // Safe require because tokens should have bounded supply.
+        require interest + supply < 2^128;
+        uint256 borrow = totalBorrowAssets(id);
+        // Safe require because it is verified in borrowLessThanSupply.
+        require borrow <= supply;
         increaseInterest(e, id, interest);
     }
 
