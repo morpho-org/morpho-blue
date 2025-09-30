@@ -376,7 +376,7 @@ contract Morpho is IMorphoStaticTyping {
                 );
             } else {
                 seizedAssets = repaidShares.toAssetsDown(market[id].totalBorrowAssets, market[id].totalBorrowShares)
-                    .wMulDown(liquidationIncentiveFactor).mulDivDown(ORACLE_PRICE_SCALE, collateralPrice);
+                    .mulDivDown(ORACLE_PRICE_SCALE, collateralPrice).wMulDown(liquidationIncentiveFactor);
             }
         }
         uint256 repaidAssets = repaidShares.toAssetsUp(market[id].totalBorrowAssets, market[id].totalBorrowShares);

@@ -207,7 +207,7 @@ contract LiquidateIntegrationTest is BaseTest {
 
         uint256 expectedRepaid = sharesRepaid.toAssetsUp(morpho.totalBorrowAssets(id), morpho.totalBorrowShares(id));
         uint256 expectedSeized = sharesRepaid.toAssetsDown(morpho.totalBorrowAssets(id), morpho.totalBorrowShares(id))
-            .wMulDown(liquidationIncentiveFactor).mulDivDown(ORACLE_PRICE_SCALE, params.priceCollateral);
+            .mulDivDown(ORACLE_PRICE_SCALE, params.priceCollateral).wMulDown(liquidationIncentiveFactor);
 
         loanToken.setBalance(LIQUIDATOR, params.amountBorrowed);
 
