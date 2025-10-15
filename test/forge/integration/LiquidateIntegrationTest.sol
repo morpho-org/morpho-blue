@@ -111,9 +111,7 @@ contract LiquidateIntegrationTest is BaseTest {
         morpho.liquidate(marketParams, BORROWER, amountSeized, 0, hex"");
     }
 
-    function testLiquidateSeizedInputNoBadDebtRealized(LiquidateTestParams memory params, uint256 amountSeized)
-        public
-    {
+    function testLiquidateSeizedInputNoBadDebtRealized(LiquidateTestParams memory params, uint256 amountSeized) public {
         _setLltv(_boundTestLltv(params.lltv));
         (params.amountCollateral, params.amountBorrowed, params.priceCollateral) =
             _boundUnhealthyPosition(params.amountCollateral, params.amountBorrowed, params.priceCollateral);
@@ -137,9 +135,8 @@ contract LiquidateIntegrationTest is BaseTest {
 
         uint256 borrowShares = morpho.borrowShares(id, BORROWER);
         uint256 liquidationIncentiveFactor = _liquidationIncentiveFactor(marketParams.lltv);
-        uint256 maxSeized = params.amountBorrowed.wMulDown(liquidationIncentiveFactor).mulDivDown(
-            ORACLE_PRICE_SCALE, params.priceCollateral
-        );
+        uint256 maxSeized = params.amountBorrowed.wMulDown(liquidationIncentiveFactor)
+            .mulDivDown(ORACLE_PRICE_SCALE, params.priceCollateral);
         vm.assume(maxSeized != 0);
 
         amountSeized = bound(amountSeized, 1, Math.min(maxSeized, params.amountCollateral - 1));
@@ -174,9 +171,7 @@ contract LiquidateIntegrationTest is BaseTest {
         assertEq(collateralToken.balanceOf(LIQUIDATOR), amountSeized, "liquidator collateral balance");
     }
 
-    function testLiquidateSharesInputNoBadDebtRealized(LiquidateTestParams memory params, uint256 sharesRepaid)
-        public
-    {
+    function testLiquidateSharesInputNoBadDebtRealized(LiquidateTestParams memory params, uint256 sharesRepaid) public {
         _setLltv(_boundTestLltv(params.lltv));
         (params.amountCollateral, params.amountBorrowed, params.priceCollateral) =
             _boundUnhealthyPosition(params.amountCollateral, params.amountBorrowed, params.priceCollateral);
@@ -200,7 +195,8 @@ contract LiquidateIntegrationTest is BaseTest {
         uint256 borrowShares = morpho.borrowShares(id, BORROWER);
         uint256 liquidationIncentiveFactor = _liquidationIncentiveFactor(marketParams.lltv);
         uint256 maxSharesRepaid = (params.amountCollateral - 1).mulDivDown(params.priceCollateral, ORACLE_PRICE_SCALE)
-            .wDivDown(liquidationIncentiveFactor).toSharesDown(morpho.totalBorrowAssets(id), morpho.totalBorrowShares(id));
+            .wDivDown(liquidationIncentiveFactor)
+            .toSharesDown(morpho.totalBorrowAssets(id), morpho.totalBorrowShares(id));
         vm.assume(maxSharesRepaid != 0);
 
         sharesRepaid = bound(sharesRepaid, 1, Math.min(borrowShares, maxSharesRepaid));
@@ -288,7 +284,8 @@ contract LiquidateIntegrationTest is BaseTest {
         params.totalBorrowSharesBeforeLiquidation = morpho.totalBorrowShares(id);
         params.totalBorrowBeforeLiquidation = morpho.totalBorrowAssets(id);
         params.totalSupplyBeforeLiquidation = morpho.totalSupplyAssets(id);
-        params.expectedBadDebt = (params.borrowSharesBeforeLiquidation - params.expectedRepaidShares).toAssetsUp(
+        params.expectedBadDebt = (params.borrowSharesBeforeLiquidation - params.expectedRepaidShares)
+        .toAssetsUp(
             params.totalBorrowBeforeLiquidation - params.expectedRepaid,
             params.totalBorrowSharesBeforeLiquidation - params.expectedRepaidShares
         );

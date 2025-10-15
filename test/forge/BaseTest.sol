@@ -249,9 +249,8 @@ contract BaseTest is Test {
         return bound(
             assets,
             0,
-            MAX_TEST_AMOUNT.toSharesDown(morpho.totalSupplyAssets(_id), morpho.totalSupplyShares(_id)).zeroFloorSub(
-                supplyShares
-            )
+            MAX_TEST_AMOUNT.toSharesDown(morpho.totalSupplyAssets(_id), morpho.totalSupplyShares(_id))
+                .zeroFloorSub(supplyShares)
         );
     }
 
@@ -334,9 +333,8 @@ contract BaseTest is Test {
         uint256 borrowShares = morpho.borrowShares(_id, borrower);
         (,, uint256 totalBorrowAssets, uint256 totalBorrowShares) = morpho.expectedMarketBalances(_marketParams);
         uint256 maxRepaidAssets = borrowShares.toAssetsDown(totalBorrowAssets, totalBorrowShares);
-        uint256 maxSeizedAssets = maxRepaidAssets.wMulDown(_liquidationIncentiveFactor(_marketParams.lltv)).mulDivDown(
-            ORACLE_PRICE_SCALE, collateralPrice
-        );
+        uint256 maxSeizedAssets = maxRepaidAssets.wMulDown(_liquidationIncentiveFactor(_marketParams.lltv))
+            .mulDivDown(ORACLE_PRICE_SCALE, collateralPrice);
 
         uint256 collateral = morpho.collateral(_id, borrower);
         return bound(seizedAssets, 0, Math.min(collateral, maxSeizedAssets));
