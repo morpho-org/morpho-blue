@@ -22,6 +22,7 @@ exclude_lints = [
     "unused-import",
     "unsafe-typecast",
     "mixed-case-variable",
+    "mixed-case-function",
     "asm-keccak256",
     "unwrapped-modifier-logic",
 ]

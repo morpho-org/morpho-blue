@@ -119,7 +119,7 @@ contract HalmosTest is SymTest, Test {
     }
 
     // Check that the fee is always smaller than the max fee.
-    function checkFeeInRange(bytes4 selector, address caller, Id id) public {
+    function check_feeInRange(bytes4 selector, address caller, Id id) public {
         vm.assume(morpho.fee(id) <= MAX_FEE);
 
         _callMorpho(selector, caller);
@@ -128,7 +128,7 @@ contract HalmosTest is SymTest, Test {
     }
 
     // Check that there is always less borrow than supply on the market.
-    function checkBorrowLessThanSupply(bytes4 selector, address caller, Id id) public {
+    function check_borrowLessThanSupply(bytes4 selector, address caller, Id id) public {
         vm.assume(morpho.totalBorrowAssets(id) <= morpho.totalSupplyAssets(id));
 
         _callMorpho(selector, caller);
@@ -137,7 +137,7 @@ contract HalmosTest is SymTest, Test {
     }
 
     // Check that the market cannot be "destroyed".
-    function checkLastUpdateNonZero(bytes4 selector, address caller, Id id) public {
+    function check_lastUpdateNonZero(bytes4 selector, address caller, Id id) public {
         vm.assume(morpho.lastUpdate(id) != 0);
 
         _callMorpho(selector, caller);
@@ -146,7 +146,7 @@ contract HalmosTest is SymTest, Test {
     }
 
     // Check that the lastUpdate can only increase.
-    function checkLastUpdateCannotDecrease(bytes4 selector, address caller, Id id) public {
+    function check_lastUpdateCannotDecrease(bytes4 selector, address caller, Id id) public {
         uint256 lastUpdateBefore = morpho.lastUpdate(id);
 
         _callMorpho(selector, caller);
@@ -156,7 +156,7 @@ contract HalmosTest is SymTest, Test {
     }
 
     // Check that enabled LLTVs are necessarily less than 1.
-    function checkLltvSmallerThanWad(bytes4 selector, address caller, uint256 _lltv) public {
+    function check_lltvSmallerThanWad(bytes4 selector, address caller, uint256 _lltv) public {
         vm.assume(!morpho.isLltvEnabled(_lltv) || _lltv < 1e18);
 
         _callMorpho(selector, caller);
@@ -165,7 +165,7 @@ contract HalmosTest is SymTest, Test {
     }
 
     // Check that LLTVs can't be disabled.
-    function checkLltvCannotBeDisabled(bytes4 selector, address caller) public {
+    function check_lltvCannotBeDisabled(bytes4 selector, address caller) public {
         _callMorpho(selector, caller);
 
         assert(morpho.isLltvEnabled(lltv));
@@ -173,14 +173,14 @@ contract HalmosTest is SymTest, Test {
 
     // Check that IRMs can't be disabled.
     // Note: IRM is not symbolic, that is not ideal.
-    function checkIrmCannotBeDisabled(bytes4 selector, address caller) public {
+    function check_irmCannotBeDisabled(bytes4 selector, address caller) public {
         _callMorpho(selector, caller);
 
         assert(morpho.isIrmEnabled(address(irm)));
     }
 
     // Check that the nonce of users cannot decrease.
-    function checkNonceCannotDecrease(bytes4 selector, address caller, address user) public {
+    function check_nonceCannotDecrease(bytes4 selector, address caller, address user) public {
         uint256 nonceBefore = morpho.nonce(user);
 
         _callMorpho(selector, caller);
@@ -191,7 +191,7 @@ contract HalmosTest is SymTest, Test {
 
     // Check that idToMarketParams cannot change.
     // Note: ok because createMarket is never called by _callMorpho.
-    function checkIdToMarketParamsForCreatedMarketCannotChange(bytes4 selector, address caller, Id id) public {
+    function check_idToMarketParamsForCreatedMarketCannotChange(bytes4 selector, address caller, Id id) public {
         MarketParams memory itmpBefore = morpho.idToMarketParams(id);
 
         _callMorpho(selector, caller);
