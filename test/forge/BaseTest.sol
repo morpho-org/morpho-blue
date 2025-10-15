@@ -117,7 +117,13 @@ contract BaseTest is Test {
     }
 
     function _setLltv(uint256 lltv) internal {
-        marketParams = MarketParams(address(loanToken), address(collateralToken), address(oracle), address(irm), lltv);
+        marketParams = MarketParams({
+            loanToken: address(loanToken),
+            collateralToken: address(collateralToken),
+            oracle: address(oracle),
+            irm: address(irm),
+            lltv: lltv
+        });
         id = marketParams.id();
 
         vm.startPrank(OWNER);

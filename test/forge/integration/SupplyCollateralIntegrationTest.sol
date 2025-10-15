@@ -14,7 +14,7 @@ contract SupplyCollateralIntegrationTest is BaseTest {
         morpho.supplyCollateral(marketParamsFuzz, amount, SUPPLIER, hex"");
     }
 
-    function testSupplyCollateralZeroAmount(address SUPPLIER) public {
+    function testSupplyCollateralZeroAmount() public {
         vm.prank(SUPPLIER);
         vm.expectRevert(bytes(ErrorsLib.ZERO_ASSETS));
         morpho.supplyCollateral(marketParams, 0, SUPPLIER, hex"");
