@@ -1,0 +1,8 @@
+{
+  "lib/forge-std": {
+    "rev": "2f112697506eab12d433a65fdc31a639548fe365"
+  },
+  "lib/halmos-cheatcodes": {
+    "rev": "a02072cd5eb8560d00c3f4a73b27831ec6e3137e"
+  }
+}
