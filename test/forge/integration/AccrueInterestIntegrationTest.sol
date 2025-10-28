@@ -162,10 +162,11 @@ contract AccrueInterestIntegrationTest is BaseTest {
         params.expectedAccruedInterest =
             params.totalBorrowBeforeAccrued.wMulDown(params.borrowRate.wTaylorCompounded(blocks * BLOCK_TIME));
         params.feeAmount = params.expectedAccruedInterest.wMulDown(fee);
-        params.feeShares = params.feeAmount.toSharesDown(
-            params.totalSupplyBeforeAccrued + params.expectedAccruedInterest - params.feeAmount,
-            params.totalSupplySharesBeforeAccrued
-        );
+        params.feeShares = params.feeAmount
+            .toSharesDown(
+                params.totalSupplyBeforeAccrued + params.expectedAccruedInterest - params.feeAmount,
+                params.totalSupplySharesBeforeAccrued
+            );
 
         vm.expectEmit(true, true, true, true, address(morpho));
         emit EventsLib.AccrueInterest(id, params.borrowRate, params.expectedAccruedInterest, params.feeShares);

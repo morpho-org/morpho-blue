@@ -47,9 +47,10 @@ library MorphoStorageLib {
     }
 
     function positionSupplySharesSlot(Id id, address user) internal pure returns (bytes32) {
-        return bytes32(
-            uint256(keccak256(abi.encode(user, keccak256(abi.encode(id, POSITION_SLOT))))) + SUPPLY_SHARES_OFFSET
-        );
+        return
+            bytes32(
+                uint256(keccak256(abi.encode(user, keccak256(abi.encode(id, POSITION_SLOT))))) + SUPPLY_SHARES_OFFSET
+            );
     }
 
     function positionBorrowSharesAndCollateralSlot(Id id, address user) internal pure returns (bytes32) {

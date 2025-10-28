@@ -44,8 +44,13 @@ contract HalmosTest is SymTest, Test {
         irm = new IrmMock();
         lltv = svm.createUint256("lltv");
 
-        marketParams = MarketParams(address(loanToken), address(collateralToken), address(oracle), address(irm), lltv);
-
+        marketParams = MarketParams({
+            loanToken: address(loanToken),
+            collateralToken: address(collateralToken),
+            oracle: address(oracle),
+            irm: address(irm),
+            lltv: lltv
+        });
         vm.startPrank(owner);
         morpho.enableIrm(address(irm));
         morpho.enableLltv(lltv);

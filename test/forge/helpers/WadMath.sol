@@ -23,7 +23,7 @@ library WadMath {
     function wadExpUp(uint256 y) internal pure returns (uint256 z) {
         uint256 exponent = FLOOR_LOG_2_WAD_SCALED - CEIL_LOG_2_E_SCALED_OVER_WAD * y;
         require(exponent <= type(uint128).max, "exponent overflow");
-        uint256 wadOneOverExpY = pow_2(uint128(exponent));
+        uint256 wadOneOverExpY = pow2(uint128(exponent));
         z = wadDivUp(WAD, wadOneOverExpY);
     }
 
@@ -33,7 +33,7 @@ library WadMath {
      * @param x power to raise 2 into, multiplied by 2^121
      * @return z 2 raised into given power
      */
-    function pow_2(uint128 x) internal pure returns (uint128 z) {
+    function pow2(uint128 x) internal pure returns (uint128 z) {
         unchecked {
             uint256 r = 0x80000000000000000000000000000000;
             if (x & 0x1000000000000000000000000000000 > 0) r = r * 0xb504f333f9de6484597d89b3754abe9f >> 127;
