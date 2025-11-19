@@ -135,6 +135,14 @@ contract HalmosTest is SymTest, Test {
 
         assert(morpho.totalBorrowAssets(id) <= morpho.totalSupplyAssets(id));
     }
+    
+    function check_failsBorrowLessThanSupply(bytes4 selector, address caller, Id id) public {
+        vm.assume(morpho.totalBorrowAssets(id) <= morpho.totalSupplyAssets(id));
+
+        _callMorpho(selector, caller);
+
+        assert(morpho.totalBorrowAssets(id) > morpho.totalSupplyAssets(id));
+    }
 
     // Check that the market cannot be "destroyed".
     function check_lastUpdateNonZero(bytes4 selector, address caller, Id id) public {
