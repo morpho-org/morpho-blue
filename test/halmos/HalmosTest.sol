@@ -197,6 +197,15 @@ contract HalmosTest is SymTest, Test {
         assert(nonceAfter == nonceBefore || nonceAfter == nonceBefore + 1);
     }
 
+    function check_failsNonceCannotDecrease(bytes4 selector, address caller, address user) public {
+        uint256 nonceBefore = morpho.nonce(user);
+
+        _callMorpho(selector, caller);
+
+        uint256 nonceAfter = morpho.nonce(user);
+        assert(nonceAfter == nonceBefore + 1);
+    }
+
     // Check that idToMarketParams cannot change.
     // Note: ok because createMarket is never called by _callMorpho.
     function check_idToMarketParamsForCreatedMarketCannotChange(bytes4 selector, address caller, Id id) public {
