@@ -32,7 +32,6 @@ contract HalmosTest is SymTest, Test {
 
     ERC20Mock internal otherToken;
     FlashBorrowerMock internal flashBorrower;
-
     function setUp() public virtual {
         owner = svm.createAddress("owner");
         morpho = IMorpho(address(new Morpho(owner)));
@@ -41,7 +40,7 @@ contract HalmosTest is SymTest, Test {
         collateralToken = new ERC20Mock();
         oracle = new OracleMock();
         oracle.setPrice(ORACLE_PRICE_SCALE);
-        irm = new IrmMock();
+        irm = IrmMock(svm.createAddress("irm"));
         lltv = svm.createUint256("lltv");
 
         marketParams = MarketParams({
@@ -136,12 +135,23 @@ contract HalmosTest is SymTest, Test {
         assert(morpho.totalBorrowAssets(id) <= morpho.totalSupplyAssets(id));
     }
     
+    // failing tests
     function check_failsBorrowLessThanSupply(bytes4 selector, address caller, Id id) public {
         vm.assume(morpho.totalBorrowAssets(id) <= morpho.totalSupplyAssets(id));
 
         _callMorpho(selector, caller);
 
         assert(morpho.totalBorrowAssets(id) > morpho.totalSupplyAssets(id));
+    }
+
+    // fixed selector=supply followed by another non-deterministic selector call. 
+    function check_chainedBorrowLessThanSupply(bytes4 selector, address caller, Id id) public {
+        vm.assume(morpho.totalBorrowAssets(id) <= morpho.totalSupplyAssets(id));
+
+        _callMorpho(morpho.supply.selector, caller);
+        _callMorpho(selector, caller);
+
+        assert(morpho.totalBorrowAssets(id) <= morpho.totalSupplyAssets(id));
     }
 
     // Check that the market cannot be "destroyed".
@@ -187,6 +197,15 @@ contract HalmosTest is SymTest, Test {
         assert(morpho.isIrmEnabled(address(irm)));
     }
 
+    // Check that IRMs can't be disabled.
+    // Attempt at adding a symbolic IRM 
+    function check_symbolic_irmCannotBeDisabled(bytes4 selector, address caller) public {
+        _callMorpho(selector, caller);
+
+        assert(morpho.isIrmEnabled(address(irm)));
+    }
+
+
     // Check that the nonce of users cannot decrease.
     function check_nonceCannotDecrease(bytes4 selector, address caller, address user) public {
         uint256 nonceBefore = morpho.nonce(user);
@@ -197,6 +216,7 @@ contract HalmosTest is SymTest, Test {
         assert(nonceAfter == nonceBefore || nonceAfter == nonceBefore + 1);
     }
 
+    // failing tests
     function check_failsNonceCannotDecrease(bytes4 selector, address caller, address user) public {
         uint256 nonceBefore = morpho.nonce(user);
 
