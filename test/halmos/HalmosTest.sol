@@ -28,7 +28,15 @@ contract HalmosTest is SymTest, Test {
     IrmMock internal irm;
     uint256 internal lltv;
 
+    uint128 internal totalSupplyAssets;
+    uint128 internal totalSupplyShares;
+    uint128 internal totalBorrowAssets;
+    uint128 internal totalBorrowShares;
+    uint128 internal lastUpdate;
+    uint128 internal fee;
+
     MarketParams internal marketParams;
+    Market internal market;
 
     ERC20Mock internal otherToken;
     FlashBorrowerMock internal flashBorrower;
@@ -40,8 +48,11 @@ contract HalmosTest is SymTest, Test {
         collateralToken = new ERC20Mock();
         oracle = new OracleMock();
         oracle.setPrice(ORACLE_PRICE_SCALE);
-        irm = IrmMock(svm.createAddress("irm"));
+        irm = new IrmMock();
         lltv = svm.createUint256("lltv");
+
+        totalSupplyAssets = uint128(svm.createUint256("totalSupplyAssets"));
+
 
         marketParams = MarketParams({
             loanToken: address(loanToken),
@@ -50,6 +61,16 @@ contract HalmosTest is SymTest, Test {
             irm: address(irm),
             lltv: lltv
         });
+        
+        market = Market({
+            totalSupplyAssets: totalSupplyAssets,
+            totalSupplyShares:totalSupplyShares,
+            totalBorrowAssets: totalBorrowAssets,
+            totalBorrowShares: totalBorrowShares,
+            lastUpdate: lastUpdate,
+            fee: fee
+        });
+
         vm.startPrank(owner);
         morpho.enableIrm(address(irm));
         morpho.enableLltv(lltv);
@@ -86,6 +107,7 @@ contract HalmosTest is SymTest, Test {
         address onBehalf = svm.createAddress("onBehalf");
         address receiver = svm.createAddress("receiver");
 
+        
         bytes memory args;
 
         if (selector == morpho.supply.selector || selector == morpho.repay.selector) {
@@ -117,6 +139,21 @@ contract HalmosTest is SymTest, Test {
         vm.assume(success);
     }
 
+    function _callIRM(bytes4 selector, address caller) internal {
+  
+        bytes memory args;
+
+        if (selector == IrmMock.borrowRate.selector || selector == IrmMock.borrowRateView.selector) {
+            args = abi.encode(marketParams, market);
+        } else {
+            args = svm.createBytes(1024, "data");
+        }
+
+        vm.prank(caller);
+        (bool success,) = address(irm).call(abi.encodePacked(selector, args));
+        vm.assume(success);
+    }
+
     // Check that the fee is always smaller than the max fee.
     function check_feeInRange(bytes4 selector, address caller, Id id) public {
         vm.assume(morpho.fee(id) <= MAX_FEE);
@@ -135,14 +172,6 @@ contract HalmosTest is SymTest, Test {
         assert(morpho.totalBorrowAssets(id) <= morpho.totalSupplyAssets(id));
     }
     
-    // failing tests
-    function check_failsBorrowLessThanSupply(bytes4 selector, address caller, Id id) public {
-        vm.assume(morpho.totalBorrowAssets(id) <= morpho.totalSupplyAssets(id));
-
-        _callMorpho(selector, caller);
-
-        assert(morpho.totalBorrowAssets(id) > morpho.totalSupplyAssets(id));
-    }
 
     // fixed selector=supply followed by another non-deterministic selector call. 
     function check_chainedBorrowLessThanSupply(bytes4 selector, address caller, Id id) public {
@@ -198,13 +227,15 @@ contract HalmosTest is SymTest, Test {
     }
 
     // Check that IRMs can't be disabled.
-    // Attempt at adding a symbolic IRM 
-    function check_symbolic_irmCannotBeDisabled(bytes4 selector, address caller) public {
-        _callMorpho(selector, caller);
+    // Attempt at adding a symbolic IRM. Created a new function _callIRM that lets symbolically interacting with IrmMock. 
+    // Not sure how to make _callMorpho use the symblic IrMMock when calling functions that use the IRM.
+    function check_symbolic_irmCannotBeDisabled(bytes4 selector1, bytes4 selector2, address caller) public {
+
+        _callIRM(selector2, caller);
+        _callMorpho(selector1, caller);
 
         assert(morpho.isIrmEnabled(address(irm)));
     }
-
 
     // Check that the nonce of users cannot decrease.
     function check_nonceCannotDecrease(bytes4 selector, address caller, address user) public {
@@ -214,16 +245,6 @@ contract HalmosTest is SymTest, Test {
 
         uint256 nonceAfter = morpho.nonce(user);
         assert(nonceAfter == nonceBefore || nonceAfter == nonceBefore + 1);
-    }
-
-    // failing tests
-    function check_failsNonceCannotDecrease(bytes4 selector, address caller, address user) public {
-        uint256 nonceBefore = morpho.nonce(user);
-
-        _callMorpho(selector, caller);
-
-        uint256 nonceAfter = morpho.nonce(user);
-        assert(nonceAfter == nonceBefore + 1);
     }
 
     // Check that idToMarketParams cannot change.
