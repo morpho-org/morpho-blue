@@ -18,6 +18,9 @@ import {IIrm} from "../../src/interfaces/IIrm.sol";
 
 import {MathLib} from "../../src/libraries/MathLib.sol";
 
+
+// A symbolic IRM for Halmos Tests.
+// Returns a symbolic borrow rate.
 contract IrmSymbolic is IIrm, SymTest, Test {
     using MathLib for uint128;
 
@@ -154,21 +157,6 @@ contract HalmosTest is SymTest, Test {
         vm.assume(success);
     }
 
-    function _callIRM(bytes4 selector, address caller) internal {
-  
-        bytes memory args;
-
-        if (selector == IrmMock.borrowRate.selector || selector == IrmMock.borrowRateView.selector) {
-            args = abi.encode(marketParams, market);
-        } else {
-            args = svm.createBytes(1024, "data");
-        }
-
-        vm.prank(caller);
-        (bool success,) = address(irm).call(abi.encodePacked(selector, args));
-        vm.assume(success);
-    }
-
     // Check that the fee is always smaller than the max fee.
     function check_feeInRange(bytes4 selector, address caller, Id id) public {
         vm.assume(morpho.fee(id) <= MAX_FEE);
@@ -187,7 +175,6 @@ contract HalmosTest is SymTest, Test {
         assert(morpho.totalBorrowAssets(id) <= morpho.totalSupplyAssets(id));
     }
     
-
     // fixed selector=supply followed by another non-deterministic selector call. 
     function check_chainedBorrowLessThanSupply(bytes4 selector, address caller, Id id) public {
         vm.assume(morpho.totalBorrowAssets(id) <= morpho.totalSupplyAssets(id));
@@ -233,19 +220,9 @@ contract HalmosTest is SymTest, Test {
         assert(morpho.isLltvEnabled(lltv));
     }
 
+
     // Check that IRMs can't be disabled.
-    // Note: IRM is not symbolic, that is not ideal.
     function check_irmCannotBeDisabled(bytes4 selector, address caller) public {
-        _callMorpho(selector, caller);
-
-        assert(morpho.isIrmEnabled(address(irm)));
-    }
-
-    // Check that IRMs can't be disabled.
-    // Attempt at adding a symbolic IRM. Created a new function _callIRM that lets symbolically interacting with IrmMock. 
-    // Not sure how to make _callMorpho use the symblic IrmMock when calling functions that use the IRM.
-    function check_irmCannotBeDisabledSymbolicIRM(bytes4 selector, address caller) public {
-
         _callMorpho(selector, caller);
 
         assert(morpho.isIrmEnabled(address(irm)));
