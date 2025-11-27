@@ -14,6 +14,22 @@ import "../../src/Morpho.sol";
 import "../../src/libraries/ConstantsLib.sol";
 import {MorphoLib} from "../../src/libraries/periphery/MorphoLib.sol";
 
+import {IIrm} from "../../src/interfaces/IIrm.sol";
+
+import {MathLib} from "../../src/libraries/MathLib.sol";
+
+contract IrmSymbolic is IIrm, SymTest, Test {
+    using MathLib for uint128;
+
+    function borrowRateView(MarketParams memory, Market memory market) public pure returns (uint256) {
+        return svm.createUint256("rate");
+    }
+    function borrowRate(MarketParams memory marketParams, Market memory market) external pure returns (uint256) {
+        return svm.createUint256("rate");
+    }
+}
+
+
 /// @custom:halmos --solver-timeout-assertion 0
 contract HalmosTest is SymTest, Test {
     using MorphoLib for IMorpho;
@@ -25,7 +41,7 @@ contract HalmosTest is SymTest, Test {
     ERC20Mock internal loanToken;
     ERC20Mock internal collateralToken;
     OracleMock internal oracle;
-    IrmMock internal irm;
+    IrmSymbolic internal irm;
     uint256 internal lltv;
 
     uint128 internal totalSupplyAssets;
@@ -48,11 +64,10 @@ contract HalmosTest is SymTest, Test {
         collateralToken = new ERC20Mock();
         oracle = new OracleMock();
         oracle.setPrice(ORACLE_PRICE_SCALE);
-        irm = new IrmMock();
+        irm = new IrmSymbolic();
         lltv = svm.createUint256("lltv");
 
         totalSupplyAssets = uint128(svm.createUint256("totalSupplyAssets"));
-
 
         marketParams = MarketParams({
             loanToken: address(loanToken),
@@ -228,11 +243,10 @@ contract HalmosTest is SymTest, Test {
 
     // Check that IRMs can't be disabled.
     // Attempt at adding a symbolic IRM. Created a new function _callIRM that lets symbolically interacting with IrmMock. 
-    // Not sure how to make _callMorpho use the symblic IrMMock when calling functions that use the IRM.
-    function check_symbolic_irmCannotBeDisabled(bytes4 selector1, bytes4 selector2, address caller) public {
+    // Not sure how to make _callMorpho use the symblic IrmMock when calling functions that use the IRM.
+    function check_irmCannotBeDisabledSymbolicIRM(bytes4 selector, address caller) public {
 
-        _callIRM(selector2, caller);
-        _callMorpho(selector1, caller);
+        _callMorpho(selector, caller);
 
         assert(morpho.isIrmEnabled(address(irm)));
     }
