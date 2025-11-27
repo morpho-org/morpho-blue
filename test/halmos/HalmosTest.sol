@@ -20,14 +20,15 @@ import {MathLib} from "../../src/libraries/MathLib.sol";
 
 
 // A symbolic IRM for Halmos Tests.
-// Returns a symbolic borrow rate.
 contract IrmSymbolic is IIrm, SymTest, Test {
     using MathLib for uint128;
 
     function borrowRateView(MarketParams memory, Market memory market) public pure returns (uint256) {
+        // Returns a symbolic borrow rate.
         return svm.createUint256("rate");
     }
     function borrowRate(MarketParams memory marketParams, Market memory market) external pure returns (uint256) {
+        // Returns a symbolic borrow rate.
         return svm.createUint256("rate");
     }
 }
