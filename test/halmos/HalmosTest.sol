@@ -220,7 +220,6 @@ contract HalmosTest is SymTest, Test {
         assert(morpho.isLltvEnabled(lltv));
     }
 
-
     // Check that IRMs can't be disabled.
     function check_irmCannotBeDisabled(bytes4 selector, address caller) public {
         _callMorpho(selector, caller);
