@@ -126,7 +126,6 @@ contract HalmosTest is SymTest, Test {
         address onBehalf = svm.createAddress("onBehalf");
         address receiver = svm.createAddress("receiver");
 
-        
         bytes memory args;
 
         if (selector == morpho.supply.selector || selector == morpho.repay.selector) {
