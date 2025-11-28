@@ -14,6 +14,26 @@ import "../../src/Morpho.sol";
 import "../../src/libraries/ConstantsLib.sol";
 import {MorphoLib} from "../../src/libraries/periphery/MorphoLib.sol";
 
+import {IIrm} from "../../src/interfaces/IIrm.sol";
+
+import {MathLib} from "../../src/libraries/MathLib.sol";
+
+
+// A symbolic IRM for Halmos Tests.
+contract IrmSymbolic is IIrm, SymTest, Test {
+    using MathLib for uint128;
+
+    function borrowRateView(MarketParams memory, Market memory market) public pure returns (uint256) {
+        // Returns a symbolic borrow rate.
+        return svm.createUint256("rate");
+    }
+    function borrowRate(MarketParams memory marketParams, Market memory market) external pure returns (uint256) {
+        // Returns a symbolic borrow rate.
+        return svm.createUint256("rate");
+    }
+}
+
+
 /// @custom:halmos --solver-timeout-assertion 0
 contract HalmosTest is SymTest, Test {
     using MorphoLib for IMorpho;
@@ -25,14 +45,15 @@ contract HalmosTest is SymTest, Test {
     ERC20Mock internal loanToken;
     ERC20Mock internal collateralToken;
     OracleMock internal oracle;
-    IrmMock internal irm;
+    IrmSymbolic internal irm;
     uint256 internal lltv;
 
     MarketParams internal marketParams;
+    Market internal market;
 
     ERC20Mock internal otherToken;
     FlashBorrowerMock internal flashBorrower;
-
+    
     function setUp() public virtual {
         owner = svm.createAddress("owner");
         morpho = IMorpho(address(new Morpho(owner)));
@@ -41,7 +62,7 @@ contract HalmosTest is SymTest, Test {
         collateralToken = new ERC20Mock();
         oracle = new OracleMock();
         oracle.setPrice(ORACLE_PRICE_SCALE);
-        irm = new IrmMock();
+        irm = new IrmSymbolic();
         lltv = svm.createUint256("lltv");
 
         marketParams = MarketParams({
@@ -51,6 +72,16 @@ contract HalmosTest is SymTest, Test {
             irm: address(irm),
             lltv: lltv
         });
+        
+        market = Market({
+            totalSupplyAssets: uint128(svm.createUint256("totalSupplyAssets")),
+            totalSupplyShares: uint128(svm.createUint256("totalSupplyShares")),
+            totalBorrowAssets: uint128(svm.createUint256("totalBorrowAssets")),
+            totalBorrowShares: uint128(svm.createUint256("totalBorrowShares")),
+            lastUpdate: uint128(svm.createUint256("lastUpdate")),
+            fee: uint128(svm.createUint256("fee"))
+        });
+
         vm.startPrank(owner);
         morpho.enableIrm(address(irm));
         morpho.enableLltv(lltv);
@@ -172,7 +203,6 @@ contract HalmosTest is SymTest, Test {
     }
 
     // Check that IRMs can't be disabled.
-    // Note: IRM is not symbolic, that is not ideal.
     function check_irmCannotBeDisabled(bytes4 selector, address caller) public {
         _callMorpho(selector, caller);
 
