@@ -18,7 +18,6 @@ import {IIrm} from "../../src/interfaces/IIrm.sol";
 
 import {MathLib} from "../../src/libraries/MathLib.sol";
 
-
 // A symbolic IRM for Halmos Tests.
 contract IrmSymbolic is IIrm, SymTest, Test {
     using MathLib for uint128;
@@ -27,12 +26,12 @@ contract IrmSymbolic is IIrm, SymTest, Test {
         // Returns a symbolic borrow rate.
         return svm.createUint256("rate");
     }
+
     function borrowRate(MarketParams memory marketParams, Market memory market) external pure returns (uint256) {
         // Returns a symbolic borrow rate.
         return svm.createUint256("rate");
     }
 }
-
 
 /// @custom:halmos --solver-timeout-assertion 0
 contract HalmosTest is SymTest, Test {
@@ -53,7 +52,7 @@ contract HalmosTest is SymTest, Test {
 
     ERC20Mock internal otherToken;
     FlashBorrowerMock internal flashBorrower;
-       
+
     function setUp() public virtual {
         owner = svm.createAddress("owner");
         morpho = IMorpho(address(new Morpho(owner)));
@@ -72,7 +71,7 @@ contract HalmosTest is SymTest, Test {
             irm: address(irm),
             lltv: lltv
         });
-        
+
         market = Market({
             totalSupplyAssets: uint128(svm.createUint256("totalSupplyAssets")),
             totalSupplyShares: uint128(svm.createUint256("totalSupplyShares")),
