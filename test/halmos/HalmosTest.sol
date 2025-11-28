@@ -53,7 +53,7 @@ contract HalmosTest is SymTest, Test {
 
     ERC20Mock internal otherToken;
     FlashBorrowerMock internal flashBorrower;
-    
+       
     function setUp() public virtual {
         owner = svm.createAddress("owner");
         morpho = IMorpho(address(new Morpho(owner)));
