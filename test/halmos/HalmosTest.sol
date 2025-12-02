@@ -22,12 +22,12 @@ import {MathLib} from "../../src/libraries/MathLib.sol";
 contract IrmSymbolic is IIrm, SymTest, Test {
     using MathLib for uint128;
 
-    function borrowRateView(MarketParams memory, Market memory market) public pure returns (uint256) {
+    function borrowRateView(MarketParams memory, Market memory) public pure returns (uint256) {
         // Returns a symbolic borrow rate.
         return svm.createUint256("rate");
     }
 
-    function borrowRate(MarketParams memory marketParams, Market memory market) external pure returns (uint256) {
+    function borrowRate(MarketParams memory, Market memory) external pure returns (uint256) {
         // Returns a symbolic borrow rate.
         return svm.createUint256("rate");
     }
@@ -70,15 +70,6 @@ contract HalmosTest is SymTest, Test {
             oracle: address(oracle),
             irm: address(irm),
             lltv: lltv
-        });
-
-        market = Market({
-            totalSupplyAssets: uint128(svm.createUint256("totalSupplyAssets")),
-            totalSupplyShares: uint128(svm.createUint256("totalSupplyShares")),
-            totalBorrowAssets: uint128(svm.createUint256("totalBorrowAssets")),
-            totalBorrowShares: uint128(svm.createUint256("totalBorrowShares")),
-            lastUpdate: uint128(svm.createUint256("lastUpdate")),
-            fee: uint128(svm.createUint256("fee"))
         });
 
         vm.startPrank(owner);
