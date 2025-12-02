@@ -202,7 +202,8 @@ contract HalmosTest is SymTest, Test {
 
     function check_isInterestRateZeroWithIRMMock(bytes4 selector, address caller, Id id) public {
         uint256 totalBorrowAssetsBefore = morpho.totalBorrowAssets(id);
-
+        uint64 blockNumber = uint64(block.number);
+        vm.roll(blockNumber + 100);
         _callMorpho(selector, caller);
 
         uint256 totalBorrowAssetsAfter = morpho.totalBorrowAssets(id);
