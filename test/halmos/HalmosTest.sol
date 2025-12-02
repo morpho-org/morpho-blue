@@ -199,4 +199,14 @@ contract HalmosTest is SymTest, Test {
         MarketParams memory itmpAfter = morpho.idToMarketParams(id);
         assert(Id.unwrap(itmpBefore.id()) == Id.unwrap(itmpAfter.id()));
     }
+
+    function check_isInterestRateZeroWithIRMMock(bytes4 selector, address caller, Id id) public {
+        uint256 totalBorrowAssetsBefore = morpho.totalBorrowAssets(id);
+
+        _callMorpho(selector, caller);
+
+        uint256 totalBorrowAssetsAfter = morpho.totalBorrowAssets(id);
+        assert(totalBorrowAssetsBefore == totalBorrowAssetsAfter);
+    }
+
 }
