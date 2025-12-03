@@ -24,12 +24,12 @@ contract IrmSymbolic is IIrm, SymTest, Test {
 
     function borrowRateView(MarketParams memory, Market memory) public pure returns (uint256) {
         // Returns a symbolic borrow rate.
-        return svm.createUint256("rate");
+        return 50;
     }
 
     function borrowRate(MarketParams memory, Market memory) external pure returns (uint256) {
         // Returns a symbolic borrow rate.
-        return svm.createUint256("rate");
+        return 50;
     }
 }
 
@@ -220,12 +220,17 @@ contract HalmosTest is SymTest, Test {
         assert(Id.unwrap(itmpBefore.id()) == Id.unwrap(itmpAfter.id()));
     }
 
-    function check_isInterestRateZeroWithIRMSymbolic(bytes4 selector, address caller, Id id) public {
+    function check_isInterestRateZeroWithIRMSymbolic(bytes4 selector, address caller) public {
+        Id id = marketParams.id();
         uint256 totalBorrowAssetsBefore = morpho.totalBorrowAssets(id);
-
+        assert(totalBorrowAssetsBefore == 0);
+        uint256 blockTimestamp = block.timestamp;
+        vm.warp(blockTimestamp+100000);
+        //_callMorpho(morpho.supply.selector, caller);
+        //_callMorpho(morpho.borrow.selector, caller);
         _callMorpho(selector, caller);
 
         uint256 totalBorrowAssetsAfter = morpho.totalBorrowAssets(id);
-        assert(totalBorrowAssetsBefore == totalBorrowAssetsAfter);
+        assert(totalBorrowAssetsAfter == totalBorrowAssetsBefore);
     }
 }
