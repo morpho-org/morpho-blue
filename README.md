@@ -23,15 +23,9 @@ The [`src/mocks`](./src/mocks) directory contains contracts designed exclusively
 
 You'll find relevant comments in [`IMorpho.sol`](./src/interfaces/IMorpho.sol), notably a list of requirements about market dependencies.
 
-## Getting Started
+## Developers
 
-Install dependencies: `yarn`
-
-Run forge tests: `yarn test:forge`
-
-Run hardhat tests: `yarn test:hardhat`
-
-You will find other useful commands in the [`package.json`](./package.json) file.
+Compilation, testing and formatting with [forge](https://book.getfoundry.sh/getting-started/installation).
 
 ## Audits
 
