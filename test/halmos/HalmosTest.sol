@@ -200,14 +200,26 @@ contract HalmosTest is SymTest, Test {
         assert(Id.unwrap(itmpBefore.id()) == Id.unwrap(itmpAfter.id()));
     }
 
-    function check_isInterestRateZeroWithIRMMock(bytes4 selector, address caller, Id id) public {
+    function check_isTotalBorrowAssetsZeroForFixedMarketID(bytes4 selector, address caller) public {
+        Id id = marketParams.id();
         uint256 totalBorrowAssetsBefore = morpho.totalBorrowAssets(id);
-        uint64 blockNumber = uint64(block.number);
-        vm.roll(blockNumber + 100);
-        _callMorpho(selector, caller);
 
+        _callMorpho(selector, caller);
+        
         uint256 totalBorrowAssetsAfter = morpho.totalBorrowAssets(id);
-        assert(totalBorrowAssetsBefore == totalBorrowAssetsAfter);
+        assert(totalBorrowAssetsBefore == 0);
+        assert(totalBorrowAssetsAfter == 0);
     }
+
+    function check_isTotalBorrowAssetsZero(bytes4 selector, address caller, Id id) public {
+        uint256 totalBorrowAssetsBefore = morpho.totalBorrowAssets(id);
+
+        _callMorpho(selector, caller);
+        
+        uint256 totalBorrowAssetsAfter = morpho.totalBorrowAssets(id);
+        assert(totalBorrowAssetsBefore == 0);
+        assert(totalBorrowAssetsAfter == 0);
+    }
+
 
 }
