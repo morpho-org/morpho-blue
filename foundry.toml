@@ -19,15 +19,11 @@ wrap_comments = true
 [lint]
 exclude_lints = [
     "unaliased-plain-import",
-    "unused-import",
-    "unsafe-typecast",
-    "mixed-case-variable",
-    "mixed-case-function",
     "asm-keccak256",
     "unwrapped-modifier-logic",
 ]
-
-[profile.no_via_ir]
-via-ir = false
+ignore = [
+    'test/**/*.sol'
+]
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/crates/config
