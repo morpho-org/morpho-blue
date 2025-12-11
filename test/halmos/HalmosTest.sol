@@ -78,6 +78,26 @@ contract HalmosTest is SymTest, Test {
         morpho.createMarket(marketParams);
         vm.stopPrank();
 
+        address supplier = svm.createAddress("supplier");
+        address borrower = svm.createAddress("borrower");
+        uint256 supplyAssets = svm.createUint256("supplyAssets");
+        uint256 collateralAssets = svm.createUint256("collateralAssets");
+        uint256 borrowAssets = svm.createUint256("borrowAssets");
+
+        bytes memory emptyData = hex"";
+
+        deal(address(loanToken), supplier, supplyAssets + 10e6);
+
+        vm.startPrank(supplier);
+        loanToken.approve(address(morpho), type(uint256).max);
+        morpho.supply(marketParams, supplyAssets, 0, supplier, emptyData);
+        vm.stopPrank();
+
+        //vm.startPrank(borrower);
+        //morpho.supplyCollateral(marketParams, collateralAssets, borrower, emptyData);
+        //morpho.borrow(marketParams, borrowAssets, 0, borrower, borrower);
+        //vm.stopPrank();
+
         // for flashLoan
         otherToken = new ERC20Mock();
         flashBorrower = new FlashBorrowerMock(morpho);
@@ -137,6 +157,13 @@ contract HalmosTest is SymTest, Test {
         vm.prank(caller);
         (bool success,) = address(morpho).call(abi.encodePacked(selector, args));
         vm.assume(success);
+    }
+
+    function check_setUp() public view {
+        Id id = marketParams.id();
+
+        assert(morpho.totalSupplyAssets(id) > 0);
+        assert(morpho.totalBorrowAssets(id) == 0);
     }
 
     // Check that the fee is always smaller than the max fee.
