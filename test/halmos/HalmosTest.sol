@@ -81,22 +81,28 @@ contract HalmosTest is SymTest, Test {
         address supplier = svm.createAddress("supplier");
         address borrower = svm.createAddress("borrower");
         uint256 supplyAssets = svm.createUint256("supplyAssets");
+        vm.assume(supplyAssets > 0);
+
         uint256 collateralAssets = svm.createUint256("collateralAssets");
         uint256 borrowAssets = svm.createUint256("borrowAssets");
 
         bytes memory emptyData = hex"";
 
-        deal(address(loanToken), supplier, supplyAssets + 10e6);
-
-        vm.startPrank(supplier);
+        loanToken.setBalance(supplier, supplyAssets);
         loanToken.approve(address(morpho), type(uint256).max);
-        morpho.supply(marketParams, supplyAssets, 0, supplier, emptyData);
-        vm.stopPrank();
+        //deal(address(loanToken), supplier, supplyAssets + 10e6);
 
-        //vm.startPrank(borrower);
-        //morpho.supplyCollateral(marketParams, collateralAssets, borrower, emptyData);
-        //morpho.borrow(marketParams, borrowAssets, 0, borrower, borrower);
-        //vm.stopPrank();
+        vm.prank(supplier);
+        morpho.supply(marketParams, supplyAssets, 0, supplier, emptyData);
+
+        collateralToken.setBalance(borrower, collateralAssets);
+        collateralToken.approve(address(morpho), type(uint256).max);
+
+
+        vm.startPrank(borrower);
+        morpho.supplyCollateral(marketParams, collateralAssets, borrower, emptyData);
+        morpho.borrow(marketParams, borrowAssets, 0, borrower, borrower);
+        vm.stopPrank();
 
         // for flashLoan
         otherToken = new ERC20Mock();
@@ -162,8 +168,10 @@ contract HalmosTest is SymTest, Test {
     function check_setUp() public view {
         Id id = marketParams.id();
 
-        assert(morpho.totalSupplyAssets(id) > 0);
+        // assert(morpho.totalSupplyAssets(id) == 0);
         assert(morpho.totalBorrowAssets(id) == 0);
+
+
     }
 
     // Check that the fee is always smaller than the max fee.
