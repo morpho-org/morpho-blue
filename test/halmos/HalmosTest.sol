@@ -165,7 +165,7 @@ contract HalmosTest is SymTest, Test {
         vm.assume(success);
     }
 
-    function check_aux_setUp() public view {
+    function aux_setUp() public view {
         Id id = marketParams.id();
 
         assert(morpho.totalSupplyAssets(id) == 0
@@ -175,11 +175,11 @@ contract HalmosTest is SymTest, Test {
             || morpho.fee(id) == 0);
     }
 
-    // Sanity Check fundtion to ensure setUp created one non-zero market state.
+    // Sanity Check test that ensures setUp created at-least one non-zero market state.
     function check_setUp() public view {
         bool reverted = false;
 
-        try this.check_aux_setUp() {
+        try this.aux_setUp() {
             reverted = false;    
         } catch {
             reverted = true;
