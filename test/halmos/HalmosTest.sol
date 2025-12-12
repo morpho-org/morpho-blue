@@ -76,12 +76,13 @@ contract HalmosTest is SymTest, Test {
         morpho.enableIrm(address(irm));
         morpho.enableLltv(lltv);
         morpho.createMarket(marketParams);
+        morpho.setFee(marketParams, svm.createUint256("fee"));
         vm.stopPrank();
 
+        // Set up some initial supply and borrow to avoid zero states in Market
         address supplier = svm.createAddress("supplier");
         address borrower = svm.createAddress("borrower");
         uint256 supplyAssets = svm.createUint256("supplyAssets");
-        vm.assume(supplyAssets > 0);
 
         uint256 collateralAssets = svm.createUint256("collateralAssets");
         uint256 borrowAssets = svm.createUint256("borrowAssets");
@@ -90,14 +91,12 @@ contract HalmosTest is SymTest, Test {
 
         loanToken.setBalance(supplier, supplyAssets);
         loanToken.approve(address(morpho), type(uint256).max);
-        //deal(address(loanToken), supplier, supplyAssets + 10e6);
 
         vm.prank(supplier);
         morpho.supply(marketParams, supplyAssets, 0, supplier, emptyData);
 
         collateralToken.setBalance(borrower, collateralAssets);
         collateralToken.approve(address(morpho), type(uint256).max);
-
 
         vm.startPrank(borrower);
         morpho.supplyCollateral(marketParams, collateralAssets, borrower, emptyData);
@@ -108,7 +107,8 @@ contract HalmosTest is SymTest, Test {
         otherToken = new ERC20Mock();
         flashBorrower = new FlashBorrowerMock(morpho);
 
-        // Enable symbolic storage
+        // Enable symbolic storage. Note that enableSymbolicStorage enables symbolic storage for only the slots that are not 
+        // already initialised in the contract's constructor. Doesn't as expected for dynamic structures. 
         svm.enableSymbolicStorage(address(this));
         svm.enableSymbolicStorage(address(morpho));
         svm.enableSymbolicStorage(address(loanToken));
@@ -165,14 +165,30 @@ contract HalmosTest is SymTest, Test {
         vm.assume(success);
     }
 
-    function check_setUp() public view {
+    function check_aux_setUp() public view {
         Id id = marketParams.id();
 
-        // assert(morpho.totalSupplyAssets(id) == 0);
-        assert(morpho.totalBorrowAssets(id) == 0);
-
-
+        assert(morpho.totalSupplyAssets(id) == 0
+            || morpho.totalSupplyShares(id) == 0
+            || morpho.totalBorrowAssets(id) == 0
+            || morpho.totalBorrowShares(id) == 0
+            || morpho.fee(id) == 0);
     }
+
+    // Sanity Check fundtion to ensure setUp created one non-zero market state.
+    function check_setUp() public view {
+        bool reverted = false;
+
+        try this.check_aux_setUp() {
+            reverted = false;    
+        } catch {
+            reverted = true;
+        }  
+
+        assert(reverted);
+    }
+
+
 
     // Check that the fee is always smaller than the max fee.
     function check_feeInRange(bytes4 selector, address caller, Id id) public {
@@ -253,19 +269,5 @@ contract HalmosTest is SymTest, Test {
 
         MarketParams memory itmpAfter = morpho.idToMarketParams(id);
         assert(Id.unwrap(itmpBefore.id()) == Id.unwrap(itmpAfter.id()));
-    }
-
-    function check_isInterestRateZeroWithIRMSymbolic(bytes4 selector, address caller) public {
-        Id id = marketParams.id();
-        uint256 totalBorrowAssetsBefore = morpho.totalBorrowAssets(id);
-        assert(totalBorrowAssetsBefore == 0);
-        uint256 blockTimestamp = block.timestamp;
-        vm.warp(blockTimestamp+100000);
-        //_callMorpho(morpho.supply.selector, caller);
-        //_callMorpho(morpho.borrow.selector, caller);
-        _callMorpho(selector, caller);
-
-        uint256 totalBorrowAssetsAfter = morpho.totalBorrowAssets(id);
-        assert(totalBorrowAssetsAfter == totalBorrowAssetsBefore);
     }
 }
