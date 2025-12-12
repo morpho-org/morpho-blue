@@ -12,8 +12,6 @@ jobs:
     runs-on: ubuntu-latest
 
     strategy:
-      fail-fast: false
-
       matrix:
         conf:
           - AccrueInterest
@@ -31,17 +29,13 @@ jobs:
           - Transfer
 
     steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
+      - uses: actions/checkout@v5
 
-      - name: Install python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: ">=3.9"
 
-      - name: Install certora
-        run: pip install certora-cli
+      - run: pip install certora-cli
 
       - name: Install solc
         run: |
@@ -49,7 +43,6 @@ jobs:
           chmod +x solc-static-linux
           sudo mv solc-static-linux /usr/local/bin/solc-0.8.19
 
-      - name: Verify ${{ matrix.conf }}
-        run: certoraRun certora/confs/${{ matrix.conf }}.conf
+      - run: certoraRun certora/confs/${{ matrix.conf }}.conf
         env:
           CERTORAKEY: ${{ secrets.CERTORAKEY }}

@@ -19,12 +19,11 @@ wrap_comments = true
 [lint]
 exclude_lints = [
     "unaliased-plain-import",
-    "unused-import",
-    "unsafe-typecast",
-    "mixed-case-variable",
-    "mixed-case-function",
     "asm-keccak256",
     "unwrapped-modifier-logic",
+]
+ignore = [
+    'test/**/*.sol'
 ]
 
 [profile.no_via_ir]

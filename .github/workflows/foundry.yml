@@ -12,21 +12,19 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  forge-test:
-    strategy:
-      fail-fast: true
-
+  fmt:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
+      - uses: actions/checkout@v5
+      - uses: foundry-rs/foundry-toolchain@v1
+      - run: forge fmt --check
 
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-
-      - name: Run Forge tests
-        run: FOUNDRY_PROFILE=test forge test -vvv
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: foundry-rs/foundry-toolchain@v1
+      - run: forge test -vvv
         env:
           FOUNDRY_FUZZ_RUNS: 10000
           FOUNDRY_FUZZ_MAX_TEST_REJECTS: 500000
