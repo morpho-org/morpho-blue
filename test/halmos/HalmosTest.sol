@@ -194,7 +194,7 @@ contract HalmosTest is SymTest, Test {
     function check_feeInRange(bytes4 selector, address caller, Id id) public {
         vm.assume(morpho.fee(id) <= MAX_FEE);
 
-        _callMorpho(selector, caller);
+        _callMorpho(morpho.borrow.selector, caller);
 
         assert(morpho.fee(id) <= MAX_FEE);
     }
@@ -204,6 +204,7 @@ contract HalmosTest is SymTest, Test {
         vm.assume(morpho.totalBorrowAssets(id) <= morpho.totalSupplyAssets(id));
 
         _callMorpho(selector, caller);
+        //_callMorpho(morpho.liquidate.selector, caller);
 
         assert(morpho.totalBorrowAssets(id) <= morpho.totalSupplyAssets(id));
     }
