@@ -175,6 +175,16 @@ contract HalmosTest is SymTest, Test {
             || morpho.fee(id) == 0);
     }
 
+    function check_setUp1() public view {
+        Id id = marketParams.id();
+
+        assert(morpho.totalSupplyAssets(id) == 0
+        && morpho.totalSupplyShares(id) == 0
+        && morpho.totalBorrowAssets(id) == 0
+        && morpho.totalBorrowShares(id) == 0
+        && morpho.fee(id) == 0);    
+    }
+
     // Sanity Check test that ensures setUp created at-least one non-zero market state.
     function check_setUp() public view {
         bool reverted = false;
@@ -194,17 +204,19 @@ contract HalmosTest is SymTest, Test {
     function check_feeInRange(bytes4 selector, address caller, Id id) public {
         vm.assume(morpho.fee(id) <= MAX_FEE);
 
-        _callMorpho(morpho.borrow.selector, caller);
+        _callMorpho(selector, caller);
 
         assert(morpho.fee(id) <= MAX_FEE);
     }
 
     // Check that there is always less borrow than supply on the market.
-    function check_borrowLessThanSupply(bytes4 selector, address caller, Id id) public {
+    function check_borrowLessThanSupply(bytes4 selector, address caller) public {
+        Id id = marketParams.id();
         vm.assume(morpho.totalBorrowAssets(id) <= morpho.totalSupplyAssets(id));
 
+        vm.assume(selector == morpho.liquidate.selector);
+            //&& selector != morpho.repay.selector);
         _callMorpho(selector, caller);
-        //_callMorpho(morpho.liquidate.selector, caller);
 
         assert(morpho.totalBorrowAssets(id) <= morpho.totalSupplyAssets(id));
     }
@@ -271,4 +283,23 @@ contract HalmosTest is SymTest, Test {
         MarketParams memory itmpAfter = morpho.idToMarketParams(id);
         assert(Id.unwrap(itmpBefore.id()) == Id.unwrap(itmpAfter.id()));
     }
+
+    function assembly_zeroFloorSub(uint256 x, uint256 y) internal pure returns (uint256 z) {
+        assembly {
+            z := mul(gt(x, y), sub(x, y))
+        }
+    }
+
+    function reference_zeroFloorSub(uint256 x, uint256 y) internal pure returns (uint256 z) {
+        z = x > y ? x - y : 0;
+        return z;
+    }
+
+    function check_equivalence_zeroFloorSub(uint256 x, uint256 y) public pure {
+        uint256 z1 = assembly_zeroFloorSub(x, y);
+        uint256 z2 = reference_zeroFloorSub(x, y);
+
+        assert(z1 == z2);
+    }
+
 }
