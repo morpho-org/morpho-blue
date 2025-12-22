@@ -87,7 +87,7 @@ contract HalmosTest is SymTest, Test {
         uint256 borrowAssets = svm.createUint256("borrowAssets");
 
         bytes memory emptyData = hex"";
-    
+
         loanToken.setBalance(supplier, supplyAssets);
         loanToken.approve(address(morpho), type(uint256).max);
 
@@ -106,8 +106,8 @@ contract HalmosTest is SymTest, Test {
         otherToken = new ERC20Mock();
         flashBorrower = new FlashBorrowerMock(morpho);
 
-        // Enable symbolic storage. Note that enableSymbolicStorage enables symbolic storage for only the slots that are not 
-        // already initialised in the contract's constructor. 
+        // Enable symbolic storage. Note that enableSymbolicStorage enables symbolic storage for only the slots that are
+        // not already initialised in the contract's constructor.
         svm.enableSymbolicStorage(address(this));
         svm.enableSymbolicStorage(address(morpho));
         svm.enableSymbolicStorage(address(loanToken));
@@ -168,13 +168,11 @@ contract HalmosTest is SymTest, Test {
     function check_setUp() public view {
         Id id = marketParams.id();
 
-        assert(morpho.totalSupplyAssets(id) != 0
-        && morpho.totalSupplyShares(id) != 0
-        && morpho.totalBorrowAssets(id) != 0
-        && morpho.totalBorrowShares(id) != 0
-        && morpho.fee(id) != 0);    
+        assert(
+            morpho.totalSupplyAssets(id) != 0 && morpho.totalSupplyShares(id) != 0 && morpho.totalBorrowAssets(id) != 0
+                && morpho.totalBorrowShares(id) != 0 && morpho.fee(id) != 0
+        );
     }
-
 
     // Check that the fee is always smaller than the max fee.
     function check_feeInRange(bytes4 selector, address caller, Id id) public {
@@ -196,7 +194,6 @@ contract HalmosTest is SymTest, Test {
 
         assert(morpho.totalBorrowAssets(id) <= morpho.totalSupplyAssets(id));
     }
-
 
     // Check that the market cannot be "destroyed".
     function check_lastUpdateNonZero(bytes4 selector, address caller, Id id) public {
@@ -279,5 +276,4 @@ contract HalmosTest is SymTest, Test {
 
         assert(z1 == z2);
     }
-
 }
