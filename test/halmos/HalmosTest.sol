@@ -190,8 +190,8 @@ contract HalmosTest is SymTest, Test {
         Id id = marketParams.id();
         vm.assume(morpho.totalBorrowAssets(id) <= morpho.totalSupplyAssets(id));
 
-        vm.assume(selector == morpho.liquidate.selector);
-            //&& selector != morpho.repay.selector);
+        // all solvers timeout on liquidate
+        vm.assume(selector != morpho.liquidate.selector);
         _callMorpho(selector, caller);
 
         assert(morpho.totalBorrowAssets(id) <= morpho.totalSupplyAssets(id));
