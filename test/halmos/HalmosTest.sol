@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
 import "../../lib/forge-std/src/Test.sol";
@@ -88,7 +87,7 @@ contract HalmosTest is SymTest, Test {
         uint256 borrowAssets = svm.createUint256("borrowAssets");
 
         bytes memory emptyData = hex"";
-
+    
         loanToken.setBalance(supplier, supplyAssets);
         loanToken.approve(address(morpho), type(uint256).max);
 
@@ -108,7 +107,7 @@ contract HalmosTest is SymTest, Test {
         flashBorrower = new FlashBorrowerMock(morpho);
 
         // Enable symbolic storage. Note that enableSymbolicStorage enables symbolic storage for only the slots that are not 
-        // already initialised in the contract's constructor. Doesn't as expected for dynamic structures. 
+        // already initialised in the contract's constructor. 
         svm.enableSymbolicStorage(address(this));
         svm.enableSymbolicStorage(address(morpho));
         svm.enableSymbolicStorage(address(loanToken));
@@ -165,39 +164,16 @@ contract HalmosTest is SymTest, Test {
         vm.assume(success);
     }
 
-    function aux_setUp() public view {
-        Id id = marketParams.id();
-
-        assert(morpho.totalSupplyAssets(id) == 0
-            || morpho.totalSupplyShares(id) == 0
-            || morpho.totalBorrowAssets(id) == 0
-            || morpho.totalBorrowShares(id) == 0
-            || morpho.fee(id) == 0);
-    }
-
-    function check_setUp1() public view {
-        Id id = marketParams.id();
-
-        assert(morpho.totalSupplyAssets(id) == 0
-        && morpho.totalSupplyShares(id) == 0
-        && morpho.totalBorrowAssets(id) == 0
-        && morpho.totalBorrowShares(id) == 0
-        && morpho.fee(id) == 0);    
-    }
-
-    // Sanity Check test that ensures setUp created at-least one non-zero market state.
+    // Sanity Check test that ensures setUp created non-zero market state.
     function check_setUp() public view {
-        bool reverted = false;
+        Id id = marketParams.id();
 
-        try this.aux_setUp() {
-            reverted = false;    
-        } catch {
-            reverted = true;
-        }  
-
-        assert(reverted);
+        assert(morpho.totalSupplyAssets(id) != 0
+        && morpho.totalSupplyShares(id) != 0
+        && morpho.totalBorrowAssets(id) != 0
+        && morpho.totalBorrowShares(id) != 0
+        && morpho.fee(id) != 0);    
     }
-
 
 
     // Check that the fee is always smaller than the max fee.
@@ -220,6 +196,7 @@ contract HalmosTest is SymTest, Test {
 
         assert(morpho.totalBorrowAssets(id) <= morpho.totalSupplyAssets(id));
     }
+
 
     // Check that the market cannot be "destroyed".
     function check_lastUpdateNonZero(bytes4 selector, address caller, Id id) public {
@@ -284,6 +261,7 @@ contract HalmosTest is SymTest, Test {
         assert(Id.unwrap(itmpBefore.id()) == Id.unwrap(itmpAfter.id()));
     }
 
+    // UtilsLib.zeroFloorSub equivalence check between assembly and reference implementation.
     function assembly_zeroFloorSub(uint256 x, uint256 y) internal pure returns (uint256 z) {
         assembly {
             z := mul(gt(x, y), sub(x, y))
