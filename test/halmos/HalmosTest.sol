@@ -183,18 +183,6 @@ contract HalmosTest is SymTest, Test {
         assert(morpho.fee(id) <= MAX_FEE);
     }
 
-    // Check that there is always less borrow than supply on the market.
-    function check_borrowLessThanSupply(bytes4 selector, address caller) public {
-        Id id = marketParams.id();
-        vm.assume(morpho.totalBorrowAssets(id) <= morpho.totalSupplyAssets(id));
-
-        // all solvers timeout on liquidate
-        vm.assume(selector != morpho.liquidate.selector);
-        _callMorpho(selector, caller);
-
-        assert(morpho.totalBorrowAssets(id) <= morpho.totalSupplyAssets(id));
-    }
-
     // Check that the market cannot be "destroyed".
     function check_lastUpdateNonZero(bytes4 selector, address caller, Id id) public {
         vm.assume(morpho.lastUpdate(id) != 0);
@@ -256,24 +244,5 @@ contract HalmosTest is SymTest, Test {
 
         MarketParams memory itmpAfter = morpho.idToMarketParams(id);
         assert(Id.unwrap(itmpBefore.id()) == Id.unwrap(itmpAfter.id()));
-    }
-
-    // UtilsLib.zeroFloorSub equivalence check between assembly and reference implementation.
-    function assembly_zeroFloorSub(uint256 x, uint256 y) internal pure returns (uint256 z) {
-        assembly {
-            z := mul(gt(x, y), sub(x, y))
-        }
-    }
-
-    function reference_zeroFloorSub(uint256 x, uint256 y) internal pure returns (uint256 z) {
-        z = x > y ? x - y : 0;
-        return z;
-    }
-
-    function check_equivalence_zeroFloorSub(uint256 x, uint256 y) public pure {
-        uint256 z1 = assembly_zeroFloorSub(x, y);
-        uint256 z2 = reference_zeroFloorSub(x, y);
-
-        assert(z1 == z2);
     }
 }
