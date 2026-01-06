@@ -349,7 +349,7 @@ rule idToMarketParamsForCreatedMarketCannotChange(method f, env e, calldataarg a
 filtered { f -> !f.isView }
 {
     MorphoHarness.Id id;
-    //require isCreated(id);
+    require isCreated(id);
     MorphoHarness.MarketParams itmpBefore = idToMarketParams_(id);
 
     f(e, args);
