@@ -288,6 +288,7 @@ filtered { f -> !f.isView }
     assert lastUpdate(id) <= e.block.timestamp;
 }
 
+// Invariant checking that the last updated time is never zero.
 rule lastUpdateNonZero(method f, env e, calldataarg args) 
 filtered { f -> !f.isView }
 {
@@ -302,6 +303,7 @@ filtered { f -> !f.isView }
     assert lastUpdate(id) != 0;
 }
 
+// Invariant checking that the last updated time never decreases.
 rule lastUpdateCannotDecrease(method f, env e, calldataarg args)
 filtered { f -> !f.isView }
 {
@@ -316,46 +318,42 @@ filtered { f -> !f.isView }
     assert lastUpdateAfter >= lastUpdateBefore;
 }
 
+// Invariant checking that IRM cannot be disabled once enabled.
 rule irmCannotBeDisabled(method f, env e, calldataarg args)
 filtered { f -> !f.isView }
 {
     address irm;
 
-    // Assume the IRM is enabled before the interaction.
     require isIrmEnabled(irm);
 
     f(e, args);
 
-    // Check that the IRM is remains enabled after the interaction.
     assert isIrmEnabled(irm);
 }
 
+// Invariant checking that LLTV cannot be disabled once enabled.
 rule lltvCannotBeDisabled(method f, env e, calldataarg args)
 filtered { f -> !f.isView }
 {
     uint256 lltv;
 
-    // Assume the IRM is enabled before the interaction.
     require isLltvEnabled(lltv);
 
     f(e, args);
 
-    // Check that the IRM is remains enabled after the interaction.
     assert isLltvEnabled(lltv);
 }
 
+// Invariant checking that market parameters for a created market cannot change.
 rule idToMarketParamsForCreatedMarketCannotChange(method f, env e, calldataarg args)
 filtered { f -> !f.isView }
 {
     MorphoHarness.Id id;
-
-    // Assume the market is created before the interaction.
-    require isCreated(id);
+    //require isCreated(id);
     MorphoHarness.MarketParams itmpBefore = idToMarketParams_(id);
 
     f(e, args);
 
-    // Check that the market params remains the same after the interaction.
     MorphoHarness.MarketParams itmpAfter = idToMarketParams_(id);
     assert itmpBefore == itmpAfter;
 }
