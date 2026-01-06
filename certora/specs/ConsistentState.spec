@@ -282,6 +282,80 @@ filtered { f -> !f.isView }
     MorphoHarness.Id id;
     // Assume the property before the interaction.
     require lastUpdate(id) <= e.block.timestamp;
+
     f(e, args);
+
     assert lastUpdate(id) <= e.block.timestamp;
+}
+
+rule lastUpdateNonZero(method f, env e, calldataarg args) 
+filtered { f -> !f.isView }
+{
+    MorphoHarness.Id id;
+
+    require e.block.timestamp <= max_uint128 - 1;
+    // Assume the property before the interaction.
+    require lastUpdate(id) != 0;
+
+    f(e, args);
+    
+    assert lastUpdate(id) != 0;
+}
+
+rule lastUpdateCannotDecrease(method f, env e, calldataarg args)
+filtered { f -> !f.isView }
+{
+    MorphoHarness.Id id;
+
+    require e.block.timestamp <= max_uint128 - 1;
+    uint256 lastUpdateBefore = lastUpdate(id);
+    
+    f(e, args);
+    
+    uint256 lastUpdateAfter = lastUpdate(id);
+    assert lastUpdateAfter >= lastUpdateBefore;
+}
+
+rule irmCannotBeDisabled(method f, env e, calldataarg args)
+filtered { f -> !f.isView }
+{
+    address irm;
+
+    // Assume the IRM is enabled before the interaction.
+    require isIrmEnabled(irm);
+
+    f(e, args);
+
+    // Check that the IRM is remains enabled after the interaction.
+    assert isIrmEnabled(irm);
+}
+
+rule lltvCannotBeDisabled(method f, env e, calldataarg args)
+filtered { f -> !f.isView }
+{
+    uint256 lltv;
+
+    // Assume the IRM is enabled before the interaction.
+    require isLltvEnabled(lltv);
+
+    f(e, args);
+
+    // Check that the IRM is remains enabled after the interaction.
+    assert isLltvEnabled(lltv);
+}
+
+rule idToMarketParamsForCreatedMarketCannotChange(method f, env e, calldataarg args)
+filtered { f -> !f.isView }
+{
+    MorphoHarness.Id id;
+
+    // Assume the market is created before the interaction.
+    require isCreated(id);
+    MorphoHarness.MarketParams itmpBefore = idToMarketParams_(id);
+
+    f(e, args);
+
+    // Check that the market params remains the same after the interaction.
+    MorphoHarness.MarketParams itmpAfter = idToMarketParams_(id);
+    assert itmpBefore == itmpAfter;
 }
