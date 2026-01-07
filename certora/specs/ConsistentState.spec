@@ -294,7 +294,7 @@ filtered { f -> !f.isView }
 {
     MorphoHarness.Id id;
 
-    require e.block.timestamp <= max_uint128 - 1;
+    require e.block.timestamp <= max_uint128;
     // Assume the property before the interaction.
     require lastUpdate(id) != 0;
 
@@ -309,7 +309,7 @@ filtered { f -> !f.isView }
 {
     MorphoHarness.Id id;
 
-    require e.block.timestamp <= max_uint128 - 1;
+    require e.block.timestamp <= max_uint128;
     uint256 lastUpdateBefore = lastUpdate(id);
     
     f(e, args);
