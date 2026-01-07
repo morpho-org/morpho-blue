@@ -1,6 +1,3 @@
 [submodule "lib/forge-std"]
 	path = lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
-[submodule "lib/halmos-cheatcodes"]
-	path = lib/halmos-cheatcodes
-	url = https://github.com/a16z/halmos-cheatcodes.git
