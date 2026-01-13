@@ -18,6 +18,7 @@ methods {
     function isLltvEnabled(uint256) external returns (bool) envfree;
     function isAuthorized(address, address) external returns (bool) envfree;
     function idToMarketParams_(MorphoHarness.Id) external returns (MorphoHarness.MarketParams) envfree;
+    function nonce(address) external returns (uint256) envfree;
 
     function Util.maxFee() external returns (uint256) envfree;
     function Util.wad() external returns (uint256) envfree;
@@ -335,4 +336,15 @@ rule idToMarketParamsForCreatedMarketCannotChange(method f, env e, calldataarg a
 
     MorphoHarness.MarketParams itmpAfter = idToMarketParams_(id);
     assert itmpBefore == itmpAfter;
+}
+
+rule nonceCannotDecrease(method f, env e, calldataarg args) filtered { f -> !f.isView } {
+    address user;
+
+    uint256 nonceBefore = nonce(user);
+
+    f(e, args);
+
+    uint256 nonceAfter = nonce(user);
+    assert(nonceAfter == nonceBefore || nonceAfter == nonceBefore + 1);
 }
