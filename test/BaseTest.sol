@@ -1,21 +1,21 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import "../../lib/forge-std/src/Test.sol";
-import "../../lib/forge-std/src/console.sol";
+import "../lib/forge-std/src/Test.sol";
+import "../lib/forge-std/src/console.sol";
 
-import {IMorpho} from "../../src/interfaces/IMorpho.sol";
-import "../../src/interfaces/IMorphoCallbacks.sol";
-import {IrmMock} from "../../src/mocks/IrmMock.sol";
-import {ERC20Mock} from "../../src/mocks/ERC20Mock.sol";
-import {OracleMock} from "../../src/mocks/OracleMock.sol";
+import {IMorpho} from "../src/interfaces/IMorpho.sol";
+import "../src/interfaces/IMorphoCallbacks.sol";
+import {IrmMock} from "../src/mocks/IrmMock.sol";
+import {ERC20Mock} from "../src/mocks/ERC20Mock.sol";
+import {OracleMock} from "../src/mocks/OracleMock.sol";
 
-import "../../src/Morpho.sol";
+import "../src/Morpho.sol";
 import {Math} from "./helpers/Math.sol";
 import {SigUtils} from "./helpers/SigUtils.sol";
 import {ArrayLib} from "./helpers/ArrayLib.sol";
-import {MorphoLib} from "../../src/libraries/periphery/MorphoLib.sol";
-import {MorphoBalancesLib} from "../../src/libraries/periphery/MorphoBalancesLib.sol";
+import {MorphoLib} from "../src/libraries/periphery/MorphoLib.sol";
+import {MorphoBalancesLib} from "../src/libraries/periphery/MorphoBalancesLib.sol";
 
 contract BaseTest is Test {
     using Math for uint256;
