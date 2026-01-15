@@ -1,4 +1,5 @@
 [profile.default]
+solc = "0.8.19"
 libs = ["lib"]
 names = true
 sizes = true
