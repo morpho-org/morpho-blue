@@ -31,7 +31,7 @@ Compilation, testing and formatting with [forge](https://book.getfoundry.sh/gett
 
 All audits are stored in the [audits](./audits/)' folder.
 
-## Licences
+## License
 
-The primary license for Morpho Blue is the Business Source License 1.1 (`BUSL-1.1`), see [`LICENSE`](./LICENSE).
-However, all files in the following folders can also be licensed under `GPL-2.0-or-later` (as indicated in their SPDX headers): [`src/interfaces`](./src/interfaces), [`src/libraries`](./src/libraries), [`src/mocks`](./src/mocks), [`test`](./test), [`certora`](./certora).
+Files in this repository are publicly available under license `GPL-2.0-or-later`, see [`LICENSE`](./LICENSE).
+The previous license (BUSL-1.1) can be found [here](https://github.com/morpho-org/morpho-blue/blob/1bcfbfdfa284597ae526d082dd34bcd182d15d27/LICENSE) for reference.
