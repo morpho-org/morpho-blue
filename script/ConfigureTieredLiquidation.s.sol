@@ -41,7 +41,8 @@ contract ConfigureTieredLiquidation is Script {
         console.log("Market initialized with admin:", marketAdmin);
 
         // 2. Enable tiered liquidation with default tiers
-        tieredMorpho.enableTieredLiquidation(marketId);
+        // Configure market with default params: 10% bonus, 100% max ratio, 1 hour cooldown, 0.01 ETH min seized, whitelist enabled
+        tieredMorpho.configureMarket(marketId, true, 0.1e18, 1e18, 1 hours, 0.01 ether, true);
         console.log("Tiered liquidation enabled for market:", uint256(Id.unwrap(marketId)));
 
         // 3. Enable whitelist mode
@@ -53,7 +54,8 @@ contract ConfigureTieredLiquidation is Script {
         console.log("\n=== Configuration Complete ===");
         console.log("Market ID:", uint256(Id.unwrap(marketId)));
         console.log("Market Admin:", marketAdmin);
-        console.log("Tiered Liquidation:", tieredMorpho.isTieredLiquidationEnabled(marketId));
+        (bool enabled,,,,,, ) = tieredMorpho.marketConfigs(marketId);
+        console.log("Market configured:", enabled);
         console.log("Whitelist Enabled:", whitelistRegistry.isWhitelistEnabled(marketId));
     }
 }

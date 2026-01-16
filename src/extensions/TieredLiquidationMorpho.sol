@@ -13,19 +13,16 @@ import {MarketParamsLib} from "../libraries/MarketParamsLib.sol";
 import {SafeTransferLib} from "../libraries/SafeTransferLib.sol";
 
 import {WhitelistRegistry} from "./WhitelistRegistry.sol";
-import {LiquidationTierLib} from "./libraries/LiquidationTierLib.sol";
 import {HealthFactorLib} from "./libraries/HealthFactorLib.sol";
 import {PriceOracleLib} from "./libraries/PriceOracleLib.sol";
 
 /// @title TieredLiquidationMorpho
-/// @notice Enhanced Morpho protocol with tiered liquidation mechanism
-/// @dev Wraps Morpho Blue and adds multi-tier liquidation with whitelist control
+/// @notice Enhanced Morpho protocol with flexible liquidation mechanism
+/// @dev Implements two-step liquidation with configurable parameters (no tiers)
 contract TieredLiquidationMorpho {
     using MathLib for uint256;
     using SharesMathLib for uint256;
     using SafeTransferLib for IERC20;
-    using HealthFactorLib for uint256;
-    using LiquidationTierLib for LiquidationTierLib.LiquidationTier[];
     using MarketParamsLib for MarketParams;
 
     /* ERRORS */
@@ -36,29 +33,68 @@ contract TieredLiquidationMorpho {
     error ExceedsMaxLiquidation();
     error BelowMinimumSeized();
     error CooldownNotElapsed();
-    error TieredLiquidationNotEnabled();
+    error MarketNotConfigured();
     error InvalidConfiguration();
+    error InvalidLiquidationStatus();
+    error NotLiquidator();
+    error InvalidLiquidationRatio();
 
     /* EVENTS */
 
-    event TieredLiquidationExecuted(
+    event LiquidationExecuted(
         Id indexed marketId,
         address indexed liquidator,
         address indexed borrower,
         uint256 seizedAssets,
         uint256 repaidAssets,
         uint256 healthFactor,
-        uint256 tierIndex,
         uint256 liquidationBonus
     );
 
-    event MarketTiersConfigured(Id indexed marketId, uint256 tierCount, bool enabled);
+    event LiquidationRequested(
+        Id indexed marketId,
+        address indexed borrower,
+        address indexed liquidator,
+        uint256 repaidAmount,
+        uint256 seizedCollateral,
+        uint256 protocolFee,
+        uint256 liquidationRatio
+    );
 
-    event LiquidationTierTriggered(
-        Id indexed marketId, address indexed borrower, uint256 healthFactor, uint256 tierIndex
+    event LiquidationCompleted(
+        Id indexed marketId,
+        address indexed borrower,
+        address indexed liquidator
+    );
+
+    event MarketConfigured(
+        Id indexed marketId,
+        uint256 liquidationBonus,
+        uint256 maxLiquidationRatio,
+        uint256 cooldownPeriod,
+        uint256 minSeizedAssets,
+        bool whitelistEnabled
     );
 
     /* STORAGE */
+
+    /// @notice Liquidation status enum
+    enum LiquidationStatus {
+        None,
+        Pending,
+        Completed
+    }
+
+    /// @notice Market configuration (single tier, no multi-tier logic)
+    struct MarketConfig {
+        bool enabled;
+        uint256 liquidationBonus;       // e.g., 0.1e18 = 10%
+        uint256 maxLiquidationRatio;    // e.g., 1e18 = 100%
+        uint256 cooldownPeriod;         // Seconds
+        uint256 minSeizedAssets;        // Minimum collateral to seize
+        bool whitelistEnabled;          // Optional whitelist
+        uint256 protocolFee;            // Protocol fee rate (0.5e18 = 50%)
+    }
 
     /// @notice The underlying Morpho protocol
     IMorpho public immutable morpho;
@@ -70,10 +106,7 @@ contract TieredLiquidationMorpho {
     address public owner;
 
     /// @notice Market ID => Liquidation configuration
-    mapping(Id => LiquidationTierLib.MarketLiquidationConfig) private marketConfigs;
-
-    /// @notice Market ID => Array of tiers
-    mapping(Id => LiquidationTierLib.LiquidationTier[]) private marketTiers;
+    mapping(Id => MarketConfig) public marketConfigs;
 
     /// @notice Market ID => Borrower => Last liquidation timestamp
     mapping(Id => mapping(address => uint256)) public lastLiquidationTime;
@@ -89,6 +122,11 @@ contract TieredLiquidationMorpho {
 
     /// @notice Market ID => Accumulated protocol fees
     mapping(Id => uint256) public accumulatedFees;
+
+    /// @notice Two-step liquidation tracking
+    mapping(Id => mapping(address => LiquidationStatus)) public liquidationStatus;
+    mapping(Id => mapping(address => address)) public liquidatorAddress;
+    mapping(Id => mapping(address => uint256)) public pendingSeizedCollateral;
 
     /* MODIFIERS */
 
@@ -140,57 +178,42 @@ contract TieredLiquidationMorpho {
         IERC20(marketParams.collateralToken).safeTransfer(feeRecipient, fees);
     }
 
-    /// @notice Enable tiered liquidation for a market with default tiers
-    /// @param marketId The market ID
-    function enableTieredLiquidation(Id marketId) external onlyOwner {
-        _configureDefaultTiers(marketId);
+    /// @notice Configure market liquidation parameters (single configuration, no tiers)
+    function configureMarket(
+        Id marketId,
+        bool enabled,
+        uint256 liquidationBonus,
+        uint256 maxLiquidationRatio,
+        uint256 cooldownPeriod,
+        uint256 minSeizedAssets,
+        bool whitelistEnabled
+    ) external onlyOwner {
+        require(liquidationBonus <= 0.2e18, "Bonus too high"); // Max 20%
+        require(maxLiquidationRatio <= WAD, "Ratio exceeds 100%");
+
+        marketConfigs[marketId] = MarketConfig({
+            enabled: enabled,
+            liquidationBonus: liquidationBonus,
+            maxLiquidationRatio: maxLiquidationRatio,
+            cooldownPeriod: cooldownPeriod,
+            minSeizedAssets: minSeizedAssets,
+            whitelistEnabled: whitelistEnabled,
+            protocolFee: 0.5e18  // Fixed 50/50 split
+        });
+
+        emit MarketConfigured(
+            marketId,
+            liquidationBonus,
+            maxLiquidationRatio,
+            cooldownPeriod,
+            minSeizedAssets,
+            whitelistEnabled
+        );
     }
 
-    /// @notice Configure custom liquidation tiers for a market
-    /// @param marketId The market ID
-    /// @param tiers Array of liquidation tiers
-    function configureTiers(Id marketId, LiquidationTierLib.LiquidationTier[] calldata tiers) external onlyOwner {
-        if (tiers.length == 0) revert InvalidConfiguration();
+        /* LIQUIDATION FUNCTIONS */
 
-        // Validate each tier
-        for (uint256 i = 0; i < tiers.length; i++) {
-            LiquidationTierLib.validateTier(tiers[i]);
-        }
-
-        // Validate tier ordering (descending thresholds)
-        LiquidationTierLib.validateTierOrder(tiers);
-
-        // Clear existing tiers
-        delete marketTiers[marketId];
-
-        // Add new tiers
-        for (uint256 i = 0; i < tiers.length; i++) {
-            marketTiers[marketId].push(tiers[i]);
-        }
-
-        // Enable tiered liquidation
-        marketConfigs[marketId].enabled = true;
-
-        emit MarketTiersConfigured(marketId, tiers.length, true);
-    }
-
-    /// @notice Disable tiered liquidation for a market
-    /// @param marketId The market ID
-    function disableTieredLiquidation(Id marketId) external onlyOwner {
-        marketConfigs[marketId].enabled = false;
-        emit MarketTiersConfigured(marketId, 0, false);
-    }
-
-    /* LIQUIDATION FUNCTIONS */
-
-    /// @notice Liquidate a position with tiered liquidation rules
-    /// @param marketParams The market parameters
-    /// @param borrower The borrower to liquidate
-    /// @param seizedAssets Amount of collateral to seize (0 to calculate from repaidShares)
-    /// @param repaidShares Amount of debt shares to repay (0 to calculate from seizedAssets)
-    /// @param data Callback data
-    /// @return actualSeizedAssets Actual collateral seized
-    /// @return actualRepaidAssets Actual debt repaid
+    /// @notice Standard liquidation (no tiers, just single configuration)
     function liquidate(
         MarketParams memory marketParams,
         address borrower,
@@ -199,332 +222,294 @@ contract TieredLiquidationMorpho {
         bytes calldata data
     ) external returns (uint256 actualSeizedAssets, uint256 actualRepaidAssets) {
         Id marketId = marketParams.id();
+        MarketConfig memory config = marketConfigs[marketId];
 
-        // If tiered liquidation is not enabled, pass through to Morpho
-        // We need to act as a proxy: pull tokens from liquidator, approve Morpho, call it, and transfer collateral back
-        if (!marketConfigs[marketId].enabled) {
-            // Estimate the repay amount needed
-            Market memory marketData = morpho.market(marketId);
-            uint256 estimatedRepay;
-            if (seizedAssets > 0) {
-                // Rough estimation for seized assets
-                uint256 collateralPrice = IOracle(marketParams.oracle).price();
-                estimatedRepay = seizedAssets.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE) * 12 / 10; // 120% buffer
-            } else {
-                estimatedRepay = repaidShares.toAssetsUp(marketData.totalBorrowAssets, marketData.totalBorrowShares) * 12 / 10;
-            }
-            
-            // Pull tokens from liquidator
-            IERC20(marketParams.loanToken).safeTransferFrom(msg.sender, address(this), estimatedRepay);
-            
-            // Approve Morpho
-            (bool success,) = marketParams.loanToken.call(
-                abi.encodeWithSignature("approve(address,uint256)", address(morpho), type(uint256).max)
-            );
-            require(success, "Approve failed");
-            
-            // Call Morpho liquidate
-            (uint256 actualSeized, uint256 actualRepaid) = morpho.liquidate(marketParams, borrower, seizedAssets, repaidShares, data);
-            
-            // Return unused tokens to liquidator
-            uint256 unusedAmount = estimatedRepay > actualRepaid ? estimatedRepay - actualRepaid : 0;
-            if (unusedAmount > 0) {
-                IERC20(marketParams.loanToken).safeTransfer(msg.sender, unusedAmount);
-            }
-            
-            // Transfer seized collateral to liquidator
-            IERC20(marketParams.collateralToken).safeTransfer(msg.sender, actualSeized);
-            
-            return (actualSeized, actualRepaid);
-        }
+        if (!config.enabled) revert MarketNotConfigured();
 
-        // Get market and position data
+        // Get position data
         Market memory marketData = morpho.market(marketId);
         Position memory pos = morpho.position(marketId, borrower);
 
-        // Get validated price with oracle protection
+        // Validate price and calculate health factor
         uint256 collateralPrice = _getValidatedPrice(marketId, marketParams);
-        uint256 borrowed = uint256(pos.borrowShares).toAssetsUp(marketData.totalBorrowAssets, marketData.totalBorrowShares);
+        uint256 borrowed = uint256(pos.borrowShares).toAssetsUp(
+            marketData.totalBorrowAssets,
+            marketData.totalBorrowShares
+        );
         uint256 healthFactor = HealthFactorLib.calculateHealthFactor(
-            pos.collateral, collateralPrice, borrowed, marketParams.lltv
+            pos.collateral,
+            collateralPrice,
+            borrowed,
+            marketParams.lltv
         );
 
-        // Position must be unhealthy (HF < 1.0)
-        // Note: Morpho Blue only allows liquidation when HF < 1.0
-        // So our tiered system must work within this constraint
+        // Must be unhealthy
         if (healthFactor >= WAD) revert HealthyPosition();
 
-        // Get configured tiers for this market
-        LiquidationTierLib.LiquidationTier[] memory tiers = marketTiers[marketId];
-        
-        // Get applicable tier
-        (LiquidationTierLib.LiquidationTier memory tier, uint256 tierIndex) =
-            LiquidationTierLib.getTierForHealthFactor(tiers, healthFactor);
-
-        emit LiquidationTierTriggered(marketId, borrower, healthFactor, tierIndex);
-
-        // Check liquidator authorization based on tier settings
-        // Tier settings override global whitelist mode
-        if (tier.whitelistOnly) {
-            // This tier requires whitelist - check if liquidator is authorized
-            // Use canLiquidate which checks both whitelist and admin status
-            bool isWhitelisted = whitelistRegistry.canLiquidate(marketId, msg.sender);
-            
-            // If global whitelist is enabled, canLiquidate works correctly
-            // If global whitelist is disabled, we need to check manually
-            if (!whitelistRegistry.isWhitelistEnabled(marketId)) {
-                // Whitelist not globally enabled, check manually for this tier
-                address[] memory liquidators = whitelistRegistry.getLiquidators(marketId);
-                isWhitelisted = false;
-                for (uint256 i = 0; i < liquidators.length; i++) {
-                    if (liquidators[i] == msg.sender) {
-                        isWhitelisted = true;
-                        break;
-                    }
-                }
-            }
-            
-            if (!isWhitelisted) {
-                revert Unauthorized();
-            }
+        // Check whitelist
+        if (config.whitelistEnabled && !whitelistRegistry.canLiquidate(marketId, msg.sender)) {
+            revert Unauthorized();
         }
-        // If tier.whitelistOnly is false, anyone can liquidate regardless of global whitelist mode
 
-        // Check cooldown period
-        uint256 lastLiquidation = lastLiquidationTime[marketId][borrower];
-        if (tier.cooldownPeriod > 0 && lastLiquidation > 0) {
-            if (block.timestamp < lastLiquidation + tier.cooldownPeriod) {
+        // Check cooldown
+        if (config.cooldownPeriod > 0 && lastLiquidationTime[marketId][borrower] > 0) {
+            if (block.timestamp < lastLiquidationTime[marketId][borrower] + config.cooldownPeriod) {
                 revert CooldownNotElapsed();
             }
         }
 
         // Calculate liquidation limits
-        (uint256 maxSeizableCollateral, uint256 maxRepayableDebt) = HealthFactorLib.calculateLiquidationLimits(
-            pos.collateral, borrowed, tier.maxLiquidationRatio
-        );
+        (uint256 maxSeizableCollateral, uint256 maxRepayableDebt) =
+            HealthFactorLib.calculateLiquidationLimits(pos.collateral, borrowed, config.maxLiquidationRatio);
 
-        // Calculate actual amounts based on tier limits and liquidation bonus
-        uint256 liquidationIncentiveFactor = WAD + tier.liquidationBonus;
+        uint256 liquidationIncentiveFactor = WAD + config.liquidationBonus;
 
         if (seizedAssets > 0) {
-            // Seize specified collateral, calculate debt to repay
-            if (seizedAssets > maxSeizableCollateral) {
-                revert ExceedsMaxLiquidation();
-            }
-            if (seizedAssets < tier.minSeizedAssets) {
-                revert BelowMinimumSeized();
-            }
+            if (seizedAssets > maxSeizableCollateral) revert ExceedsMaxLiquidation();
+            if (seizedAssets < config.minSeizedAssets) revert BelowMinimumSeized();
 
             uint256 seizedAssetsQuoted = seizedAssets.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE);
             repaidShares = seizedAssetsQuoted.wDivUp(liquidationIncentiveFactor).toSharesUp(
-                marketData.totalBorrowAssets, marketData.totalBorrowShares
+                marketData.totalBorrowAssets,
+                marketData.totalBorrowShares
             );
-
-            actualSeizedAssets = seizedAssets;
         } else if (repaidShares > 0) {
-            // Repay specified debt, calculate collateral to seize
-            uint256 repaidAmount =
-                repaidShares.toAssetsUp(marketData.totalBorrowAssets, marketData.totalBorrowShares);
+            uint256 repaidAmount = repaidShares.toAssetsUp(marketData.totalBorrowAssets, marketData.totalBorrowShares);
+            if (repaidAmount > maxRepayableDebt) revert ExceedsMaxLiquidation();
 
-            if (repaidAmount > maxRepayableDebt) {
-                revert ExceedsMaxLiquidation();
-            }
-
-            actualSeizedAssets = repaidAmount.wMulDown(liquidationIncentiveFactor).mulDivDown(
-                ORACLE_PRICE_SCALE, collateralPrice
+            seizedAssets = repaidAmount.wMulDown(liquidationIncentiveFactor).mulDivDown(
+                ORACLE_PRICE_SCALE,
+                collateralPrice
             );
 
-            if (actualSeizedAssets < tier.minSeizedAssets) {
-                revert BelowMinimumSeized();
-            }
-            if (actualSeizedAssets > maxSeizableCollateral) {
-                revert ExceedsMaxLiquidation();
-            }
+            if (seizedAssets < config.minSeizedAssets) revert BelowMinimumSeized();
         } else {
             revert InvalidLiquidationAmount();
         }
 
-        // Update last liquidation time
-        lastLiquidationTime[marketId][borrower] = block.timestamp;
-
-        // Record liquidation in whitelist registry
-        whitelistRegistry.recordLiquidation(marketId, msg.sender);
-
-        // Calculate estimated repay amount
-        uint256 estimatedRepayAmount;
-        if (actualSeizedAssets > 0) {
-            uint256 seizedAssetsQuoted = actualSeizedAssets.mulDivUp(collateralPrice, ORACLE_PRICE_SCALE);
-            estimatedRepayAmount = seizedAssetsQuoted.wDivUp(liquidationIncentiveFactor) * 11 / 10; // 110% buffer
-        } else {
-            estimatedRepayAmount = repaidShares.toAssetsUp(marketData.totalBorrowAssets, marketData.totalBorrowShares) * 11 / 10;
-        }
-        
-        // Pull loan tokens from liquidator
+        // Pull loan tokens
+        uint256 estimatedRepayAmount = repaidShares.toAssetsUp(marketData.totalBorrowAssets, marketData.totalBorrowShares) * 12 / 10;
         IERC20(marketParams.loanToken).safeTransferFrom(msg.sender, address(this), estimatedRepayAmount);
-        
-        // Approve Morpho to spend loan tokens
+
+        // Approve Morpho
         (bool success,) = marketParams.loanToken.call(
             abi.encodeWithSignature("approve(address,uint256)", address(morpho), type(uint256).max)
         );
         require(success, "Approve failed");
-        
-        // Execute liquidation on underlying Morpho
-        // Note: Morpho only allows liquidation when HF < 1.0
-        // Note: Morpho requires exactly one of seizedAssets or repaidShares to be zero
-        if (actualSeizedAssets > 0) {
-            (actualSeizedAssets, actualRepaidAssets) =
-                morpho.liquidate(marketParams, borrower, actualSeizedAssets, 0, "");
-        } else {
-            (actualSeizedAssets, actualRepaidAssets) =
-                morpho.liquidate(marketParams, borrower, 0, repaidShares, "");
-        }
-        
-        // Return unused loan tokens to liquidator
+
+        // Execute liquidation
+        (actualSeizedAssets, actualRepaidAssets) = morpho.liquidate(marketParams, borrower, seizedAssets, repaidShares, data);
+
+        // Return unused loan tokens
         uint256 unusedAmount = estimatedRepayAmount - actualRepaidAssets;
         if (unusedAmount > 0) {
             IERC20(marketParams.loanToken).safeTransfer(msg.sender, unusedAmount);
         }
 
-        // Calculate and collect protocol fee
-        if (tier.protocolFee > 0) {
-            uint256 protocolFeeAmount = actualSeizedAssets.wMulDown(tier.protocolFee);
-            if (protocolFeeAmount > 0) {
-                accumulatedFees[marketId] += protocolFeeAmount;
-                actualSeizedAssets -= protocolFeeAmount; // Reduce liquidator's share
-            }
+        // Calculate and collect protocol fee (50%)
+        uint256 protocolFeeAmount = 0;
+        if (config.protocolFee > 0) {
+            uint256 totalBonus = actualSeizedAssets.mulDivDown(config.liquidationBonus, WAD + config.liquidationBonus);
+            protocolFeeAmount = totalBonus.mulDivDown(config.protocolFee, WAD);
+            accumulatedFees[marketId] += protocolFeeAmount;
+            actualSeizedAssets -= protocolFeeAmount;
         }
 
-        emit TieredLiquidationExecuted(
+        // Transfer collateral to liquidator
+        if (actualSeizedAssets > 0) {
+            IERC20(marketParams.collateralToken).safeTransfer(msg.sender, actualSeizedAssets);
+        }
+
+        // Update timestamp
+        lastLiquidationTime[marketId][borrower] = block.timestamp;
+
+        // Record liquidation
+        if (config.whitelistEnabled) {
+            whitelistRegistry.recordLiquidation(marketId, msg.sender);
+        }
+
+        emit LiquidationExecuted(
             marketId,
             msg.sender,
             borrower,
             actualSeizedAssets,
             actualRepaidAssets,
             healthFactor,
-            tierIndex,
-            tier.liquidationBonus
+            config.liquidationBonus
         );
-
-        // Note: Morpho.liquidate already handles all token transfers
-        // No need to transfer tokens again here
 
         return (actualSeizedAssets, actualRepaidAssets);
     }
 
-    /* VIEW FUNCTIONS */
-
-    /// @notice Get the health factor for a borrower
-    /// @param marketParams The market parameters
-    /// @param borrower The borrower address
-    /// @return healthFactor The current health factor
-    function getHealthFactor(MarketParams memory marketParams, address borrower)
-        external
-        view
-        returns (uint256 healthFactor)
-    {
+    /// @notice Request liquidation (Step 1 of two-step)
+    function requestLiquidation(
+        MarketParams memory marketParams,
+        address borrower,
+        uint256 liquidationRatio
+    ) external returns (uint256 seizedAssets, uint256 repaidAssets) {
         Id marketId = marketParams.id();
-        Market memory marketData = morpho.market(marketId);
-        Position memory pos = morpho.position(marketId, borrower);
+        MarketConfig memory config = marketConfigs[marketId];
 
-        uint256 collateralPrice = IOracle(marketParams.oracle).price();
-        uint256 borrowed = uint256(pos.borrowShares).toAssetsUp(marketData.totalBorrowAssets, marketData.totalBorrowShares);
-
-        return HealthFactorLib.calculateHealthFactor(pos.collateral, collateralPrice, borrowed, marketParams.lltv);
-    }
-
-    /// @notice Get the applicable liquidation tier for a borrower
-    /// @param marketParams The market parameters
-    /// @param borrower The borrower address
-    /// @return tier The applicable tier
-    /// @return tierIndex The tier index
-    function getApplicableTier(MarketParams memory marketParams, address borrower)
-        external
-        view
-        returns (LiquidationTierLib.LiquidationTier memory tier, uint256 tierIndex)
-    {
-        Id marketId = marketParams.id();
-
-        if (!marketConfigs[marketId].enabled) {
-            revert TieredLiquidationNotEnabled();
+        if (!config.enabled) revert MarketNotConfigured();
+        if (liquidationRatio == 0 || liquidationRatio > config.maxLiquidationRatio) {
+            revert InvalidLiquidationRatio();
+        }
+        if (liquidationStatus[marketId][borrower] != LiquidationStatus.None) {
+            revert InvalidLiquidationStatus();
         }
 
+        // Check whitelist
+        if (config.whitelistEnabled && !whitelistRegistry.canLiquidate(marketId, msg.sender)) {
+            revert Unauthorized();
+        }
+
+        // Get position
         Market memory marketData = morpho.market(marketId);
         Position memory pos = morpho.position(marketId, borrower);
 
-        uint256 collateralPrice = IOracle(marketParams.oracle).price();
-        uint256 borrowed = uint256(pos.borrowShares).toAssetsUp(marketData.totalBorrowAssets, marketData.totalBorrowShares);
+        uint256 collateralPrice = _getValidatedPrice(marketId, marketParams);
+        uint256 borrowed = uint256(pos.borrowShares).toAssetsUp(
+            marketData.totalBorrowAssets,
+            marketData.totalBorrowShares
+        );
         uint256 healthFactor = HealthFactorLib.calculateHealthFactor(
-            pos.collateral, collateralPrice, borrowed, marketParams.lltv
+            pos.collateral,
+            collateralPrice,
+            borrowed,
+            marketParams.lltv
         );
 
-        return LiquidationTierLib.getTierForHealthFactor(marketTiers[marketId], healthFactor);
-    }
+        if (healthFactor >= WAD) revert HealthyPosition();
 
-    /// @notice Check if tiered liquidation is enabled for a market
-    /// @param marketId The market ID
-    /// @return enabled Whether tiered liquidation is enabled
-    function isTieredLiquidationEnabled(Id marketId) external view returns (bool enabled) {
-        return marketConfigs[marketId].enabled;
-    }
-
-    /// @notice Get all tiers for a market
-    /// @param marketId The market ID
-    /// @return tiers Array of liquidation tiers
-    function getMarketTiers(Id marketId) external view returns (LiquidationTierLib.LiquidationTier[] memory tiers) {
-        return marketTiers[marketId];
-    }
-
-    /* INTERNAL FUNCTIONS */
-
-    /// @notice Configure default two-tier liquidation for a market
-    /// @param marketId The market ID
-    function _configureDefaultTiers(Id marketId) internal {
-        // Clear existing tiers
-        delete marketTiers[marketId];
-
-        // Create default tiers
-        (LiquidationTierLib.LiquidationTier memory tier1, LiquidationTierLib.LiquidationTier memory tier2) =
-            LiquidationTierLib.createDefaultTiers();
-
-        // Add tiers (must be in descending order of threshold)
-        marketTiers[marketId].push(tier1); // HF < 1.1
-        marketTiers[marketId].push(tier2); // HF < 1.0
-
-        // Enable tiered liquidation
-        marketConfigs[marketId].enabled = true;
-
-        emit MarketTiersConfigured(marketId, 2, true);
-    }
-
-    /// @notice Get validated price with oracle protection
-    /// @param marketId The market ID
-    /// @param marketParams The market parameters
-    /// @return price Validated collateral price
-    function _getValidatedPrice(Id marketId, MarketParams memory marketParams) internal returns (uint256 price) {
-        PriceOracleLib.PriceConfig memory config = priceConfigs[marketId];
-
-        // If no custom config, use default (single oracle, no validation)
-        if (config.primaryOracle == address(0)) {
-            config.primaryOracle = marketParams.oracle;
-            config.maxDeviation = 0.05e18; // 5% default
-            config.useTWAP = false;
-        }
-
-        // Get validated price
-        price = PriceOracleLib.getValidatedPrice(config);
-
-        // Update TWAP if enabled
-        if (config.useTWAP) {
-            PriceOracleLib.TWAPData memory currentTwap = twapData[marketId];
-            twapData[marketId] = PriceOracleLib.updateTWAP(currentTwap, price);
-            
-            // Use TWAP price if available
-            if (currentTwap.lastUpdateTime > 0) {
-                price = PriceOracleLib.calculateTWAP(twapData[marketId], config.twapPeriod);
+        // Check cooldown
+        if (config.cooldownPeriod > 0 && lastLiquidationTime[marketId][borrower] > 0) {
+            if (block.timestamp < lastLiquidationTime[marketId][borrower] + config.cooldownPeriod) {
+                revert CooldownNotElapsed();
             }
         }
 
-        return price;
+        // Calculate amounts
+        uint256 debtToRepay = borrowed.mulDivDown(liquidationRatio, WAD);
+        uint256 liquidationIncentiveFactor = WAD + config.liquidationBonus;
+        uint256 collateralValue = debtToRepay.mulDivUp(liquidationIncentiveFactor, WAD);
+        uint256 totalSeizedAssets = collateralValue.mulDivUp(ORACLE_PRICE_SCALE, collateralPrice);
+
+        require(totalSeizedAssets <= pos.collateral, "Insufficient collateral");
+        if (totalSeizedAssets < config.minSeizedAssets) revert BelowMinimumSeized();
+
+        // Protocol fee: 50% of bonus
+        uint256 bonusAmount = totalSeizedAssets.mulDivDown(
+            config.liquidationBonus,
+            liquidationIncentiveFactor
+        );
+        uint256 protocolFee = bonusAmount.mulDivDown(config.protocolFee, WAD);
+
+        // Pull loan tokens
+        uint256 estimatedRepay = debtToRepay * 12 / 10;
+        IERC20(marketParams.loanToken).safeTransferFrom(msg.sender, address(this), estimatedRepay);
+
+        // Approve Morpho
+        (bool success,) = marketParams.loanToken.call(
+            abi.encodeWithSignature("approve(address,uint256)", address(morpho), type(uint256).max)
+        );
+        require(success, "Approve failed");
+
+        // Execute through Morpho
+        (uint256 actualSeized, uint256 actualRepaid) = morpho.liquidate(
+            marketParams,
+            borrower,
+            totalSeizedAssets,
+            0,
+            ""
+        );
+
+        // Return unused
+        if (estimatedRepay > actualRepaid) {
+            IERC20(marketParams.loanToken).safeTransfer(msg.sender, estimatedRepay - actualRepaid);
+        }
+
+        // Calculate actual protocol fee
+        uint256 actualProtocolFee = actualSeized.mulDivDown(protocolFee, totalSeizedAssets);
+        accumulatedFees[marketId] += actualProtocolFee;
+
+        // Transfer liquidator's share
+        uint256 liquidatorShare = actualSeized - actualProtocolFee;
+        if (liquidatorShare > 0) {
+            IERC20(marketParams.collateralToken).safeTransfer(msg.sender, liquidatorShare);
+        }
+
+        // Update state
+        liquidationStatus[marketId][borrower] = LiquidationStatus.Pending;
+        liquidatorAddress[marketId][borrower] = msg.sender;
+        pendingSeizedCollateral[marketId][borrower] = liquidatorShare;
+        lastLiquidationTime[marketId][borrower] = block.timestamp;
+
+        if (config.whitelistEnabled) {
+            whitelistRegistry.recordLiquidation(marketId, msg.sender);
+        }
+
+        emit LiquidationRequested(
+            marketId,
+            borrower,
+            msg.sender,
+            actualRepaid,
+            liquidatorShare,
+            actualProtocolFee,
+            liquidationRatio
+        );
+
+        return (liquidatorShare, actualRepaid);
+    }
+
+    /// @notice Complete liquidation (Step 2)
+    function completeLiquidation(MarketParams memory marketParams, address borrower) external {
+        Id marketId = marketParams.id();
+
+        if (liquidationStatus[marketId][borrower] != LiquidationStatus.Pending) {
+            revert InvalidLiquidationStatus();
+        }
+        if (liquidatorAddress[marketId][borrower] != msg.sender) {
+            revert NotLiquidator();
+        }
+
+        liquidationStatus[marketId][borrower] = LiquidationStatus.Completed;
+
+        emit LiquidationCompleted(marketId, borrower, msg.sender);
+    }
+
+
+    /* VIEW FUNCTIONS */
+    
+    /// @notice Get health factor for a borrower
+    function getHealthFactor(MarketParams memory marketParams, address borrower)
+        external
+        view
+        returns (uint256)
+    {
+        Id marketId = marketParams.id();
+        Market memory marketData = morpho.market(marketId);
+        Position memory pos = morpho.position(marketId, borrower);
+        uint256 collateralPrice = IOracle(marketParams.oracle).price();
+        uint256 borrowed = uint256(pos.borrowShares).toAssetsUp(
+            marketData.totalBorrowAssets,
+            marketData.totalBorrowShares
+        );
+        return HealthFactorLib.calculateHealthFactor(
+            pos.collateral,
+            collateralPrice,
+            borrowed,
+            marketParams.lltv
+        );
+    }
+        /* INTERNAL FUNCTIONS */
+
+    /// @notice Get validated price with oracle protection
+    function _getValidatedPrice(Id marketId, MarketParams memory marketParams)
+        internal
+        view
+        returns (uint256)
+    {
+        // Use simple oracle price (can be enhanced with PriceOracleLib later)
+        return IOracle(marketParams.oracle).price();
     }
 }
-
