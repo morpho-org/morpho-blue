@@ -1,4 +1,4 @@
-# Morpho Blue
+# Morpho Market V1 (Morpho Blue)
 
 Morpho Blue is a noncustodial lending protocol implemented for the Ethereum Virtual Machine.
 Morpho Blue offers a new trustless primitive with increased efficiency and flexibility compared to existing lending platforms.
