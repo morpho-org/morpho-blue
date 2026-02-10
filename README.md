@@ -29,7 +29,7 @@ Compilation, testing and formatting with [forge](https://book.getfoundry.sh/gett
 
 ## Audits
 
-All audits are stored in the [audits](./audits/)' folder.
+All audits are stored in the [audits](./audits/) folder.
 
 ## License
 
