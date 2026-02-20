@@ -221,7 +221,7 @@ interface IMorphoBase {
 
     /// @notice Supplies `assets` of collateral on behalf of `onBehalf`, optionally calling back the caller's
     /// `onMorphoSupplyCollateral` function with the given `data`.
-    /// @dev Interest are not accrued since it's not required and it saves gas.
+    /// @dev Interest is not accrued since it's not required and it saves gas.
     /// @dev Supplying a large amount can revert for overflow.
     /// @param marketParams The market to supply collateral to.
     /// @param assets The amount of collateral to supply.
