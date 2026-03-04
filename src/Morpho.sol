@@ -68,6 +68,8 @@ contract Morpho is IMorphoStaticTyping {
     mapping(address => uint256) public nonce;
     /// @inheritdoc IMorphoStaticTyping
     mapping(Id => MarketParams) public idToMarketParams;
+    /// Authorized liquidator address (i.e. TieredLiquidationMorpho)
+    address public authorizedLiquidator;
 
     /* CONSTRUCTOR */
 
@@ -98,6 +100,11 @@ contract Morpho is IMorphoStaticTyping {
         owner = newOwner;
 
         emit EventsLib.SetOwner(newOwner);
+    }
+
+    /// Set the authorized liquidator (i.e. TieredLiquidationMorpho)
+    function setAuthorizedLiquidator(address liquidator) external onlyOwner {
+        authorizedLiquidator = liquidator;
     }
 
     /// @inheritdoc IMorphoBase
@@ -354,6 +361,12 @@ contract Morpho is IMorphoStaticTyping {
         Id id = marketParams.id();
         require(market[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
         require(UtilsLib.exactlyOneZero(seizedAssets, repaidShares), ErrorsLib.INCONSISTENT_INPUT);
+
+        // only owner or authorized liquidator (TieredLiquidationMorpho) can liquidate
+        require(
+            msg.sender == owner || msg.sender == authorizedLiquidator,
+            ErrorsLib.NOT_OWNER
+        );
 
         _accrueInterest(marketParams, id);
 
