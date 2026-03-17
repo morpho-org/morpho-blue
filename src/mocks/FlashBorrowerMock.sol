@@ -17,7 +17,7 @@ contract FlashBorrowerMock is IMorphoFlashLoanCallback {
     }
 
     function onMorphoFlashLoan(uint256 assets, bytes calldata data) external {
-        require(msg.sender == address(MORPHO));
+        require(msg.sender == address(MORPHO), "not morpho");
         address token = abi.decode(data, (address));
         IERC20(token).approve(address(MORPHO), assets);
     }
