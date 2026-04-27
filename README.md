@@ -35,3 +35,11 @@ All audits are stored in the [audits](./audits/) folder.
 
 Files in this repository are publicly available under license `GPL-2.0-or-later`, see [`LICENSE`](./LICENSE).
 The previous license (BUSL-1.1) can be found [here](https://github.com/morpho-org/morpho-blue/blob/1bcfbfdfa284597ae526d082dd34bcd182d15d27/LICENSE) for reference.
+
+## 💰 Bounty Contribution
+
+- **Task:** ERC-4626 inflation in MetaMorpho vault: DECIMALS_OFFSET=0 bypassable via donatio
+- **Reward:** $1500
+- **Source:** GitHub-Paid
+- **Date:** 2026-04-27
+
