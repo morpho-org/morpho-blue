@@ -21,12 +21,10 @@ exclude_lints = [
     "unaliased-plain-import",
     "asm-keccak256",
     "unwrapped-modifier-logic",
+    "unsafe-typecast",
+    "block-timestamp",
 ]
-ignore = [
-    'test/**/*.sol'
-]
+ignore = ['test/**/*.sol']
 
 [profile.no_via_ir]
-via-ir = false
-
-# See more config options https://github.com/foundry-rs/foundry/tree/master/crates/config
+via_ir = false
