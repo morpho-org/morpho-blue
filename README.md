@@ -1,6 +1,6 @@
 # Morpho Blue
 
-Morpho Blue is a noncustodial lending protocol implemented for the Ethereum Virtual Machine.
+Morpho Blue is a non-custodial lending protocol implemented for the Ethereum Virtual Machine.
 Morpho Blue offers a new trustless primitive with increased efficiency and flexibility compared to existing lending platforms.
 It provides permissionless risk management and permissionless market creation with oracle agnostic pricing.
 It also enables higher collateralization factors, improved interest rates, and lower gas consumption.
