@@ -90,14 +90,9 @@ invariant sumSupplySharesCorrect(MorphoHarness.Id id)
 
 where `sumSupplyShares` only exists in the specification, and is defined to be automatically updated whenever any of the shares of the users are modified.
 
-## Positions health and liquidations
+## Bad debt realization
 
 To ensure proper collateralization, a liquidation system is put in place, where unhealthy positions can be liquidated.
-A position is said to be healthy if the ratio of the borrowed value over collateral value is smaller than the liquidation loan-to-value (LLTV) of that market.
-This leaves a safety buffer before the position can be insolvent, where the aforementioned ratio is above 1.
-To ensure that liquidators have the time to interact with unhealthy positions, it is formally verified that this buffer is respected and that it leaves room for healthy liquidations to happen.
-Notably, it is verified that in the absence of accrued interest, which is the case when creating a new position or when interacting multiple times in the same block, a position cannot be made unhealthy.
-
 Let's define bad debt of a position as the amount borrowed when it is backed by no collateral.
 Morpho Blue automatically realizes the bad debt when liquidating a position, by transferring it to the lenders.
 In effect, this means that there is no bad debt on Morpho Blue, which is verified by the following invariant.
@@ -106,8 +101,6 @@ In effect, this means that there is no bad debt on Morpho Blue, which is verifie
 invariant alwaysCollateralized(MorphoHarness.Id id, address borrower)
     borrowShares(id, borrower) != 0 => collateral(id, borrower) != 0;
 ```
-
-More generally, this means that the result of liquidating a position multiple times eventually leads to a healthy position (possibly empty).
 
 ## Authorization
 
@@ -253,7 +246,6 @@ The [`certora/specs`](specs) folder contains the following files:
 - [`Health.spec`](specs/Health.spec) checks properties about the health of the positions.
   Notably, debt positions always have some collateral thanks to the bad debt realization mechanism.
 - [`LibSummary.spec`](specs/LibSummary.spec) checks the summarization of the library functions that are used in other specification files.
-- [`LiquidateBuffer.spec`](specs/LiquidateBuffer.spec) checks that there is a buffer for liquidatable positions, before they are insolvent, such that liquidation leads to healthier position and cannot lead to bad debt.
 - [`Liveness.spec`](specs/Liveness.spec) checks that main functions change the owner of funds and the amount of shares as expected, and that it's always possible to exit a position.
 - [`Reentrancy.spec`](specs/Reentrancy.spec) checks that the contract is immune to a particular class of reentrancy issues.
 - [`Reverts.spec`](specs/Reverts.spec) checks the condition for reverts and that inputs are correctly validated.
