@@ -9,6 +9,8 @@ methods {
     function collateral(MorphoInternalAccess.Id, address) external returns uint256 envfree;
     function totalSupplyAssets(MorphoInternalAccess.Id) external returns uint256 envfree;
     function totalSupplyShares(MorphoInternalAccess.Id) external returns uint256 envfree;
+    function virtualTotalSupplyAssets(MorphoInternalAccess.Id) external returns uint256 envfree;
+    function virtualTotalSupplyShares(MorphoInternalAccess.Id) external returns uint256 envfree;
     function totalBorrowAssets(MorphoInternalAccess.Id) external returns uint256 envfree;
     function totalBorrowShares(MorphoInternalAccess.Id) external returns uint256 envfree;
     function fee(MorphoInternalAccess.Id) external returns uint256 envfree;
@@ -18,6 +20,7 @@ methods {
 
     function Util.libId(MorphoInternalAccess.MarketParams) external returns MorphoInternalAccess.Id envfree;
     function Util.refId(MorphoInternalAccess.MarketParams) external returns MorphoInternalAccess.Id envfree;
+    function Util.libMulDivDown(uint256 x, uint256 y, uint256 d) external returns uint256 envfree;
 
     function _._accrueInterest(MorphoInternalAccess.MarketParams memory marketParams, MorphoInternalAccess.Id id) internal with (env e) => summaryAccrueInterest(e, marketParams, id) expect void;
 
@@ -357,12 +360,18 @@ rule canWithdrawAll(env e, MorphoInternalAccess.MarketParams marketParams, uint2
     require receiver != 0;
     require e.msg.value == 0;
     require shares > 0;
-    // Assume no outstanding debt on the market.
-    require totalBorrowAssets(id) == 0;
     // Safe require because of the noTimeTravel rule.
     require lastUpdate(id) <= e.block.timestamp;
     // Safe require because of the sumSupplySharesCorrect invariant.
     require shares <= totalSupplyShares(id);
+
+    // Accrue interest first, for the shares -> assets conversion below.
+    // Safe because of the AccrueInterest.withdrawAccruesInterest rule, and because `_accrueInterest` is already summarized like so in this file.
+    summaryAccrueInterest(e, marketParams, id);
+
+    uint256 assets = Util.libMulDivDown(shares, virtualTotalSupplyAssets(id), virtualTotalSupplyShares(id));
+    // Assume the market has enough liquidity to cover the withdrawal: exactly the condition under which withdraw's INSUFFICIENT_LIQUIDITY check passes.
+    require assets <= totalSupplyAssets(id) - totalBorrowAssets(id);
 
     withdraw@withrevert(e, marketParams, 0, shares, e.msg.sender, receiver);
 
