@@ -18,6 +18,7 @@ methods {
 
     function Util.libId(MorphoInternalAccess.MarketParams) external returns MorphoInternalAccess.Id envfree;
     function Util.refId(MorphoInternalAccess.MarketParams) external returns MorphoInternalAccess.Id envfree;
+    function Util.libMulDivDown(uint256, uint256, uint256) external returns uint256 envfree;
 
     function _._accrueInterest(MorphoInternalAccess.MarketParams memory marketParams, MorphoInternalAccess.Id id) internal with (env e) => summaryAccrueInterest(e, marketParams, id) expect void;
 
@@ -357,12 +358,17 @@ rule canWithdrawAll(env e, MorphoInternalAccess.MarketParams marketParams, uint2
     require receiver != 0;
     require e.msg.value == 0;
     require shares > 0;
-    // Assume no outstanding debt on the market.
-    require totalBorrowAssets(id) == 0;
     // Safe require because of the noTimeTravel rule.
     require lastUpdate(id) <= e.block.timestamp;
     // Safe require because of the sumSupplySharesCorrect invariant.
     require shares <= totalSupplyShares(id);
+
+    // Accrue interest first so that the liquidity bound uses the state seen by withdraw.
+    summaryAccrueInterest(e, marketParams, id);
+
+    uint256 assets = Util.libMulDivDown(shares, totalSupplyAssets(id) + 1, totalSupplyShares(id) + 10^6);
+    // Assume that the user's full position fits within the market's available liquidity.
+    require assets + totalBorrowAssets(id) <= totalSupplyAssets(id);
 
     withdraw@withrevert(e, marketParams, 0, shares, e.msg.sender, receiver);
 
