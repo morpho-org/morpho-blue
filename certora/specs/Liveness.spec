@@ -35,6 +35,8 @@ function summaryId(MorphoInternalAccess.MarketParams marketParams) returns Morph
 }
 
 function summarySafeTransferFrom(address token, address from, address to, uint256 amount) {
+    // Safe require because token amounts in Morpho are bounded by uint128 accounting.
+    require amount < 2^128;
     if (from == currentContract) {
         // Assert instead of require so that the absence of underflow is a proof obligation, discharged by
         // an explicit assumption in each rule (e.g. that the singleton holds enough tokens: balance[token] >= amount).
