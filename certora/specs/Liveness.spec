@@ -35,7 +35,6 @@ function summaryId(MorphoInternalAccess.MarketParams marketParams) returns Morph
 }
 
 function summarySafeTransferFrom(address token, address from, address to, uint256 amount) {
-    // Safe requires because a token balance is a non-negative uint256 (it can exceed 2^128, as a token may be shared across markets).
     require balance[token] >= 0;
     require balance[token] <= max_uint256;
     if (from == currentContract) {
