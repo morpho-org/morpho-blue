@@ -105,6 +105,8 @@ rule supplyChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams marke
 
 // Check that you can supply non-zero tokens by passing shares.
 rule canSupplyByPassingShares(env e, MorphoInternalAccess.MarketParams marketParams, uint256 shares, address onBehalf, bytes data) {
+    // Assume that tokens have bounded supply, so the singleton balance cannot overflow when receiving tokens.
+    require balance[marketParams.loanToken] < 2^128;
     uint256 suppliedAssets;
     suppliedAssets, _ = supply(e, marketParams, 0, shares, onBehalf, data);
 
@@ -144,6 +146,9 @@ rule withdrawChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams mar
 
 // Check that you can withdraw non-zero tokens by passing shares.
 rule canWithdrawByPassingShares(env e, MorphoInternalAccess.MarketParams marketParams, uint256 shares, address onBehalf, address receiver) {
+    MorphoInternalAccess.Id id = Util.libId(marketParams);
+    // Assume that the singleton holds enough loan tokens to cover the withdrawal (which is at most totalSupplyAssets).
+    require balance[marketParams.loanToken] >= to_mathint(totalSupplyAssets(id));
     uint256 withdrawnAssets;
     withdrawnAssets, _ = withdraw(e, marketParams, 0, shares, onBehalf, receiver);
 
@@ -183,6 +188,9 @@ rule borrowChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams marke
 
 // Check that you can borrow non-zero tokens by passing shares.
 rule canBorrowByPassingShares(env e, MorphoInternalAccess.MarketParams marketParams, uint256 shares, address onBehalf, address receiver) {
+    MorphoInternalAccess.Id id = Util.libId(marketParams);
+    // Assume that the singleton holds enough loan tokens to cover the borrow (which is at most totalSupplyAssets).
+    require balance[marketParams.loanToken] >= to_mathint(totalSupplyAssets(id));
     uint256 borrowedAssets;
     borrowedAssets, _ = borrow(e, marketParams, 0, shares, onBehalf, receiver);
 
@@ -224,6 +232,8 @@ rule repayChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams market
 
 // Check that you can repay non-zero tokens by passing shares.
 rule canRepayByPassingShares(env e, MorphoInternalAccess.MarketParams marketParams, uint256 shares, address onBehalf, bytes data) {
+    // Assume that tokens have bounded supply, so the singleton balance cannot overflow when receiving tokens.
+    require balance[marketParams.loanToken] < 2^128;
     uint256 repaidAssets;
     repaidAssets, _ = repay(e, marketParams, 0, shares, onBehalf, data);
 
@@ -317,6 +327,11 @@ rule liquidateChangesTokens(env e, MorphoInternalAccess.MarketParams marketParam
 
 // Check that you can liquidate non-zero tokens by passing shares.
 rule canLiquidateByPassingShares(env e, MorphoInternalAccess.MarketParams marketParams, address borrower, uint256 repaidShares, bytes data) {
+    MorphoInternalAccess.Id id = Util.libId(marketParams);
+    // Assume that tokens have bounded supply, so the loan token balance cannot overflow when receiving the repaid assets.
+    require balance[marketParams.loanToken] < 2^128;
+    // Assume that the singleton holds enough collateral tokens to cover the seized assets (at most the borrower's collateral).
+    require balance[marketParams.collateralToken] >= to_mathint(collateral(id, borrower));
     uint256 seizedAssets;
     uint256 repaidAssets;
     seizedAssets, repaidAssets = liquidate(e, marketParams, borrower, 0, repaidShares,  data);
