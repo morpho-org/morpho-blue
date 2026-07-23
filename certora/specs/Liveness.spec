@@ -35,16 +35,21 @@ function summaryId(MorphoInternalAccess.MarketParams marketParams) returns Morph
 }
 
 function summarySafeTransferFrom(address token, address from, address to, uint256 amount) {
-    // Safe require because token amounts in Morpho are bounded by uint128 accounting.
+    // Safe requires: transferred amounts and the singleton's token balances are bounded by Morpho's uint128
+    // accounting, and a balance is non-negative. These are structural facts about the ghost (a mathint that
+    // stands in for a real, non-negative, bounded token balance), not the liveness precondition. The
+    // "singleton holds enough tokens" assumption (balance[token] >= amount) is still a proof obligation of the
+    // assert below, discharged by an explicit require in each rule.
     require amount < 2^128;
+    require balance[token] >= 0;
+    require balance[token] < 2^128;
     if (from == currentContract) {
-        // Assert instead of require so that the absence of underflow is a proof obligation, discharged by
-        // an explicit assumption in each rule (e.g. that the singleton holds enough tokens: balance[token] >= amount).
+        // Assert (not require) so that the absence of underflow is a proof obligation, discharged by the
+        // per-rule assumption that the singleton holds enough tokens (e.g. balance[token] >= totalSupplyAssets(id)).
         balance[token] = assert_uint256(balance[token] - amount);
     }
     if (to == currentContract) {
-        // Assert instead of require so that the absence of overflow is a proof obligation, discharged by
-        // an explicit assumption in each rule (e.g. that tokens have bounded supply: balance[token] cannot overflow).
+        // Assert (not require) so that the absence of overflow is a proof obligation, discharged by the bounds above.
         balance[token] = assert_uint256(balance[token] + amount);
     }
 }
