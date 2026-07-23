@@ -341,7 +341,8 @@ rule canLiquidateByPassingShares(env e, MorphoInternalAccess.MarketParams market
     MorphoInternalAccess.Id id = Util.libId(marketParams);
     // Safe require because Morpho cannot call such functions by itself.
     require currentContract != e.msg.sender;
-    // Assume that the singleton holds enough collateral tokens to cover the seized assets (at most the borrower's collateral).
+    // Assume that the singleton holds enough collateral tokens to cover the seized assets (which are at most the borrower's collateral).
+    // Justified by the idleAmountLessThanBalance invariant (ConsistentState.spec): balance[token] >= idleAmount[token] >= collateral.
     require balance[marketParams.collateralToken] >= to_mathint(collateral(id, borrower));
     uint256 seizedAssets;
     uint256 repaidAssets;
