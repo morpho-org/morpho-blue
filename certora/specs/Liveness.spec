@@ -370,8 +370,7 @@ rule canWithdrawAll(env e, MorphoInternalAccess.MarketParams marketParams, uint2
 
     // Assets withdrawn for all the shares, rounding down (SharesMathLib.toAssetsDown).
     uint256 assets = Util.libMulDivDown(shares, require_uint256(totalSupplyAssets(id) + 1), require_uint256(totalSupplyShares(id) + 10^6));
-    // Assume the market has enough liquidity to cover the withdrawal: exactly the
-    // condition under which withdraw's INSUFFICIENT_LIQUIDITY check passes.
+    // Assume the market has enough liquidity to cover the withdrawal: exactly the condition under which withdraw's INSUFFICIENT_LIQUIDITY check passes.
     require to_mathint(assets) <= totalSupplyAssets(id) - totalBorrowAssets(id);
 
     withdraw@withrevert(e, marketParams, 0, shares, e.msg.sender, receiver);
