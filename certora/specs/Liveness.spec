@@ -9,6 +9,8 @@ methods {
     function collateral(MorphoInternalAccess.Id, address) external returns uint256 envfree;
     function totalSupplyAssets(MorphoInternalAccess.Id) external returns uint256 envfree;
     function totalSupplyShares(MorphoInternalAccess.Id) external returns uint256 envfree;
+    function virtualTotalSupplyAssets(MorphoInternalAccess.Id) external returns uint256 envfree;
+    function virtualTotalSupplyShares(MorphoInternalAccess.Id) external returns uint256 envfree;
     function totalBorrowAssets(MorphoInternalAccess.Id) external returns uint256 envfree;
     function totalBorrowShares(MorphoInternalAccess.Id) external returns uint256 envfree;
     function fee(MorphoInternalAccess.Id) external returns uint256 envfree;
@@ -364,12 +366,12 @@ rule canWithdrawAll(env e, MorphoInternalAccess.MarketParams marketParams, uint2
     require shares <= totalSupplyShares(id);
 
     // Accrue interest first, for the shares -> assets conversion below.
-    // Safe because of the AccrueInterest.withdrawAccruesInterest rule.
+    // Safe because of the AccrueInterest.withdrawAccruesInterest rule, and because `_accrueInterest` is already summarized like so in this file.
     summaryAccrueInterest(e, marketParams, id);
 
-    uint256 assets = Util.libMulDivDown(shares, require_uint256(totalSupplyAssets(id) + 1), require_uint256(totalSupplyShares(id) + 10^6));
+    uint256 assets = Util.libMulDivDown(shares, virtualTotalSupplyAssets(id), virtualTotalSupplyShares(id));
     // Assume the market has enough liquidity to cover the withdrawal: exactly the condition under which withdraw's INSUFFICIENT_LIQUIDITY check passes.
-    require to_mathint(assets) <= totalSupplyAssets(id) - totalBorrowAssets(id);
+    require assets <= totalSupplyAssets(id) - totalBorrowAssets(id);
 
     withdraw@withrevert(e, marketParams, 0, shares, e.msg.sender, receiver);
 
