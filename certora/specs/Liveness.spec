@@ -112,6 +112,8 @@ rule supplyChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams marke
 
 // Check that you can supply non-zero tokens by passing shares.
 rule canSupplyByPassingShares(env e, MorphoInternalAccess.MarketParams marketParams, uint256 shares, address onBehalf, bytes data) {
+    // Safe require because Morpho cannot call such functions by itself.
+    require currentContract != e.msg.sender;
     // Assume that tokens have bounded supply, so the singleton balance cannot overflow when receiving tokens.
     require balance[marketParams.loanToken] < 2^128;
     uint256 suppliedAssets;
@@ -239,6 +241,8 @@ rule repayChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams market
 
 // Check that you can repay non-zero tokens by passing shares.
 rule canRepayByPassingShares(env e, MorphoInternalAccess.MarketParams marketParams, uint256 shares, address onBehalf, bytes data) {
+    // Safe require because Morpho cannot call such functions by itself.
+    require currentContract != e.msg.sender;
     // Assume that tokens have bounded supply, so the singleton balance cannot overflow when receiving tokens.
     require balance[marketParams.loanToken] < 2^128;
     uint256 repaidAssets;
@@ -335,6 +339,8 @@ rule liquidateChangesTokens(env e, MorphoInternalAccess.MarketParams marketParam
 // Check that you can liquidate non-zero tokens by passing shares.
 rule canLiquidateByPassingShares(env e, MorphoInternalAccess.MarketParams marketParams, address borrower, uint256 repaidShares, bytes data) {
     MorphoInternalAccess.Id id = Util.libId(marketParams);
+    // Safe require because Morpho cannot call such functions by itself.
+    require currentContract != e.msg.sender;
     // Assume that tokens have bounded supply, so the loan token balance cannot overflow when receiving the repaid assets.
     require balance[marketParams.loanToken] < 2^128;
     // Assume that the singleton holds enough collateral tokens to cover the seized assets (at most the borrower's collateral).
@@ -370,6 +376,8 @@ rule canRepayAll(env e, MorphoInternalAccess.MarketParams marketParams, uint256 
     // Omit sanity checks.
     require isCreated(id);
     require e.msg.sender != 0;
+    // Safe require because Morpho cannot call such functions by itself.
+    require currentContract != e.msg.sender;
     require e.msg.value == 0;
     require shares > 0;
     // Safe require because of the noTimeTravel rule.
