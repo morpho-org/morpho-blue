@@ -363,8 +363,7 @@ rule canWithdrawAll(env e, MorphoInternalAccess.MarketParams marketParams, uint2
     // Safe require because of the sumSupplySharesCorrect invariant.
     require shares <= totalSupplyShares(id);
 
-    // Accrue interest first, so the liquidity assumption below constrains the
-    // post-accrual state that withdraw's internal liquidity check actually uses.
+    // Accrue interest first, for the shares -> assets conversion below.
     // Safe because of the AccrueInterest.withdrawAccruesInterest rule.
     summaryAccrueInterest(e, marketParams, id);
 
