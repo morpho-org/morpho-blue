@@ -44,7 +44,7 @@ function summarySafeTransferFrom(address token, address from, address to, uint25
     if (to == currentContract) {
         // Safe require because an erc20's total supply, which is the sum of balances, fits in uint256.
         require amount <= max_uint256 - balance[token];
-        // Assert (not require) so that the absence of overflow is a proof obligation.
+        // Assert so that the absence of overflow is a proof obligation.
         balance[token] = assert_uint256(balance[token] + amount);
     }
 }
