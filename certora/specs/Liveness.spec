@@ -156,6 +156,8 @@ rule withdrawChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams mar
 // Check that you can withdraw non-zero tokens by passing shares.
 rule canWithdrawByPassingShares(env e, MorphoInternalAccess.MarketParams marketParams, uint256 shares, address onBehalf, address receiver) {
     MorphoInternalAccess.Id id = Util.libId(marketParams);
+    // Assumption to ensure that no interest is accumulated.
+    require lastUpdate(id) == e.block.timestamp;
     // Assume that the singleton holds enough loan tokens to cover the withdrawal (which is exactly the amount transferred out, toAssetsDown(shares)).
     require balance[marketParams.loanToken] >= to_mathint(Util.libMulDivDown(shares, virtualTotalSupplyAssets(id), virtualTotalSupplyShares(id)));
     uint256 withdrawnAssets;
@@ -202,6 +204,8 @@ rule borrowChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams marke
 // Check that you can borrow non-zero tokens by passing shares.
 rule canBorrowByPassingShares(env e, MorphoInternalAccess.MarketParams marketParams, uint256 shares, address onBehalf, address receiver) {
     MorphoInternalAccess.Id id = Util.libId(marketParams);
+    // Assumption to ensure that no interest is accumulated.
+    require lastUpdate(id) == e.block.timestamp;
     // Assume that the singleton holds enough loan tokens to cover the borrow (which is exactly the amount transferred out, toAssetsDown(shares) over the borrow totals).
     require balance[marketParams.loanToken] >= to_mathint(Util.libMulDivDown(shares, virtualTotalBorrowAssets(id), virtualTotalBorrowShares(id)));
     uint256 borrowedAssets;
