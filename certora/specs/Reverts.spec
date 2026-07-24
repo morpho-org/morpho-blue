@@ -7,34 +7,34 @@ methods {
 
     function owner() external returns address envfree;
     function feeRecipient() external returns address envfree;
-    function totalSupplyAssets(MorphoHarness.Id) external returns uint256 envfree;
-    function totalBorrowAssets(MorphoHarness.Id) external returns uint256 envfree;
-    function totalSupplyShares(MorphoHarness.Id) external returns uint256 envfree;
-    function totalBorrowShares(MorphoHarness.Id) external returns uint256 envfree;
-    function lastUpdate(MorphoHarness.Id) external returns uint256 envfree;
+    function totalSupplyAssets(bytes32) external returns uint256 envfree;
+    function totalBorrowAssets(bytes32) external returns uint256 envfree;
+    function totalSupplyShares(bytes32) external returns uint256 envfree;
+    function totalBorrowShares(bytes32) external returns uint256 envfree;
+    function lastUpdate(bytes32) external returns uint256 envfree;
     function isIrmEnabled(address) external returns bool envfree;
     function isLltvEnabled(uint256) external returns bool envfree;
     function isAuthorized(address, address) external returns bool envfree;
     function nonce(address) external returns uint256 envfree;
 
-    function Util.libId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
+    function Util.libId(MorphoHarness.MarketParams) external returns bytes32 envfree;
 
     function Util.maxFee() external returns uint256 envfree;
     function Util.wad() external returns uint256 envfree;
 }
 
-definition isCreated(MorphoHarness.Id id) returns bool =
+definition isCreated(bytes32 id) returns bool =
     (lastUpdate(id) != 0);
 
-persistent ghost mapping(MorphoHarness.Id => mathint) sumCollateral
+persistent ghost mapping(bytes32 => mathint) sumCollateral
 {
-    init_state axiom (forall MorphoHarness.Id id. sumCollateral[id] == 0);
+    init_state axiom (forall bytes32 id. sumCollateral[id] == 0);
 }
-hook Sstore position[KEY MorphoHarness.Id id][KEY address owner].collateral uint128 newAmount (uint128 oldAmount) {
+hook Sstore position[KEY bytes32 id][KEY address owner].collateral uint128 newAmount (uint128 oldAmount) {
     sumCollateral[id] = sumCollateral[id] - oldAmount + newAmount;
 }
 
-definition emptyMarket(MorphoHarness.Id id) returns bool =
+definition emptyMarket(bytes32 id) returns bool =
     totalSupplyAssets(id) == 0 &&
     totalSupplyShares(id) == 0 &&
     totalBorrowAssets(id) == 0 &&
@@ -45,7 +45,7 @@ definition exactlyOneZero(uint256 assets, uint256 shares) returns bool =
     (assets == 0 && shares != 0) || (assets != 0 && shares == 0);
 
 // This invariant catches bugs when not checking that the market is created with lastUpdate.
-invariant notCreatedIsEmpty(MorphoHarness.Id id)
+invariant notCreatedIsEmpty(bytes32 id)
     !isCreated(id) => emptyMarket(id)
 {
     preserved with (env e) {
@@ -90,7 +90,7 @@ rule enableLltvRevertCondition(env e, uint256 lltv) {
 // Check that setFee reverts when its inputs are not validated.
 // setFee can also revert if the accrueInterest reverts.
 rule setFeeInputValidation(env e, MorphoHarness.MarketParams marketParams, uint256 newFee) {
-    MorphoHarness.Id id = Util.libId(marketParams);
+    bytes32 id = Util.libId(marketParams);
     address oldOwner = owner();
     bool wasCreated = isCreated(id);
     setFee@withrevert(e, marketParams, newFee);
@@ -108,7 +108,7 @@ rule setFeeRecipientRevertCondition(env e, address newFeeRecipient) {
 
 // Check that createMarket reverts when its input are not validated.
 rule createMarketInputValidation(env e, MorphoHarness.MarketParams marketParams) {
-    MorphoHarness.Id id = Util.libId(marketParams);
+    bytes32 id = Util.libId(marketParams);
     bool irmEnabled = isIrmEnabled(marketParams.irm);
     bool lltvEnabled = isLltvEnabled(marketParams.lltv);
     bool wasCreated = isCreated(id);

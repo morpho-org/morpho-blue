@@ -191,7 +191,7 @@ contract BaseInvariantTest is InvariantTest {
 
     function setFeeNoRevert(uint256 marketSeed, uint256 newFee) external {
         MarketParams memory _marketParams = _randomMarket(marketSeed);
-        Id _id = _marketParams.id();
+        bytes32 _id = _marketParams.id();
 
         newFee = bound(newFee, 0, MAX_FEE);
         if (newFee == morpho.fee(_id)) return;

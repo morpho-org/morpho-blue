@@ -6,11 +6,11 @@ import "./MorphoHarness.sol";
 contract MorphoInternalAccess is MorphoHarness {
     constructor(address newOwner) MorphoHarness(newOwner) {}
 
-    function update(Id id, uint256 timestamp) external {
+    function update(bytes32 id, uint256 timestamp) external {
         market[id].lastUpdate = uint128(timestamp);
     }
 
-    function increaseInterest(Id id, uint128 interest) external {
+    function increaseInterest(bytes32 id, uint128 interest) external {
         market[id].totalBorrowAssets += interest;
         market[id].totalSupplyAssets += interest;
     }

@@ -10,67 +10,67 @@ contract MorphoHarness is Morpho {
 
     constructor(address newOwner) Morpho(newOwner) {}
 
-    function idToMarketParams_(Id id) external view returns (MarketParams memory) {
+    function idToMarketParams_(bytes32 id) external view returns (MarketParams memory) {
         return idToMarketParams[id];
     }
 
-    function market_(Id id) external view returns (Market memory) {
+    function market_(bytes32 id) external view returns (Market memory) {
         return market[id];
     }
 
-    function position_(Id id, address user) external view returns (Position memory) {
+    function position_(bytes32 id, address user) external view returns (Position memory) {
         return position[id][user];
     }
 
-    function totalSupplyAssets(Id id) external view returns (uint256) {
+    function totalSupplyAssets(bytes32 id) external view returns (uint256) {
         return market[id].totalSupplyAssets;
     }
 
-    function totalSupplyShares(Id id) external view returns (uint256) {
+    function totalSupplyShares(bytes32 id) external view returns (uint256) {
         return market[id].totalSupplyShares;
     }
 
-    function totalBorrowAssets(Id id) external view returns (uint256) {
+    function totalBorrowAssets(bytes32 id) external view returns (uint256) {
         return market[id].totalBorrowAssets;
     }
 
-    function totalBorrowShares(Id id) external view returns (uint256) {
+    function totalBorrowShares(bytes32 id) external view returns (uint256) {
         return market[id].totalBorrowShares;
     }
 
-    function supplyShares(Id id, address account) external view returns (uint256) {
+    function supplyShares(bytes32 id, address account) external view returns (uint256) {
         return position[id][account].supplyShares;
     }
 
-    function borrowShares(Id id, address account) external view returns (uint256) {
+    function borrowShares(bytes32 id, address account) external view returns (uint256) {
         return position[id][account].borrowShares;
     }
 
-    function collateral(Id id, address account) external view returns (uint256) {
+    function collateral(bytes32 id, address account) external view returns (uint256) {
         return position[id][account].collateral;
     }
 
-    function lastUpdate(Id id) external view returns (uint256) {
+    function lastUpdate(bytes32 id) external view returns (uint256) {
         return market[id].lastUpdate;
     }
 
-    function fee(Id id) external view returns (uint256) {
+    function fee(bytes32 id) external view returns (uint256) {
         return market[id].fee;
     }
 
-    function virtualTotalSupplyAssets(Id id) external view returns (uint256) {
+    function virtualTotalSupplyAssets(bytes32 id) external view returns (uint256) {
         return market[id].totalSupplyAssets + SharesMathLib.VIRTUAL_ASSETS;
     }
 
-    function virtualTotalSupplyShares(Id id) external view returns (uint256) {
+    function virtualTotalSupplyShares(bytes32 id) external view returns (uint256) {
         return market[id].totalSupplyShares + SharesMathLib.VIRTUAL_SHARES;
     }
 
-    function virtualTotalBorrowAssets(Id id) external view returns (uint256) {
+    function virtualTotalBorrowAssets(bytes32 id) external view returns (uint256) {
         return market[id].totalBorrowAssets + SharesMathLib.VIRTUAL_ASSETS;
     }
 
-    function virtualTotalBorrowShares(Id id) external view returns (uint256) {
+    function virtualTotalBorrowShares(bytes32 id) external view returns (uint256) {
         return market[id].totalBorrowShares + SharesMathLib.VIRTUAL_SHARES;
     }
 

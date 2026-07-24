@@ -5,23 +5,23 @@ using Util as Util;
 methods {
     function extSloads(bytes32[]) external returns bytes32[] => NONDET DELETE;
 
-    function supplyShares(MorphoHarness.Id, address) external returns uint256 envfree;
-    function borrowShares(MorphoHarness.Id, address) external returns uint256 envfree;
-    function collateral(MorphoHarness.Id, address) external returns uint256 envfree;
-    function totalSupplyShares(MorphoHarness.Id) external returns uint256 envfree;
-    function totalBorrowShares(MorphoHarness.Id) external returns uint256 envfree;
-    function virtualTotalSupplyAssets(MorphoHarness.Id) external returns uint256 envfree;
-    function virtualTotalSupplyShares(MorphoHarness.Id) external returns uint256 envfree;
-    function virtualTotalBorrowAssets(MorphoHarness.Id) external returns uint256 envfree;
-    function virtualTotalBorrowShares(MorphoHarness.Id) external returns uint256 envfree;
-    function lastUpdate(MorphoHarness.Id) external returns uint256 envfree;
+    function supplyShares(bytes32, address) external returns uint256 envfree;
+    function borrowShares(bytes32, address) external returns uint256 envfree;
+    function collateral(bytes32, address) external returns uint256 envfree;
+    function totalSupplyShares(bytes32) external returns uint256 envfree;
+    function totalBorrowShares(bytes32) external returns uint256 envfree;
+    function virtualTotalSupplyAssets(bytes32) external returns uint256 envfree;
+    function virtualTotalSupplyShares(bytes32) external returns uint256 envfree;
+    function virtualTotalBorrowAssets(bytes32) external returns uint256 envfree;
+    function virtualTotalBorrowShares(bytes32) external returns uint256 envfree;
+    function lastUpdate(bytes32) external returns uint256 envfree;
 
     function Util.libMulDivDown(uint256, uint256, uint256) external returns uint256 envfree;
     function Util.libMulDivUp(uint256, uint256, uint256) external returns uint256 envfree;
-    function Util.libId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
+    function Util.libId(MorphoHarness.MarketParams) external returns bytes32 envfree;
 }
 
-function expectedSupplyAssets(MorphoHarness.Id id, address user) returns uint256 {
+function expectedSupplyAssets(bytes32 id, address user) returns uint256 {
     uint256 userShares = supplyShares(id, user);
     uint256 totalSupplyAssets = virtualTotalSupplyAssets(id);
     uint256 totalSupplyShares = virtualTotalSupplyShares(id);
@@ -29,7 +29,7 @@ function expectedSupplyAssets(MorphoHarness.Id id, address user) returns uint256
     return Util.libMulDivDown(userShares, totalSupplyAssets, totalSupplyShares);
 }
 
-function expectedBorrowAssets(MorphoHarness.Id id, address user) returns uint256 {
+function expectedBorrowAssets(bytes32 id, address user) returns uint256 {
     uint256 userShares = borrowShares(id, user);
     uint256 totalBorrowAssets = virtualTotalBorrowAssets(id);
     uint256 totalBorrowShares = virtualTotalBorrowShares(id);
@@ -39,7 +39,7 @@ function expectedBorrowAssets(MorphoHarness.Id id, address user) returns uint256
 
 // Check that the assets supplied are greater than the increase in owned assets.
 rule supplyAssetsAccounting(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data) {
-    MorphoHarness.Id id = Util.libId(marketParams);
+    bytes32 id = Util.libId(marketParams);
 
     // Assume no interest as it would increase the total supply assets.
     require lastUpdate(id) == e.block.timestamp;
@@ -58,7 +58,7 @@ rule supplyAssetsAccounting(env e, MorphoHarness.MarketParams marketParams, uint
 
 // Check that the assets withdrawn are less than the assets owned initially.
 rule withdrawAssetsAccounting(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, address receiver) {
-    MorphoHarness.Id id = Util.libId(marketParams);
+    bytes32 id = Util.libId(marketParams);
 
     // Assume no interest as it would increase the total supply assets.
     require lastUpdate(id) == e.block.timestamp;
@@ -73,7 +73,7 @@ rule withdrawAssetsAccounting(env e, MorphoHarness.MarketParams marketParams, ui
 
 // Check that the increase of owed assets are greater than the borrowed assets.
 rule borrowAssetsAccounting(env e, MorphoHarness.MarketParams marketParams, uint256 shares, address onBehalf, address receiver) {
-    MorphoHarness.Id id = Util.libId(marketParams);
+    bytes32 id = Util.libId(marketParams);
 
     // Assume no interest as it would increase the total borrowed assets.
     require lastUpdate(id) == e.block.timestamp;
@@ -93,7 +93,7 @@ rule borrowAssetsAccounting(env e, MorphoHarness.MarketParams marketParams, uint
 
 // Check that the assets repaid are greater than the assets owed initially.
 rule repayAssetsAccounting(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data) {
-    MorphoHarness.Id id = Util.libId(marketParams);
+    bytes32 id = Util.libId(marketParams);
 
     // Assume no interest as it would increase the total borrowed assets.
     require lastUpdate(id) == e.block.timestamp;
@@ -111,7 +111,7 @@ rule repayAssetsAccounting(env e, MorphoHarness.MarketParams marketParams, uint2
 
 // Check that the collateral assets supplied are equal to the increase of owned assets.
 rule supplyCollateralAssetsAccounting(env e, MorphoHarness.MarketParams marketParams, uint256 suppliedAssets, address onBehalf, bytes data) {
-    MorphoHarness.Id id = Util.libId(marketParams);
+    bytes32 id = Util.libId(marketParams);
 
     uint256 ownedAssetsBefore = collateral(id, onBehalf);
 
@@ -124,7 +124,7 @@ rule supplyCollateralAssetsAccounting(env e, MorphoHarness.MarketParams marketPa
 
 // Check that the collateral assets withdrawn are less than the assets owned initially.
 rule withdrawCollateralAssetsAccounting(env e, MorphoHarness.MarketParams marketParams, uint256 withdrawnAssets, address onBehalf, address receiver) {
-    MorphoHarness.Id id = Util.libId(marketParams);
+    bytes32 id = Util.libId(marketParams);
 
     uint256 ownedAssets = collateral(id, onBehalf);
 

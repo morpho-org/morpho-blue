@@ -5,17 +5,17 @@ using Util as Util;
 methods {
     function extSloads(bytes32[]) external returns bytes32[] => NONDET DELETE;
 
-    function totalBorrowAssets(MorphoHarness.Id) external returns uint256 envfree;
-    function totalBorrowShares(MorphoHarness.Id) external returns uint256 envfree;
-    function virtualTotalBorrowAssets(MorphoHarness.Id) external returns uint256 envfree;
-    function virtualTotalBorrowShares(MorphoHarness.Id) external returns uint256 envfree;
-    function lastUpdate(MorphoHarness.Id) external returns uint256 envfree;
-    function borrowShares(MorphoHarness.Id, address) external returns uint256 envfree;
-    function collateral(MorphoHarness.Id, address) external returns uint256 envfree;
+    function totalBorrowAssets(bytes32) external returns uint256 envfree;
+    function totalBorrowShares(bytes32) external returns uint256 envfree;
+    function virtualTotalBorrowAssets(bytes32) external returns uint256 envfree;
+    function virtualTotalBorrowShares(bytes32) external returns uint256 envfree;
+    function lastUpdate(bytes32) external returns uint256 envfree;
+    function borrowShares(bytes32, address) external returns uint256 envfree;
+    function collateral(bytes32, address) external returns uint256 envfree;
     function isAuthorized(address, address user) external returns bool envfree;
-    function lastUpdate(MorphoHarness.Id) external returns uint256 envfree;
+    function lastUpdate(bytes32) external returns uint256 envfree;
 
-    function Util.libId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
+    function Util.libId(MorphoHarness.MarketParams) external returns bytes32 envfree;
     function isHealthy(MorphoHarness.MarketParams, address user) external returns bool envfree;
 
     function _.price() external => CONSTANT;
@@ -31,7 +31,7 @@ rule healthyUserCannotLoseCollateral(env e, method f, calldataarg data)
 filtered { f -> !f.isView }
 {
     MorphoHarness.MarketParams marketParams;
-    MorphoHarness.Id id = Util.libId(marketParams);
+    bytes32 id = Util.libId(marketParams);
     address user;
 
     // Assume that the e.msg.sender is not authorized.
@@ -51,12 +51,12 @@ filtered { f -> !f.isView }
 
 // Check that users without collateral also have no debt.
 // This invariant ensures that bad debt realization cannot be bypassed.
-invariant alwaysCollateralized(MorphoHarness.Id id, address borrower)
+invariant alwaysCollateralized(bytes32 id, address borrower)
     borrowShares(id, borrower) != 0 => collateral(id, borrower) != 0;
 
 // Checks that passing a seized amount input to liquidate leads to repaid shares S and repaid amount A such that liquidating instead with shares S also repays the amount A.
 rule liquidateEquivalentInputDebtAndInputCollateral(env e, MorphoHarness.MarketParams marketParams, address borrower, uint256 seizedAssets, bytes data) {
-    MorphoHarness.Id id = Util.libId(marketParams);
+    bytes32 id = Util.libId(marketParams);
 
     // Assume no interest accrual to ease the verification.
     require lastUpdate(id) == e.block.timestamp;

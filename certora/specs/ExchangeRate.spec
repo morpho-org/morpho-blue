@@ -5,16 +5,16 @@ using Util as Util;
 methods {
     function extSloads(bytes32[]) external returns bytes32[] => NONDET DELETE;
 
-    function collateral(MorphoHarness.Id, address) external returns uint256 envfree;
-    function virtualTotalSupplyAssets(MorphoHarness.Id) external returns uint256 envfree;
-    function virtualTotalSupplyShares(MorphoHarness.Id) external returns uint256 envfree;
-    function virtualTotalBorrowAssets(MorphoHarness.Id) external returns uint256 envfree;
-    function virtualTotalBorrowShares(MorphoHarness.Id) external returns uint256 envfree;
-    function fee(MorphoHarness.Id) external returns uint256 envfree;
-    function lastUpdate(MorphoHarness.Id) external returns uint256 envfree;
+    function collateral(bytes32, address) external returns uint256 envfree;
+    function virtualTotalSupplyAssets(bytes32) external returns uint256 envfree;
+    function virtualTotalSupplyShares(bytes32) external returns uint256 envfree;
+    function virtualTotalBorrowAssets(bytes32) external returns uint256 envfree;
+    function virtualTotalBorrowShares(bytes32) external returns uint256 envfree;
+    function fee(bytes32) external returns uint256 envfree;
+    function lastUpdate(bytes32) external returns uint256 envfree;
 
     function Util.maxFee() external returns uint256 envfree;
-    function Util.libId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
+    function Util.libId(MorphoHarness.MarketParams) external returns bytes32 envfree;
 
     function UtilsLib.min(uint256 x, uint256 y) internal returns uint256 => summaryMin(x, y);
     function MathLib.mulDivDown(uint256 a, uint256 b, uint256 c) internal returns uint256 => summaryMulDivDown(a, b, c);
@@ -25,7 +25,7 @@ methods {
 
 }
 
-invariant feeInRange(MorphoHarness.Id id)
+invariant feeInRange(bytes32 id)
     fee(id) <= Util.maxFee();
 
 function summaryMin(uint256 x, uint256 y) returns uint256 {
@@ -50,7 +50,7 @@ function summaryMulDivDown(uint256 x, uint256 y, uint256 d) returns uint256 {
 
 // Check that accrueInterest increases the value of supply shares.
 rule accrueInterestIncreasesSupplyExchangeRate(env e, MorphoHarness.MarketParams marketParams) {
-    MorphoHarness.Id id;
+    bytes32 id;
     requireInvariant feeInRange(id);
 
     mathint assetsBefore = virtualTotalSupplyAssets(id);
@@ -68,7 +68,7 @@ rule accrueInterestIncreasesSupplyExchangeRate(env e, MorphoHarness.MarketParams
 
 // Check that accrueInterest increases the value of borrow shares.
 rule accrueInterestIncreasesBorrowExchangeRate(env e, MorphoHarness.MarketParams marketParams) {
-    MorphoHarness.Id id;
+    bytes32 id;
     requireInvariant feeInRange(id);
 
     mathint assetsBefore = virtualTotalBorrowAssets(id);
@@ -91,7 +91,7 @@ filtered {
     f -> !f.isView && f.selector != sig:liquidate(MorphoHarness.MarketParams, address, uint256, uint256, bytes).selector
 }
 {
-    MorphoHarness.Id id;
+    bytes32 id;
     requireInvariant feeInRange(id);
 
     mathint assetsBefore = virtualTotalSupplyAssets(id);
@@ -113,7 +113,7 @@ filtered {
 // Check that when not realizing bad debt in liquidate, the value of supply shares increases.
 rule liquidateWithoutBadDebtRealizationIncreasesSupplyExchangeRate(env e, MorphoHarness.MarketParams marketParams, address borrower, uint256 seizedAssets, uint256 repaidShares, bytes data)
 {
-    MorphoHarness.Id id;
+    bytes32 id;
     requireInvariant feeInRange(id);
 
     mathint assetsBefore = virtualTotalSupplyAssets(id);
@@ -145,7 +145,7 @@ filtered {
     f.selector != sig:liquidate(MorphoHarness.MarketParams, address, uint256, uint256, bytes).selector
 }
 {
-    MorphoHarness.Id id;
+    bytes32 id;
     requireInvariant feeInRange(id);
 
     // Interest would increase borrow exchange rate, so we need to assume that no time passes.
@@ -168,7 +168,7 @@ filtered {
 // The other case requires exact math (ie not over-approximating mulDivUp and mulDivDown), so it is checked separately in ExactMath.spec.
 rule repayDecreasesBorrowExchangeRate(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data)
 {
-    MorphoHarness.Id id = Util.libId(marketParams);
+    bytes32 id = Util.libId(marketParams);
     requireInvariant feeInRange(id);
 
     mathint assetsBefore = virtualTotalBorrowAssets(id);
@@ -194,7 +194,7 @@ rule repayDecreasesBorrowExchangeRate(env e, MorphoHarness.MarketParams marketPa
 rule liquidateDecreasesBorrowExchangeRate(env e, MorphoHarness.MarketParams marketParams, address borrower, uint256 seizedAssets, uint256 repaidShares, bytes data)
 {
     require data.length == 0;
-    MorphoHarness.Id id = Util.libId(marketParams);
+    bytes32 id = Util.libId(marketParams);
 
     mathint assetsBefore = virtualTotalBorrowAssets(id);
     mathint sharesBefore = virtualTotalBorrowShares(id);

@@ -7,8 +7,8 @@ methods {
 
     function Util.libMulDivUp(uint256, uint256, uint256) external returns uint256 envfree;
     function Util.libMulDivDown(uint256, uint256, uint256) external returns uint256 envfree;
-    function Util.libId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
-    function Util.refId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
+    function Util.libId(MorphoHarness.MarketParams) external returns bytes32 envfree;
+    function Util.refId(MorphoHarness.MarketParams) external returns bytes32 envfree;
     function Util.libMin(uint256 x, uint256 y) external returns uint256 envfree;
 }
 
