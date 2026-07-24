@@ -31,7 +31,7 @@ methods {
     function SafeTransferLib.safeTransferFrom(address token, address from, address to, uint256 value) internal => summarySafeTransferFrom(token, from, to, value);
 }
 
-persistent ghost mapping(address => mathint) balance {
+persistent ghost mapping(address => uint256) balance {
     init_state axiom (forall address token. balance[token] == 0);
 }
 
@@ -40,17 +40,13 @@ function summaryId(MorphoInternalAccess.MarketParams marketParams) returns Morph
 }
 
 function summarySafeTransferFrom(address token, address from, address to, uint256 amount) {
-    require balance[token] >= 0;
-    require balance[token] <= max_uint256;
     if (from == currentContract) {
         // Assert so that the absence of underflow is a proof obligation.
         balance[token] = assert_uint256(balance[token] - amount);
     }
     if (to == currentContract) {
         // Safe require because an erc20's total supply, which is the sum of balances, fits in uint256.
-        require amount <= max_uint256 - balance[token];
-        // Assert so that the absence of overflow is a proof obligation.
-        balance[token] = assert_uint256(balance[token] + amount);
+        balance[token] = require_uint256(balance[token] + amount);
     }
 }
 
