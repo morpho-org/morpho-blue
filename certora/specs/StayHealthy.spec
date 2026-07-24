@@ -15,7 +15,7 @@ filtered {
 }
 {
     MorphoHarness.MarketParams marketParams;
-    MorphoHarness.Id id = Util.libId(marketParams);
+    bytes32 id = Util.libId(marketParams);
     address user;
 
     // Assume that the position is healthy before the interaction.
@@ -38,7 +38,7 @@ filtered {
 //   - the market of the liquidation is the market of the user, see the *DifferentMarkets rule,
 //   - there is still some borrow on the market after liquidation, see the *LastBorrow rule.
 rule stayHealthyLiquidate(env e, MorphoHarness.MarketParams marketParams, address borrower, uint256 seizedAssets, bytes data) {
-    MorphoHarness.Id id = Util.libId(marketParams);
+    bytes32 id = Util.libId(marketParams);
     address user;
 
     // Assume the invariant initially.
@@ -70,7 +70,7 @@ rule stayHealthyLiquidate(env e, MorphoHarness.MarketParams marketParams, addres
 }
 
 rule stayHealthyLiquidateDifferentMarkets(env e, MorphoHarness.MarketParams marketParams, address borrower, uint256 seizedAssets, bytes data) {
-    MorphoHarness.Id id = Util.libId(marketParams);
+    bytes32 id = Util.libId(marketParams);
     address user;
     MorphoHarness.MarketParams liquidationMarketParams;
 
@@ -93,7 +93,7 @@ rule stayHealthyLiquidateDifferentMarkets(env e, MorphoHarness.MarketParams mark
 }
 
 rule stayHealthyLiquidateLastBorrow(env e, MorphoHarness.MarketParams marketParams, address borrower, uint256 seizedAssets, bytes data) {
-    MorphoHarness.Id id = Util.libId(marketParams);
+    bytes32 id = Util.libId(marketParams);
     address user;
 
     // Assume the invariant initially.

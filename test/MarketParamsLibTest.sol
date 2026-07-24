@@ -3,12 +3,12 @@ pragma solidity ^0.8.0;
 
 import "../lib/forge-std/src/Test.sol";
 
-import {MarketParamsLib, MarketParams, Id} from "../src/libraries/MarketParamsLib.sol";
+import {MarketParamsLib, MarketParams} from "../src/libraries/MarketParamsLib.sol";
 
 contract MarketParamsLibTest is Test {
     using MarketParamsLib for MarketParams;
 
     function testMarketParamsId(MarketParams memory marketParamsFuzz) public {
-        assertEq(Id.unwrap(marketParamsFuzz.id()), keccak256(abi.encode(marketParamsFuzz)));
+        assertEq(marketParamsFuzz.id(), keccak256(abi.encode(marketParamsFuzz)));
     }
 }

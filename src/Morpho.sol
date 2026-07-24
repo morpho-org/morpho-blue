@@ -2,7 +2,6 @@
 pragma solidity 0.8.19;
 
 import {
-    Id,
     IMorphoStaticTyping,
     IMorphoBase,
     MarketParams,
@@ -55,9 +54,9 @@ contract Morpho is IMorphoStaticTyping {
     /// @inheritdoc IMorphoBase
     address public feeRecipient;
     /// @inheritdoc IMorphoStaticTyping
-    mapping(Id => mapping(address => Position)) public position;
+    mapping(bytes32 => mapping(address => Position)) public position;
     /// @inheritdoc IMorphoStaticTyping
-    mapping(Id => Market) public market;
+    mapping(bytes32 => Market) public market;
     /// @inheritdoc IMorphoBase
     mapping(address => bool) public isIrmEnabled;
     /// @inheritdoc IMorphoBase
@@ -67,7 +66,7 @@ contract Morpho is IMorphoStaticTyping {
     /// @inheritdoc IMorphoBase
     mapping(address => uint256) public nonce;
     /// @inheritdoc IMorphoStaticTyping
-    mapping(Id => MarketParams) public idToMarketParams;
+    mapping(bytes32 => MarketParams) public idToMarketParams;
 
     /* CONSTRUCTOR */
 
@@ -121,7 +120,7 @@ contract Morpho is IMorphoStaticTyping {
 
     /// @inheritdoc IMorphoBase
     function setFee(MarketParams memory marketParams, uint256 newFee) external onlyOwner {
-        Id id = marketParams.id();
+        bytes32 id = marketParams.id();
         require(market[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
         require(newFee != market[id].fee, ErrorsLib.ALREADY_SET);
         require(newFee <= MAX_FEE, ErrorsLib.MAX_FEE_EXCEEDED);
@@ -148,7 +147,7 @@ contract Morpho is IMorphoStaticTyping {
 
     /// @inheritdoc IMorphoBase
     function createMarket(MarketParams memory marketParams) external {
-        Id id = marketParams.id();
+        bytes32 id = marketParams.id();
         require(isIrmEnabled[marketParams.irm], ErrorsLib.IRM_NOT_ENABLED);
         require(isLltvEnabled[marketParams.lltv], ErrorsLib.LLTV_NOT_ENABLED);
         require(market[id].lastUpdate == 0, ErrorsLib.MARKET_ALREADY_CREATED);
@@ -173,7 +172,7 @@ contract Morpho is IMorphoStaticTyping {
         address onBehalf,
         bytes calldata data
     ) external returns (uint256, uint256) {
-        Id id = marketParams.id();
+        bytes32 id = marketParams.id();
         require(market[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
         require(UtilsLib.exactlyOneZero(assets, shares), ErrorsLib.INCONSISTENT_INPUT);
         require(onBehalf != address(0), ErrorsLib.ZERO_ADDRESS);
@@ -204,7 +203,7 @@ contract Morpho is IMorphoStaticTyping {
         address onBehalf,
         address receiver
     ) external returns (uint256, uint256) {
-        Id id = marketParams.id();
+        bytes32 id = marketParams.id();
         require(market[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
         require(UtilsLib.exactlyOneZero(assets, shares), ErrorsLib.INCONSISTENT_INPUT);
         require(receiver != address(0), ErrorsLib.ZERO_ADDRESS);
@@ -239,7 +238,7 @@ contract Morpho is IMorphoStaticTyping {
         address onBehalf,
         address receiver
     ) external returns (uint256, uint256) {
-        Id id = marketParams.id();
+        bytes32 id = marketParams.id();
         require(market[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
         require(UtilsLib.exactlyOneZero(assets, shares), ErrorsLib.INCONSISTENT_INPUT);
         require(receiver != address(0), ErrorsLib.ZERO_ADDRESS);
@@ -273,7 +272,7 @@ contract Morpho is IMorphoStaticTyping {
         address onBehalf,
         bytes calldata data
     ) external returns (uint256, uint256) {
-        Id id = marketParams.id();
+        bytes32 id = marketParams.id();
         require(market[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
         require(UtilsLib.exactlyOneZero(assets, shares), ErrorsLib.INCONSISTENT_INPUT);
         require(onBehalf != address(0), ErrorsLib.ZERO_ADDRESS);
@@ -303,7 +302,7 @@ contract Morpho is IMorphoStaticTyping {
     function supplyCollateral(MarketParams memory marketParams, uint256 assets, address onBehalf, bytes calldata data)
         external
     {
-        Id id = marketParams.id();
+        bytes32 id = marketParams.id();
         require(market[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
         require(assets != 0, ErrorsLib.ZERO_ASSETS);
         require(onBehalf != address(0), ErrorsLib.ZERO_ADDRESS);
@@ -323,7 +322,7 @@ contract Morpho is IMorphoStaticTyping {
     function withdrawCollateral(MarketParams memory marketParams, uint256 assets, address onBehalf, address receiver)
         external
     {
-        Id id = marketParams.id();
+        bytes32 id = marketParams.id();
         require(market[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
         require(assets != 0, ErrorsLib.ZERO_ASSETS);
         require(receiver != address(0), ErrorsLib.ZERO_ADDRESS);
@@ -351,7 +350,7 @@ contract Morpho is IMorphoStaticTyping {
         uint256 repaidShares,
         bytes calldata data
     ) external returns (uint256, uint256) {
-        Id id = marketParams.id();
+        bytes32 id = marketParams.id();
         require(market[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
         require(UtilsLib.exactlyOneZero(seizedAssets, repaidShares), ErrorsLib.INCONSISTENT_INPUT);
 
@@ -471,7 +470,7 @@ contract Morpho is IMorphoStaticTyping {
 
     /// @inheritdoc IMorphoBase
     function accrueInterest(MarketParams memory marketParams) external {
-        Id id = marketParams.id();
+        bytes32 id = marketParams.id();
         require(market[id].lastUpdate != 0, ErrorsLib.MARKET_NOT_CREATED);
 
         _accrueInterest(marketParams, id);
@@ -479,7 +478,7 @@ contract Morpho is IMorphoStaticTyping {
 
     /// @dev Accrues interest for the given market `marketParams`.
     /// @dev Assumes that the inputs `marketParams` and `id` match.
-    function _accrueInterest(MarketParams memory marketParams, Id id) internal {
+    function _accrueInterest(MarketParams memory marketParams, bytes32 id) internal {
         uint256 elapsed = block.timestamp - market[id].lastUpdate;
         if (elapsed == 0) return;
 
@@ -511,7 +510,7 @@ contract Morpho is IMorphoStaticTyping {
 
     /// @dev Returns whether the position of `borrower` in the given market `marketParams` is healthy.
     /// @dev Assumes that the inputs `marketParams` and `id` match.
-    function _isHealthy(MarketParams memory marketParams, Id id, address borrower) internal view returns (bool) {
+    function _isHealthy(MarketParams memory marketParams, bytes32 id, address borrower) internal view returns (bool) {
         if (position[id][borrower].borrowShares == 0) return true;
 
         uint256 collateralPrice = IOracle(marketParams.oracle).price();
@@ -523,7 +522,7 @@ contract Morpho is IMorphoStaticTyping {
     /// `collateralPrice` is healthy.
     /// @dev Assumes that the inputs `marketParams` and `id` match.
     /// @dev Rounds in favor of the protocol, so one might not be able to borrow exactly `maxBorrow` but one unit less.
-    function _isHealthy(MarketParams memory marketParams, Id id, address borrower, uint256 collateralPrice)
+    function _isHealthy(MarketParams memory marketParams, bytes32 id, address borrower, uint256 collateralPrice)
         internal
         view
         returns (bool)

@@ -55,7 +55,7 @@ contract BaseTest is Test {
     IrmMock internal irm;
 
     MarketParams internal marketParams;
-    Id internal id;
+    bytes32 internal id;
 
     function setUp() public virtual {
         SUPPLIER = makeAddr("Supplier");
@@ -208,7 +208,7 @@ contract BaseTest is Test {
         view
         returns (uint256)
     {
-        Id _id = _marketParams.id();
+        bytes32 _id = _marketParams.id();
 
         uint256 collateral = morpho.collateral(_id, onBehalf);
 
@@ -220,7 +220,7 @@ contract BaseTest is Test {
         view
         returns (uint256)
     {
-        Id _id = _marketParams.id();
+        bytes32 _id = _marketParams.id();
 
         uint256 collateral = morpho.collateral(_id, onBehalf);
         uint256 collateralPrice = IOracle(_marketParams.oracle).price();
@@ -248,7 +248,7 @@ contract BaseTest is Test {
         view
         returns (uint256)
     {
-        Id _id = _marketParams.id();
+        bytes32 _id = _marketParams.id();
 
         uint256 supplyShares = morpho.supplyShares(_id, onBehalf);
 
@@ -265,7 +265,7 @@ contract BaseTest is Test {
         view
         returns (uint256)
     {
-        Id _id = _marketParams.id();
+        bytes32 _id = _marketParams.id();
 
         uint256 supplyBalance = morpho.expectedSupplyAssets(_marketParams, onBehalf);
         uint256 liquidity = morpho.totalSupplyAssets(_id) - morpho.totalBorrowAssets(_id);
@@ -278,7 +278,7 @@ contract BaseTest is Test {
         view
         returns (uint256)
     {
-        Id _id = _marketParams.id();
+        bytes32 _id = _marketParams.id();
 
         uint256 supplyShares = morpho.supplyShares(_id, onBehalf);
         uint256 totalSupplyAssets = morpho.totalSupplyAssets(_id);
@@ -294,7 +294,7 @@ contract BaseTest is Test {
         view
         returns (uint256)
     {
-        Id _id = _marketParams.id();
+        bytes32 _id = _marketParams.id();
 
         uint256 maxBorrow = _maxBorrow(_marketParams, onBehalf);
         uint256 borrowed = morpho.expectedBorrowAssets(_marketParams, onBehalf);
@@ -308,7 +308,7 @@ contract BaseTest is Test {
         view
         returns (uint256)
     {
-        Id _id = _marketParams.id();
+        bytes32 _id = _marketParams.id();
 
         (,, uint256 totalBorrowAssets, uint256 totalBorrowShares) = morpho.expectedMarketBalances(_marketParams);
         uint256 maxRepayAssets = morpho.borrowShares(_id, onBehalf).toAssetsDown(totalBorrowAssets, totalBorrowShares);
@@ -321,7 +321,7 @@ contract BaseTest is Test {
         view
         returns (uint256)
     {
-        Id _id = _marketParams.id();
+        bytes32 _id = _marketParams.id();
 
         uint256 borrowShares = morpho.borrowShares(_id, onBehalf);
 
@@ -333,7 +333,7 @@ contract BaseTest is Test {
         view
         returns (uint256)
     {
-        Id _id = _marketParams.id();
+        bytes32 _id = _marketParams.id();
 
         uint256 collateralPrice = IOracle(_marketParams.oracle).price();
         uint256 borrowShares = morpho.borrowShares(_id, borrower);
@@ -351,7 +351,7 @@ contract BaseTest is Test {
         view
         returns (uint256)
     {
-        Id _id = _marketParams.id();
+        bytes32 _id = _marketParams.id();
 
         uint256 collateralPrice = IOracle(_marketParams.oracle).price();
         uint256 maxRepaidAssets = morpho.collateral(_id, borrower).mulDivDown(collateralPrice, ORACLE_PRICE_SCALE)
@@ -365,7 +365,7 @@ contract BaseTest is Test {
     }
 
     function _maxBorrow(MarketParams memory _marketParams, address user) internal view returns (uint256) {
-        Id _id = _marketParams.id();
+        bytes32 _id = _marketParams.id();
 
         uint256 collateralPrice = IOracle(_marketParams.oracle).price();
 
@@ -388,7 +388,7 @@ contract BaseTest is Test {
     }
 
     function neq(MarketParams memory a, MarketParams memory b) internal pure returns (bool) {
-        return (Id.unwrap(a.id()) != Id.unwrap(b.id()));
+        return (a.id() != b.id());
     }
 
     function _randomCandidate(address[] memory candidates, uint256 seed) internal pure returns (address) {

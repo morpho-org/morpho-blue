@@ -62,7 +62,7 @@ contract InvariantTest is BaseTest {
         view
         returns (address)
     {
-        Id _id = _marketParams.id();
+        bytes32 _id = _marketParams.id();
         address[] memory candidates = new address[](users.length);
 
         for (uint256 i; i < users.length; ++i) {
@@ -81,7 +81,7 @@ contract InvariantTest is BaseTest {
         view
         returns (address)
     {
-        Id _id = _marketParams.id();
+        bytes32 _id = _marketParams.id();
         address[] memory candidates = new address[](users.length);
 
         for (uint256 i; i < users.length; ++i) {
@@ -100,7 +100,7 @@ contract InvariantTest is BaseTest {
         view
         returns (address)
     {
-        Id _id = _marketParams.id();
+        bytes32 _id = _marketParams.id();
         address[] memory candidates = new address[](users.length);
 
         for (uint256 i; i < users.length; ++i) {

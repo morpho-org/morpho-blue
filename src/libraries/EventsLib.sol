@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import {Id, MarketParams} from "../interfaces/IMorpho.sol";
+import {MarketParams} from "../interfaces/IMorpho.sol";
 
 /// @title EventsLib
 /// @author Morpho Labs
@@ -15,7 +15,7 @@ library EventsLib {
     /// @notice Emitted when setting a new fee.
     /// @param id The market id.
     /// @param newFee The new fee.
-    event SetFee(Id indexed id, uint256 newFee);
+    event SetFee(bytes32 indexed id, uint256 newFee);
 
     /// @notice Emitted when setting a new fee recipient.
     /// @param newFeeRecipient The new fee recipient.
@@ -32,7 +32,7 @@ library EventsLib {
     /// @notice Emitted when creating a market.
     /// @param id The market id.
     /// @param marketParams The market that was created.
-    event CreateMarket(Id indexed id, MarketParams marketParams);
+    event CreateMarket(bytes32 indexed id, MarketParams marketParams);
 
     /// @notice Emitted on supply of assets.
     /// @dev Warning: `feeRecipient` receives some shares during interest accrual without any supply event emitted.
@@ -41,7 +41,7 @@ library EventsLib {
     /// @param onBehalf The owner of the modified position.
     /// @param assets The amount of assets supplied.
     /// @param shares The amount of shares minted.
-    event Supply(Id indexed id, address indexed caller, address indexed onBehalf, uint256 assets, uint256 shares);
+    event Supply(bytes32 indexed id, address indexed caller, address indexed onBehalf, uint256 assets, uint256 shares);
 
     /// @notice Emitted on withdrawal of assets.
     /// @param id The market id.
@@ -51,7 +51,7 @@ library EventsLib {
     /// @param assets The amount of assets withdrawn.
     /// @param shares The amount of shares burned.
     event Withdraw(
-        Id indexed id,
+        bytes32 indexed id,
         address caller,
         address indexed onBehalf,
         address indexed receiver,
@@ -67,7 +67,7 @@ library EventsLib {
     /// @param assets The amount of assets borrowed.
     /// @param shares The amount of shares minted.
     event Borrow(
-        Id indexed id,
+        bytes32 indexed id,
         address caller,
         address indexed onBehalf,
         address indexed receiver,
@@ -81,14 +81,14 @@ library EventsLib {
     /// @param onBehalf The owner of the modified position.
     /// @param assets The amount of assets repaid. May be 1 over the corresponding market's `totalBorrowAssets`.
     /// @param shares The amount of shares burned.
-    event Repay(Id indexed id, address indexed caller, address indexed onBehalf, uint256 assets, uint256 shares);
+    event Repay(bytes32 indexed id, address indexed caller, address indexed onBehalf, uint256 assets, uint256 shares);
 
     /// @notice Emitted on supply of collateral.
     /// @param id The market id.
     /// @param caller The caller.
     /// @param onBehalf The owner of the modified position.
     /// @param assets The amount of collateral supplied.
-    event SupplyCollateral(Id indexed id, address indexed caller, address indexed onBehalf, uint256 assets);
+    event SupplyCollateral(bytes32 indexed id, address indexed caller, address indexed onBehalf, uint256 assets);
 
     /// @notice Emitted on withdrawal of collateral.
     /// @param id The market id.
@@ -97,7 +97,7 @@ library EventsLib {
     /// @param receiver The address that received the withdrawn collateral.
     /// @param assets The amount of collateral withdrawn.
     event WithdrawCollateral(
-        Id indexed id, address caller, address indexed onBehalf, address indexed receiver, uint256 assets
+        bytes32 indexed id, address caller, address indexed onBehalf, address indexed receiver, uint256 assets
     );
 
     /// @notice Emitted on liquidation of a position.
@@ -110,7 +110,7 @@ library EventsLib {
     /// @param badDebtAssets The amount of assets of bad debt realized.
     /// @param badDebtShares The amount of borrow shares of bad debt realized.
     event Liquidate(
-        Id indexed id,
+        bytes32 indexed id,
         address indexed caller,
         address indexed borrower,
         uint256 repaidAssets,
@@ -146,5 +146,5 @@ library EventsLib {
     /// @param prevBorrowRate The previous borrow rate.
     /// @param interest The amount of interest accrued.
     /// @param feeShares The amount of shares minted as fee.
-    event AccrueInterest(Id indexed id, uint256 prevBorrowRate, uint256 interest, uint256 feeShares);
+    event AccrueInterest(bytes32 indexed id, uint256 prevBorrowRate, uint256 interest, uint256 feeShares);
 }

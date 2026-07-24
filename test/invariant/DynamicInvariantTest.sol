@@ -35,7 +35,7 @@ contract DynamicInvariantTest is BaseInvariantTest {
 
         for (uint256 i; i < allMarketParams.length; ++i) {
             MarketParams memory _marketParams = allMarketParams[i];
-            Id _id = _marketParams.id();
+            bytes32 _id = _marketParams.id();
 
             uint256 sumSupplyShares = morpho.supplyShares(_id, FEE_RECIPIENT);
             for (uint256 j; j < users.length; ++j) {
@@ -51,7 +51,7 @@ contract DynamicInvariantTest is BaseInvariantTest {
 
         for (uint256 i; i < allMarketParams.length; ++i) {
             MarketParams memory _marketParams = allMarketParams[i];
-            Id _id = _marketParams.id();
+            bytes32 _id = _marketParams.id();
 
             uint256 sumBorrowShares;
             for (uint256 j; j < users.length; ++j) {
@@ -65,7 +65,7 @@ contract DynamicInvariantTest is BaseInvariantTest {
     function invariantTotalSupplyGeTotalBorrow() public {
         for (uint256 i; i < allMarketParams.length; ++i) {
             MarketParams memory _marketParams = allMarketParams[i];
-            Id _id = _marketParams.id();
+            bytes32 _id = _marketParams.id();
 
             assertGe(morpho.totalSupplyAssets(_id), morpho.totalBorrowAssets(_id));
         }
@@ -74,7 +74,7 @@ contract DynamicInvariantTest is BaseInvariantTest {
     function invariantMorphoBalance() public {
         for (uint256 i; i < allMarketParams.length; ++i) {
             MarketParams memory _marketParams = allMarketParams[i];
-            Id _id = _marketParams.id();
+            bytes32 _id = _marketParams.id();
 
             assertGe(
                 loanToken.balanceOf(address(morpho)) + morpho.totalBorrowAssets(_id), morpho.totalSupplyAssets(_id)
@@ -87,7 +87,7 @@ contract DynamicInvariantTest is BaseInvariantTest {
 
         for (uint256 i; i < allMarketParams.length; ++i) {
             MarketParams memory _marketParams = allMarketParams[i];
-            Id _id = _marketParams.id();
+            bytes32 _id = _marketParams.id();
 
             for (uint256 j; j < users.length; ++j) {
                 address user = users[j];

@@ -39,7 +39,7 @@ contract CreateMarketIntegrationTest is BaseTest {
     function testCreateMarketWithEnabledIrmAndLltv(MarketParams memory marketParamsFuzz) public {
         marketParamsFuzz.irm = address(irm);
         marketParamsFuzz.lltv = _boundValidLltv(marketParamsFuzz.lltv);
-        Id marketParamsFuzzId = marketParamsFuzz.id();
+        bytes32 marketParamsFuzzId = marketParamsFuzz.id();
 
         vm.startPrank(OWNER);
         if (!morpho.isLltvEnabled(marketParamsFuzz.lltv)) morpho.enableLltv(marketParamsFuzz.lltv);
@@ -77,7 +77,7 @@ contract CreateMarketIntegrationTest is BaseTest {
     function testIdToMarketParams(MarketParams memory marketParamsFuzz) public {
         marketParamsFuzz.irm = address(irm);
         marketParamsFuzz.lltv = _boundValidLltv(marketParamsFuzz.lltv);
-        Id marketParamsFuzzId = marketParamsFuzz.id();
+        bytes32 marketParamsFuzzId = marketParamsFuzz.id();
 
         vm.startPrank(OWNER);
         if (!morpho.isLltvEnabled(marketParamsFuzz.lltv)) morpho.enableLltv(marketParamsFuzz.lltv);

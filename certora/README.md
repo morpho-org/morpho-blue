@@ -58,7 +58,7 @@ In effect, this means that funds can only leave the contract through borrows and
 Additionally, it is checked that on a given market the borrowed amounts cannot exceed the supplied amounts.
 
 ```solidity
-invariant borrowLessThanSupply(MorphoHarness.Id id)
+invariant borrowLessThanSupply(bytes32 id)
     totalBorrowAssets(id) <= totalSupplyAssets(id);
 ```
 
@@ -84,7 +84,7 @@ This variable needs to be kept up to date at each corresponding interaction, and
 For example, for the supply side, this is done by the following invariant.
 
 ```solidity
-invariant sumSupplySharesCorrect(MorphoHarness.Id id)
+invariant sumSupplySharesCorrect(bytes32 id)
     to_mathint(totalSupplyShares(id)) == sumSupplyShares[id];
 ```
 
@@ -103,7 +103,7 @@ Morpho Blue automatically realizes the bad debt when liquidating a position, by 
 In effect, this means that there is no bad debt on Morpho Blue, which is verified by the following invariant.
 
 ```solidity
-invariant alwaysCollateralized(MorphoHarness.Id id, address borrower)
+invariant alwaysCollateralized(bytes32 id, address borrower)
     borrowShares(id, borrower) != 0 => collateral(id, borrower) != 0;
 ```
 
@@ -121,7 +121,7 @@ Let's detail the rule that makes sure that the supply side stays consistent.
 rule userCannotLoseSupplyShares(env e, method f, calldataarg data)
 filtered { f -> !f.isView }
 {
-    MorphoHarness.Id id;
+    bytes32 id;
     address user;
 
     // Assume that the e.msg.sender is not authorized.
@@ -163,7 +163,7 @@ The governance can choose to set a fee to a given market.
 Fees are guaranteed to never exceed 25% of the interest accrued, and this is verified by the following rule.
 
 ```solidity
-invariant feeInRange(MorphoHarness.Id id)
+invariant feeInRange(bytes32 id)
     fee(id) <= maxFee();
 ```
 
@@ -177,7 +177,7 @@ This is a sanity check, but it is also useful to ensure that there will be no un
 rule noTimeTravel(method f, env e, calldataarg args)
 filtered { f -> !f.isView }
 {
-    MorphoHarness.Id id;
+    bytes32 id;
     // Assume the property before the interaction.
     require lastUpdate(id) <= e.block.timestamp;
     f(e, args);

@@ -5,21 +5,21 @@ using Util as Util;
 methods {
     function extSloads(bytes32[]) external returns (bytes32[]) => NONDET DELETE;
 
-    function lastUpdate(MorphoHarness.Id) external returns (uint256) envfree;
-    function borrowShares(MorphoHarness.Id, address) external returns (uint256) envfree;
-    function collateral(MorphoHarness.Id, address) external returns (uint256) envfree;
-    function totalBorrowShares(MorphoHarness.Id) external returns (uint256) envfree;
-    function totalBorrowAssets(MorphoHarness.Id) external returns (uint256) envfree;
-    function virtualTotalBorrowAssets(MorphoHarness.Id) external returns uint256 envfree;
-    function virtualTotalBorrowShares(MorphoHarness.Id) external returns uint256 envfree;
+    function lastUpdate(bytes32) external returns (uint256) envfree;
+    function borrowShares(bytes32, address) external returns (uint256) envfree;
+    function collateral(bytes32, address) external returns (uint256) envfree;
+    function totalBorrowShares(bytes32) external returns (uint256) envfree;
+    function totalBorrowAssets(bytes32) external returns (uint256) envfree;
+    function virtualTotalBorrowAssets(bytes32) external returns uint256 envfree;
+    function virtualTotalBorrowShares(bytes32) external returns uint256 envfree;
 
-    function Util.libId(MorphoHarness.MarketParams) external returns (MorphoHarness.Id) envfree;
+    function Util.libId(MorphoHarness.MarketParams) external returns (bytes32) envfree;
     function Util.lif(uint256) external returns (uint256) envfree;
     function Util.oraclePriceScale() external returns (uint256) envfree;
     function Util.wad() external returns (uint256) envfree;
 
-    function Morpho._isHealthy(MorphoHarness.MarketParams memory, MorphoHarness.Id, address) internal returns (bool) => NONDET;
-    function Morpho._accrueInterest(MorphoHarness.MarketParams memory, MorphoHarness.Id) internal => NONDET;
+    function Morpho._isHealthy(MorphoHarness.MarketParams memory, bytes32, address) internal returns (bool) => NONDET;
+    function Morpho._accrueInterest(MorphoHarness.MarketParams memory, bytes32) internal => NONDET;
 
     function _.price() external => constantPrice expect uint256;
 }
@@ -31,7 +31,7 @@ rule liquidateImprovePosition(env e, MorphoHarness.MarketParams marketParams, ad
     // Assume no callback.
     require data.length == 0;
 
-    MorphoHarness.Id id = Util.libId(marketParams);
+    bytes32 id = Util.libId(marketParams);
 
     // We place ourselves at the last block for getting the following variables.
     require lastUpdate(id) == e.block.timestamp;
