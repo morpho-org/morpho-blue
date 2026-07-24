@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+// Liveness properties: a user can always exit the market by repaying, withdrawing, or withdrawing collateral.
+
 using Util as Util;
 
 methods {
@@ -41,11 +43,9 @@ function summaryId(MorphoInternalAccess.MarketParams marketParams) returns Morph
 
 function summarySafeTransferFrom(address token, address from, address to, uint256 amount) {
     if (from == currentContract) {
-        // Assert so that the absence of underflow is a proof obligation.
         balance[token] = assert_uint256(balance[token] - amount);
     }
     if (to == currentContract) {
-        // Safe require because an erc20's total supply, which is the sum of balances, fits in uint256.
         balance[token] = require_uint256(balance[token] + amount);
     }
 }
@@ -54,18 +54,13 @@ function min(mathint a, mathint b) returns mathint {
     return a < b ? a : b;
 }
 
-// Assume no fee.
-// Summarize the accrue interest to avoid having to deal with reverts with absurdly high borrow rates.
 function summaryAccrueInterest(env e, MorphoInternalAccess.MarketParams marketParams, MorphoInternalAccess.Id id) {
-    // Safe require because timestamps cannot realistically be that large.
     require e.block.timestamp < 2^128;
     if (e.block.timestamp != lastUpdate(id) && totalBorrowAssets(id) != 0) {
         uint128 interest;
         uint256 supply = totalSupplyAssets(id);
-        // Safe require because tokens should have bounded supply.
         require interest + supply < 2^128;
         uint256 borrow = totalBorrowAssets(id);
-        // Safe require because it is verified in borrowLessThanSupply.
         require borrow <= supply;
         increaseInterest(e, id, interest);
     }
@@ -76,315 +71,23 @@ function summaryAccrueInterest(env e, MorphoInternalAccess.MarketParams marketPa
 definition isCreated(MorphoInternalAccess.Id id) returns bool =
     lastUpdate(id) != 0;
 
-// Check that tokens and shares are properly accounted following a supply.
-rule supplyChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data) {
-    MorphoInternalAccess.Id id = Util.libId(marketParams);
-
-    // Safe require because Morpho cannot call such functions by itself.
-    require currentContract != e.msg.sender;
-    // Assumption to ensure that no interest is accumulated.
-    require lastUpdate(id) == e.block.timestamp;
-
-    mathint sharesBefore = supplyShares(id, onBehalf);
-    mathint balanceBefore = balance[marketParams.loanToken];
-    mathint liquidityBefore = totalSupplyAssets(id) - totalBorrowAssets(id);
-
-    uint256 suppliedAssets;
-    uint256 suppliedShares;
-    suppliedAssets, suppliedShares = supply(e, marketParams, assets, shares, onBehalf, data);
-
-    mathint sharesAfter = supplyShares(id, onBehalf);
-    mathint balanceAfter = balance[marketParams.loanToken];
-    mathint liquidityAfter = totalSupplyAssets(id) - totalBorrowAssets(id);
-
-    assert assets != 0 => suppliedAssets == assets;
-    assert shares != 0 => suppliedShares == shares;
-    assert sharesAfter == sharesBefore + suppliedShares;
-    assert balanceAfter == balanceBefore + suppliedAssets;
-    assert liquidityAfter == liquidityBefore + suppliedAssets;
-}
-
-// Check that you can supply non-zero tokens by passing shares.
-rule canSupplyByPassingShares(env e, MorphoInternalAccess.MarketParams marketParams, uint256 shares, address onBehalf, bytes data) {
-    // Safe require because Morpho cannot call such functions by itself.
-    require currentContract != e.msg.sender;
-    uint256 suppliedAssets;
-    suppliedAssets, _ = supply(e, marketParams, 0, shares, onBehalf, data);
-
-    satisfy suppliedAssets != 0;
-}
-
-// Check that tokens and shares are properly accounted following a withdraw.
-rule withdrawChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, address receiver) {
-    MorphoInternalAccess.Id id = Util.libId(marketParams);
-
-    // Assume that Morpho is not the receiver.
-    require currentContract != receiver;
-    // Assumption to ensure that no interest is accumulated.
-    require lastUpdate(id) == e.block.timestamp;
-
-    mathint sharesBefore = supplyShares(id, onBehalf);
-    mathint balanceBefore = balance[marketParams.loanToken];
-    mathint liquidityBefore = totalSupplyAssets(id) - totalBorrowAssets(id);
-
-    // Assume that the singleton holds enough loan tokens to cover the withdrawal (which is exactly the amount transferred out).
-    // The withdrawn assets are `assets` when passing assets, and toAssetsDown(shares) when passing shares (exactly one of them is non-zero),
-    // so both bounds together cover the transferred amount in either case. Because no interest is accumulated, the virtual totals are unchanged by the call.
-    // Justified by the idleAmountLessThanBalance invariant (ConsistentState.spec): balance[token] >= idleAmount[token] >= withdrawnAssets.
-    require balance[marketParams.loanToken] >= to_mathint(assets);
-    require balance[marketParams.loanToken] >= to_mathint(Util.libMulDivDown(shares, virtualTotalSupplyAssets(id), virtualTotalSupplyShares(id)));
-
-    uint256 withdrawnAssets;
-    uint256 withdrawnShares;
-    withdrawnAssets, withdrawnShares = withdraw(e, marketParams, assets, shares, onBehalf, receiver);
-
-    mathint sharesAfter = supplyShares(id, onBehalf);
-    mathint balanceAfter = balance[marketParams.loanToken];
-    mathint liquidityAfter = totalSupplyAssets(id) - totalBorrowAssets(id);
-
-    assert assets != 0 => withdrawnAssets == assets;
-    assert shares != 0 => withdrawnShares == shares;
-    assert sharesAfter == sharesBefore - withdrawnShares;
-    assert balanceAfter == balanceBefore - withdrawnAssets;
-    assert liquidityAfter == liquidityBefore - withdrawnAssets;
-}
-
-// Check that you can withdraw non-zero tokens by passing shares.
-rule canWithdrawByPassingShares(env e, MorphoInternalAccess.MarketParams marketParams, uint256 shares, address onBehalf, address receiver) {
-    MorphoInternalAccess.Id id = Util.libId(marketParams);
-    // Assumption to ensure that no interest is accumulated.
-    require lastUpdate(id) == e.block.timestamp;
-    // Assume that the singleton holds enough loan tokens to cover the withdrawal (which is exactly the amount transferred out, toAssetsDown(shares)).
-    require balance[marketParams.loanToken] >= to_mathint(Util.libMulDivDown(shares, virtualTotalSupplyAssets(id), virtualTotalSupplyShares(id)));
-    uint256 withdrawnAssets;
-    withdrawnAssets, _ = withdraw(e, marketParams, 0, shares, onBehalf, receiver);
-
-    satisfy withdrawnAssets != 0;
-}
-
-// Check that tokens and shares are properly accounted following a borrow.
-rule borrowChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, address receiver) {
-    MorphoInternalAccess.Id id = Util.libId(marketParams);
-
-    // Assume that Morpho is not the receiver.
-    require currentContract != receiver;
-    // Assumption to ensure that no interest is accumulated.
-    require lastUpdate(id) == e.block.timestamp;
-
-    mathint sharesBefore = borrowShares(id, onBehalf);
-    mathint balanceBefore = balance[marketParams.loanToken];
-    mathint liquidityBefore = totalSupplyAssets(id) - totalBorrowAssets(id);
-
-    // Assume that the singleton holds enough loan tokens to cover the borrow (which is exactly the amount transferred out).
-    // The borrowed assets are `assets` when passing assets, and toAssetsDown(shares) over the borrow totals when passing shares (exactly one of them is non-zero),
-    // so both bounds together cover the transferred amount in either case. Because no interest is accumulated, the virtual totals are unchanged by the call.
-    // Justified by the idleAmountLessThanBalance invariant (ConsistentState.spec): balance[token] >= idleAmount[token] >= borrowedAssets.
-    require balance[marketParams.loanToken] >= to_mathint(assets);
-    require balance[marketParams.loanToken] >= to_mathint(Util.libMulDivDown(shares, virtualTotalBorrowAssets(id), virtualTotalBorrowShares(id)));
-
-    uint256 borrowedAssets;
-    uint256 borrowedShares;
-    borrowedAssets, borrowedShares = borrow(e, marketParams, assets, shares, onBehalf, receiver);
-
-    mathint sharesAfter = borrowShares(id, onBehalf);
-    mathint balanceAfter = balance[marketParams.loanToken];
-    mathint liquidityAfter = totalSupplyAssets(id) - totalBorrowAssets(id);
-
-    assert assets != 0 => borrowedAssets == assets;
-    assert shares != 0 => borrowedShares == shares;
-    assert sharesAfter == sharesBefore + borrowedShares;
-    assert balanceAfter == balanceBefore - borrowedAssets;
-    assert liquidityAfter == liquidityBefore - borrowedAssets;
-}
-
-// Check that you can borrow non-zero tokens by passing shares.
-rule canBorrowByPassingShares(env e, MorphoInternalAccess.MarketParams marketParams, uint256 shares, address onBehalf, address receiver) {
-    MorphoInternalAccess.Id id = Util.libId(marketParams);
-    // Assumption to ensure that no interest is accumulated.
-    require lastUpdate(id) == e.block.timestamp;
-    // Assume that the singleton holds enough loan tokens to cover the borrow (which is exactly the amount transferred out, toAssetsDown(shares) over the borrow totals).
-    require balance[marketParams.loanToken] >= to_mathint(Util.libMulDivDown(shares, virtualTotalBorrowAssets(id), virtualTotalBorrowShares(id)));
-    uint256 borrowedAssets;
-    borrowedAssets, _ = borrow(e, marketParams, 0, shares, onBehalf, receiver);
-
-    satisfy borrowedAssets != 0;
-}
-
-// Check that tokens and shares are properly accounted following a repay.
-rule repayChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data) {
-    MorphoInternalAccess.Id id = Util.libId(marketParams);
-
-    // Safe require because Morpho cannot call such functions by itself.
-    require currentContract != e.msg.sender;
-    // Assumption to ensure that no interest is accumulated.
-    require lastUpdate(id) == e.block.timestamp;
-
-    mathint sharesBefore = borrowShares(id, onBehalf);
-    mathint balanceBefore = balance[marketParams.loanToken];
-    mathint liquidityBefore = totalSupplyAssets(id) - totalBorrowAssets(id);
-
-    mathint borrowAssetsBefore = totalBorrowAssets(id);
-
-    uint256 repaidAssets;
-    uint256 repaidShares;
-    repaidAssets, repaidShares = repay(e, marketParams, assets, shares, onBehalf, data);
-
-    mathint sharesAfter = borrowShares(id, onBehalf);
-    mathint balanceAfter = balance[marketParams.loanToken];
-    mathint liquidityAfter = totalSupplyAssets(id) - totalBorrowAssets(id);
-
-    assert assets != 0 => repaidAssets == assets;
-    assert shares != 0 => repaidShares == shares;
-    assert sharesAfter == sharesBefore - repaidShares;
-    assert balanceAfter == balanceBefore + repaidAssets;
-    // Taking the min to handle the zeroFloorSub in the code.
-    assert liquidityAfter == liquidityBefore + min(repaidAssets, borrowAssetsBefore);
-}
-
-// Check that you can repay non-zero tokens by passing shares.
-rule canRepayByPassingShares(env e, MorphoInternalAccess.MarketParams marketParams, uint256 shares, address onBehalf, bytes data) {
-    // Safe require because Morpho cannot call such functions by itself.
-    require currentContract != e.msg.sender;
-    uint256 repaidAssets;
-    repaidAssets, _ = repay(e, marketParams, 0, shares, onBehalf, data);
-
-    satisfy repaidAssets != 0;
-}
-
-// Check that tokens and balances are properly accounted following a supplyCollateral.
-rule supplyCollateralChangesTokensAndBalance(env e, MorphoInternalAccess.MarketParams marketParams, uint256 assets, address onBehalf, bytes data) {
-    MorphoInternalAccess.Id id = Util.libId(marketParams);
-
-    // Safe require because Morpho cannot call such functions by itself.
-    require currentContract != e.msg.sender;
-
-    mathint collateralBefore = collateral(id, onBehalf);
-    mathint balanceBefore = balance[marketParams.collateralToken];
-
-    supplyCollateral(e, marketParams, assets, onBehalf, data);
-
-    mathint collateralAfter = collateral(id, onBehalf);
-    mathint balanceAfter = balance[marketParams.collateralToken];
-
-    assert collateralAfter == collateralBefore + assets;
-    assert balanceAfter == balanceBefore + assets;
-}
-
-// Check that tokens and balances are properly accounted following a withdrawCollateral.
-rule withdrawCollateralChangesTokensAndBalance(env e, MorphoInternalAccess.MarketParams marketParams, uint256 assets, address onBehalf, address receiver) {
-    MorphoInternalAccess.Id id = Util.libId(marketParams);
-
-    // Assume that Morpho is not the receiver.
-    require currentContract != receiver;
-    // Assumption to ensure that no interest is accumulated.
-    require lastUpdate(id) == e.block.timestamp;
-    // Assume that the singleton holds enough collateral tokens to cover the withdrawal.
-    // Justified by the idleAmountLessThanBalance invariant (ConsistentState.spec): balance[token] >= idleAmount[token] >= assets.
-    require balance[marketParams.collateralToken] >= to_mathint(assets);
-
-    mathint collateralBefore = collateral(id, onBehalf);
-    mathint balanceBefore = balance[marketParams.collateralToken];
-
-    withdrawCollateral(e, marketParams, assets, onBehalf, receiver);
-
-    mathint collateralAfter = collateral(id, onBehalf);
-    mathint balanceAfter = balance[marketParams.collateralToken];
-
-    assert collateralAfter == collateralBefore - assets;
-    assert balanceAfter == balanceBefore - assets;
-}
-
-// Check that tokens are properly accounted following a liquidate.
-rule liquidateChangesTokens(env e, MorphoInternalAccess.MarketParams marketParams, address borrower, uint256 seized, uint256 repaidShares, bytes data) {
-    MorphoInternalAccess.Id id = Util.libId(marketParams);
-
-    // Safe require because Morpho cannot call such functions by itself.
-    require currentContract != e.msg.sender;
-    // Assumption to simplify the balance specification in the rest of this rule.
-    require marketParams.loanToken != marketParams.collateralToken;
-    // Assumption to ensure that no interest is accumulated.
-    require lastUpdate(id) == e.block.timestamp;
-    // Assume that the singleton holds enough collateral tokens to cover the seized assets (which are at most the borrower's collateral).
-    // Justified by the idleAmountLessThanBalance invariant (ConsistentState.spec): balance[token] >= idleAmount[token] >= collateral.
-    require balance[marketParams.collateralToken] >= to_mathint(collateral(id, borrower));
-
-    mathint collateralBefore = collateral(id, borrower);
-    mathint balanceLoanBefore = balance[marketParams.loanToken];
-    mathint balanceCollateralBefore = balance[marketParams.collateralToken];
-    mathint liquidityBefore = totalSupplyAssets(id) - totalBorrowAssets(id);
-
-    mathint borrowLoanAssetsBefore = totalBorrowAssets(id);
-
-    uint256 seizedAssets;
-    uint256 repaidAssets;
-    seizedAssets, repaidAssets = liquidate(e, marketParams, borrower, seized, repaidShares, data);
-
-    mathint collateralAfter = collateral(id, borrower);
-    mathint balanceLoanAfter = balance[marketParams.loanToken];
-    mathint balanceCollateralAfter = balance[marketParams.collateralToken];
-    mathint liquidityAfter = totalSupplyAssets(id) - totalBorrowAssets(id);
-
-    assert seized != 0 => seizedAssets == seized;
-    assert collateralBefore > to_mathint(seizedAssets) => collateralAfter == collateralBefore - seizedAssets;
-    assert balanceLoanAfter == balanceLoanBefore + repaidAssets;
-    assert balanceCollateralAfter == balanceCollateralBefore - seizedAssets;
-    // Taking the min to handle the zeroFloorSub in the code.
-    assert liquidityAfter == liquidityBefore + min(repaidAssets, borrowLoanAssetsBefore);
-}
-
-// Check that you can liquidate non-zero tokens by passing shares.
-rule canLiquidateByPassingShares(env e, MorphoInternalAccess.MarketParams marketParams, address borrower, uint256 repaidShares, bytes data) {
-    MorphoInternalAccess.Id id = Util.libId(marketParams);
-    // Safe require because Morpho cannot call such functions by itself.
-    require currentContract != e.msg.sender;
-    // Assume that the singleton holds enough collateral tokens to cover the seized assets (which are at most the borrower's collateral).
-    // Justified by the idleAmountLessThanBalance invariant (ConsistentState.spec): balance[token] >= idleAmount[token] >= collateral.
-    require balance[marketParams.collateralToken] >= to_mathint(collateral(id, borrower));
-    uint256 seizedAssets;
-    uint256 repaidAssets;
-    seizedAssets, repaidAssets = liquidate(e, marketParams, borrower, 0, repaidShares,  data);
-
-    satisfy seizedAssets != 0 && repaidAssets != 0;
-}
-
-// Check that nonce and authorization are properly updated with calling setAuthorizationWithSig.
-rule setAuthorizationWithSigChangesNonceAndAuthorizes(env e, MorphoInternalAccess.Authorization authorization, MorphoInternalAccess.Signature signature) {
-    mathint nonceBefore = nonce(authorization.authorizer);
-
-    setAuthorizationWithSig(e, authorization, signature);
-
-    mathint nonceAfter = nonce(authorization.authorizer);
-
-    assert nonceAfter == nonceBefore + 1;
-    assert isAuthorized(authorization.authorizer, authorization.authorized) == authorization.isAuthorized;
-}
-
 // Check that one can always repay the debt in full.
 rule canRepayAll(env e, MorphoInternalAccess.MarketParams marketParams, uint256 shares, bytes data) {
     MorphoInternalAccess.Id id = Util.libId(marketParams);
 
-    // Assume no callback, which still allows to repay all.
     require data.length == 0;
 
-    // Assume a full repay.
     require shares == borrowShares(id, e.msg.sender);
-    // Omit sanity checks.
     require isCreated(id);
     require e.msg.sender != 0;
-    // Safe require because Morpho cannot call such functions by itself.
     require currentContract != e.msg.sender;
     require e.msg.value == 0;
     require shares > 0;
-    // Safe require because of the noTimeTravel rule.
     require lastUpdate(id) <= e.block.timestamp;
-    // Safe require because of the sumBorrowSharesCorrect invariant.
     require shares <= totalBorrowShares(id);
 
-    // Accrue interest first to ensure that the accrued interest is reasonable (next require).
-    // Safe because of the AccrueInterest.repayAccruesInterest rule
     summaryAccrueInterest(e, marketParams, id);
 
-    // Assume that the invariant about tokens total supply is respected.
     require totalBorrowAssets(id) < 10^35;
 
     repay@withrevert(e, marketParams, 0, shares, e.msg.sender, data);
@@ -396,28 +99,19 @@ rule canRepayAll(env e, MorphoInternalAccess.MarketParams marketParams, uint256 
 rule canWithdrawAll(env e, MorphoInternalAccess.MarketParams marketParams, uint256 shares, address receiver) {
     MorphoInternalAccess.Id id = Util.libId(marketParams);
 
-    // Assume a full withdraw.
     require shares == supplyShares(id, e.msg.sender);
-    // Omit sanity checks.
     require isCreated(id);
     require e.msg.sender != 0;
     require receiver != 0;
     require e.msg.value == 0;
     require shares > 0;
-    // Safe require because of the noTimeTravel rule.
     require lastUpdate(id) <= e.block.timestamp;
-    // Safe require because of the sumSupplySharesCorrect invariant.
     require shares <= totalSupplyShares(id);
-    // Assume that the singleton holds enough loan tokens to cover the withdrawal (which is at most totalSupplyAssets).
-    // Justified by the idleAmountLessThanBalance invariant (ConsistentState.spec): balance[token] >= idleAmount[token] >= totalSupplyAssets.
     require balance[marketParams.loanToken] >= to_mathint(totalSupplyAssets(id));
 
-    // Accrue interest first, for the shares -> assets conversion below.
-    // Safe because of the AccrueInterest.withdrawAccruesInterest rule, and because `_accrueInterest` is already summarized like so in this file.
     summaryAccrueInterest(e, marketParams, id);
 
     uint256 assets = Util.libMulDivDown(shares, virtualTotalSupplyAssets(id), virtualTotalSupplyShares(id));
-    // Assume the market has enough liquidity to cover the withdrawal: exactly the condition under which withdraw's INSUFFICIENT_LIQUIDITY check passes.
     require assets <= totalSupplyAssets(id) - totalBorrowAssets(id);
 
     withdraw@withrevert(e, marketParams, 0, shares, e.msg.sender, receiver);
@@ -430,19 +124,13 @@ rule canWithdrawAll(env e, MorphoInternalAccess.MarketParams marketParams, uint2
 rule canWithdrawCollateralAll(env e, MorphoInternalAccess.MarketParams marketParams, uint256 assets, address receiver) {
     MorphoInternalAccess.Id id = Util.libId(marketParams);
 
-    // Ensure a full withdrawCollateral.
     require assets == collateral(id, e.msg.sender);
-    // Omit sanity checks.
     require isCreated(id);
     require receiver != 0;
     require e.msg.value == 0;
     require assets > 0;
-    // Safe require because of the noTimeTravel rule.
     require lastUpdate(id) <= e.block.timestamp;
-    // Assume that the user does not have an outstanding debt.
     require borrowShares(id, e.msg.sender) == 0;
-    // Assume that the singleton holds enough collateral tokens to cover the withdrawal.
-    // Justified by the idleAmountLessThanBalance invariant (ConsistentState.spec): balance[token] >= idleAmount[token] >= assets.
     require balance[marketParams.collateralToken] >= to_mathint(assets);
 
     withdrawCollateral@withrevert(e, marketParams, assets, e.msg.sender, receiver);

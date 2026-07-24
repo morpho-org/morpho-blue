@@ -23,6 +23,7 @@ jobs:
           - LibSummary
           - LiquidateBuffer
           - Liveness
+          - Reachability
           - Reentrancy
           - Reverts
           - StayHealthy
