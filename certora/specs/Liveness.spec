@@ -47,7 +47,7 @@ function summarySafeTransferFrom(address token, address from, address to, uint25
         balance[token] = assert_uint256(balance[token] - amount);
     }
     if (to == currentContract) {
-        // Safe require because the reference implementation would revert.
+        // Safe require as the sum of balances is equal to totalSupply <= type(uint256).max.
         balance[token] = require_uint256(balance[token] + amount);
     }
 }
