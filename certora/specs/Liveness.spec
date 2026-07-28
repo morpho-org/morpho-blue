@@ -104,7 +104,7 @@ rule canRepayAll(env e, MorphoInternalAccess.MarketParams marketParams, uint256 
     assert !lastReverted;
 }
 
-// Check the one can always withdraw all, under the condition that there are no outstanding debt on the market.
+// Check the one can always withdraw all, under the condition that there is enough liquidity on the market to cover the withdrawal.
 rule canWithdrawAll(env e, MorphoInternalAccess.MarketParams marketParams, uint256 shares, address receiver) {
     MorphoInternalAccess.Id id = Util.libId(marketParams);
 
@@ -120,8 +120,8 @@ rule canWithdrawAll(env e, MorphoInternalAccess.MarketParams marketParams, uint2
     require lastUpdate(id) <= e.block.timestamp;
     // Safe require because of the sumSupplySharesCorrect invariant.
     require shares <= totalSupplyShares(id);
-    // Assume that the singleton holds enough tokens to cover the withdrawal, which is at most totalSupplyAssets. Justified by the idleAmountLessThanBalance invariant (ConsistentState.spec).
-    require balance[marketParams.loanToken] >= totalSupplyAssets(id);
+    // Justified by the idleAmountLessThanBalance invariant (ConsistentState.spec), since idle amount includes total supply assets minus total borrow assets.
+    require balance[marketParams.loanToken] >= totalSupplyAssets(id) - totalBorrowAssets(id);
 
     // Accrue interest first, for the shares -> assets conversion below.
     // Safe because of the AccrueInterest.withdrawAccruesInterest rule, and because `_accrueInterest` is already summarized like so in this file.
@@ -152,7 +152,7 @@ rule canWithdrawCollateralAll(env e, MorphoInternalAccess.MarketParams marketPar
     require lastUpdate(id) <= e.block.timestamp;
     // Assume that the user does not have an outstanding debt.
     require borrowShares(id, e.msg.sender) == 0;
-    // Assume that the singleton holds enough collateral tokens to cover the withdrawal. Justified by the idleAmountLessThanBalance invariant (ConsistentState.spec).
+    // Justified by the idleAmountLessThanBalance invariant (ConsistentState.spec), since idle amount includes the sum of all the collateral on the market.
     require balance[marketParams.collateralToken] >= assets;
 
     withdrawCollateral@withrevert(e, marketParams, assets, e.msg.sender, receiver);
