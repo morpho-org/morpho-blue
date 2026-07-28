@@ -8,19 +8,13 @@ methods {
     function borrowShares(MorphoInternalAccess.Id, address) external returns uint256 envfree;
     function collateral(MorphoInternalAccess.Id, address) external returns uint256 envfree;
     function totalSupplyAssets(MorphoInternalAccess.Id) external returns uint256 envfree;
-    function totalSupplyShares(MorphoInternalAccess.Id) external returns uint256 envfree;
-    function virtualTotalSupplyAssets(MorphoInternalAccess.Id) external returns uint256 envfree;
-    function virtualTotalSupplyShares(MorphoInternalAccess.Id) external returns uint256 envfree;
     function totalBorrowAssets(MorphoInternalAccess.Id) external returns uint256 envfree;
-    function totalBorrowShares(MorphoInternalAccess.Id) external returns uint256 envfree;
-    function fee(MorphoInternalAccess.Id) external returns uint256 envfree;
     function lastUpdate(MorphoInternalAccess.Id) external returns uint256 envfree;
     function nonce(address) external returns uint256 envfree;
     function isAuthorized(address, address) external returns bool envfree;
 
     function Util.libId(MorphoInternalAccess.MarketParams) external returns MorphoInternalAccess.Id envfree;
     function Util.refId(MorphoInternalAccess.MarketParams) external returns MorphoInternalAccess.Id envfree;
-    function Util.libMulDivDown(uint256 x, uint256 y, uint256 d) external returns uint256 envfree;
 
     function _._accrueInterest(MorphoInternalAccess.MarketParams memory marketParams, MorphoInternalAccess.Id id) internal with (env e) => summaryAccrueInterest(e, marketParams, id) expect void;
 
@@ -29,9 +23,7 @@ methods {
     function SafeTransferLib.safeTransferFrom(address token, address from, address to, uint256 value) internal => summarySafeTransferFrom(token, from, to, value);
 }
 
-persistent ghost mapping(address => mathint) balance {
-    init_state axiom (forall address token. balance[token] == 0);
-}
+persistent ghost mapping(address => uint256) balance;
 
 function summaryId(MorphoInternalAccess.MarketParams marketParams) returns MorphoInternalAccess.Id {
     return Util.refId(marketParams);
@@ -70,9 +62,6 @@ function summaryAccrueInterest(env e, MorphoInternalAccess.MarketParams marketPa
 
     update(e, id, e.block.timestamp);
 }
-
-definition isCreated(MorphoInternalAccess.Id id) returns bool =
-    lastUpdate(id) != 0;
 
 // Check that tokens and shares are properly accounted following a supply.
 rule supplyChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data) {
@@ -289,7 +278,7 @@ rule liquidateChangesTokens(env e, MorphoInternalAccess.MarketParams marketParam
     mathint liquidityAfter = totalSupplyAssets(id) - totalBorrowAssets(id);
 
     assert seized != 0 => seizedAssets == seized;
-    assert collateralBefore > to_mathint(seizedAssets) => collateralAfter == collateralBefore - seizedAssets;
+    assert collateralBefore > seizedAssets => collateralAfter == collateralBefore - seizedAssets;
     assert balanceLoanAfter == balanceLoanBefore + repaidAssets;
     assert balanceCollateralAfter == balanceCollateralBefore - seizedAssets;
     // Taking the min to handle the zeroFloorSub in the code.
