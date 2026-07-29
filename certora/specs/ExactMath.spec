@@ -13,6 +13,7 @@ methods {
     function virtualTotalBorrowAssets(MorphoHarness.Id) external returns uint256 envfree;
     function virtualTotalBorrowShares(MorphoHarness.Id) external returns uint256 envfree;
     function totalSupplyAssets(MorphoHarness.Id) external returns uint256 envfree;
+    function totalSupplyShares(MorphoHarness.Id) external returns uint256 envfree;
     function totalBorrowAssets(MorphoHarness.Id) external returns uint256 envfree;
     function lastUpdate(MorphoHarness.Id) external returns uint256 envfree;
     function fee(MorphoHarness.Id) external returns uint256 envfree;
@@ -120,7 +121,10 @@ rule expectedAssetsAreWithdrawable(env e, MorphoHarness.MarketParams marketParam
     require virtualTotalSupplyAssets(id) <= virtualTotalSupplyShares(id);
 
     uint256 owned = expectedSupplyAssets(id, onBehalf);
-    require owned > 0;
+    // Withdrawing a positive amount (owned - 1 >= 1).
+    require owned > 1;
+    // Safe require because of the sumSupplySharesCorrect invariant.
+    require supplyShares(id, onBehalf) <= totalSupplyShares(id);
 
     // The caller withdraws on their own behalf.
     require e.msg.sender == onBehalf;
