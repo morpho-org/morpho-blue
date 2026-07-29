@@ -82,6 +82,44 @@ rule supplyWithdraw() {
     assert withdrawnAssets <= suppliedAssets;
 }
 
+// Under a share price of at most 1, supplying then immediately withdrawing loses at most 1 asset to rounding.
+rule supplyLossBoundedByOneWhenPriceBelowOne() {
+    MorphoHarness.MarketParams marketParams;
+    MorphoHarness.Id id = Util.libId(marketParams);
+    env e1;
+    env e2;
+    address onBehalf;
+    address receiver;
+    uint256 supplyAssets;
+    bytes data;
+
+    // Assume that interactions happen at the same block.
+    require e1.block.timestamp == e2.block.timestamp;
+    // Assume that the user starts without any supply position.
+    require supplyShares(id, onBehalf) == 0;
+    // Assume that the user is not the fee recipient, otherwise the gain can come from the fee.
+    require onBehalf != feeRecipient();
+    // Safe require because timestamps cannot realistically be that large.
+    require e1.block.timestamp < 2^128;
+    // No interest accrual so the price assumption holds at supply time.
+    require lastUpdate(id) == e1.block.timestamp;
+    // Share price is at most 1.
+    require virtualTotalSupplyAssets(id) <= virtualTotalSupplyShares(id);
+
+    uint256 suppliedAssets;
+    uint256 suppliedShares;
+    suppliedAssets, suppliedShares = supply(e1, marketParams, supplyAssets, 0, onBehalf, data);
+
+    // Hints for the prover.
+    assert suppliedShares * virtualTotalSupplyAssets(id) <= suppliedAssets * virtualTotalSupplyShares(id);
+    assert suppliedShares * (virtualTotalSupplyAssets(id) - suppliedAssets) <= suppliedAssets * (virtualTotalSupplyShares(id) - suppliedShares);
+
+    uint256 withdrawnAssets;
+    withdrawnAssets, _ = withdraw(e2, marketParams, 0, suppliedShares, onBehalf, receiver);
+
+    assert withdrawnAssets + 1 >= suppliedAssets;
+}
+
 // There should be no profit from borrow followed immediately by repaying all.
 rule borrowRepay() {
     MorphoHarness.MarketParams marketParams;
