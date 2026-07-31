@@ -125,7 +125,12 @@ rule withdrawExpectedAssetsLossBounded(env e, MorphoHarness.MarketParams marketP
     mathint expectedAssetsBefore = expectedSupplyAssets(id, onBehalf);
 
     uint256 withdrawnAssets;
-    withdrawnAssets, _ = withdraw(e, marketParams, assets, shares, onBehalf, receiver);
+    uint256 withdrawnShares;
+    withdrawnAssets, withdrawnShares = withdraw(e, marketParams, assets, shares, onBehalf, receiver);
+
+    // Hints for the prover.
+    assert withdrawnAssets * (virtualTotalSupplyShares(id) - withdrawnShares) <= withdrawnShares * (virtualTotalSupplyAssets(id) - withdrawnAssets);
+    assert withdrawnAssets * virtualTotalSupplyShares(id) <= withdrawnShares * virtualTotalSupplyAssets(id);
 
     assert expectedSupplyAssets(id, onBehalf) + withdrawnAssets + 1 >= expectedAssetsBefore;
 }
