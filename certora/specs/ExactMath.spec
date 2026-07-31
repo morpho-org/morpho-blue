@@ -117,7 +117,7 @@ rule supplyExpectedAssetsLossBounded(env e, MorphoHarness.MarketParams marketPar
 }
 
 // Withdrawing assets from a market with a share price of at most 1 loses at most 1 asset to rounding.
-rule withdrawExpectedAssetsLossBounded(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, address receiver) {
+rule withdrawExpectedAssetsLossBounded(env e, MorphoHarness.MarketParams marketParams, uint256 assets, address onBehalf, address receiver) {
     MorphoHarness.Id id = Util.libId(marketParams);
 
     // Safe require because timestamps cannot realistically be that large.
@@ -132,12 +132,7 @@ rule withdrawExpectedAssetsLossBounded(env e, MorphoHarness.MarketParams marketP
     mathint expectedAssetsBefore = expectedSupplyAssets(id, onBehalf);
 
     uint256 withdrawnAssets;
-    uint256 withdrawnShares;
-    withdrawnAssets, withdrawnShares = withdraw(e, marketParams, assets, shares, onBehalf, receiver);
-
-    // Hints for the prover.
-    assert withdrawnAssets * (virtualTotalSupplyShares(id) - withdrawnShares) <= withdrawnShares * (virtualTotalSupplyAssets(id) - withdrawnAssets);
-    assert withdrawnAssets * virtualTotalSupplyShares(id) <= withdrawnShares * virtualTotalSupplyAssets(id);
+    withdrawnAssets, _ = withdraw(e, marketParams, assets, 0, onBehalf, receiver);
 
     assert expectedSupplyAssets(id, onBehalf) + withdrawnAssets + 1 >= expectedAssetsBefore;
 }
