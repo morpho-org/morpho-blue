@@ -12,9 +12,6 @@ methods {
     function virtualTotalSupplyShares(MorphoHarness.Id) external returns uint256 envfree;
     function virtualTotalBorrowAssets(MorphoHarness.Id) external returns uint256 envfree;
     function virtualTotalBorrowShares(MorphoHarness.Id) external returns uint256 envfree;
-    function totalSupplyAssets(MorphoHarness.Id) external returns uint256 envfree;
-    function totalSupplyShares(MorphoHarness.Id) external returns uint256 envfree;
-    function totalBorrowAssets(MorphoHarness.Id) external returns uint256 envfree;
     function lastUpdate(MorphoHarness.Id) external returns uint256 envfree;
     function fee(MorphoHarness.Id) external returns uint256 envfree;
 
@@ -98,47 +95,30 @@ rule supplyWithdraw() {
 rule supplyExpectedAssetsLossBounded(env e, MorphoHarness.MarketParams marketParams, uint256 assets, address onBehalf, bytes data) {
     MorphoHarness.Id id = Util.libId(marketParams);
 
-    // No interest accrual, so the price assumption holds at the moment shares are minted.
-    require lastUpdate(id) == e.block.timestamp;
     // Share price is at most 1.
     require virtualTotalSupplyAssets(id) <= virtualTotalSupplyShares(id);
-    // Fresh position, so the resulting value is exactly the value of the supplied assets.
-    require supplyShares(id, onBehalf) == 0;
+
+    mathint expectedAssetsBefore = expectedSupplyAssets(id, onBehalf);
 
     uint256 suppliedAssets;
     suppliedAssets, _ = supply(e, marketParams, assets, 0, onBehalf, data);
 
-    assert expectedSupplyAssets(id, onBehalf) + 1 >= suppliedAssets;
+    assert expectedSupplyAssets(id, onBehalf) + 1 >= expectedAssetsBefore + suppliedAssets;
 }
 
-// A supply position worth x assets can be withdrawn down to at most 1 asset of rounding.
-rule expectedAssetsAreWithdrawable(env e, MorphoHarness.MarketParams marketParams, address onBehalf, address receiver) {
+// Withdrawing assets from a market with a share price of at most 1 loses at most 1 asset to rounding.
+rule withdrawExpectedAssetsLossBounded(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, address receiver) {
     MorphoHarness.Id id = Util.libId(marketParams);
 
-    // No interest accrual.
-    require lastUpdate(id) == e.block.timestamp;
     // Share price is at most 1.
     require virtualTotalSupplyAssets(id) <= virtualTotalSupplyShares(id);
 
-    uint256 owned = expectedSupplyAssets(id, onBehalf);
-    // Withdrawing a positive amount (owned - 1 >= 1).
-    require owned > 1;
-    // Safe require because of the sumSupplySharesCorrect invariant.
-    require supplyShares(id, onBehalf) <= totalSupplyShares(id);
+    mathint expectedAssetsBefore = expectedSupplyAssets(id, onBehalf);
 
-    // The caller withdraws on their own behalf.
-    require e.msg.sender == onBehalf;
-    // Omit sanity checks, mirroring canWithdrawAll in Liveness.spec.
-    require receiver != 0;
-    require e.msg.value == 0;
-    // The market is created, safe because the position holds shares.
-    require lastUpdate(id) != 0;
-    // The market has enough idle liquidity to cover the withdrawal, exactly withdraw's INSUFFICIENT_LIQUIDITY condition.
-    require owned - 1 <= totalSupplyAssets(id) - totalBorrowAssets(id);
+    uint256 withdrawnAssets;
+    withdrawnAssets, _ = withdraw(e, marketParams, assets, shares, onBehalf, receiver);
 
-    withdraw@withrevert(e, marketParams, assert_uint256(owned - 1), 0, onBehalf, receiver);
-
-    assert !lastReverted;
+    assert expectedSupplyAssets(id, onBehalf) + withdrawnAssets + 1 >= expectedAssetsBefore;
 }
 
 // There should be no profit from borrow followed immediately by repaying all.
