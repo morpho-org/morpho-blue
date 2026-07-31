@@ -99,6 +99,9 @@ rule supplyWithdraw() {
 rule supplyExpectedAssetsLossBounded(env e, MorphoHarness.MarketParams marketParams, uint256 assets, address onBehalf, bytes data) {
     MorphoHarness.Id id = Util.libId(marketParams);
 
+    // Safe require because timestamps cannot realistically be that large.
+    require e.block.timestamp < 2^128;
+
     // Accrue interest up front so the price bound and expected assets are evaluated at mint time.
     accrueInterest(e, marketParams);
 
@@ -116,6 +119,9 @@ rule supplyExpectedAssetsLossBounded(env e, MorphoHarness.MarketParams marketPar
 // Withdrawing assets from a market with a share price of at most 1 loses at most 1 asset to rounding.
 rule withdrawExpectedAssetsLossBounded(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, address receiver) {
     MorphoHarness.Id id = Util.libId(marketParams);
+
+    // Safe require because timestamps cannot realistically be that large.
+    require e.block.timestamp < 2^128;
 
     // Accrue interest up front so the price bound and expected assets are evaluated at burn time.
     accrueInterest(e, marketParams);
