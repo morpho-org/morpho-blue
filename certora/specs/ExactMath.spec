@@ -94,6 +94,8 @@ rule supplyWithdraw() {
 // Supplying assets into a market with a share price of at most 1 loses at most 1 asset to rounding.
 rule supplyExpectedAssetsLossBounded(env e, MorphoHarness.MarketParams marketParams, uint256 assets, address onBehalf, bytes data) {
     MorphoHarness.Id id = Util.libId(marketParams);
+    // No interest accrual, so the price assumption holds when shares are minted.
+    require lastUpdate(id) == e.block.timestamp;
 
     // Share price is at most 1.
     require virtualTotalSupplyAssets(id) <= virtualTotalSupplyShares(id);
@@ -109,6 +111,8 @@ rule supplyExpectedAssetsLossBounded(env e, MorphoHarness.MarketParams marketPar
 // Withdrawing assets from a market with a share price of at most 1 loses at most 1 asset to rounding.
 rule withdrawExpectedAssetsLossBounded(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, address receiver) {
     MorphoHarness.Id id = Util.libId(marketParams);
+    // No interest accrual, so the price assumption holds when shares are burned.
+    require lastUpdate(id) == e.block.timestamp;
 
     // Share price is at most 1.
     require virtualTotalSupplyAssets(id) <= virtualTotalSupplyShares(id);
