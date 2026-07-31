@@ -25,6 +25,7 @@ methods {
 
     // Summarize the IRM's borrowRate return-only so that the external call in _accrueInterest does not havoc Morpho storage.
     function _.borrowRate(MorphoHarness.MarketParams, MorphoHarness.Market) external => NONDET;
+    function MathLib.wTaylorCompounded(uint256, uint256) internal returns uint256 => NONDET;
 }
 
 function expectedSupplyAssets(MorphoHarness.Id id, address user) returns uint256 {
