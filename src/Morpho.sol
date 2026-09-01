@@ -375,7 +375,8 @@ contract Morpho is IMorphoStaticTyping {
                     .toSharesUp(market[id].totalBorrowAssets, market[id].totalBorrowShares);
             } else {
                 seizedAssets = repaidShares.toAssetsDown(market[id].totalBorrowAssets, market[id].totalBorrowShares)
-                    .wMulDown(liquidationIncentiveFactor).mulDivDown(ORACLE_PRICE_SCALE, collateralPrice);
+                    .wMulDown(liquidationIncentiveFactor)
+                    .mulDivDown(ORACLE_PRICE_SCALE, collateralPrice);
             }
         }
         uint256 repaidAssets = repaidShares.toAssetsUp(market[id].totalBorrowAssets, market[id].totalBorrowShares);
@@ -530,7 +531,8 @@ contract Morpho is IMorphoStaticTyping {
     {
         uint256 borrowed = uint256(position[id][borrower].borrowShares)
             .toAssetsUp(market[id].totalBorrowAssets, market[id].totalBorrowShares);
-        uint256 maxBorrow = uint256(position[id][borrower].collateral).mulDivDown(collateralPrice, ORACLE_PRICE_SCALE)
+        uint256 maxBorrow = uint256(position[id][borrower].collateral)
+            .mulDivDown(collateralPrice, ORACLE_PRICE_SCALE)
             .wMulDown(marketParams.lltv);
 
         return maxBorrow >= borrowed;

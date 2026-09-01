@@ -354,7 +354,8 @@ contract BaseTest is Test {
         Id _id = _marketParams.id();
 
         uint256 collateralPrice = IOracle(_marketParams.oracle).price();
-        uint256 maxRepaidAssets = morpho.collateral(_id, borrower).mulDivDown(collateralPrice, ORACLE_PRICE_SCALE)
+        uint256 maxRepaidAssets = morpho.collateral(_id, borrower)
+            .mulDivDown(collateralPrice, ORACLE_PRICE_SCALE)
             .wDivDown(_liquidationIncentiveFactor(_marketParams.lltv));
 
         (,, uint256 totalBorrowAssets, uint256 totalBorrowShares) = morpho.expectedMarketBalances(_marketParams);
