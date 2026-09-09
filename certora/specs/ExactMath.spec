@@ -17,10 +17,23 @@ methods {
 
     function Util.maxFee() external returns uint256 envfree;
     function Util.libId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
+    function Util.libMulDivDown(uint256, uint256, uint256) external returns uint256 envfree;
 
+    function MathLib.wTaylorCompounded(uint256, uint256) internal returns uint256 => NONDET;
     function SafeTransferLib.safeTransfer(address token, address to, uint256 value) internal => NONDET;
     function SafeTransferLib.safeTransferFrom(address token, address from, address to, uint256 value) internal => NONDET;
     function _.onMorphoSupply(uint256 assets, bytes data) external => HAVOC_ECF;
+
+    // Summarize the IRM's borrowRate return-only so that the external call in _accrueInterest does not havoc Morpho storage.
+    function _.borrowRate(MorphoHarness.MarketParams, MorphoHarness.Market) external => NONDET;
+}
+
+function expectedSupplyAssets(MorphoHarness.Id id, address user) returns uint256 {
+    uint256 userShares = supplyShares(id, user);
+    uint256 totalSupplyAssets = virtualTotalSupplyAssets(id);
+    uint256 totalSupplyShares = virtualTotalSupplyShares(id);
+
+    return Util.libMulDivDown(userShares, totalSupplyAssets, totalSupplyShares);
 }
 
 // Check that when not accruing interest, and when repaying all, the borrow exchange rate is at least reset to the initial exchange rate.
@@ -80,6 +93,46 @@ rule supplyWithdraw() {
     withdrawnAssets, _ = withdraw(e2, marketParams, withdrawAssets, withdrawShares, onBehalf, receiver);
 
     assert withdrawnAssets <= suppliedAssets;
+}
+
+// Supplying assets into a market with a share price of at most 1 loses at most 1 asset to rounding.
+rule supplyExpectedAssetsLossBounded(env e, MorphoHarness.MarketParams marketParams, uint256 suppliedAssets, address onBehalf, bytes data) {
+    MorphoHarness.Id id = Util.libId(marketParams);
+
+    // Safe require because timestamps cannot realistically be that large.
+    require e.block.timestamp < 2^128;
+
+    // Accrue interest up front so the price bound and expected assets are evaluated at supply time.
+    accrueInterest(e, marketParams);
+
+    // Share price is at most 1.
+    require virtualTotalSupplyAssets(id) <= virtualTotalSupplyShares(id);
+
+    mathint expectedAssetsBefore = expectedSupplyAssets(id, onBehalf);
+
+    supply(e, marketParams, suppliedAssets, 0, onBehalf, data);
+
+    assert expectedSupplyAssets(id, onBehalf) + 1 >= expectedAssetsBefore + suppliedAssets;
+}
+
+// Withdrawing assets from a market with a share price of at most 1 loses at most 1 asset to rounding.
+rule withdrawExpectedAssetsLossBounded(env e, MorphoHarness.MarketParams marketParams, uint256 withdrawnAssets, address onBehalf, address receiver) {
+    MorphoHarness.Id id = Util.libId(marketParams);
+
+    // Safe require because timestamps cannot realistically be that large.
+    require e.block.timestamp < 2^128;
+
+    // Accrue interest up front so the price bound and expected assets are evaluated at withdraw time.
+    accrueInterest(e, marketParams);
+
+    // Share price is at most 1.
+    require virtualTotalSupplyAssets(id) <= virtualTotalSupplyShares(id);
+
+    mathint expectedAssetsBefore = expectedSupplyAssets(id, onBehalf);
+
+    withdraw(e, marketParams, withdrawnAssets, 0, onBehalf, receiver);
+
+    assert expectedSupplyAssets(id, onBehalf) + withdrawnAssets + 1 >= expectedAssetsBefore;
 }
 
 // There should be no profit from borrow followed immediately by repaying all.
