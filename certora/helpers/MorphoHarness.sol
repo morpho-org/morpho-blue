@@ -1,14 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity 0.8.19;
 
-import "../../src/Morpho.sol";
-import "../../src/libraries/SharesMathLib.sol";
-import "../../src/libraries/MarketParamsLib.sol";
+import "../../src/MorphoBlueReconstruction.sol";
 
-contract MorphoHarness is Morpho {
-    using MarketParamsLib for MarketParams;
-
-    constructor(address newOwner) Morpho(newOwner) {}
+contract MorphoHarness is MorphoBlueReconstruction {
+    constructor(address newOwner) MorphoBlueReconstruction(newOwner) {}
 
     function idToMarketParams_(Id id) external view returns (MarketParams memory) {
         return idToMarketParams[id];
@@ -59,22 +55,22 @@ contract MorphoHarness is Morpho {
     }
 
     function virtualTotalSupplyAssets(Id id) external view returns (uint256) {
-        return market[id].totalSupplyAssets + SharesMathLib.VIRTUAL_ASSETS;
+        return market[id].totalSupplyAssets + ReconstructedMath.VIRTUAL_ASSETS;
     }
 
     function virtualTotalSupplyShares(Id id) external view returns (uint256) {
-        return market[id].totalSupplyShares + SharesMathLib.VIRTUAL_SHARES;
+        return market[id].totalSupplyShares + ReconstructedMath.VIRTUAL_SHARES;
     }
 
     function virtualTotalBorrowAssets(Id id) external view returns (uint256) {
-        return market[id].totalBorrowAssets + SharesMathLib.VIRTUAL_ASSETS;
+        return market[id].totalBorrowAssets + ReconstructedMath.VIRTUAL_ASSETS;
     }
 
     function virtualTotalBorrowShares(Id id) external view returns (uint256) {
-        return market[id].totalBorrowShares + SharesMathLib.VIRTUAL_SHARES;
+        return market[id].totalBorrowShares + ReconstructedMath.VIRTUAL_SHARES;
     }
 
     function isHealthy(MarketParams memory marketParams, address user) external view returns (bool) {
-        return _isHealthy(marketParams, marketParams.id(), user);
+        return _isHealthy(marketParams, _id(marketParams), user);
     }
 }

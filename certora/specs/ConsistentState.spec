@@ -25,12 +25,12 @@ methods {
     function Util.libId(MorphoHarness.MarketParams) external returns (MorphoHarness.Id) envfree;
 
     // Over-approximate pure function.
-    function UtilsLib.min(uint256, uint256) internal returns (uint256) => NONDET;
+    function ReconstructedMath.min(uint256, uint256) internal returns (uint256) => NONDET;
 
     function _.borrowRate(MorphoHarness.MarketParams, MorphoHarness.Market) external => HAVOC_ECF;
 
-    function SafeTransferLib.safeTransfer(address token, address to, uint256 value) internal => summarySafeTransferFrom(token, currentContract, to, value);
-    function SafeTransferLib.safeTransferFrom(address token, address from, address to, uint256 value) internal => summarySafeTransferFrom(token, from, to, value);
+    function ReconstructedTokenTransfers.safeTransfer(address token, address to, uint256 value) internal => summarySafeTransferFrom(token, currentContract, to, value);
+    function ReconstructedTokenTransfers.safeTransferFrom(address token, address from, address to, uint256 value) internal => summarySafeTransferFrom(token, from, to, value);
 }
 
 persistent ghost mapping(MorphoHarness.Id => mathint) sumSupplyShares {

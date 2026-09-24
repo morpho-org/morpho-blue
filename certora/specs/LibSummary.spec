@@ -12,13 +12,13 @@ methods {
     function Util.libMin(uint256 x, uint256 y) external returns uint256 envfree;
 }
 
-// Check the summary of MathLib.mulDivUp required by ExchangeRate.spec
+// Check the summary of ReconstructedMath.mulDivUp required by ExchangeRate.spec
 rule checkSummaryMulDivUp(uint256 x, uint256 y, uint256 d) {
     uint256 result = Util.libMulDivUp(x, y, d);
     assert result * d >= x * y;
 }
 
-// Check the summary of MathLib.mulDivDown required by ExchangeRate.spec
+// Check the summary of ReconstructedMath.mulDivDown required by ExchangeRate.spec
 rule checkSummaryMulDivDown(uint256 x, uint256 y, uint256 d) {
     uint256 result = Util.libMulDivDown(x, y, d);
     assert result * d <= x * y;

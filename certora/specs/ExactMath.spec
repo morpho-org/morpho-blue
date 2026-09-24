@@ -19,9 +19,9 @@ methods {
     function Util.libId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
     function Util.libMulDivDown(uint256, uint256, uint256) external returns uint256 envfree;
 
-    function MathLib.wTaylorCompounded(uint256, uint256) internal returns uint256 => NONDET;
-    function SafeTransferLib.safeTransfer(address token, address to, uint256 value) internal => NONDET;
-    function SafeTransferLib.safeTransferFrom(address token, address from, address to, uint256 value) internal => NONDET;
+    function ReconstructedMath.wTaylorCompounded(uint256, uint256) internal returns uint256 => NONDET;
+    function ReconstructedTokenTransfers.safeTransfer(address token, address to, uint256 value) internal => NONDET;
+    function ReconstructedTokenTransfers.safeTransferFrom(address token, address from, address to, uint256 value) internal => NONDET;
     function _.onMorphoSupply(uint256 assets, bytes data) external => HAVOC_ECF;
 
     // Summarize the IRM's borrowRate return-only so that the external call in _accrueInterest does not havoc Morpho storage.

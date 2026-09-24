@@ -4,9 +4,9 @@ methods {
 
     function Util.maxFee() external returns uint256 envfree;
 
-    function MathLib.mulDivDown(uint256 a, uint256 b, uint256 c) internal returns uint256 => ghostMulDivDown(a, b, c);
-    function MathLib.mulDivUp(uint256 a, uint256 b, uint256 c) internal returns uint256 => ghostMulDivUp(a, b, c);
-    function MathLib.wTaylorCompounded(uint256 a, uint256 b) internal returns uint256 => ghostTaylorCompounded(a, b);
+    function ReconstructedMath.mulDivDown(uint256 a, uint256 b, uint256 c) internal returns uint256 => ghostMulDivDown(a, b, c);
+    function ReconstructedMath.mulDivUp(uint256 a, uint256 b, uint256 c) internal returns uint256 => ghostMulDivUp(a, b, c);
+    function ReconstructedMath.wTaylorCompounded(uint256 a, uint256 b) internal returns uint256 => ghostTaylorCompounded(a, b);
     // We assume here that all external functions will not access storage, since we cannot show commutativity otherwise.
     // We also need to assume that the price and borrow rate return always the same value (and do not depend on msg.origin), so we use ghost functions for them.
     function _.borrowRate(MorphoHarness.MarketParams marketParams, MorphoHarness.Market market) external with (env e) => ghostBorrowRate(marketParams.irm, e.block.timestamp) expect uint256;

@@ -18,9 +18,9 @@ methods {
 
     function _._accrueInterest(MorphoInternalAccess.MarketParams memory marketParams, MorphoInternalAccess.Id id) internal with (env e) => summaryAccrueInterest(e, marketParams, id) expect void;
 
-    function MarketParamsLib.id(MorphoInternalAccess.MarketParams memory marketParams) internal returns MorphoInternalAccess.Id => summaryId(marketParams);
-    function SafeTransferLib.safeTransfer(address token, address to, uint256 value) internal => summarySafeTransferFrom(token, currentContract, to, value);
-    function SafeTransferLib.safeTransferFrom(address token, address from, address to, uint256 value) internal => summarySafeTransferFrom(token, from, to, value);
+    function MorphoBlueReconstruction._id(MorphoInternalAccess.MarketParams memory marketParams) internal returns MorphoInternalAccess.Id => summaryId(marketParams);
+    function ReconstructedTokenTransfers.safeTransfer(address token, address to, uint256 value) internal => summarySafeTransferFrom(token, currentContract, to, value);
+    function ReconstructedTokenTransfers.safeTransferFrom(address token, address from, address to, uint256 value) internal => summarySafeTransferFrom(token, from, to, value);
 }
 
 persistent ghost mapping(address => uint256) balance;

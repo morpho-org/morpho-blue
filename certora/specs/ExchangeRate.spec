@@ -16,10 +16,10 @@ methods {
     function Util.maxFee() external returns uint256 envfree;
     function Util.libId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
 
-    function UtilsLib.min(uint256 x, uint256 y) internal returns uint256 => summaryMin(x, y);
-    function MathLib.mulDivDown(uint256 a, uint256 b, uint256 c) internal returns uint256 => summaryMulDivDown(a, b, c);
-    function MathLib.mulDivUp(uint256 a, uint256 b, uint256 c) internal returns uint256 => summaryMulDivUp(a, b, c);
-    function MathLib.wTaylorCompounded(uint256, uint256) internal returns uint256 => NONDET;
+    function ReconstructedMath.min(uint256 x, uint256 y) internal returns uint256 => summaryMin(x, y);
+    function ReconstructedMath.mulDivDown(uint256 a, uint256 b, uint256 c) internal returns uint256 => summaryMulDivDown(a, b, c);
+    function ReconstructedMath.mulDivUp(uint256 a, uint256 b, uint256 c) internal returns uint256 => summaryMulDivUp(a, b, c);
+    function ReconstructedMath.wTaylorCompounded(uint256, uint256) internal returns uint256 => NONDET;
 
     function _.borrowRate(MorphoHarness.MarketParams, MorphoHarness.Market) external => HAVOC_ECF;
 
