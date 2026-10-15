@@ -62,7 +62,7 @@ rule noAccessBeforeAccrueInterest(method f, env e, calldataarg data) {
     require !accrued;
     require !accessedBeforeAccrual;
 
-    f(e, data);
+    f@withrevert(e, data);
 
     assert accrued => !accessedBeforeAccrual;
 }
