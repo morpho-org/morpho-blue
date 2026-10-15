@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
+// SPDX-License-Identifier: MIT
 
 // Liveness properties: a user can always exit the market by repaying, withdrawing, or withdrawing collateral.
 
