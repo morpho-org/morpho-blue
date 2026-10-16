@@ -16,6 +16,8 @@ jobs:
       matrix:
         conf:
           - AccrueInterest
+          - AccrueInterestFirst
+          - AccrueInterestWrites
           - AssetsAccounting
           - ConsistentState
           - ExactMath

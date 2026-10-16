@@ -243,6 +243,9 @@ The [`certora/specs`](specs) folder contains the following files:
 - [`AccrueInterest.spec`](specs/AccrueInterest.spec) checks that the main functions accrue interest at the start of the interaction.
   This is done by ensuring that accruing interest before calling the function does not change the outcome compared to just calling the function.
   View functions do not necessarily respect this property (for example, `totalSupplyShares`), and are filtered out.
+- [`AccrueInterestFirst.spec`](specs/AccrueInterestFirst.spec) checks that functions accruing interest do not access the variables written by `accrueInterest` before accruing interest.
+  The `lastUpdate` of markets is only checked not to be written, since it is read beforehand to check that the market is created.
+- [`AccrueInterestWrites.spec`](specs/AccrueInterestWrites.spec) checks that `accrueInterest` writes no storage variable other than the `totalSupplyAssets`, `totalSupplyShares`, `totalBorrowAssets` and `lastUpdate` of markets, and the `supplyShares` of positions.
 - [`AssetsAccounting.spec`](specs/AssetsAccounting.spec) checks that when exiting a position the user cannot get more than what was owed.
   Similarly, when entering a position, the assets owned as a result are no greater than what was given.
 - [`ConsistentState.spec`](specs/ConsistentState.spec) checks that the state (storage) of the Morpho contract is consistent.
