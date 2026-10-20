@@ -51,12 +51,14 @@ jobs:
       - name: Install solc
         run: |
           wget https://github.com/ethereum/solidity/releases/download/v0.8.19/solc-static-linux
+          echo "7805ee2c1e70f2004eeb514f98a18d8260644c2f4bbf2e50f7f92e24b9ec2dbdc3e96ccbfe2570912f48bf0611b885594d2a6635527bc53d811dd56fb596e41b  solc-static-linux" | sha512sum --check --strict -
           chmod +x solc-static-linux
           sudo mv solc-static-linux /usr/local/bin/solc-0.8.19
 
       - name: Install solc (0.8.27)
         run: |
           wget https://github.com/ethereum/solidity/releases/download/v0.8.27/solc-static-linux
+          echo "6550177d642061f1698cc724e7dad063f44bb85e6b4cb54cbc86530452ac9e1f02c9b573eb640167aa972e0592985d9464e55e4efb2894ec7cd3cbba0cae2729  solc-static-linux" | sha512sum --check --strict -
           chmod +x solc-static-linux
           sudo mv solc-static-linux /usr/local/bin/solc-0.8.27
 
