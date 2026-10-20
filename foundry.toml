@@ -6,7 +6,17 @@ via_ir = true
 optimizer = true
 optimizer_runs = 999999
 bytecode_hash = "none"
-evm_version = "paris"
+evm_version = "cancun"
+additional_compiler_profiles = [
+    { name = "cancun", evm_version = "cancun", via_ir = true, optimizer = true, optimizer_runs = 999999, bytecode_hash = "None" },
+    { name = "paris", evm_version = "paris", via_ir = true, optimizer = true, optimizer_runs = 999999, bytecode_hash = "None" },
+]
+compilation_restrictions = [
+    { paths = "src/Morpho.sol", evm_version = "paris" },
+    { paths = "test/BaseTest.sol", evm_version = "paris" },
+    { paths = "src/periphery/pre-liquidation/**", evm_version = "cancun" },
+    { paths = "test/periphery/pre-liquidation/**", evm_version = "cancun" },
+]
 
 [profile.default.invariant]
 runs = 1024
