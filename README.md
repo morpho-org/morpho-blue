@@ -16,7 +16,7 @@ The protocol is described in detail in the [Morpho Blue Whitepaper](./morpho-blu
 [`Morpho.sol`](./src/Morpho.sol) contains most of the source code of the core contract of Morpho Blue.
 It solely relies on internal libraries in the [`src/libraries`](./src/libraries) subdirectory.
 
-Contracts in [`src/periphery`](./src/periphery/pre-liquidation) are not used by Morpho Blue; see [PreLiquidation](./src/periphery/pre-liquidation/README.md).
+Contracts in [`src/periphery`](./src/periphery) are not used by Morpho Blue; see [PreLiquidation](./src/periphery/pre-liquidation/README.md).
 
 Libraries in the [`src/libraries/periphery`](./src/libraries/periphery) directory are not used by Morpho Blue.
 They are useful helpers that integrators can reuse or adapt to their own needs.
