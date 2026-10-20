@@ -29,9 +29,18 @@ jobs:
           - Reverts
           - StayHealthy
           - Transfer
+          - periphery/pre-liquidation/ConsistentInstantiation
+          - periphery/pre-liquidation/Immutability
+          - periphery/pre-liquidation/Liveness
+          - periphery/pre-liquidation/MarketExists
+          - periphery/pre-liquidation/Reentrancy
+          - periphery/pre-liquidation/Reverts
+          - periphery/pre-liquidation/SafeMath
 
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          submodules: recursive
 
       - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6
         with:
@@ -44,6 +53,12 @@ jobs:
           wget https://github.com/ethereum/solidity/releases/download/v0.8.19/solc-static-linux
           chmod +x solc-static-linux
           sudo mv solc-static-linux /usr/local/bin/solc-0.8.19
+
+      - name: Install solc (0.8.27)
+        run: |
+          wget https://github.com/ethereum/solidity/releases/download/v0.8.27/solc-static-linux
+          chmod +x solc-static-linux
+          sudo mv solc-static-linux /usr/local/bin/solc-0.8.27
 
       - run: certoraRun certora/confs/${{ matrix.conf }}.conf
         env:
