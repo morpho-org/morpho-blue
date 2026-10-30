@@ -46,7 +46,7 @@ This is checked in [`SafeMath.spec`](SafeMath.spec).
 
 ### Folders and file structure
 
-The [`certora/specs`](.) folder contains the following files:
+This folder contains the following files:
 
 - [`Reentrancy.spec`](Reentrancy.spec) checks that PreLiquidation is reentrancy safe by checking that the storage is never used;
 - [`Immutability.spec`](Immutability.spec) checks that PreLiquidation contract is immutable because it doesn't perform any delegate call;
