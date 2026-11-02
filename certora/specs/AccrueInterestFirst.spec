@@ -4,7 +4,7 @@ methods {
 
     function Morpho._accrueInterest(MorphoHarness.MarketParams memory, MorphoHarness.Id) internal => accrueInterestSummary();
 
-    // Since _accrueInterest is summarized, any call to borrowRate happens outside of the interest accrual.
+    // Check that there are no call to borrowRate before an interest accrual.
     function _.borrowRate(MorphoHarness.MarketParams, MorphoHarness.Market) external => borrowRateSummary() expect uint256;
 }
 
