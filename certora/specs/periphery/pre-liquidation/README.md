@@ -2,6 +2,8 @@
 
 This folder contains the [CVL](https://docs.certora.com/en/latest/docs/cvl/index.html) specification and verification setup for the [PreLiquidation](../../../../src/periphery/pre-liquidation/PreLiquidation.sol) contract.
 
+These specs were migrated from the [pre-liquidation](https://github.com/morpho-org/pre-liquidation) repository, which holds their history and PRs.
+
 ## Getting started
 
 This project depends on two different versions of [Solidity](https://soliditylang.org/) which are required for running the verification.
