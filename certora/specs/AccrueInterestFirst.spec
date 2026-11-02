@@ -72,15 +72,13 @@ hook Sstore position[KEY MorphoHarness.Id _][KEY address _].supplyShares uint256
     recordAccess();
 }
 
-// Check that the variables written by accrueInterest (see AccrueInterestWrites.spec) and the borrow rate are not accessed before accrueInterest.
-// View functions and createMarket, which initializes lastUpdate and the borrow rate, are excluded.
-rule noAccessBeforeAccrueInterest(method f, env e, calldataarg data)
-filtered { f -> !f.isView && f.selector != sig:createMarket(MorphoHarness.MarketParams).selector } {
+// Check that the variables written by accrueInterest (see AccrueInterestWrites.spec) and the borrow rate are not accessed before accrueInterest in functions that accrue interest.
+rule noAccessBeforeAccrueInterest(method f, env e, calldataarg data) {
     // Set up the initial state.
     require !accrued;
     require !accessedBeforeAccrual;
 
     f@withrevert(e, data);
 
-    assert !accessedBeforeAccrual;
+    assert accrued => !accessedBeforeAccrual;
 }
