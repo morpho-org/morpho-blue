@@ -21,7 +21,7 @@ Optional helper contracts and libraries for interacting with Morpho Blue are in 
 Libraries in the [`src/libraries/periphery`](./src/libraries/periphery) directory are not used by Morpho Blue.
 They are useful helpers that integrators can reuse or adapt to their own needs.
 
-The [`src/mocks`](./src/mocks) directory contains contracts designed exclusively for testing.
+The [`test/mocks`](./test/mocks) directory contains contracts designed exclusively for testing.
 
 You'll find relevant comments in [`IMorpho.sol`](./src/interfaces/IMorpho.sol), notably a list of requirements about market dependencies.
 

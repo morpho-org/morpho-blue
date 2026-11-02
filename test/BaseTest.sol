@@ -6,9 +6,9 @@ import "../lib/forge-std/src/console.sol";
 
 import {IMorpho} from "../src/interfaces/IMorpho.sol";
 import "../src/interfaces/IMorphoCallbacks.sol";
-import {IrmMock} from "../src/mocks/IrmMock.sol";
-import {ERC20Mock} from "../src/mocks/ERC20Mock.sol";
-import {OracleMock} from "../src/mocks/OracleMock.sol";
+import {IrmMock} from "./mocks/IrmMock.sol";
+import {ERC20Mock} from "./mocks/ERC20Mock.sol";
+import {OracleMock} from "./mocks/OracleMock.sol";
 
 import "../src/Morpho.sol";
 import {Math} from "./helpers/Math.sol";

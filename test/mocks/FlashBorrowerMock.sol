@@ -2,8 +2,8 @@
 pragma solidity ^0.8.0;
 
 import {IERC20} from "./interfaces/IERC20.sol";
-import {IMorpho} from "../interfaces/IMorpho.sol";
-import {IMorphoFlashLoanCallback} from "../interfaces/IMorphoCallbacks.sol";
+import {IMorpho} from "../../src/interfaces/IMorpho.sol";
+import {IMorphoFlashLoanCallback} from "../../src/interfaces/IMorphoCallbacks.sol";
 
 contract FlashBorrowerMock is IMorphoFlashLoanCallback {
     IMorpho private immutable MORPHO;
