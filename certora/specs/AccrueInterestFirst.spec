@@ -72,6 +72,36 @@ hook Sstore position[KEY MorphoHarness.Id _][KEY address _].supplyShares uint256
     recordAccess();
 }
 
+definition doesNotAccrueInterest(method f) returns bool =
+    f.isView ||
+    f.selector == sig:setOwner(address).selector ||
+    f.selector == sig:enableIrm(address).selector ||
+    f.selector == sig:enableLltv(uint256).selector ||
+    f.selector == sig:setFeeRecipient(address).selector ||
+    f.selector == sig:createMarket(MorphoHarness.MarketParams).selector ||
+    f.selector == sig:supplyCollateral(MorphoHarness.MarketParams, uint256, address, bytes).selector ||
+    f.selector == sig:flashLoan(address, uint256, bytes).selector ||
+    f.selector == sig:setAuthorization(address, bool).selector ||
+    f.selector == sig:setAuthorizationWithSig(MorphoHarness.Authorization, MorphoHarness.Signature).selector;
+
+// Check that the listed functions never accrue interest, so they are not constrained by noAccessBeforeAccrueInterest.
+rule listedFunctionsDoNotAccrueInterest(method f, env e, calldataarg data) filtered { f -> doesNotAccrueInterest(f) } {
+    require !accrued;
+
+    f@withrevert(e, data);
+
+    assert !accrued;
+}
+
+// Check that the other functions always accrue interest when they don't revert, so the list above is exhaustive.
+rule otherFunctionsAccrueInterest(method f, env e, calldataarg data) filtered { f -> !doesNotAccrueInterest(f) } {
+    require !accrued;
+
+    f(e, data);
+
+    assert accrued;
+}
+
 // Check that the variables written by accrueInterest (see AccrueInterestWrites.spec) and the borrow rate are not accessed before accrueInterest in functions that accrue interest.
 rule noAccessBeforeAccrueInterest(method f, env e, calldataarg data) {
     // Set up the initial state.
