@@ -22,7 +22,7 @@ function recordAccess() {
     }
 }
 
-// Check that the borrow rate is not fetched before accruing interest, as it could then be outdated.
+// Check that the borrow rate is not fetched before accruing interest.
 function borrowRateSummary() returns uint256 {
     recordAccess();
     uint256 rate;
