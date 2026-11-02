@@ -1,5 +1,7 @@
 # PreLiquidation
 
+These contracts were migrated from the [pre-liquidation](https://github.com/morpho-org/pre-liquidation) repository, which holds their history and PRs.
+
 ## Overview
 
 This repository puts together different contracts to carry out liquidations on Morpho with specific parameters chosen by the borrower.
