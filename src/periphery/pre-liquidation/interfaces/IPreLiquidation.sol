@@ -30,5 +30,5 @@ interface IPreLiquidation {
 
     function preLiquidate(address borrower, uint256 seizedAssets, uint256 repaidShares, bytes calldata data)
         external
-        returns (uint256 assetsSeized, uint256 assetsRepaid);
+        returns (uint256 assetsSeizedOutput, uint256 assetsRepaidOutput);
 }
