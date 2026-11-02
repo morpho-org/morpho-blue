@@ -33,5 +33,5 @@ All audits are stored in the [audits](./audits/) folder.
 
 ## License
 
-Files in this repository are publicly available under license `GPL-2.0-or-later`, see [`LICENSE`](./LICENSE).
+`src/Morpho.sol` is under `GPL-2.0-or-later` (see [`LICENSE`](./LICENSE)). All other files are under `MIT` (see [`LICENSE-MIT`](./LICENSE-MIT)), except `test/helpers/WadMath.sol`, which is under `GPL-3.0-or-later` and adapted from USM.
 The previous license (BUSL-1.1) can be found [here](https://github.com/morpho-org/morpho-blue/blob/1bcfbfdfa284597ae526d082dd34bcd182d15d27/LICENSE) for reference.

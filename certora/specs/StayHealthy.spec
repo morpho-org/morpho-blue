@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
+// SPDX-License-Identifier: MIT
 import "Health.spec";
 
 function mulDivUp(uint256 x, uint256 y, uint256 d) returns uint256 {
