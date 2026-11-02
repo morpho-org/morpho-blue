@@ -1,5 +1,7 @@
 This folder contains the verification of the Morpho Blue protocol using CVL, Certora's Verification Language.
 
+Pre-liquidation specifications are documented in the [pre-liquidation Certora README](specs/periphery/pre-liquidation/README.md).
+
 The core concepts of the Morpho Blue protocol are described in the [Whitepaper](../morpho-blue-whitepaper.pdf).
 These concepts have been verified using CVL.
 We first give a [high-level description](#high-level-description) of the verification and then describe the [folder and file structure](#folder-and-file-structure) of the specification files.

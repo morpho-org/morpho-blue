@@ -6,7 +6,13 @@ via_ir = true
 optimizer = true
 optimizer_runs = 999999
 bytecode_hash = "none"
-evm_version = "paris"
+evm_version = "cancun"
+additional_compiler_profiles = [
+    { name = "paris", evm_version = "paris" },
+]
+compilation_restrictions = [
+    { paths = "src/Morpho.sol", evm_version = "paris" },
+]
 
 [profile.default.invariant]
 runs = 1024
