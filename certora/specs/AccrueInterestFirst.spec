@@ -102,13 +102,28 @@ rule otherFunctionsAccrueInterest(method f, env e, calldataarg data) filtered { 
     assert accrued;
 }
 
-// Check that the variables written by accrueInterest (see AccrueInterestWrites.spec) and the borrow rate are not accessed before accrueInterest in functions that accrue interest.
-rule noAccessBeforeAccrueInterest(method f, env e, calldataarg data) {
+definition accessesWithoutAccruingInterest(method f) returns bool =
+    f.selector == sig:createMarket(MorphoHarness.MarketParams).selector ||
+    f.selector == sig:market(MorphoHarness.Id).selector ||
+    f.selector == sig:position(MorphoHarness.Id, address).selector ||
+    f.selector == sig:market_(MorphoHarness.Id).selector ||
+    f.selector == sig:position_(MorphoHarness.Id, address).selector ||
+    f.selector == sig:totalSupplyAssets(MorphoHarness.Id).selector ||
+    f.selector == sig:totalSupplyShares(MorphoHarness.Id).selector ||
+    f.selector == sig:totalBorrowAssets(MorphoHarness.Id).selector ||
+    f.selector == sig:supplyShares(MorphoHarness.Id, address).selector ||
+    f.selector == sig:virtualTotalSupplyAssets(MorphoHarness.Id).selector ||
+    f.selector == sig:virtualTotalSupplyShares(MorphoHarness.Id).selector ||
+    f.selector == sig:virtualTotalBorrowAssets(MorphoHarness.Id).selector ||
+    f.selector == sig:isHealthy(MorphoHarness.MarketParams, address).selector;
+
+// Check that the variables written by accrueInterest (see AccrueInterestWrites.spec) and the borrow rate are not accessed before accrueInterest, except in the functions that access them without accruing interest.
+rule noAccessBeforeAccrueInterest(method f, env e, calldataarg data) filtered { f -> !accessesWithoutAccruingInterest(f) } {
     // Set up the initial state.
     require !accrued;
     require !accessedBeforeAccrual;
 
     f@withrevert(e, data);
 
-    assert accrued => !accessedBeforeAccrual;
+    assert !accessedBeforeAccrual;
 }
