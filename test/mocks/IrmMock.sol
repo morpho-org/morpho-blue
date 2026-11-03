@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {IIrm} from "../interfaces/IIrm.sol";
-import {MarketParams, Market} from "../interfaces/IMorpho.sol";
+import {IIrm} from "../../src/interfaces/IIrm.sol";
+import {MarketParams, Market} from "../../src/interfaces/IMorpho.sol";
 
-import {MathLib} from "../libraries/MathLib.sol";
+import {MathLib} from "../../src/libraries/MathLib.sol";
 
 contract IrmMock is IIrm {
     using MathLib for uint128;

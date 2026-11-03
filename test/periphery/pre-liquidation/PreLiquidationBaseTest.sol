@@ -4,9 +4,9 @@ pragma solidity ^0.8.0;
 import "../../../lib/forge-std/src/Test.sol";
 import "../../../lib/forge-std/src/console2.sol";
 
-import {ERC20Mock} from "../../../src/mocks/ERC20Mock.sol";
-import {IrmMock} from "../../../src/mocks/IrmMock.sol";
-import {OracleMock} from "../../../src/mocks/OracleMock.sol";
+import {ERC20Mock} from "../../mocks/ERC20Mock.sol";
+import {IrmMock} from "../../mocks/IrmMock.sol";
+import {OracleMock} from "../../mocks/OracleMock.sol";
 
 import {MarketParams, IMorpho, Id} from "../../../src/interfaces/IMorpho.sol";
 import {IOracle} from "../../../src/interfaces/IOracle.sol";
