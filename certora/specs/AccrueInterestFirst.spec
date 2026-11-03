@@ -73,19 +73,16 @@ hook Sstore position[KEY MorphoHarness.Id _][KEY address _].supplyShares uint256
 }
 
 definition accessesWithoutAccruingInterest(method f) returns bool =
-    f.selector == sig:createMarket(MorphoHarness.MarketParams).selector ||
-    f.selector == sig:market(MorphoHarness.Id).selector ||
-    f.selector == sig:position(MorphoHarness.Id, address).selector ||
-    f.selector == sig:market_(MorphoHarness.Id).selector ||
-    f.selector == sig:position_(MorphoHarness.Id, address).selector ||
-    f.selector == sig:totalSupplyAssets(MorphoHarness.Id).selector ||
-    f.selector == sig:totalSupplyShares(MorphoHarness.Id).selector ||
-    f.selector == sig:totalBorrowAssets(MorphoHarness.Id).selector ||
-    f.selector == sig:supplyShares(MorphoHarness.Id, address).selector ||
-    f.selector == sig:virtualTotalSupplyAssets(MorphoHarness.Id).selector ||
-    f.selector == sig:virtualTotalSupplyShares(MorphoHarness.Id).selector ||
-    f.selector == sig:virtualTotalBorrowAssets(MorphoHarness.Id).selector ||
-    f.selector == sig:isHealthy(MorphoHarness.MarketParams, address).selector;
+    f.isView || f.selector == sig:createMarket(MorphoHarness.MarketParams).selector;
+
+// Check that the functions filtered out of noAccessBeforeAccrueInterest don't accrue interest.
+rule accessesWithoutAccruingInterestDoNotAccrue(method f, env e, calldataarg data) filtered { f -> accessesWithoutAccruingInterest(f) } {
+    require !accrued;
+
+    f@withrevert(e, data);
+
+    assert !accrued;
+}
 
 // Check that the variables written by accrueInterest (see AccrueInterestWrites.spec) and the borrow rate are not accessed before accrueInterest, except in the functions that access them without accruing interest.
 rule noAccessBeforeAccrueInterest(method f, env e, calldataarg data) filtered { f -> !accessesWithoutAccruingInterest(f) } {
