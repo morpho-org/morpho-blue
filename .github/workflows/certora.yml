@@ -31,6 +31,10 @@ jobs:
           - Reverts
           - StayHealthy
           - Transfer
+          - periphery/adaptive-curve-irm/BorrowRateView
+          - periphery/adaptive-curve-irm/ExpectedMarketBalances
+          - periphery/adaptive-curve-irm/ExpLibSummary
+          - periphery/adaptive-curve-irm/NeverReverts
           - periphery/pre-liquidation/ConsistentInstantiation
           - periphery/pre-liquidation/Immutability
           - periphery/pre-liquidation/Liveness

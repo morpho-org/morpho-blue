@@ -1,6 +1,7 @@
 This folder contains the verification of the Morpho Blue protocol using CVL, Certora's Verification Language.
 
 Pre-liquidation specifications are documented in the [pre-liquidation Certora README](specs/periphery/pre-liquidation/README.md).
+AdaptiveCurveIRM specifications are in [`specs/periphery/adaptive-curve-irm`](specs/periphery/adaptive-curve-irm).
 
 The core concepts of the Morpho Blue protocol are described in the [Whitepaper](../morpho-blue-whitepaper.pdf).
 These concepts have been verified using CVL.

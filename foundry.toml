@@ -7,11 +7,14 @@ optimizer = true
 optimizer_runs = 999999
 bytecode_hash = "none"
 evm_version = "cancun"
+gas_limit = 4294967295
 additional_compiler_profiles = [
     { name = "paris", evm_version = "paris" },
 ]
 compilation_restrictions = [
     { paths = "src/Morpho.sol", evm_version = "paris" },
+    { paths = "src/periphery/adaptive-curve-irm/**", evm_version = "paris" },
+    { paths = "src/periphery/fixed-rate-irm/**", evm_version = "paris" },
 ]
 
 [profile.default.invariant]
