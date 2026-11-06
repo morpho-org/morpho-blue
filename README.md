@@ -16,7 +16,7 @@ The protocol is described in detail in the [Morpho Blue Whitepaper](./morpho-blu
 [`Morpho.sol`](./src/Morpho.sol) contains most of the source code of the core contract of Morpho Blue.
 It solely relies on internal libraries in the [`src/libraries`](./src/libraries) subdirectory.
 
-Optional helper contracts and libraries for interacting with Morpho Blue are in [`src/periphery`](./src/periphery), such as [PreLiquidation](./src/periphery/pre-liquidation/README.md).
+Optional helper contracts and libraries for interacting with Morpho Blue are in [`src/periphery`](./src/periphery), such as [PreLiquidation](./src/periphery/pre-liquidation/README.md), [AdaptiveCurveIRM](./src/periphery/adaptive-curve-irm/README.md) and [FixedRateIRM](./src/periphery/fixed-rate-irm/README.md).
 
 Libraries in the [`src/libraries/periphery`](./src/libraries/periphery) directory are not used by Morpho Blue.
 They are useful helpers that integrators can reuse or adapt to their own needs.
