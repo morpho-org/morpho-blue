@@ -1,0 +1,40 @@
+name: forge-old
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  forge-old:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          submodules: recursive
+      - name: Install Foundry (old)
+        run: |
+          curl -fsSL -o foundry.tar.gz https://github.com/foundry-rs/foundry/releases/download/v1.8.3/foundry_v1.8.3_linux_amd64.tar.gz
+          echo "7ca48e6ca3cac1bce1403ca67e5bc1dc3bc1fd818199c9957c7165079c228568  foundry.tar.gz" | sha256sum -c -
+          mkdir "$RUNNER_TEMP/foundry"
+          tar -xzf foundry.tar.gz -C "$RUNNER_TEMP/foundry"
+          echo "$RUNNER_TEMP/foundry" >> "$GITHUB_PATH"
+      - name: Install solc into svm cache
+        run: |
+          echo "0.8.19 7a5c1d3dc9a8eba62bb2ec37192c9178ae5fe8a54a56e5573fd3c9c17cd9eb48
+          0.8.27 b9977d500c17cba6f0032ca939ef98c4decf6363f19f386d05fb02f708115264" |
+          while read -r version sha256; do
+            solc="$HOME/.svm/$version/solc-$version"
+            mkdir -p "${solc%/*}"
+            curl -fsSL -o "$solc" "https://github.com/ethereum/solidity/releases/download/v$version/solc-static-linux"
+            echo "$sha256  $solc" | sha256sum -c -
+            chmod +x "$solc"
+          done
+      - name: Run Forge tests
+        run: forge test --offline
