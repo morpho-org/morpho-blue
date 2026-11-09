@@ -7,7 +7,7 @@ These contracts were migrated from the [morpho-blue-irm](https://github.com/morp
 [`AdaptiveCurveIrm`](./AdaptiveCurveIrm.sol) is an interest rate model for Morpho Blue.
 See its [documentation](https://docs.morpho.org/concepts/morpho-blue/core-concepts/irm#the-adaptivecurveirm) and [announcement article](https://morpho.mirror.xyz/aaUjIF85aIi5RT6-pLhVWBzuiCpOb4BV03OYNts2BHQ).
 
-[`AdaptiveCurveIrmLib`](./libraries/periphery/AdaptiveCurveIrmLib.sol) computes the borrow rate and the expected market balances of markets using the `AdaptiveCurveIrm` without calling it.
+[`AdaptiveCurveIrmLib`](./libraries/AdaptiveCurveIrmLib.sol) computes the borrow rate and the expected market balances of markets using the `AdaptiveCurveIrm` without calling it.
 
 ## Developers
 

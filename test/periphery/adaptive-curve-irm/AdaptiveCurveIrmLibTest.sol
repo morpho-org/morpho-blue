@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "../../../src/periphery/adaptive-curve-irm/AdaptiveCurveIrm.sol";
-import "../../../src/periphery/adaptive-curve-irm/libraries/periphery/AdaptiveCurveIrmLib.sol";
+import "../../../src/periphery/adaptive-curve-irm/libraries/AdaptiveCurveIrmLib.sol";
 import "../../../src/interfaces/IMorpho.sol";
 import {MorphoBalancesLib} from "../../../src/libraries/periphery/MorphoBalancesLib.sol";
 

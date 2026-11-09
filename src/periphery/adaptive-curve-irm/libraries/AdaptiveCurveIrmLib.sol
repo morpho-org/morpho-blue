@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {Id, Market, IMorpho} from "../../../../interfaces/IMorpho.sol";
-import {IAdaptiveCurveIrm} from "../../interfaces/IAdaptiveCurveIrm.sol";
+import {Id, Market, IMorpho} from "../../../interfaces/IMorpho.sol";
+import {IAdaptiveCurveIrm} from "../interfaces/IAdaptiveCurveIrm.sol";
 
-import {ExpLib} from "../ExpLib.sol";
-import {UtilsLib} from "../UtilsLib.sol";
-import {ConstantsLib} from "../ConstantsLib.sol";
-import {MathLib, WAD_INT as WAD} from "../MathLib.sol";
-import {SharesMathLib} from "../../../../libraries/SharesMathLib.sol";
-import {MathLib as MorphoMathLib} from "../../../../libraries/MathLib.sol";
-import {UtilsLib as MorphoUtilsLib} from "../../../../libraries/UtilsLib.sol";
+import {ExpLib} from "./ExpLib.sol";
+import {UtilsLib} from "./UtilsLib.sol";
+import {ConstantsLib} from "./ConstantsLib.sol";
+import {MathLib, WAD_INT as WAD} from "./MathLib.sol";
+import {SharesMathLib} from "../../../libraries/SharesMathLib.sol";
+import {MathLib as MorphoMathLib} from "../../../libraries/MathLib.sol";
+import {UtilsLib as MorphoUtilsLib} from "../../../libraries/UtilsLib.sol";
 
 /// @dev Library to compute borrowRateView and expectedMarketBalances with only the market id.
 /// @dev Must be used only for markets with an AdaptiveCurveIrm as irm.

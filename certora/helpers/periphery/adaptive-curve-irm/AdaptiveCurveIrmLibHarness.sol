@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {AdaptiveCurveIrmLib} from "../../../../src/periphery/adaptive-curve-irm/libraries/periphery/AdaptiveCurveIrmLib.sol";
+import {AdaptiveCurveIrmLib} from "../../../../src/periphery/adaptive-curve-irm/libraries/AdaptiveCurveIrmLib.sol";
 import {MorphoBalancesLib} from "../../../../src/libraries/periphery/MorphoBalancesLib.sol";
 import {Id, Market, MarketParams, IMorpho} from "../../../../src/interfaces/IMorpho.sol";
 import {MarketParamsLib} from "../../../../src/libraries/MarketParamsLib.sol";
