@@ -33,8 +33,10 @@ jobs:
           submodules: recursive
 
       - name: Run Certora Config Linter
+        env:
+          CONF: ${{ matrix.conf }}
         run: |
-          file="certora/confs/${{ matrix.conf }}.conf"
+          file="certora/confs/$CONF.conf"
           echo "Fix lint errors by applying the following diff to $file:"
           diff -u "$file" <(jq < "$file")
 
@@ -58,6 +60,7 @@ jobs:
           chmod +x solc-static-linux
           sudo mv solc-static-linux /usr/local/bin/solc-0.8.27
 
-      - run: certoraRun certora/confs/${{ matrix.conf }}.conf
+      - run: certoraRun "certora/confs/$CONF.conf"
         env:
+          CONF: ${{ matrix.conf }}
           CERTORAKEY: ${{ secrets.CERTORAKEY }}
