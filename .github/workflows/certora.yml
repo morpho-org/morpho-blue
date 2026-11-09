@@ -8,41 +8,37 @@ on:
   workflow_dispatch:
 
 jobs:
+  matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      confs: ${{ steps.list.outputs.confs }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - id: list
+        run: echo "confs=$(find certora/confs -name '*.conf' | sed 's|^certora/confs/||;s|\.conf$||' | sort | jq -nRc '[inputs]')" >> "$GITHUB_OUTPUT"
+
   verify:
+    needs: matrix
     runs-on: ubuntu-latest
 
     strategy:
       fail-fast: false
       matrix:
-        conf:
-          - AccrueInterest
-          - AccrueInterestFirst
-          - AccrueInterestWrites
-          - AssetsAccounting
-          - ConsistentState
-          - ExactMath
-          - ExchangeRate
-          - Health
-          - LibSummary
-          - LiquidateBuffer
-          - Liveness
-          - Reachability
-          - Reentrancy
-          - Reverts
-          - StayHealthy
-          - Transfer
-          - periphery/pre-liquidation/ConsistentInstantiation
-          - periphery/pre-liquidation/Immutability
-          - periphery/pre-liquidation/Liveness
-          - periphery/pre-liquidation/MarketExists
-          - periphery/pre-liquidation/Reentrancy
-          - periphery/pre-liquidation/Reverts
-          - periphery/pre-liquidation/SafeMath
+        conf: ${{ fromJson(needs.matrix.outputs.confs) }}
 
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           submodules: recursive
+
+      - name: Run Certora Config Linter
+        env:
+          CONF: ${{ matrix.conf }}
+        run: |
+          file="certora/confs/$CONF.conf"
+          echo "Fix lint errors by applying the following diff to $file:"
+          diff -u "$file" <(jq < "$file")
 
       - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6
         with:
@@ -64,6 +60,7 @@ jobs:
           chmod +x solc-static-linux
           sudo mv solc-static-linux /usr/local/bin/solc-0.8.27
 
-      - run: certoraRun certora/confs/${{ matrix.conf }}.conf
+      - run: certoraRun "certora/confs/$CONF.conf"
         env:
+          CONF: ${{ matrix.conf }}
           CERTORAKEY: ${{ secrets.CERTORAKEY }}
