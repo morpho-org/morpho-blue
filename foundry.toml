@@ -14,7 +14,6 @@ additional_compiler_profiles = [
 compilation_restrictions = [
     { paths = "src/Morpho.sol", evm_version = "paris" },
     { paths = "src/periphery/adaptive-curve-irm/**", evm_version = "paris" },
-    { paths = "src/periphery/fixed-rate-irm/**", evm_version = "paris" },
 ]
 
 [profile.default.invariant]
