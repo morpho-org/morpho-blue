@@ -51,8 +51,14 @@ ignore = ['test/**/*.sol']
 via_ir = false
 
 # Test-only baseline. Lists replace rather than extend the default exclusions.
+# Lint test/ as ordinary Solidity instead of applying Forge's test-only rule filter.
+[profile.lint-test]
+test = ".forge-lint-unused"
+
 [profile.lint-test.lint]
 exclude_lints = [
+    # ERC20 mocks intentionally omit access-control events.
+    "missing-events-access-control",
     "unaliased-plain-import",
     "asm-keccak256",
     "unwrapped-modifier-logic",
