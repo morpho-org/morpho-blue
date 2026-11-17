@@ -53,6 +53,8 @@ jobs:
         with:
           version: nightly # Catch upstream Foundry changes before the next stable release.
       - run: forge build --sizes
+      - name: Check foundry.lock matches submodule pins
+        run: forge build --locked
 
   test:
     permissions:
@@ -66,8 +68,6 @@ jobs:
       - uses: foundry-rs/foundry-toolchain@dba66c27052e63476d886f22216e119ba7e615bf # v1.9.2
         with:
           version: nightly # Catch upstream Foundry changes before the next stable release.
-      - name: Check foundry.lock matches submodule pins
-        run: forge build --locked
       - run: forge test --deny warnings -vvv
         env:
           FOUNDRY_FUZZ_SEED: 0x${{ github.sha }}

@@ -97,7 +97,8 @@ jobs:
           chmod +x solc-static-linux
           sudo mv solc-static-linux /usr/local/bin/solc-0.8.27
 
-      - run: certoraRun "certora/confs/$CONF.conf"
+      - name: Verify ${{ matrix.conf }} specification
+        run: certoraRun "certora/confs/$CONF.conf"
         env:
           CONF: ${{ matrix.conf }}
           CERTORAKEY: ${{ secrets.CERTORAKEY }}
