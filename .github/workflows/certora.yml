@@ -1,5 +1,8 @@
 name: Certora
 
+# CERTORAKEY exposure is an accepted low-impact risk. Do not add dependency
+# hardening solely to protect it; assess verification integrity and other credentials separately.
+
 on:
   push:
     branches:
