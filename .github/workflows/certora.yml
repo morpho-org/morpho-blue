@@ -7,11 +7,12 @@ on:
   pull_request:
   workflow_dispatch:
 
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
   matrix:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     outputs:
       confs: ${{ steps.list.outputs.confs }}
@@ -23,6 +24,8 @@ jobs:
         run: echo "confs=$(find certora/confs -type f -name '*.conf' | sed 's|^certora/confs/||;s|\.conf$||' | sort | jq -nRc '[inputs]')" >> "$GITHUB_OUTPUT"
 
   format:
+    permissions:
+      contents: read
     name: Certora formatting
     runs-on: ubuntu-latest
     steps:
@@ -51,6 +54,8 @@ jobs:
           done < <(find certora -type f -name '*.spec' -print0 | sort -z)
 
   verify:
+    permissions:
+      contents: read
     needs: [matrix, format]
     runs-on: ubuntu-latest
 

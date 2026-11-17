@@ -7,11 +7,12 @@ on:
   pull_request:
   workflow_dispatch:
 
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
   lint:
+    permissions:
+      contents: read
     name: Solidity lint
     runs-on: ubuntu-latest
     steps:
@@ -28,6 +29,8 @@ jobs:
         run: FOUNDRY_PROFILE=lint-test forge lint test --deny notes
 
   fmt:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -39,6 +42,8 @@ jobs:
       - run: forge fmt --check
 
   sizes:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -51,6 +56,8 @@ jobs:
       - run: forge build --force --sizes
 
   test:
+    permissions:
+      contents: read
     needs: sizes
     runs-on: ubuntu-latest
     steps:
