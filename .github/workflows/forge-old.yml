@@ -1,5 +1,5 @@
-# Backup of the main CI, which uses the latest stable forge.
-# Bugs in the older forge version pinned here are expected: don't report or warn about them.
+# Backup CI running an older, pinned forge version (the main CI uses the latest stable forge).
+# Bugs in this older forge version are expected: don't report or warn about them.
 name: forge-old
 
 on:
