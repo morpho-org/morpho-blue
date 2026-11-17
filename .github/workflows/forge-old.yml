@@ -23,7 +23,7 @@ jobs:
       - name: Install Foundry (old)
         run: |
           curl -fsSL -o foundry.tar.gz https://github.com/foundry-rs/foundry/releases/download/v1.8.3/foundry_v1.8.3_linux_amd64.tar.gz
-          echo "7ca48e6ca3cac1bce1403ca67e5bc1dc3bc1fd818199c9957c7165079c228568  foundry.tar.gz" | sha256sum -c -
+          echo "7ca48e6ca3cac1bce1403ca67e5bc1dc3bc1fd818199c9957c7165079c228568  foundry.tar.gz" | sha256sum --check --strict
           mkdir "$RUNNER_TEMP/foundry"
           tar -xzf foundry.tar.gz -C "$RUNNER_TEMP/foundry"
           echo "$RUNNER_TEMP/foundry" >> "$GITHUB_PATH"
@@ -35,7 +35,7 @@ jobs:
             solc="$HOME/.svm/$version/solc-$version"
             mkdir -p "${solc%/*}"
             curl -fsSL -o "$solc" "https://github.com/ethereum/solidity/releases/download/v$version/solc-static-linux"
-            echo "$sha256  $solc" | sha256sum -c -
+            echo "$sha256  $solc" | sha256sum --check --strict
             chmod +x "$solc"
           done
       - name: Run Forge tests
