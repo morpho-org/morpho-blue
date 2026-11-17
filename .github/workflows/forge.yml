@@ -70,7 +70,7 @@ jobs:
           version: nightly # Catch upstream Foundry changes before the next stable release.
       - name: Check foundry.lock matches submodule pins
         run: forge build --locked
-      - run: forge test -vvv
+      - run: forge test --deny warnings -vvv
         env:
           FOUNDRY_FUZZ_SEED: 0x${{ github.event.pull_request.base.sha || github.sha }}
           FOUNDRY_FUZZ_RUNS: 10000
