@@ -9,7 +9,8 @@ import {IERC20} from "../../../interfaces/IERC20.sol";
 /// https://github.com/transmissions11/solmate/blob/97bdb2003b70382996a79a406813f76417b1cf90/src/utils/SafeTransferLib.sol
 /// @dev Modified by Morpho on 2026-11-17: retain only safeTransferFrom and safeApprove; use the existing IERC20
 /// interface.
-/// @dev AGPL-3.0-only; the full licence text is in SafeTransferLib.LICENSE.
+/// @dev Licence:
+/// https://github.com/transmissions11/solmate/blob/97bdb2003b70382996a79a406813f76417b1cf90/LICENSE
 /// @dev Use with caution! Some functions in this library knowingly create dirty bits at the destination of the free
 /// memory pointer.
 /// @dev Note that none of the functions in this library check that a token has code at all! That responsibility is
