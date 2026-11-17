@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 import "../../../src/periphery/adaptive-curve-irm/AdaptiveCurveIrm.sol";
 
 import "../../../lib/forge-std/src/Test.sol";
-import {VmEnvironment} from "../../helpers/VmEnvironment.sol";
 
 contract AdaptiveCurveIrmTest is Test {
     using MathLib for int256;
@@ -150,8 +149,8 @@ contract AdaptiveCurveIrmTest is Test {
         market.totalBorrowAssets = initialBorrowAssets;
 
         for (uint256 i; i < 45 days / 1 minutes; ++i) {
-            market.lastUpdate = uint128(VmEnvironment(address(vm)).getBlockTimestamp());
-            vm.warp(VmEnvironment(address(vm)).getBlockTimestamp() + 1 minutes);
+            market.lastUpdate = uint128(vm.getBlockTimestamp());
+            vm.warp(vm.getBlockTimestamp() + 1 minutes);
 
             uint256 avgBorrowRate = irm.borrowRate(marketParams, market);
             uint256 interest = market.totalBorrowAssets.wMulDown(avgBorrowRate.wTaylorCompounded(1 minutes));
@@ -204,8 +203,8 @@ contract AdaptiveCurveIrmTest is Test {
         assertEq(irm.rateAtTarget(marketParams.id()), ConstantsLib.INITIAL_RATE_AT_TARGET);
 
         for (uint256 i; i < 3 weeks / 1 minutes; ++i) {
-            market.lastUpdate = uint128(VmEnvironment(address(vm)).getBlockTimestamp());
-            vm.warp(VmEnvironment(address(vm)).getBlockTimestamp() + 1 minutes);
+            market.lastUpdate = uint128(vm.getBlockTimestamp());
+            vm.warp(vm.getBlockTimestamp() + 1 minutes);
 
             uint256 avgBorrowRate = irm.borrowRate(marketParams, market);
             uint256 interest = market.totalBorrowAssets.wMulDown(avgBorrowRate.wTaylorCompounded(1 minutes));
@@ -249,7 +248,7 @@ contract AdaptiveCurveIrmTest is Test {
         irm.borrowRate(marketParams, market);
     }
 
-    function testFirstBorrowRateView(Market memory market) public {
+    function testFirstBorrowRateView(Market memory market) public view {
         vm.assume(market.totalBorrowAssets > 0);
         vm.assume(market.totalSupplyAssets >= market.totalBorrowAssets);
 
@@ -368,7 +367,7 @@ contract AdaptiveCurveIrmTest is Test {
         );
     }
 
-    function testConstants() public {
+    function testConstants() public pure {
         assertGe(ConstantsLib.CURVE_STEEPNESS, 1 ether, "curveSteepness too small");
         assertLe(ConstantsLib.CURVE_STEEPNESS, 100 ether, "curveSteepness too big");
         assertGe(ConstantsLib.ADJUSTMENT_SPEED, 0, "adjustmentSpeed too small");

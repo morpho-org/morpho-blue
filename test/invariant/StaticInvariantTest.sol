@@ -6,7 +6,7 @@ import "./BaseInvariantTest.sol";
 contract StaticInvariantTest is BaseInvariantTest {
     /* INVARIANTS */
 
-    function invariantHealthy() public {
+    function invariantHealthy() public view {
         address[] memory users = targetSenders();
 
         for (uint256 i; i < allMarketParams.length; ++i) {

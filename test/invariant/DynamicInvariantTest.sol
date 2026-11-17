@@ -30,7 +30,7 @@ contract DynamicInvariantTest is BaseInvariantTest {
 
     /* INVARIANTS */
 
-    function invariantSupplyShares() public {
+    function invariantSupplyShares() public view {
         address[] memory users = targetSenders();
 
         for (uint256 i; i < allMarketParams.length; ++i) {
@@ -46,7 +46,7 @@ contract DynamicInvariantTest is BaseInvariantTest {
         }
     }
 
-    function invariantBorrowShares() public {
+    function invariantBorrowShares() public view {
         address[] memory users = targetSenders();
 
         for (uint256 i; i < allMarketParams.length; ++i) {
@@ -62,7 +62,7 @@ contract DynamicInvariantTest is BaseInvariantTest {
         }
     }
 
-    function invariantTotalSupplyGeTotalBorrow() public {
+    function invariantTotalSupplyGeTotalBorrow() public view {
         for (uint256 i; i < allMarketParams.length; ++i) {
             MarketParams memory _marketParams = allMarketParams[i];
             Id _id = _marketParams.id();
@@ -71,7 +71,7 @@ contract DynamicInvariantTest is BaseInvariantTest {
         }
     }
 
-    function invariantMorphoBalance() public {
+    function invariantMorphoBalance() public view {
         for (uint256 i; i < allMarketParams.length; ++i) {
             MarketParams memory _marketParams = allMarketParams[i];
             Id _id = _marketParams.id();
@@ -82,7 +82,7 @@ contract DynamicInvariantTest is BaseInvariantTest {
         }
     }
 
-    function invariantBadDebt() public {
+    function invariantBadDebt() public view {
         address[] memory users = targetSenders();
 
         for (uint256 i; i < allMarketParams.length; ++i) {
