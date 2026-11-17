@@ -275,7 +275,7 @@ The [`certora/dispatch`](dispatch) folder contains different contracts similar
 
 # Getting started
 
-Install `certora-cli` package with `pip install certora-cli==8.20.3`.
+Install `certora-cli` package with `pip install certora-cli`.
 To verify specification files, pass to `certoraRun` the corresponding configuration file in the [`certora/confs`](confs) folder.
 It requires having set the `CERTORAKEY` environment variable to a valid Certora key.
 You can also pass additional arguments, notably to verify a specific rule.

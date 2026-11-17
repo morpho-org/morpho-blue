@@ -39,8 +39,8 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: ">=3.15.2"
-      - run: pip install certora-cli==8.20.3
-      - name: Check every config and spec, including shared helpers
+      - run: pip install certora-cli
+      - name: Run Certora Config Linter
         run: |
           formatted="$(mktemp)"
           trap 'rm -f "$formatted"' EXIT
@@ -48,6 +48,10 @@ jobs:
             jq . "$file" > "$formatted"
             diff -u "$file" "$formatted"
           done < <(find certora/confs -type f -name '*.conf' -print0 | sort -z)
+      - name: Run Certora Specs Linter
+        run: |
+          formatted="$(mktemp)"
+          trap 'rm -f "$formatted"' EXIT
           while IFS= read -r -d '' file; do
             certoraCVLFormatter "$file" | sed 's/[[:blank:]]*$//' > "$formatted"
             diff -u "$file" "$formatted"
@@ -77,7 +81,7 @@ jobs:
         with:
           python-version: ">=3.15.2"
 
-      - run: pip install certora-cli==8.20.3
+      - run: pip install certora-cli
 
       - name: Install solc (0.8.19)
         run: |
