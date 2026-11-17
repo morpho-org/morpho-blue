@@ -9,10 +9,10 @@ import {IOracle} from "../../interfaces/IOracle.sol";
 
 import {ORACLE_PRICE_SCALE} from "../../libraries/ConstantsLib.sol";
 import {SharesMathLib} from "../../libraries/SharesMathLib.sol";
-import {SafeTransferLib} from "../../../lib/solmate/src/utils/SafeTransferLib.sol";
+import {SafeTransferLib} from "./libraries/solmate/SafeTransferLib.sol";
 import {WAD, MathLib} from "../../libraries/MathLib.sol";
 import {UtilsLib} from "../../libraries/UtilsLib.sol";
-import {ERC20} from "../../../lib/solmate/src/tokens/ERC20.sol";
+import {ERC20} from "./libraries/solmate/ERC20.sol";
 import {EventsLib} from "./libraries/EventsLib.sol";
 import {ErrorsLib} from "./libraries/ErrorsLib.sol";
 
