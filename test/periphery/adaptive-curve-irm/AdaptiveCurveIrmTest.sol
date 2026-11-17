@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import "../../../src/periphery/adaptive-curve-irm/AdaptiveCurveIrm.sol";
 
 import "../../../lib/forge-std/src/Test.sol";
+import {VmEnvironment} from "../../helpers/VmEnvironment.sol";
 
 contract AdaptiveCurveIrmTest is Test {
     using MathLib for int256;
@@ -149,8 +150,8 @@ contract AdaptiveCurveIrmTest is Test {
         market.totalBorrowAssets = initialBorrowAssets;
 
         for (uint256 i; i < 45 days / 1 minutes; ++i) {
-            market.lastUpdate = uint128(block.timestamp);
-            vm.warp(block.timestamp + 1 minutes);
+            market.lastUpdate = uint128(VmEnvironment(address(vm)).getBlockTimestamp());
+            vm.warp(VmEnvironment(address(vm)).getBlockTimestamp() + 1 minutes);
 
             uint256 avgBorrowRate = irm.borrowRate(marketParams, market);
             uint256 interest = market.totalBorrowAssets.wMulDown(avgBorrowRate.wTaylorCompounded(1 minutes));
@@ -203,8 +204,8 @@ contract AdaptiveCurveIrmTest is Test {
         assertEq(irm.rateAtTarget(marketParams.id()), ConstantsLib.INITIAL_RATE_AT_TARGET);
 
         for (uint256 i; i < 3 weeks / 1 minutes; ++i) {
-            market.lastUpdate = uint128(block.timestamp);
-            vm.warp(block.timestamp + 1 minutes);
+            market.lastUpdate = uint128(VmEnvironment(address(vm)).getBlockTimestamp());
+            vm.warp(VmEnvironment(address(vm)).getBlockTimestamp() + 1 minutes);
 
             uint256 avgBorrowRate = irm.borrowRate(marketParams, market);
             uint256 interest = market.totalBorrowAssets.wMulDown(avgBorrowRate.wTaylorCompounded(1 minutes));

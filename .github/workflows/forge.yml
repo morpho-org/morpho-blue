@@ -25,7 +25,7 @@ jobs:
       - name: Lint contracts and verification harnesses
         run: forge lint src certora --deny notes
       - name: Lint tests
-        run: FOUNDRY_PROFILE=lint-test forge lint test --deny notes
+        run: forge lint test --deny notes
 
   fmt:
     permissions:
