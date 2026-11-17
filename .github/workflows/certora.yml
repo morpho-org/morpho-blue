@@ -60,7 +60,6 @@ jobs:
     runs-on: ubuntu-latest
 
     strategy:
-      fail-fast: false
       matrix:
         conf: ${{ fromJson(needs.matrix.outputs.confs) }}
 
