@@ -3,22 +3,22 @@
 using Util as Util;
 
 methods {
-    function extSloads(bytes32[]) external returns bytes32[] => NONDET DELETE;
+    function extSloads(bytes32[]) external returns (bytes32[]) => NONDET DELETE;
 
-    function supplyShares(MorphoHarness.Id, address) external returns uint256 envfree;
-    function borrowShares(MorphoHarness.Id, address) external returns uint256 envfree;
-    function collateral(MorphoHarness.Id, address) external returns uint256 envfree;
-    function totalSupplyShares(MorphoHarness.Id) external returns uint256 envfree;
-    function totalBorrowShares(MorphoHarness.Id) external returns uint256 envfree;
-    function virtualTotalSupplyAssets(MorphoHarness.Id) external returns uint256 envfree;
-    function virtualTotalSupplyShares(MorphoHarness.Id) external returns uint256 envfree;
-    function virtualTotalBorrowAssets(MorphoHarness.Id) external returns uint256 envfree;
-    function virtualTotalBorrowShares(MorphoHarness.Id) external returns uint256 envfree;
-    function lastUpdate(MorphoHarness.Id) external returns uint256 envfree;
+    function supplyShares(MorphoHarness.Id, address) external returns (uint256) envfree;
+    function borrowShares(MorphoHarness.Id, address) external returns (uint256) envfree;
+    function collateral(MorphoHarness.Id, address) external returns (uint256) envfree;
+    function totalSupplyShares(MorphoHarness.Id) external returns (uint256) envfree;
+    function totalBorrowShares(MorphoHarness.Id) external returns (uint256) envfree;
+    function virtualTotalSupplyAssets(MorphoHarness.Id) external returns (uint256) envfree;
+    function virtualTotalSupplyShares(MorphoHarness.Id) external returns (uint256) envfree;
+    function virtualTotalBorrowAssets(MorphoHarness.Id) external returns (uint256) envfree;
+    function virtualTotalBorrowShares(MorphoHarness.Id) external returns (uint256) envfree;
+    function lastUpdate(MorphoHarness.Id) external returns (uint256) envfree;
 
-    function Util.libMulDivDown(uint256, uint256, uint256) external returns uint256 envfree;
-    function Util.libMulDivUp(uint256, uint256, uint256) external returns uint256 envfree;
-    function Util.libId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
+    function Util.libMulDivDown(uint256, uint256, uint256) external returns (uint256) envfree;
+    function Util.libMulDivUp(uint256, uint256, uint256) external returns (uint256) envfree;
+    function Util.libId(MorphoHarness.MarketParams) external returns (MorphoHarness.Id) envfree;
 }
 
 function expectedSupplyAssets(MorphoHarness.Id id, address user) returns uint256 {
@@ -43,6 +43,7 @@ rule supplyAssetsAccounting(env e, MorphoHarness.MarketParams marketParams, uint
 
     // Assume no interest as it would increase the total supply assets.
     require lastUpdate(id) == e.block.timestamp;
+
     // Safe require because of the sumSupplySharesCorrect invariant.
     require supplyShares(id, onBehalf) <= totalSupplyShares(id);
 
@@ -77,6 +78,7 @@ rule borrowAssetsAccounting(env e, MorphoHarness.MarketParams marketParams, uint
 
     // Assume no interest as it would increase the total borrowed assets.
     require lastUpdate(id) == e.block.timestamp;
+
     // Safe require because of the sumBorrowSharesCorrect invariant.
     require borrowShares(id, onBehalf) <= totalBorrowShares(id);
 

@@ -31,8 +31,44 @@ exclude_lints = [
     "unwrapped-modifier-logic",
     "unsafe-typecast",
     "block-timestamp",
+    # Existing implementation baseline; enabling CI must preserve audited bytecode.
+    "arbitrary-send-erc20",
+    "calls-loop",
+    "divide-before-multiply",
+    "ecrecover",
+    "encode-packed-collision",
+    "missing-zero-check",
+    "reentrancy-events",
+    "reentrancy-no-eth",
+    "require-revert-in-loop",
+    "solmate-safe-transfer-lib",
+    "uninitialized-local",
+    "unused-return",
 ]
 ignore = ['test/**/*.sol']
 
 [profile.no_via_ir]
 via_ir = false
+
+# Test-only baseline. Lists replace rather than extend the default exclusions.
+[profile.lint-test.lint]
+exclude_lints = [
+    "unaliased-plain-import",
+    "asm-keccak256",
+    "unwrapped-modifier-logic",
+    "unsafe-typecast",
+    "block-timestamp",
+    "arbitrary-send-erc20",
+    "calls-loop",
+    "divide-before-multiply",
+    "ecrecover",
+    "encode-packed-collision",
+    "missing-zero-check",
+    "reentrancy-events",
+    "reentrancy-no-eth",
+    "require-revert-in-loop",
+    "solmate-safe-transfer-lib",
+    "uninitialized-local",
+    "unused-return",
+    "environment-read-across-mutation",
+]

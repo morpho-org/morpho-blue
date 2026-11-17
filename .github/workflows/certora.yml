@@ -7,6 +7,13 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
 jobs:
   matrix:
     runs-on: ubuntu-latest
@@ -14,12 +21,33 @@ jobs:
       confs: ${{ steps.list.outputs.confs }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
       - id: list
-        run: echo "confs=$(find certora/confs -name '*.conf' | sed 's|^certora/confs/||;s|\.conf$||' | sort | jq -nRc '[inputs]')" >> "$GITHUB_OUTPUT"
+        run: echo "confs=$(find certora/confs -type f -name '*.conf' | sed 's|^certora/confs/||;s|\.conf$||' | sort | jq -nRc '[inputs]')" >> "$GITHUB_OUTPUT"
+
+  format:
+    name: Certora formatting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.15.2"
+      - run: pip install certora-cli==8.20.3
+      - name: Check every config and spec, including shared helpers
+        run: |
+          formatted="$(mktemp)"
+          trap 'rm -f "$formatted"' EXIT
+          while IFS= read -r -d '' file; do
+            jq . "$file" > "$formatted"
+            diff -u "$file" "$formatted"
+          done < <(find certora/confs -type f -name '*.conf' -print0 | sort -z)
+          while IFS= read -r -d '' file; do
+            certoraCVLFormatter "$file" | sed 's/[[:blank:]]*$//' > "$formatted"
+            diff -u "$file" "$formatted"
+          done < <(find certora -type f -name '*.spec' -print0 | sort -z)
 
   verify:
-    needs: matrix
+    needs: [matrix, format]
     runs-on: ubuntu-latest
 
     strategy:
@@ -28,23 +56,19 @@ jobs:
         conf: ${{ fromJson(needs.matrix.outputs.confs) }}
 
     steps:
+      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+        with:
+          distribution: temurin
+          java-version: "21"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           submodules: recursive
 
-      - name: Run Certora Config Linter
-        env:
-          CONF: ${{ matrix.conf }}
-        run: |
-          file="certora/confs/$CONF.conf"
-          echo "Fix lint errors by applying the following diff to $file:"
-          diff -u "$file" <(jq < "$file")
-
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version: ">=3.15.2"
+          python-version: "3.15.2"
 
-      - run: pip install certora-cli
+      - run: pip install certora-cli==8.20.3
 
       - name: Install solc (0.8.19)
         run: |

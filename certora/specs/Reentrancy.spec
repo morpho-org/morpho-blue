@@ -1,16 +1,20 @@
 // SPDX-License-Identifier: MIT
 methods {
-    function extSloads(bytes32[]) external returns bytes32[] => NONDET DELETE;
+    function extSloads(bytes32[]) external returns (bytes32[]) => NONDET DELETE;
 
-    function _.borrowRate(MorphoHarness.MarketParams marketParams, MorphoHarness.Market) external => summaryBorrowRate() expect uint256;
+    function _.borrowRate(MorphoHarness.MarketParams marketParams, MorphoHarness.Market) external => summaryBorrowRate() expect(uint256);
 }
 
 persistent ghost bool delegateCall;
+
 persistent ghost bool callIsBorrowRate;
+
 // True when storage has been accessed with either a SSTORE or a SLOAD.
 persistent ghost bool hasAccessedStorage;
+
 // True when a CALL has been done after storage has been accessed.
 persistent ghost bool hasCallAfterAccessingStorage;
+
 // True when storage has been accessed, after which an external call is made, followed by accessing storage again.
 persistent ghost bool hasReentrancyUnsafeCall;
 

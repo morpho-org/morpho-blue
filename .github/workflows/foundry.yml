@@ -7,16 +7,36 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
   cancel-in-progress: true
 
 jobs:
+  lint:
+    name: Solidity lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+      - uses: foundry-rs/foundry-toolchain@dba66c27052e63476d886f22216e119ba7e615bf # v1.9.2
+        with:
+          version: stable # Deliberately exercise the current stable release.
+      - name: Lint contracts and verification harnesses
+        run: forge lint src certora --deny notes
+      - name: Lint tests
+        run: FOUNDRY_PROFILE=lint-test forge lint test --deny notes
+
   fmt:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: foundry-rs/foundry-toolchain@dba66c27052e63476d886f22216e119ba7e615bf # v1.9.2
+        with:
+          version: stable # Deliberately exercise the current stable release.
       - run: forge fmt --check
 
   sizes:
@@ -26,6 +46,8 @@ jobs:
         with:
           submodules: recursive
       - uses: foundry-rs/foundry-toolchain@dba66c27052e63476d886f22216e119ba7e615bf # v1.9.2
+        with:
+          version: stable # Deliberately exercise the current stable release.
       - run: forge build --force --sizes
 
   test:
@@ -36,6 +58,8 @@ jobs:
         with:
           submodules: recursive
       - uses: foundry-rs/foundry-toolchain@dba66c27052e63476d886f22216e119ba7e615bf # v1.9.2
+        with:
+          version: stable # Deliberately exercise the current stable release.
       - name: Check foundry.lock matches submodule pins
         run: forge build --locked
       - run: forge test -vvv
