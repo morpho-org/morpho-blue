@@ -21,9 +21,6 @@ runs = 1024
 depth = 32
 fail_on_revert = true
 
-[profile.default.fmt]
-wrap_comments = true
-
 [lint]
 exclude_lints = [
     "arbitrary-send-erc20",
