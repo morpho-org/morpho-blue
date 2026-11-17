@@ -25,7 +25,7 @@ jobs:
           submodules: recursive
       - uses: foundry-rs/foundry-toolchain@dba66c27052e63476d886f22216e119ba7e615bf # v1.9.2
         with:
-          version: stable # Deliberately exercise the current stable release.
+          version: nightly # Catch upstream Foundry changes before the next stable release.
       - name: Lint contracts and verification harnesses
         run: forge lint src certora --deny notes
       - name: Lint tests
@@ -39,7 +39,7 @@ jobs:
           persist-credentials: false
       - uses: foundry-rs/foundry-toolchain@dba66c27052e63476d886f22216e119ba7e615bf # v1.9.2
         with:
-          version: stable # Deliberately exercise the current stable release.
+          version: nightly # Catch upstream Foundry changes before the next stable release.
       - run: forge fmt --check
 
   sizes:
@@ -51,7 +51,7 @@ jobs:
           submodules: recursive
       - uses: foundry-rs/foundry-toolchain@dba66c27052e63476d886f22216e119ba7e615bf # v1.9.2
         with:
-          version: stable # Deliberately exercise the current stable release.
+          version: nightly # Catch upstream Foundry changes before the next stable release.
       - run: forge build --force --sizes
 
   test:
@@ -64,7 +64,7 @@ jobs:
           submodules: recursive
       - uses: foundry-rs/foundry-toolchain@dba66c27052e63476d886f22216e119ba7e615bf # v1.9.2
         with:
-          version: stable # Deliberately exercise the current stable release.
+          version: nightly # Catch upstream Foundry changes before the next stable release.
       - name: Check foundry.lock matches submodule pins
         run: forge build --locked
       - run: forge test -vvv
