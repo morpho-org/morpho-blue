@@ -1,4 +1,5 @@
 [profile.default]
+ignored_warnings_from = ["lib"]
 libs = ["lib"]
 names = true
 sizes = true
