@@ -42,20 +42,16 @@ jobs:
       - run: pip install certora-cli
       - name: Run Certora Config Linter
         run: |
-          formatted="$(mktemp)"
-          trap 'rm -f "$formatted"' EXIT
-          while IFS= read -r -d '' file; do
-            jq . "$file" > "$formatted"
-            diff -u "$file" "$formatted"
-          done < <(find certora/confs -type f -name '*.conf' -print0 | sort -z)
+          find certora/confs -type f -name '*.conf' | sort |
+          while read -r file; do
+            jq . "$file" | diff -u "$file" -
+          done
       - name: Run Certora Specs Linter
         run: |
-          formatted="$(mktemp)"
-          trap 'rm -f "$formatted"' EXIT
-          while IFS= read -r -d '' file; do
-            certoraCVLFormatter "$file" | sed 's/[[:blank:]]*$//' > "$formatted"
-            diff -u "$file" "$formatted"
-          done < <(find certora -type f -name '*.spec' -print0 | sort -z)
+          find certora -type f -name '*.spec' | sort |
+          while read -r file; do
+            certoraCVLFormatter "$file" | diff -u "$file" -
+          done
 
   verify:
     permissions:
