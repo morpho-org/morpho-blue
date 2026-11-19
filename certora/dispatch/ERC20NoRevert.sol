@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+// forge-lint: disable-next-line(missing-inheritance) Certora test token, not deployed.
 contract ERC20NoRevert {
     address public owner;
     uint256 public totalSupply;
@@ -11,6 +12,7 @@ contract ERC20NoRevert {
         owner = msg.sender;
     }
 
+    // forge-lint: disable-next-line(modifier-used-only-once) Certora test token, not deployed.
     modifier onlyOwner() {
         require(msg.sender == owner);
         _;
