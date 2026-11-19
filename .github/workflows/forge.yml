@@ -28,6 +28,7 @@ jobs:
         run: forge lint test --deny notes
 
   fmt:
+    name: format
     permissions:
       contents: read
     runs-on: ubuntu-latest
@@ -41,6 +42,7 @@ jobs:
       - run: forge fmt src test certora --check
 
   build:
+    name: sizes
     permissions:
       contents: read
     runs-on: ubuntu-latest
