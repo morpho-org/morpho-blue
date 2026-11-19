@@ -13,6 +13,10 @@ If a tool needs updating, do an update PR across the repos you are checking.
 
 If the CI or the CI check section of AGENTS.md of one of the repos has changed since your last check, propagate the change to the other repos if it makes sense. Otherwise the difference should be justified by a comment.
 
+Do not report:
+- A download failure that passes on a later run.
+- A change applied the same way in every repo.
+
 Allowed differences:
 - Fork-test RPC secret: `MORPHO_RPC_KEY` (deployments) vs `PROTOCOL_ALCHEMY_KEY` (morpho-blue-oracles, morpho-token).
 - CI or foundry.toml settings where the difference is explained by a comment above, or that follow from what the repo contains (like no Certora, different solc versions, compiler settings, Makefile needs, etc.).
