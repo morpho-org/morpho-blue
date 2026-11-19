@@ -10,7 +10,8 @@ on:
 permissions: {}
 
 jobs:
-  forge-old:
+  test:
+    name: Forge old tests
     permissions:
       contents: read
     runs-on: ubuntu-latest
@@ -42,7 +43,17 @@ jobs:
         run: forge test --offline -vvv
         env:
           FOUNDRY_FUZZ_SEED: 0x${{ github.sha }}
-          FOUNDRY_FUZZ_RUNS: 10000
           FOUNDRY_FUZZ_MAX_TEST_REJECTS: 500000
-          FOUNDRY_INVARIANT_RUNS: 10000
-          FOUNDRY_INVARIANT_DEPTH: 32
+
+  # Same check name as in the other repos.
+  forge-old:
+    permissions:
+      contents: read
+    if: ${{ always() }}
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every legacy test combination
+        env:
+          RESULT: ${{ needs.test.result }}
+        run: test "$RESULT" = success

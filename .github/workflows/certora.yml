@@ -33,6 +33,7 @@ jobs:
         run: |
           java_dir="$RUNNER_TEMP/temurin-21.0.13+9"
           curl -fsSL -o "$RUNNER_TEMP/java.tar.gz" "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.13%2B9/OpenJDK21U-jdk_x64_linux_hotspot_21.0.13_9.tar.gz"
+          # setup-java has no hardcoded Java hash; this check is needed.
           echo "d7f5d5cf865a2902b70ff549b97586a7d3f234e016f041ab447ea740c7d66d1c  $RUNNER_TEMP/java.tar.gz" | sha256sum --check --strict
           mkdir -p "$java_dir"
           tar -xzf "$RUNNER_TEMP/java.tar.gz" -C "$java_dir" --strip-components=1
@@ -42,16 +43,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      # setup-python is commit-SHA-pinned and checks a hardcoded Python hash; no explicit check needed.
       - name: Install Python
-        run: |
-          python_dir="$RUNNER_TEMP/python-3.15.2"
-          curl -fsSL -o "$RUNNER_TEMP/python.tar.gz" "https://github.com/astral-sh/python-build-standalone/releases/download/20261110/cpython-3.15.2%2B20261110-x86_64-unknown-linux-gnu-install_only_stripped.tar.gz"
-          echo "ad23d1b73fac26440b0306ae06911031344c49a90ec19716c8362e7fa40cae43  $RUNNER_TEMP/python.tar.gz" | sha256sum --check --strict
-          mkdir -p "$python_dir"
-          tar -xzf "$RUNNER_TEMP/python.tar.gz" -C "$python_dir" --strip-components=1
-          echo "$python_dir/bin" >> "$GITHUB_PATH"
-          "$python_dir/bin/python" --version
-          "$python_dir/bin/python" -m pip --version
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.15.2"
       - run: pip install certora-cli
       - name: Run Certora Config Linter
         run: |
@@ -80,6 +76,7 @@ jobs:
         run: |
           java_dir="$RUNNER_TEMP/temurin-21.0.13+9"
           curl -fsSL -o "$RUNNER_TEMP/java.tar.gz" "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.13%2B9/OpenJDK21U-jdk_x64_linux_hotspot_21.0.13_9.tar.gz"
+          # setup-java has no hardcoded Java hash; this check is needed.
           echo "d7f5d5cf865a2902b70ff549b97586a7d3f234e016f041ab447ea740c7d66d1c  $RUNNER_TEMP/java.tar.gz" | sha256sum --check --strict
           mkdir -p "$java_dir"
           tar -xzf "$RUNNER_TEMP/java.tar.gz" -C "$java_dir" --strip-components=1
@@ -92,16 +89,11 @@ jobs:
           persist-credentials: false
           submodules: recursive
 
+      # setup-python is commit-SHA-pinned and checks a hardcoded Python hash; no explicit check needed.
       - name: Install Python
-        run: |
-          python_dir="$RUNNER_TEMP/python-3.15.2"
-          curl -fsSL -o "$RUNNER_TEMP/python.tar.gz" "https://github.com/astral-sh/python-build-standalone/releases/download/20261110/cpython-3.15.2%2B20261110-x86_64-unknown-linux-gnu-install_only_stripped.tar.gz"
-          echo "ad23d1b73fac26440b0306ae06911031344c49a90ec19716c8362e7fa40cae43  $RUNNER_TEMP/python.tar.gz" | sha256sum --check --strict
-          mkdir -p "$python_dir"
-          tar -xzf "$RUNNER_TEMP/python.tar.gz" -C "$python_dir" --strip-components=1
-          echo "$python_dir/bin" >> "$GITHUB_PATH"
-          "$python_dir/bin/python" --version
-          "$python_dir/bin/python" -m pip --version
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.15.2"
 
       - name: Install certora
         run: pip install certora-cli

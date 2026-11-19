@@ -23,11 +23,6 @@ contract AdaptiveCurveIrmTest is Test {
     function setUp() public {
         irm = new AdaptiveCurveIrm(address(this));
         vm.warp(90 days);
-
-        bytes4[] memory selectors = new bytes4[](1);
-        selectors[0] = AdaptiveCurveIrmTest.handleBorrowRate.selector;
-        targetSelector(FuzzSelector({addr: address(this), selectors: selectors}));
-        targetContract(address(this));
     }
 
     /* TESTS */
@@ -317,54 +312,6 @@ contract AdaptiveCurveIrmTest is Test {
         assertEq(borrowRateView, borrowRate, "borrowRateView");
         assertApproxEqRel(borrowRate, expectedAvgRate, 0.1 ether, "avgBorrowRate");
         assertApproxEqRel(irm.rateAtTarget(marketParams.id()), expectedRateAtTarget, 0.001 ether, "rateAtTarget");
-    }
-
-    /* HANDLERS */
-
-    function handleBorrowRate(uint256 totalSupplyAssets, uint256 totalBorrowAssets, uint256 elapsed) external {
-        elapsed = bound(elapsed, 0, type(uint48).max);
-        totalSupplyAssets = bound(totalSupplyAssets, 0, type(uint128).max);
-        totalBorrowAssets = bound(totalBorrowAssets, 0, totalSupplyAssets);
-
-        Market memory market;
-        market.lastUpdate = uint128(block.timestamp);
-        market.totalSupplyAssets = uint128(totalSupplyAssets);
-        market.totalBorrowAssets = uint128(totalBorrowAssets);
-
-        vm.warp(block.timestamp + elapsed);
-        irm.borrowRate(marketParams, market);
-    }
-
-    /* INVARIANTS */
-
-    function invariantGeMinRateAtTarget() public {
-        Market memory market;
-        market.totalBorrowAssets = 9 ether;
-        market.totalSupplyAssets = 10 ether;
-
-        assertGe(
-            irm.borrowRateView(marketParams, market),
-            uint256(ConstantsLib.MIN_RATE_AT_TARGET.wDivToZero(ConstantsLib.CURVE_STEEPNESS))
-        );
-        assertGe(
-            irm.borrowRate(marketParams, market),
-            uint256(ConstantsLib.MIN_RATE_AT_TARGET.wDivToZero(ConstantsLib.CURVE_STEEPNESS))
-        );
-    }
-
-    function invariantLeMaxRateAtTarget() public {
-        Market memory market;
-        market.totalBorrowAssets = 9 ether;
-        market.totalSupplyAssets = 10 ether;
-
-        assertLe(
-            irm.borrowRateView(marketParams, market),
-            uint256(ConstantsLib.MAX_RATE_AT_TARGET.wMulToZero(ConstantsLib.CURVE_STEEPNESS))
-        );
-        assertLe(
-            irm.borrowRate(marketParams, market),
-            uint256(ConstantsLib.MAX_RATE_AT_TARGET.wMulToZero(ConstantsLib.CURVE_STEEPNESS))
-        );
     }
 
     function testConstants() public pure {

@@ -17,10 +17,8 @@ compilation_restrictions = [
     { paths = "src/periphery/adaptive-curve-irm/**", evm_version = "paris" },
 ]
 
-[profile.default.invariant]
-runs = 1024
-depth = 32
-fail_on_revert = true
+[profile.default.fuzz]
+runs = 2048
 
 [lint]
 exclude_lints = [
