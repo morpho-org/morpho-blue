@@ -29,17 +29,8 @@ jobs:
     name: Certora formatting
     runs-on: ubuntu-latest
     steps:
-      - name: Install Java
-        run: |
-          java_dir="$RUNNER_TEMP/temurin-21.0.13+9"
-          curl -fsSL -o "$RUNNER_TEMP/java.tar.gz" "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.13%2B9/OpenJDK21U-jdk_x64_linux_hotspot_21.0.13_9.tar.gz"
-          # setup-java has no hardcoded Java hash; this check is needed.
-          echo "d7f5d5cf865a2902b70ff549b97586a7d3f234e016f041ab447ea740c7d66d1c  $RUNNER_TEMP/java.tar.gz" | sha256sum --check --strict
-          mkdir -p "$java_dir"
-          tar -xzf "$RUNNER_TEMP/java.tar.gz" -C "$java_dir" --strip-components=1
-          echo "JAVA_HOME=$java_dir" >> "$GITHUB_ENV"
-          echo "$java_dir/bin" >> "$GITHUB_PATH"
-          "$java_dir/bin/java" -version
+      - name: Use Java 21
+        run: echo "$JAVA_HOME_21_X64/bin" >> "$GITHUB_PATH"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
@@ -68,17 +59,8 @@ jobs:
         conf: ${{ fromJson(needs.matrix.outputs.confs) }}
 
     steps:
-      - name: Install Java
-        run: |
-          java_dir="$RUNNER_TEMP/temurin-21.0.13+9"
-          curl -fsSL -o "$RUNNER_TEMP/java.tar.gz" "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.13%2B9/OpenJDK21U-jdk_x64_linux_hotspot_21.0.13_9.tar.gz"
-          # setup-java has no hardcoded Java hash; this check is needed.
-          echo "d7f5d5cf865a2902b70ff549b97586a7d3f234e016f041ab447ea740c7d66d1c  $RUNNER_TEMP/java.tar.gz" | sha256sum --check --strict
-          mkdir -p "$java_dir"
-          tar -xzf "$RUNNER_TEMP/java.tar.gz" -C "$java_dir" --strip-components=1
-          echo "JAVA_HOME=$java_dir" >> "$GITHUB_ENV"
-          echo "$java_dir/bin" >> "$GITHUB_PATH"
-          "$java_dir/bin/java" -version
+      - name: Use Java 21
+        run: echo "$JAVA_HOME_21_X64/bin" >> "$GITHUB_PATH"
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -88,19 +70,16 @@ jobs:
       - name: Install certora
         run: pip install certora-cli
 
-      - name: Install solc (0.8.19)
+      - name: Install solc
         run: |
-          wget https://github.com/ethereum/solidity/releases/download/v0.8.19/solc-static-linux
-          echo "7a5c1d3dc9a8eba62bb2ec37192c9178ae5fe8a54a56e5573fd3c9c17cd9eb48  solc-static-linux" | sha256sum --check --strict
-          chmod +x solc-static-linux
-          sudo mv solc-static-linux /usr/local/bin/solc-0.8.19
-
-      - name: Install solc (0.8.27)
-        run: |
-          wget https://github.com/ethereum/solidity/releases/download/v0.8.27/solc-static-linux
-          echo "b9977d500c17cba6f0032ca939ef98c4decf6363f19f386d05fb02f708115264  solc-static-linux" | sha256sum --check --strict
-          chmod +x solc-static-linux
-          sudo mv solc-static-linux /usr/local/bin/solc-0.8.27
+          echo "0.8.19 7a5c1d3dc9a8eba62bb2ec37192c9178ae5fe8a54a56e5573fd3c9c17cd9eb48
+          0.8.27 b9977d500c17cba6f0032ca939ef98c4decf6363f19f386d05fb02f708115264" |
+          while read -r version sha256; do
+            curl -fsSL -o solc "https://github.com/ethereum/solidity/releases/download/v$version/solc-static-linux"
+            echo "$sha256  solc" | sha256sum --check --strict
+            chmod +x solc
+            sudo mv solc "/usr/local/bin/solc-$version"
+          done
 
       - name: Verify ${{ matrix.conf }} specification
         run: certoraRun "certora/confs/$CONF.conf"
