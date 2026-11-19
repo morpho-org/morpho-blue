@@ -12,12 +12,6 @@ contract ERC20USDT {
         owner = msg.sender;
     }
 
-    // forge-lint: disable-next-line(modifier-used-only-once) Certora test token, not deployed.
-    modifier onlyOwner() {
-        require(msg.sender == owner);
-        _;
-    }
-
     function _transfer(address _from, address _to, uint256 _amount) internal {
         balanceOf[_from] -= _amount;
         balanceOf[_to] += _amount;
@@ -40,7 +34,8 @@ contract ERC20USDT {
         allowance[msg.sender][_spender] = _amount;
     }
 
-    function mint(address _receiver, uint256 _amount) public onlyOwner {
+    function mint(address _receiver, uint256 _amount) public {
+        require(msg.sender == owner);
         balanceOf[_receiver] += _amount;
         totalSupply += _amount;
     }
