@@ -15,18 +15,19 @@ contract RewardsDistributor is IRewardsDistributor {
 
     /* STORAGE */
 
-    /// @notice The number of campaigns created. IDs start at 1.
+    /// @inheritdoc IRewardsDistributor
     uint256 public campaignCount;
-    /// @notice The parameters and remaining funded balance of each campaign.
+    /// @inheritdoc IRewardsDistributor
     mapping(uint256 => Campaign) public campaigns;
-    /// @notice The earliest acceptance timestamp for each pending campaign root.
+    /// @inheritdoc IRewardsDistributor
     mapping(uint256 id => mapping(bytes32 root => uint256 validAt)) public pendingRoot;
-    /// @notice The cumulative amount already claimed by an account in a campaign.
+    /// @inheritdoc IRewardsDistributor
     mapping(uint256 id => mapping(address account => uint256)) public claimed;
 
     /* EXTERNAL */
 
     /// @notice Batches calls to this contract, preserving the caller and reverting the whole batch on failure.
+    /// @dev Useful for EOAs to batch admin calls.
     function multicall(bytes[] calldata data) external returns (bytes[] memory results) {
         results = new bytes[](data.length);
         for (uint256 i; i < data.length; ++i) {
@@ -59,6 +60,8 @@ contract RewardsDistributor is IRewardsDistributor {
     }
 
     /// @notice Submits a root, restarting its timelock if it is already pending.
+    /// @dev Will revert if the timelock value is type(uint256).max or any value that overflows when added to the block
+    /// timestamp.
     /// @dev Several roots may be pending at once and any matured one can be accepted. Updaters should revoke roots
     /// they no longer want.
     function submitRoot(uint256 id, bytes32 newRoot) external {
@@ -98,6 +101,8 @@ contract RewardsDistributor is IRewardsDistributor {
     }
 
     /// @notice Transfers the campaign's updater role to a nonzero address.
+    /// @dev Roles are not "two-step", so anyone can give a role to anyone, but it does not mean that they will exercise
+    /// it.
     function setUpdater(uint256 id, address newUpdater) external {
         if (msg.sender != campaigns[id].updater) revert NotUpdater();
         if (newUpdater == address(0)) revert ZeroAddress();

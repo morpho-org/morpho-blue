@@ -21,5 +21,3 @@ forge fmt --check
 forge build --locked
 forge test --match-path 'test/periphery/rewards-distributor/*'
 ```
-
-The contracts use Solidity 0.8.27 and Morpho Blue's safe transfer library, which checks token code and transfer results. Merkle proofs use sorted pairs and double-hashed leaves, matching URD tooling. Pending roots use a nonzero `validAt` timestamp as their presence indicator; chain timestamps are assumed to be nonzero.

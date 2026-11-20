@@ -13,7 +13,6 @@ struct Campaign {
 
 /// @title IRewardsDistributor
 /// @author Morpho Labs
-/// @custom:contact security@morpho.org
 /// @notice Singleton distribution of independently funded, timelocked rewards campaigns.
 interface IRewardsDistributor {
     error ZeroAddress();
@@ -39,12 +38,16 @@ interface IRewardsDistributor {
     event SetUpdater(uint256 indexed id, address indexed updater);
     event Claim(uint256 indexed id, address indexed account, uint256 amount);
 
+    /// @notice The number of campaigns created. IDs start at 1.
     function campaignCount() external view returns (uint256);
+    /// @notice The state of the campaign corresponding to `id`.
     function campaigns(uint256 id)
         external
         view
         returns (address token, address updater, uint256 timelock, uint256 balance, bytes32 root, uint256 pausedAt);
+    /// @notice The earliest acceptance timestamp for each pending campaign root.
     function pendingRoot(uint256 id, bytes32 root) external view returns (uint256 validAt);
+    /// @notice The cumulative amount already claimed by an account in a campaign.
     function claimed(uint256 id, address account) external view returns (uint256);
     function createCampaign(address token, address updater, uint256 timelock) external returns (uint256 id);
     function fund(uint256 id, uint256 amount) external;
