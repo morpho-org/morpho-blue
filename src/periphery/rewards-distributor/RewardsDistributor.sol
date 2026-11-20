@@ -7,14 +7,13 @@ import {EventsLib} from "./libraries/EventsLib.sol";
 import {ERC20} from "../../../lib/solmate/src/tokens/ERC20.sol";
 import {SafeTransferLib} from "../../../lib/solmate/src/utils/SafeTransferLib.sol";
 import {MerkleProofLib} from "../../../lib/solmate/src/utils/MerkleProofLib.sol";
-import {ReentrancyGuard} from "../../../lib/solmate/src/utils/ReentrancyGuard.sol";
 
 /// @title RewardsDistributor
 /// @author Morpho Labs
 /// @custom:contact security@morpho.org
 /// @notice Distributes rewards through independently funded, timelocked Merkle campaigns.
-/// @dev Tokens must not rebase or debit senders more than the requested transfer amount.
-contract RewardsDistributor is ReentrancyGuard {
+/// @dev Fee-on-transfer and rebasing tokens are not supported.
+contract RewardsDistributor {
     using SafeTransferLib for ERC20;
 
     /* STORAGE */
@@ -27,18 +26,6 @@ contract RewardsDistributor is ReentrancyGuard {
     mapping(uint256 => PendingRoot) public pendingRoot;
     /// @notice The cumulative amount already claimed by an account in a campaign.
     mapping(uint256 id => mapping(address account => uint256)) public claimed;
-
-    /* MODIFIERS */
-
-    modifier knownCampaign(uint256 id) {
-        require(campaigns[id].token != address(0), ErrorsLib.UNKNOWN_CAMPAIGN);
-        _;
-    }
-
-    modifier onlyUpdater(uint256 id) {
-        require(msg.sender == campaigns[id].updater, ErrorsLib.NOT_UPDATER_ROLE);
-        _;
-    }
 
     /* EXTERNAL */
 
@@ -65,25 +52,25 @@ contract RewardsDistributor is ReentrancyGuard {
         emit EventsLib.CampaignCreated(id, msg.sender, token, updater, timelock);
     }
 
-    /// @notice Funds a campaign, crediting only tokens actually received from the caller.
-    function fund(uint256 id, uint256 amount) external nonReentrant knownCampaign(id) {
+    /// @notice Funds a campaign with the specified amount from the caller.
+    function fund(uint256 id, uint256 amount) external {
+        require(campaigns[id].token != address(0), ErrorsLib.UNKNOWN_CAMPAIGN);
         ERC20 token = ERC20(campaigns[id].token);
-        uint256 beforeBalance = token.balanceOf(address(this));
         token.safeTransferFrom(msg.sender, address(this), amount);
-        uint256 received = token.balanceOf(address(this)) - beforeBalance;
-        campaigns[id].balance += received;
-        emit EventsLib.Funded(id, msg.sender, received);
+        campaigns[id].balance += amount;
+        emit EventsLib.Funded(id, msg.sender, amount);
     }
 
     /// @notice Submits or replaces a pending root, restarting the campaign's timelock.
-    function submitRoot(uint256 id, bytes32 newRoot) external knownCampaign(id) onlyUpdater(id) {
+    function submitRoot(uint256 id, bytes32 newRoot) external {
+        require(msg.sender == campaigns[id].updater, ErrorsLib.NOT_UPDATER_ROLE);
         require(pendingRoot[id].validAt == 0 || newRoot != pendingRoot[id].root, ErrorsLib.ALREADY_PENDING);
         pendingRoot[id] = PendingRoot(newRoot, block.timestamp + campaigns[id].timelock);
         emit EventsLib.PendingRootSet(id, msg.sender, newRoot);
     }
 
     /// @notice Accepts a matured pending root. Anyone may call this function.
-    function acceptRoot(uint256 id) external knownCampaign(id) {
+    function acceptRoot(uint256 id) external {
         require(pendingRoot[id].validAt != 0, ErrorsLib.NO_PENDING_ROOT);
         require(block.timestamp >= pendingRoot[id].validAt, ErrorsLib.TIMELOCK_NOT_EXPIRED);
         campaigns[id].root = pendingRoot[id].root;
@@ -92,21 +79,24 @@ contract RewardsDistributor is ReentrancyGuard {
     }
 
     /// @notice Revokes a pending root. A matured root may be accepted before this transaction.
-    function revokePendingRoot(uint256 id) external knownCampaign(id) onlyUpdater(id) {
+    function revokePendingRoot(uint256 id) external {
+        require(msg.sender == campaigns[id].updater, ErrorsLib.NOT_UPDATER_ROLE);
         require(pendingRoot[id].validAt != 0, ErrorsLib.NO_PENDING_ROOT);
         delete pendingRoot[id];
         emit EventsLib.PendingRootRevoked(id, msg.sender);
     }
 
     /// @notice Stops claims and deletes any pending root. Resuming requires a new timelocked submission.
-    function pauseCampaign(uint256 id) external knownCampaign(id) onlyUpdater(id) {
+    function pauseCampaign(uint256 id) external {
+        require(msg.sender == campaigns[id].updater, ErrorsLib.NOT_UPDATER_ROLE);
         campaigns[id].root = bytes32(0);
         delete pendingRoot[id];
         emit EventsLib.CampaignPaused(id, msg.sender);
     }
 
     /// @notice Transfers the campaign's updater role to a nonzero address.
-    function setUpdater(uint256 id, address newUpdater) external knownCampaign(id) onlyUpdater(id) {
+    function setUpdater(uint256 id, address newUpdater) external {
+        require(msg.sender == campaigns[id].updater, ErrorsLib.NOT_UPDATER_ROLE);
         require(newUpdater != address(0), ErrorsLib.ZERO_ADDRESS);
         require(newUpdater != campaigns[id].updater, ErrorsLib.ALREADY_SET);
         campaigns[id].updater = newUpdater;
@@ -117,8 +107,6 @@ contract RewardsDistributor is ReentrancyGuard {
     /// @return amount The incremental amount transferred from the campaign.
     function claim(uint256 id, address account, uint256 claimable, bytes32[] calldata proof)
         external
-        nonReentrant
-        knownCampaign(id)
         returns (uint256 amount)
     {
         Campaign storage campaign = campaigns[id];

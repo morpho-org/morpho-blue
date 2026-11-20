@@ -4,7 +4,7 @@ A singleton distributor for new rewards campaigns. Each campaign has one token, 
 
 Anyone can create and fund campaigns, accept matured roots, and claim on behalf of recipients. Updaters submit or revoke roots and can immediately pause a campaign; resuming always requires submission and acceptance through its timelock. Claims are cumulative and use the URD double-hashed account/token/amount leaf format.
 
-Only funds received through `fund` are credited. Direct transfers are unallocated and cannot be recovered. Funding supports transfer fees by crediting actual receipts; outgoing transfer fees may reduce what recipients receive. Rebasing tokens and tokens that debit the sender more than the requested transfer amount are not supported.
+Only amounts supplied through `fund` are credited. Direct transfers are unallocated and cannot be recovered. Funding credits the specified amount without measuring token balance changes. Fee-on-transfer and rebasing tokens are not supported.
 
 Campaign IDs start at 1. Zero roots may be submitted and accepted, but do not enable claims. A zero timelock still requires an explicit acceptance. Existing URD proofs can be reused; leaves do not bind campaign IDs, so updaters must choose campaign roots carefully.
 

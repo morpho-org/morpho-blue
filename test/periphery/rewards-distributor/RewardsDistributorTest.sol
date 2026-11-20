@@ -15,50 +15,6 @@ contract RewardsToken is ERC20Mock {
     }
 }
 
-contract FeeToken is RewardsToken {
-    function transfer(address to, uint256 amount) public override returns (bool) {
-        uint256 fee = amount / 10;
-        setBalance(msg.sender, balanceOf[msg.sender] - fee);
-        return super.transfer(to, amount - fee);
-    }
-
-    function transferFrom(address from, address to, uint256 amount) public override returns (bool) {
-        uint256 beforeBalance = balanceOf[to];
-        super.transferFrom(from, to, amount);
-        setBalance(to, beforeBalance + amount - amount / 10);
-        return true;
-    }
-}
-
-contract CallbackToken is RewardsToken {
-    address internal target;
-    bytes internal callback;
-
-    function configure(address target_, bytes calldata callback_) external {
-        target = target_;
-        callback = callback_;
-    }
-
-    function transfer(address to, uint256 amount) public override returns (bool) {
-        super.transfer(to, amount);
-        _callback();
-        return true;
-    }
-
-    function transferFrom(address from, address to, uint256 amount) public override returns (bool) {
-        super.transferFrom(from, to, amount);
-        _callback();
-        return true;
-    }
-
-    function _callback() internal {
-        if (target != address(0)) {
-            (bool success, bytes memory result) = target.call(callback);
-            require(!success && keccak256(result) == keccak256(abi.encodeWithSignature("Error(string)", "REENTRANCY")));
-        }
-    }
-}
-
 contract RewardsDistributorTest is Test {
     uint256 internal constant TIMELOCK = 6 hours;
     RewardsDistributor internal distributor;
@@ -153,25 +109,6 @@ contract RewardsDistributorTest is Test {
         distributor.fund(id, 40);
         assertEq(_balance(id), 40);
         assertEq(token.balanceOf(address(distributor)), 140);
-    }
-
-    function testFeeOnTransferCreditsActualReceipts(uint128 amount) public {
-        FeeToken feeToken = new FeeToken();
-        uint256 feeId = distributor.createCampaign(address(feeToken), updater, TIMELOCK);
-        feeToken.mint(address(this), amount);
-        feeToken.approve(address(distributor), amount);
-        uint256 received = uint256(amount) - uint256(amount) / 10;
-        vm.expectEmit(true, true, false, true);
-        emit EventsLib.Funded(feeId, address(this), received);
-        distributor.fund(feeId, amount);
-        assertEq(_balance(feeId), received);
-        assertEq(feeToken.balanceOf(address(distributor)), received);
-        if (received == 0) return;
-        bytes32[] memory leaves = _tree(address(feeToken), received);
-        _activate(feeId, merkle.getRoot(leaves));
-        distributor.claim(feeId, alice, received, merkle.getProof(leaves, 0));
-        assertEq(_balance(feeId), 0);
-        assertEq(feeToken.balanceOf(alice), received - received / 10);
     }
 
     function testCampaignIsolation(uint128 fundingA, uint128 fundingB) public {
@@ -392,10 +329,18 @@ contract RewardsDistributorTest is Test {
         calls[4] = abi.encodeCall(distributor.pauseCampaign, (unknown));
         calls[5] = abi.encodeCall(distributor.setUpdater, (unknown, bob));
         calls[6] = abi.encodeCall(distributor.claim, (unknown, alice, 1, new bytes32[](0)));
+        string[] memory errors = new string[](7);
+        errors[0] = ErrorsLib.UNKNOWN_CAMPAIGN;
+        errors[1] = ErrorsLib.NOT_UPDATER_ROLE;
+        errors[2] = ErrorsLib.NO_PENDING_ROOT;
+        errors[3] = ErrorsLib.NOT_UPDATER_ROLE;
+        errors[4] = ErrorsLib.NOT_UPDATER_ROLE;
+        errors[5] = ErrorsLib.NOT_UPDATER_ROLE;
+        errors[6] = ErrorsLib.ROOT_NOT_SET;
         for (uint256 i; i < calls.length; ++i) {
             (bool success, bytes memory reason) = address(distributor).call(calls[i]);
             assertFalse(success);
-            assertEq(reason, abi.encodeWithSignature("Error(string)", ErrorsLib.UNKNOWN_CAMPAIGN));
+            assertEq(reason, abi.encodeWithSignature("Error(string)", errors[i]));
         }
     }
 
@@ -447,7 +392,7 @@ contract RewardsDistributorTest is Test {
         calls[0] = abi.encodeCall(distributor.submitRoot, (id, bytes32(uint256(1))));
         calls[1] = abi.encodeCall(distributor.acceptRoot, (3));
         vm.prank(updater);
-        vm.expectRevert(bytes(ErrorsLib.UNKNOWN_CAMPAIGN));
+        vm.expectRevert(bytes(ErrorsLib.NO_PENDING_ROOT));
         distributor.multicall(calls);
         (bytes32 root, uint256 validAt) = distributor.pendingRoot(id);
         assertEq(root, bytes32(0));
@@ -459,32 +404,5 @@ contract RewardsDistributorTest is Test {
         vm.expectRevert();
         distributor.fund(id, 100);
         assertEq(_balance(id), 0);
-    }
-
-    function testReentrancyGuardOnFundAndClaim() public {
-        CallbackToken callbackToken = new CallbackToken();
-        uint256 callbackId = distributor.createCampaign(address(callbackToken), updater, 0);
-        callbackToken.mint(address(this), 200);
-        callbackToken.approve(address(distributor), 200);
-        bytes32[] memory leaves = _tree(address(callbackToken), 100);
-        bytes32[] memory proof = merkle.getProof(leaves, 0);
-        _activate(callbackId, merkle.getRoot(leaves));
-        bytes[] memory callbacks = new bytes[](2);
-        callbacks[0] = abi.encodeCall(distributor.fund, (callbackId, 0));
-        callbacks[1] = abi.encodeCall(distributor.claim, (callbackId, alice, 100, proof));
-        for (uint256 i; i < callbacks.length; ++i) {
-            callbackToken.configure(address(distributor), callbacks[i]);
-            distributor.fund(callbackId, 100);
-            assertEq(_balance(callbackId), 100 * (i + 1));
-            assertEq(callbackToken.balanceOf(address(distributor)), 100 * (i + 1));
-        }
-        for (uint256 i; i < callbacks.length; ++i) {
-            address account = i == 0 ? alice : bob;
-            bytes32[] memory accountProof = merkle.getProof(leaves, i);
-            callbackToken.configure(address(distributor), callbacks[i]);
-            distributor.claim(callbackId, account, 100, accountProof);
-            assertEq(_balance(callbackId), 100 * (1 - i));
-            assertEq(distributor.claimed(callbackId, account), 100);
-        }
     }
 }
