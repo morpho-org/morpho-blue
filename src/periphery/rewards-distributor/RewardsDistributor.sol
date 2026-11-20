@@ -42,6 +42,20 @@ contract RewardsDistributor is ReentrancyGuard {
 
     /* EXTERNAL */
 
+    /// @notice Batches calls to this contract, preserving the caller and reverting the whole batch on failure.
+    function multicall(bytes[] calldata data) external returns (bytes[] memory results) {
+        results = new bytes[](data.length);
+        for (uint256 i; i < data.length; ++i) {
+            (bool success, bytes memory result) = address(this).delegatecall(data[i]);
+            if (!success) {
+                assembly ("memory-safe") {
+                    revert(add(result, 32), mload(result))
+                }
+            }
+            results[i] = result;
+        }
+    }
+
     /// @notice Creates a campaign with a fixed timelock and no active root.
     /// @return id The newly created campaign ID.
     function createCampaign(address token, address updater, uint256 timelock) external returns (uint256 id) {
@@ -122,19 +136,5 @@ contract RewardsDistributor is ReentrancyGuard {
         campaign.balance -= amount;
         ERC20(campaign.token).safeTransfer(account, amount);
         emit EventsLib.Claimed(id, account, amount);
-    }
-
-    /// @notice Batches calls to this contract, preserving the caller and reverting the whole batch on failure.
-    function multicall(bytes[] calldata data) external returns (bytes[] memory results) {
-        results = new bytes[](data.length);
-        for (uint256 i; i < data.length; ++i) {
-            (bool success, bytes memory result) = address(this).delegatecall(data[i]);
-            if (!success) {
-                assembly ("memory-safe") {
-                    revert(add(result, 32), mload(result))
-                }
-            }
-            results[i] = result;
-        }
     }
 }
