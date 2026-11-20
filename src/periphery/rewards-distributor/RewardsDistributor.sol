@@ -24,8 +24,8 @@ contract RewardsDistributor is IRewardsDistributor {
 
     /// @dev Delegatecalls preserve msg.sender; any failed call reverts the entire batch.
     /// @dev Useful for EOAs to batch admin calls.
-    function multicall(bytes[] calldata data) external returns (bytes[] memory results) {
-        results = new bytes[](data.length);
+    function multicall(bytes[] calldata data) external returns (bytes[] memory) {
+        bytes[] memory results = new bytes[](data.length);
         for (uint256 i; i < data.length; ++i) {
             (bool success, bytes memory result) = address(this).delegatecall(data[i]);
             if (!success) {
@@ -35,6 +35,7 @@ contract RewardsDistributor is IRewardsDistributor {
             }
             results[i] = result;
         }
+        return results;
     }
 
     /// @dev A nonzero updater marks a created campaign.
@@ -43,13 +44,14 @@ contract RewardsDistributor is IRewardsDistributor {
     /// @dev Bundles sharing msg.sender must also bind preSalt to their initiator.
     function createCampaign(address token, uint256 timelock, address newUpdater, bytes32 preSalt)
         external
-        returns (bytes32 id)
+        returns (bytes32)
     {
         CampaignParams memory params = CampaignParams(token, timelock, keccak256(abi.encode(preSalt, msg.sender)));
-        id = keccak256(abi.encode(params));
+        bytes32 id = keccak256(abi.encode(params));
         require(updater[id] == address(0), AlreadyCreated());
         updater[id] = newUpdater;
         emit CreateCampaign(id, msg.sender, params, newUpdater);
+        return id;
     }
 
     function fund(CampaignParams calldata params, uint256 amount) external {
@@ -109,10 +111,10 @@ contract RewardsDistributor is IRewardsDistributor {
     }
 
     /// @dev Equal cumulative claims still transfer zero and emit; lower values revert.
-    /// @return amount The incremental amount transferred from the campaign.
+    /// @return The incremental amount transferred from the campaign.
     function claim(CampaignParams calldata params, address account, uint256 claimable, bytes32[] calldata proof)
         external
-        returns (uint256 amount)
+        returns (uint256)
     {
         bytes32 id = keccak256(abi.encode(params));
         bytes32 computedRoot = keccak256(bytes.concat(keccak256(abi.encode(account, params.token, claimable))));
@@ -124,11 +126,12 @@ contract RewardsDistributor is IRewardsDistributor {
         }
         require(computedRoot == root[id], InvalidProofOrExpired());
         require(claimable >= claimed[id][account], ClaimableTooLow());
-        amount = claimable - claimed[id][account];
-        require(amount <= balance[id], InsufficientBalance());
+        uint256 assets = claimable - claimed[id][account];
+        require(assets <= balance[id], InsufficientBalance());
         claimed[id][account] = claimable;
-        balance[id] -= amount;
-        IERC20(params.token).safeTransfer(account, amount);
-        emit Claim(id, account, amount);
+        balance[id] -= assets;
+        IERC20(params.token).safeTransfer(account, assets);
+        emit Claim(id, account, assets);
+        return assets;
     }
 }

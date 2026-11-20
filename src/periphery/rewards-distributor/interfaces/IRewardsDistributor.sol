@@ -26,7 +26,7 @@ interface IRewardsDistributor {
     event PauseCampaign(bytes32 indexed id, address indexed caller);
     event SetUpdater(bytes32 indexed id, address indexed updater);
     event SetSentinel(bytes32 indexed id, address indexed sentinel);
-    event Claim(bytes32 indexed id, address indexed account, uint256 amount);
+    event Claim(bytes32 indexed id, address indexed account, uint256 assets);
 
     function updater(bytes32 id) external view returns (address);
     function sentinel(bytes32 id) external view returns (address);
@@ -36,7 +36,7 @@ interface IRewardsDistributor {
     function claimed(bytes32 id, address account) external view returns (uint256);
     function createCampaign(address token, uint256 timelock, address newUpdater, bytes32 preSalt)
         external
-        returns (bytes32 id);
+        returns (bytes32);
     function fund(CampaignParams calldata params, uint256 amount) external;
     function submitRoot(CampaignParams calldata params, bytes32 newRoot) external;
     function acceptRoot(bytes32 id, bytes32 newRoot) external;
@@ -46,6 +46,6 @@ interface IRewardsDistributor {
     function setSentinel(bytes32 id, address newSentinel) external;
     function claim(CampaignParams calldata params, address account, uint256 claimable, bytes32[] calldata proof)
         external
-        returns (uint256 amount);
-    function multicall(bytes[] calldata data) external returns (bytes[] memory results);
+        returns (uint256);
+    function multicall(bytes[] calldata data) external returns (bytes[] memory);
 }
