@@ -63,10 +63,10 @@ contract RewardsDistributorTest is Test {
         return distributor.root(campaignId);
     }
 
-    function _tree(address reward, uint256 amount) internal view returns (bytes32[] memory leaves) {
+    function _tree(uint256 amount) internal view returns (bytes32[] memory leaves) {
         leaves = new bytes32[](2);
-        leaves[0] = keccak256(bytes.concat(keccak256(abi.encode(alice, reward, amount))));
-        leaves[1] = keccak256(bytes.concat(keccak256(abi.encode(bob, reward, amount))));
+        leaves[0] = merkle.getLeaf(alice, amount);
+        leaves[1] = merkle.getLeaf(bob, amount);
     }
 
     function _submit(bytes32 campaignId, bytes32 root) internal {
@@ -163,7 +163,7 @@ contract RewardsDistributorTest is Test {
     }
 
     function testParamsCannotBeChangedForExistingCampaign() public {
-        bytes32[] memory leaves = _tree(address(token), 100);
+        bytes32[] memory leaves = _tree(100);
         bytes32[] memory proof = merkle.getProof(leaves, 0);
         bytes32 root = merkle.getRoot(leaves);
         _activate(id, root);
@@ -207,7 +207,7 @@ contract RewardsDistributorTest is Test {
     function testDirectTransferDoesNotCreditCampaign() public {
         token.transfer(address(distributor), 100);
         assertEq(_balance(id), 0);
-        bytes32[] memory leaves = _tree(address(token), 100);
+        bytes32[] memory leaves = _tree(100);
         bytes32[] memory proof = merkle.getProof(leaves, 0);
         _activate(id, merkle.getRoot(leaves));
         vm.expectRevert(IRewardsDistributor.InsufficientBalance.selector);
@@ -223,8 +223,8 @@ contract RewardsDistributorTest is Test {
         token.mint(address(this), uint256(fundingA) + amountB);
         distributor.fund(paramsById[id], fundingA);
         distributor.fund(paramsById[otherId], amountB);
-        bytes32[] memory badLeaves = _tree(address(token), uint256(fundingA) + 1);
-        bytes32[] memory goodLeaves = _tree(address(token), amountB);
+        bytes32[] memory badLeaves = _tree(uint256(fundingA) + 1);
+        bytes32[] memory goodLeaves = _tree(amountB);
         bytes32[] memory badProof = merkle.getProof(badLeaves, 0);
         bytes32[] memory goodProof = merkle.getProof(goodLeaves, 0);
         _activate(id, merkle.getRoot(badLeaves));
@@ -337,7 +337,7 @@ contract RewardsDistributorTest is Test {
     }
 
     function testPauseAndTimelockedResume() public {
-        bytes32[] memory leaves = _tree(address(token), 100);
+        bytes32[] memory leaves = _tree(100);
         bytes32[] memory proof = merkle.getProof(leaves, 0);
         bytes32 root = merkle.getRoot(leaves);
         distributor.fund(paramsById[id], 100);
@@ -511,7 +511,7 @@ contract RewardsDistributorTest is Test {
         uint256 total = amount + bound(increment, 1, type(uint128).max);
         token.mint(address(this), total);
         distributor.fund(paramsById[id], total);
-        bytes32[] memory leaves = _tree(address(token), amount);
+        bytes32[] memory leaves = _tree(amount);
         bytes32[] memory proof = merkle.getProof(leaves, 0);
         _activate(id, merkle.getRoot(leaves));
         vm.expectEmit(true, true, false, true);
@@ -524,14 +524,14 @@ contract RewardsDistributorTest is Test {
         assertEq(token.balanceOf(alice), amount);
         assertEq(distributor.claimed(id, alice), amount);
         assertEq(_balance(id), total - amount);
-        leaves = _tree(address(token), total);
+        leaves = _tree(total);
         proof = merkle.getProof(leaves, 0);
         _activate(id, merkle.getRoot(leaves));
         assertEq(distributor.claim(paramsById[id], alice, total, proof), total - amount);
         assertEq(token.balanceOf(alice), total);
         assertEq(distributor.claimed(id, alice), total);
         assertEq(_balance(id), 0);
-        leaves = _tree(address(token), amount);
+        leaves = _tree(amount);
         proof = merkle.getProof(leaves, 0);
         _activate(id, merkle.getRoot(leaves));
         vm.expectRevert(IRewardsDistributor.ClaimableTooLow.selector);
@@ -539,7 +539,7 @@ contract RewardsDistributorTest is Test {
     }
 
     function testInvalidProofAndUnsetRoot() public {
-        bytes32[] memory leaves = _tree(address(token), 100);
+        bytes32[] memory leaves = _tree(100);
         bytes32[] memory proof = merkle.getProof(leaves, 0);
         vm.expectRevert(IRewardsDistributor.InvalidProofOrExpired.selector);
         distributor.claim(paramsById[id], alice, 100, proof);
@@ -554,7 +554,7 @@ contract RewardsDistributorTest is Test {
     }
 
     function testZeroClaimable() public {
-        bytes32[] memory leaves = _tree(address(token), 0);
+        bytes32[] memory leaves = _tree(0);
         bytes32[] memory proof = merkle.getProof(leaves, 0);
         _activate(id, merkle.getRoot(leaves));
         vm.expectEmit(true, true, false, true);
@@ -621,7 +621,7 @@ contract RewardsDistributorTest is Test {
     }
 
     function testTransferFailureRollsBackClaim() public {
-        bytes32[] memory leaves = _tree(address(token), 100);
+        bytes32[] memory leaves = _tree(100);
         bytes32[] memory proof = merkle.getProof(leaves, 0);
         distributor.fund(paramsById[id], 100);
         _activate(id, merkle.getRoot(leaves));
@@ -676,7 +676,7 @@ contract RewardsDistributorTest is Test {
     }
 
     function testTransferReturningFalseRollsBackClaim() public {
-        bytes32[] memory leaves = _tree(address(token), 100);
+        bytes32[] memory leaves = _tree(100);
         bytes32[] memory proof = merkle.getProof(leaves, 0);
         distributor.fund(paramsById[id], 100);
         _activate(id, merkle.getRoot(leaves));
@@ -688,17 +688,51 @@ contract RewardsDistributorTest is Test {
     }
 
     function testSingleLeafEmptyProof() public {
-        bytes32 root = keccak256(bytes.concat(keccak256(abi.encode(alice, address(token), uint256(100)))));
+        bytes32 root = keccak256(bytes.concat(keccak256(abi.encode(alice, uint256(100)))));
         distributor.fund(paramsById[id], 100);
         _activate(id, root);
         distributor.claim(paramsById[id], alice, 100, new bytes32[](0));
         assertEq(token.balanceOf(alice), 100);
     }
 
+    function testTokenBoundLeafRejected() public {
+        bytes32 oldRoot = keccak256(bytes.concat(keccak256(abi.encode(alice, address(token), uint256(100)))));
+        distributor.fund(paramsById[id], 100);
+        _activate(id, oldRoot);
+        vm.expectRevert(IRewardsDistributor.InvalidProofOrExpired.selector);
+        distributor.claim(paramsById[id], alice, 100, new bytes32[](0));
+        assertEq(distributor.claimed(id, alice), 0);
+        assertEq(_balance(id), 100);
+    }
+
+    function testSameProofAcrossTokens() public {
+        RewardsToken otherToken = new RewardsToken();
+        bytes32 otherId = _create(address(otherToken), updater, TIMELOCK);
+        otherToken.mint(address(this), 100);
+        otherToken.approve(address(distributor), 100);
+        distributor.fund(paramsById[id], 100);
+        distributor.fund(paramsById[otherId], 100);
+        bytes32[] memory leaves = _tree(100);
+        bytes32[] memory proof = merkle.getProof(leaves, 0);
+        bytes32 sharedRoot = merkle.getRoot(leaves);
+        _activate(id, sharedRoot);
+        _activate(otherId, sharedRoot);
+        assertEq(distributor.claim(paramsById[id], alice, 100, proof), 100);
+        assertEq(distributor.claimed(otherId, alice), 0);
+        assertEq(_balance(otherId), 100);
+        assertEq(distributor.claim(paramsById[otherId], alice, 100, proof), 100);
+        assertEq(token.balanceOf(alice), 100);
+        assertEq(otherToken.balanceOf(alice), 100);
+        assertEq(distributor.claimed(id, alice), 100);
+        assertEq(distributor.claimed(otherId, alice), 100);
+        assertEq(_balance(id), 0);
+        assertEq(_balance(otherId), 0);
+    }
+
     function testMultipleLevelSortedProof(uint128 claimable) public {
         uint256 amount = bound(claimable, 1, type(uint128).max);
-        bytes32[] memory leftLeaves = _tree(address(token), amount);
-        bytes32[] memory rightLeaves = _tree(address(token), amount + 1);
+        bytes32[] memory leftLeaves = _tree(amount);
+        bytes32[] memory rightLeaves = _tree(amount + 1);
         bytes32[] memory parents = new bytes32[](2);
         parents[0] = merkle.getRoot(leftLeaves);
         parents[1] = merkle.getRoot(rightLeaves);

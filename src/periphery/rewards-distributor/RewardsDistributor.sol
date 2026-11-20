@@ -117,7 +117,7 @@ contract RewardsDistributor is IRewardsDistributor {
         returns (uint256)
     {
         bytes32 id = keccak256(abi.encode(params));
-        bytes32 computedRoot = keccak256(bytes.concat(keccak256(abi.encode(account, params.token, claimable))));
+        bytes32 computedRoot = keccak256(bytes.concat(keccak256(abi.encode(account, claimable))));
         for (uint256 i; i < proof.length; ++i) {
             bytes32 sibling = proof[i];
             computedRoot = computedRoot < sibling
