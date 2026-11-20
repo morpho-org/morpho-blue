@@ -11,8 +11,6 @@ Software installed from the runner image does not need to be checked, since we t
 
 The goal is to avoid a wrongly green CI. Leaking keys & repo content is not critical.
 
-If a tool needs updating, do an update PR across the repos you are checking.
-
 If the CI or the CI check section of AGENTS.md of one of the repos has changed since your last check, propagate the change to the other repos if it makes sense. Otherwise the difference should be justified by a comment.
 
 Do not report:

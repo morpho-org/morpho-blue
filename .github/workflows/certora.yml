@@ -23,10 +23,9 @@ jobs:
       - id: list
         run: echo "confs=$(find certora/confs -type f -name '*.conf' | sed 's|^certora/confs/||;s|\.conf$||' | sort | jq -nRc '[inputs]')" >> "$GITHUB_OUTPUT"
 
-  format:
+  format-certora:
     permissions:
       contents: read
-    name: Certora formatting
     runs-on: ubuntu-latest
     steps:
       - name: Use Java 21
@@ -35,13 +34,13 @@ jobs:
         with:
           persist-credentials: false
       - run: pip install certora-cli
-      - name: Run Certora Config Linter
+      - name: Run Certora Config Formatter
         run: |
-          find certora/confs -type f -name '*.conf' | sort |
+          find certora -type f -name '*.conf' | sort |
           while read -r file; do
             jq . "$file" | diff -u "$file" -
           done
-      - name: Run Certora Specs Linter
+      - name: Run Certora Specs Formatter
         run: |
           find certora -type f -name '*.spec' | sort |
           while read -r file; do
@@ -51,7 +50,7 @@ jobs:
   verify:
     permissions:
       contents: read
-    needs: [matrix, format]
+    needs: [matrix, format-certora]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false

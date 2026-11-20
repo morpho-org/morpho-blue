@@ -10,8 +10,7 @@ on:
 permissions: {}
 
 jobs:
-  fmt:
-    name: format
+  format:
     permissions:
       contents: read
     runs-on: ubuntu-latest
@@ -23,7 +22,8 @@ jobs:
         uses: foundry-rs/foundry-toolchain@dba66c27052e63476d886f22216e119ba7e615bf # v1.9.2
         with:
           version: nightly
-      - run: forge fmt src test certora --check
+      - name: Run forge fmt
+        run: forge fmt src test certora --check
 
   lint:
     permissions:
