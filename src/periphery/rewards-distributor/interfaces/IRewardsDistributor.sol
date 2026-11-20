@@ -7,13 +7,6 @@ struct CampaignParams {
     bytes32 salt;
 }
 
-struct Campaign {
-    address updater;
-    address sentinel;
-    uint256 balance;
-    bytes32 root;
-}
-
 interface IRewardsDistributor {
     error AlreadyCreated();
     error UnknownCampaign();
@@ -35,19 +28,19 @@ interface IRewardsDistributor {
     event SetSentinel(bytes32 indexed id, address indexed sentinel);
     event Claim(bytes32 indexed id, address indexed account, uint256 amount);
 
-    function campaigns(bytes32 id)
-        external
-        view
-        returns (address updater, address sentinel, uint256 balance, bytes32 root);
+    function updater(bytes32 id) external view returns (address);
+    function sentinel(bytes32 id) external view returns (address);
+    function balance(bytes32 id) external view returns (uint256);
+    function root(bytes32 id) external view returns (bytes32);
     function validAt(bytes32 id, bytes32 root) external view returns (uint256);
     function claimed(bytes32 id, address account) external view returns (uint256);
-    function createCampaign(address token, uint256 timelock, address updater, bytes32 preSalt)
+    function createCampaign(address token, uint256 timelock, address newUpdater, bytes32 preSalt)
         external
         returns (bytes32 id);
     function fund(CampaignParams calldata params, uint256 amount) external;
     function submitRoot(CampaignParams calldata params, bytes32 newRoot) external;
-    function acceptRoot(bytes32 id, bytes32 root) external;
-    function revokePendingRoot(bytes32 id, bytes32 root) external;
+    function acceptRoot(bytes32 id, bytes32 newRoot) external;
+    function revokePendingRoot(bytes32 id, bytes32 pendingRoot) external;
     function pauseCampaign(bytes32 id) external;
     function setUpdater(bytes32 id, address newUpdater) external;
     function setSentinel(bytes32 id, address newSentinel) external;

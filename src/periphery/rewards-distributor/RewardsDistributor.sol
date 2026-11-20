@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.39;
 
-import {Campaign, CampaignParams, IRewardsDistributor} from "./interfaces/IRewardsDistributor.sol";
+import {CampaignParams, IRewardsDistributor} from "./interfaces/IRewardsDistributor.sol";
 import {IERC20} from "../../interfaces/IERC20.sol";
 import {SafeTransferLib} from "../../libraries/SafeTransferLib.sol";
 
@@ -12,7 +12,10 @@ contract RewardsDistributor is IRewardsDistributor {
 
     /* STORAGE */
 
-    mapping(bytes32 id => Campaign) public campaigns;
+    mapping(bytes32 id => address) public updater;
+    mapping(bytes32 id => address) public sentinel;
+    mapping(bytes32 id => uint256) public balance;
+    mapping(bytes32 id => bytes32) public root;
     /// @dev Zero means no pending root.
     mapping(bytes32 id => mapping(bytes32 root => uint256)) public validAt;
     mapping(bytes32 id => mapping(address account => uint256)) public claimed;
@@ -38,23 +41,23 @@ contract RewardsDistributor is IRewardsDistributor {
     /// @dev Only the original creator can recreate the ID after its updater is zeroed; other state is preserved.
     /// @dev The salt is derived from msg.sender to prevent front-running issues.
     /// @dev Bundles sharing msg.sender must also bind preSalt to their initiator.
-    function createCampaign(address token, uint256 timelock, address updater, bytes32 preSalt)
+    function createCampaign(address token, uint256 timelock, address newUpdater, bytes32 preSalt)
         external
         returns (bytes32 id)
     {
         CampaignParams memory params = CampaignParams(token, timelock, keccak256(abi.encode(preSalt, msg.sender)));
         id = keccak256(abi.encode(params));
-        require(campaigns[id].updater == address(0), AlreadyCreated());
-        campaigns[id].updater = updater;
-        emit CreateCampaign(id, msg.sender, params, updater);
+        require(updater[id] == address(0), AlreadyCreated());
+        updater[id] = newUpdater;
+        emit CreateCampaign(id, msg.sender, params, newUpdater);
     }
 
     function fund(CampaignParams calldata params, uint256 amount) external {
         bytes32 id = keccak256(abi.encode(params));
-        require(campaigns[id].updater != address(0), UnknownCampaign());
+        require(updater[id] != address(0), UnknownCampaign());
         IERC20 token = IERC20(params.token);
         token.safeTransferFrom(msg.sender, address(this), amount);
-        campaigns[id].balance += amount;
+        balance[id] += amount;
         emit Fund(id, msg.sender, amount);
     }
 
@@ -64,45 +67,44 @@ contract RewardsDistributor is IRewardsDistributor {
     /// @dev Updaters should revoke roots they no longer want.
     function submitRoot(CampaignParams calldata params, bytes32 newRoot) external {
         bytes32 id = keccak256(abi.encode(params));
-        require(msg.sender == campaigns[id].updater, NotUpdater());
+        require(msg.sender == updater[id], NotUpdater());
         validAt[id][newRoot] = block.timestamp + params.timelock;
         emit SubmitRoot(id, msg.sender, newRoot);
     }
 
-    function acceptRoot(bytes32 id, bytes32 root) external {
-        uint256 rootValidAt = validAt[id][root];
+    function acceptRoot(bytes32 id, bytes32 newRoot) external {
+        uint256 rootValidAt = validAt[id][newRoot];
         require(rootValidAt != 0, NoPendingRoot());
         require(block.timestamp >= rootValidAt, TimelockNotExpired());
-        Campaign storage campaign = campaigns[id];
-        campaign.root = root;
-        validAt[id][root] = 0;
-        emit AcceptRoot(id, root);
+        root[id] = newRoot;
+        validAt[id][newRoot] = 0;
+        emit AcceptRoot(id, newRoot);
     }
 
     /// @dev A matured root may be accepted before this transaction.
-    function revokePendingRoot(bytes32 id, bytes32 root) external {
-        require(msg.sender == campaigns[id].updater || msg.sender == campaigns[id].sentinel, NotUpdaterNorSentinel());
-        validAt[id][root] = 0;
-        emit RevokePendingRoot(id, msg.sender, root);
+    function revokePendingRoot(bytes32 id, bytes32 pendingRoot) external {
+        require(msg.sender == updater[id] || msg.sender == sentinel[id], NotUpdaterNorSentinel());
+        validAt[id][pendingRoot] = 0;
+        emit RevokePendingRoot(id, msg.sender, pendingRoot);
     }
 
     /// @dev Pending roots are unaffected. The updater should revoke any it does not want accepted.
     function pauseCampaign(bytes32 id) external {
-        require(msg.sender == campaigns[id].updater || msg.sender == campaigns[id].sentinel, NotUpdaterNorSentinel());
-        campaigns[id].root = bytes32(0);
+        require(msg.sender == updater[id] || msg.sender == sentinel[id], NotUpdaterNorSentinel());
+        root[id] = bytes32(0);
         emit PauseCampaign(id, msg.sender);
     }
 
     /// @dev The updater transfer is not two-step; the recipient may not exercise the role.
     function setUpdater(bytes32 id, address newUpdater) external {
-        require(msg.sender == campaigns[id].updater, NotUpdater());
-        campaigns[id].updater = newUpdater;
+        require(msg.sender == updater[id], NotUpdater());
+        updater[id] = newUpdater;
         emit SetUpdater(id, newUpdater);
     }
 
     function setSentinel(bytes32 id, address newSentinel) external {
-        require(msg.sender == campaigns[id].updater, NotUpdater());
-        campaigns[id].sentinel = newSentinel;
+        require(msg.sender == updater[id], NotUpdater());
+        sentinel[id] = newSentinel;
         emit SetSentinel(id, newSentinel);
     }
 
@@ -113,7 +115,6 @@ contract RewardsDistributor is IRewardsDistributor {
         returns (uint256 amount)
     {
         bytes32 id = keccak256(abi.encode(params));
-        Campaign storage campaign = campaigns[id];
         bytes32 computedRoot = keccak256(bytes.concat(keccak256(abi.encode(account, params.token, claimable))));
         for (uint256 i; i < proof.length; ++i) {
             bytes32 sibling = proof[i];
@@ -121,12 +122,12 @@ contract RewardsDistributor is IRewardsDistributor {
                 ? keccak256(abi.encodePacked(computedRoot, sibling))
                 : keccak256(abi.encodePacked(sibling, computedRoot));
         }
-        require(computedRoot == campaign.root, InvalidProofOrExpired());
+        require(computedRoot == root[id], InvalidProofOrExpired());
         require(claimable >= claimed[id][account], ClaimableTooLow());
         amount = claimable - claimed[id][account];
-        require(amount <= campaign.balance, InsufficientBalance());
+        require(amount <= balance[id], InsufficientBalance());
         claimed[id][account] = claimable;
-        campaign.balance -= amount;
+        balance[id] -= amount;
         IERC20(params.token).safeTransfer(account, amount);
         emit Claim(id, account, amount);
     }
