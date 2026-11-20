@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.27;
 
-import {Campaign, PendingRoot} from "./interfaces/IRewardsDistributor.sol";
+import {Campaign, PendingRoot, IRewardsDistributor} from "./interfaces/IRewardsDistributor.sol";
 import {ErrorsLib} from "./libraries/ErrorsLib.sol";
-import {EventsLib} from "./libraries/EventsLib.sol";
 import {ERC20} from "../../../lib/solmate/src/tokens/ERC20.sol";
 import {SafeTransferLib} from "../../../lib/solmate/src/utils/SafeTransferLib.sol";
 import {MerkleProofLib} from "../../../lib/solmate/src/utils/MerkleProofLib.sol";
@@ -13,7 +12,7 @@ import {MerkleProofLib} from "../../../lib/solmate/src/utils/MerkleProofLib.sol"
 /// @custom:contact security@morpho.org
 /// @notice Distributes rewards through independently funded, timelocked Merkle campaigns.
 /// @dev Fee-on-transfer and rebasing tokens are not supported.
-contract RewardsDistributor {
+contract RewardsDistributor is IRewardsDistributor {
     using SafeTransferLib for ERC20;
 
     /* STORAGE */
@@ -49,7 +48,7 @@ contract RewardsDistributor {
         require(token != address(0) && updater != address(0), ErrorsLib.ZERO_ADDRESS);
         id = ++campaignCount;
         campaigns[id] = Campaign(token, updater, timelock, 0, bytes32(0));
-        emit EventsLib.CampaignCreated(id, msg.sender, token, updater, timelock);
+        emit CampaignCreated(id, msg.sender, token, updater, timelock);
     }
 
     /// @notice Funds a campaign with the specified amount from the caller.
@@ -58,7 +57,7 @@ contract RewardsDistributor {
         ERC20 token = ERC20(campaigns[id].token);
         token.safeTransferFrom(msg.sender, address(this), amount);
         campaigns[id].balance += amount;
-        emit EventsLib.Funded(id, msg.sender, amount);
+        emit Funded(id, msg.sender, amount);
     }
 
     /// @notice Submits or replaces a pending root, restarting the campaign's timelock.
@@ -66,7 +65,7 @@ contract RewardsDistributor {
         require(msg.sender == campaigns[id].updater, ErrorsLib.NOT_UPDATER_ROLE);
         require(pendingRoot[id].validAt == 0 || newRoot != pendingRoot[id].root, ErrorsLib.ALREADY_PENDING);
         pendingRoot[id] = PendingRoot(newRoot, block.timestamp + campaigns[id].timelock);
-        emit EventsLib.PendingRootSet(id, msg.sender, newRoot);
+        emit PendingRootSet(id, msg.sender, newRoot);
     }
 
     /// @notice Accepts a matured pending root. Anyone may call this function.
@@ -75,7 +74,7 @@ contract RewardsDistributor {
         require(block.timestamp >= pendingRoot[id].validAt, ErrorsLib.TIMELOCK_NOT_EXPIRED);
         campaigns[id].root = pendingRoot[id].root;
         delete pendingRoot[id];
-        emit EventsLib.RootSet(id, campaigns[id].root);
+        emit RootSet(id, campaigns[id].root);
     }
 
     /// @notice Revokes a pending root. A matured root may be accepted before this transaction.
@@ -83,7 +82,7 @@ contract RewardsDistributor {
         require(msg.sender == campaigns[id].updater, ErrorsLib.NOT_UPDATER_ROLE);
         require(pendingRoot[id].validAt != 0, ErrorsLib.NO_PENDING_ROOT);
         delete pendingRoot[id];
-        emit EventsLib.PendingRootRevoked(id, msg.sender);
+        emit PendingRootRevoked(id, msg.sender);
     }
 
     /// @notice Stops claims and deletes any pending root. Resuming requires a new timelocked submission.
@@ -91,7 +90,7 @@ contract RewardsDistributor {
         require(msg.sender == campaigns[id].updater, ErrorsLib.NOT_UPDATER_ROLE);
         campaigns[id].root = bytes32(0);
         delete pendingRoot[id];
-        emit EventsLib.CampaignPaused(id, msg.sender);
+        emit CampaignPaused(id, msg.sender);
     }
 
     /// @notice Transfers the campaign's updater role to a nonzero address.
@@ -100,7 +99,7 @@ contract RewardsDistributor {
         require(newUpdater != address(0), ErrorsLib.ZERO_ADDRESS);
         require(newUpdater != campaigns[id].updater, ErrorsLib.ALREADY_SET);
         campaigns[id].updater = newUpdater;
-        emit EventsLib.UpdaterSet(id, newUpdater);
+        emit UpdaterSet(id, newUpdater);
     }
 
     /// @notice Claims cumulative rewards on behalf of an account, paying only that account.
@@ -123,6 +122,6 @@ contract RewardsDistributor {
         claimed[id][account] = claimable;
         campaign.balance -= amount;
         ERC20(campaign.token).safeTransfer(account, amount);
-        emit EventsLib.Claimed(id, account, amount);
+        emit Claimed(id, account, amount);
     }
 }

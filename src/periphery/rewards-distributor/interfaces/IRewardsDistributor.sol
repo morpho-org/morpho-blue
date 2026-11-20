@@ -21,6 +21,17 @@ struct PendingRoot {
 /// @custom:contact security@morpho.org
 /// @notice Singleton distribution of independently funded, timelocked rewards campaigns.
 interface IRewardsDistributor {
+    event CampaignCreated(
+        uint256 indexed id, address indexed caller, address indexed token, address updater, uint256 timelock
+    );
+    event Funded(uint256 indexed id, address indexed caller, uint256 amount);
+    event PendingRootSet(uint256 indexed id, address indexed caller, bytes32 root);
+    event PendingRootRevoked(uint256 indexed id, address indexed caller);
+    event RootSet(uint256 indexed id, bytes32 root);
+    event CampaignPaused(uint256 indexed id, address indexed caller);
+    event UpdaterSet(uint256 indexed id, address indexed updater);
+    event Claimed(uint256 indexed id, address indexed account, uint256 amount);
+
     function campaignCount() external view returns (uint256);
     function campaigns(uint256 id)
         external

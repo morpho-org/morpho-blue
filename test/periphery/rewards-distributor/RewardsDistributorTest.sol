@@ -7,7 +7,6 @@ import {ERC20Mock} from "../../mocks/ERC20Mock.sol";
 import {RewardsDistributor} from "../../../src/periphery/rewards-distributor/RewardsDistributor.sol";
 import {IRewardsDistributor} from "../../../src/periphery/rewards-distributor/interfaces/IRewardsDistributor.sol";
 import {ErrorsLib} from "../../../src/periphery/rewards-distributor/libraries/ErrorsLib.sol";
-import {EventsLib} from "../../../src/periphery/rewards-distributor/libraries/EventsLib.sol";
 
 contract RewardsToken is ERC20Mock {
     function mint(address account, uint256 amount) external {
@@ -64,7 +63,7 @@ contract RewardsDistributorTest is Test {
 
     function testCreateCampaign(address creator, uint256 timelock) public {
         vm.expectEmit(true, true, true, true);
-        emit EventsLib.CampaignCreated(2, creator, address(token), updater, timelock);
+        emit IRewardsDistributor.CampaignCreated(2, creator, address(token), updater, timelock);
         vm.prank(creator);
         uint256 otherId = distributor.createCampaign(address(token), updater, timelock);
         assertEq(otherId, 2);
@@ -90,7 +89,7 @@ contract RewardsDistributorTest is Test {
         vm.prank(bob);
         token.approve(address(distributor), amount);
         vm.expectEmit(true, true, false, true);
-        emit EventsLib.Funded(id, bob, amount);
+        emit IRewardsDistributor.Funded(id, bob, amount);
         vm.prank(bob);
         distributor.fund(id, amount);
         assertEq(_balance(id), amount);
@@ -144,7 +143,7 @@ contract RewardsDistributorTest is Test {
         distributor.acceptRoot(id);
         vm.warp(validAt);
         vm.expectEmit(true, false, false, true);
-        emit EventsLib.RootSet(id, root);
+        emit IRewardsDistributor.RootSet(id, root);
         vm.prank(caller);
         distributor.acceptRoot(id);
         assertEq(_root(id), root);
@@ -192,7 +191,7 @@ contract RewardsDistributorTest is Test {
         vm.expectRevert(bytes(ErrorsLib.TIMELOCK_NOT_EXPIRED));
         distributor.acceptRoot(id);
         vm.expectEmit(true, true, false, true);
-        emit EventsLib.PendingRootRevoked(id, updater);
+        emit IRewardsDistributor.PendingRootRevoked(id, updater);
         vm.prank(updater);
         distributor.revokePendingRoot(id);
         (bytes32 root, uint256 validAt) = distributor.pendingRoot(id);
@@ -214,7 +213,7 @@ contract RewardsDistributorTest is Test {
         _submit(id, bytes32(uint256(1)));
         (, uint256 revokedValidAt) = distributor.pendingRoot(id);
         vm.expectEmit(true, true, false, true);
-        emit EventsLib.CampaignPaused(id, updater);
+        emit IRewardsDistributor.CampaignPaused(id, updater);
         vm.prank(updater);
         distributor.pauseCampaign(id);
         assertEq(_root(id), bytes32(0));
@@ -259,7 +258,7 @@ contract RewardsDistributorTest is Test {
         vm.expectRevert(bytes(ErrorsLib.ALREADY_SET));
         distributor.setUpdater(id, updater);
         vm.expectEmit(true, true, false, true);
-        emit EventsLib.UpdaterSet(id, bob);
+        emit IRewardsDistributor.UpdaterSet(id, bob);
         distributor.setUpdater(id, bob);
         vm.expectRevert(bytes(ErrorsLib.NOT_UPDATER_ROLE));
         distributor.submitRoot(id, bytes32(uint256(1)));
@@ -277,7 +276,7 @@ contract RewardsDistributorTest is Test {
         bytes32[] memory proof = merkle.getProof(leaves, 0);
         _activate(id, merkle.getRoot(leaves));
         vm.expectEmit(true, true, false, true);
-        emit EventsLib.Claimed(id, alice, amount);
+        emit IRewardsDistributor.Claimed(id, alice, amount);
         vm.prank(bob);
         assertEq(distributor.claim(id, alice, amount, proof), amount);
         vm.expectRevert(bytes(ErrorsLib.CLAIMABLE_TOO_LOW));
