@@ -208,9 +208,11 @@ contract RewardsDistributorTest is Test {
         assertEq(distributor.validAt(id, rootC), validAt);
         vm.expectRevert(IRewardsDistributor.NoPendingRoot.selector);
         distributor.acceptRoot(id, rootB);
+        vm.expectEmit(true, true, false, true);
+        emit IRewardsDistributor.RevokePendingRoot(id, updater, rootB);
         vm.prank(updater);
-        vm.expectRevert(IRewardsDistributor.NoPendingRoot.selector);
         distributor.revokePendingRoot(id, rootB);
+        assertEq(distributor.validAt(id, rootB), 0);
         vm.warp(validAt);
         distributor.acceptRoot(id, rootC);
         assertEq(_root(id), rootC);
@@ -232,7 +234,7 @@ contract RewardsDistributorTest is Test {
         distributor.pauseCampaign(id);
         assertEq(_root(id), bytes32(0));
         assertEq(_balance(id), 100);
-        vm.expectRevert(IRewardsDistributor.RootNotSet.selector);
+        vm.expectRevert(IRewardsDistributor.InvalidProofOrExpired.selector);
         distributor.claim(id, alice, 100, proof);
         vm.expectRevert(IRewardsDistributor.NoPendingRoot.selector);
         distributor.acceptRoot(id, root);
@@ -314,7 +316,8 @@ contract RewardsDistributorTest is Test {
 
     function testSetUpdater() public {
         vm.startPrank(updater);
-        vm.expectRevert(IRewardsDistributor.AlreadySet.selector);
+        vm.expectEmit(true, true, false, true);
+        emit IRewardsDistributor.SetUpdater(id, updater);
         distributor.setUpdater(id, updater);
         vm.expectEmit(true, true, false, true);
         emit IRewardsDistributor.SetUpdater(id, bob);
@@ -338,8 +341,12 @@ contract RewardsDistributorTest is Test {
         emit IRewardsDistributor.Claim(id, alice, amount);
         vm.prank(bob);
         assertEq(distributor.claim(id, alice, amount, proof), amount);
-        vm.expectRevert(IRewardsDistributor.ClaimableTooLow.selector);
-        distributor.claim(id, alice, amount, proof);
+        vm.expectEmit(true, true, false, true);
+        emit IRewardsDistributor.Claim(id, alice, 0);
+        assertEq(distributor.claim(id, alice, amount, proof), 0);
+        assertEq(token.balanceOf(alice), amount);
+        assertEq(distributor.claimed(id, alice), amount);
+        assertEq(_balance(id), total - amount);
         leaves = _tree(address(token), total);
         proof = merkle.getProof(leaves, 0);
         _activate(id, merkle.getRoot(leaves));
@@ -357,7 +364,7 @@ contract RewardsDistributorTest is Test {
     function testInvalidProofAndUnsetRoot() public {
         bytes32[] memory leaves = _tree(address(token), 100);
         bytes32[] memory proof = merkle.getProof(leaves, 0);
-        vm.expectRevert(IRewardsDistributor.RootNotSet.selector);
+        vm.expectRevert(IRewardsDistributor.InvalidProofOrExpired.selector);
         distributor.claim(id, alice, 100, proof);
         _activate(id, merkle.getRoot(leaves));
         vm.expectRevert(IRewardsDistributor.InvalidProofOrExpired.selector);
@@ -373,8 +380,12 @@ contract RewardsDistributorTest is Test {
         bytes32[] memory leaves = _tree(address(token), 0);
         bytes32[] memory proof = merkle.getProof(leaves, 0);
         _activate(id, merkle.getRoot(leaves));
-        vm.expectRevert(IRewardsDistributor.ClaimableTooLow.selector);
-        distributor.claim(id, alice, 0, proof);
+        vm.expectEmit(true, true, false, true);
+        emit IRewardsDistributor.Claim(id, alice, 0);
+        assertEq(distributor.claim(id, alice, 0, proof), 0);
+        assertEq(distributor.claimed(id, alice), 0);
+        assertEq(token.balanceOf(alice), 0);
+        assertEq(_balance(id), 0);
     }
 
     function testUnknownCampaigns(uint256 unknown) public {
@@ -394,7 +405,7 @@ contract RewardsDistributorTest is Test {
         errors[3] = IRewardsDistributor.NotUpdater.selector;
         errors[4] = IRewardsDistributor.NotUpdater.selector;
         errors[5] = IRewardsDistributor.NotUpdater.selector;
-        errors[6] = IRewardsDistributor.RootNotSet.selector;
+        errors[6] = IRewardsDistributor.InvalidProofOrExpired.selector;
         for (uint256 i; i < calls.length; ++i) {
             (bool success, bytes memory reason) = address(distributor).call(calls[i]);
             assertFalse(success);

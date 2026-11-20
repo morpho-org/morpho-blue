@@ -10,6 +10,7 @@ import {SafeTransferLib} from "../../libraries/SafeTransferLib.sol";
 /// @custom:contact security@morpho.org
 /// @notice Distributes rewards through independently funded, timelocked Merkle campaigns.
 /// @dev Fee-on-transfer and rebasing tokens are not supported.
+/// @dev No-ops are allowed.
 contract RewardsDistributor is IRewardsDistributor {
     using SafeTransferLib for IERC20;
 
@@ -83,7 +84,6 @@ contract RewardsDistributor is IRewardsDistributor {
     /// @notice Revokes a pending root. A matured root may be accepted before this transaction.
     function revokePendingRoot(uint256 id, bytes32 root) external {
         require(msg.sender == campaigns[id].updater, NotUpdater());
-        require(validAt[id][root] != 0, NoPendingRoot());
         validAt[id][root] = 0;
         emit RevokePendingRoot(id, msg.sender, root);
     }
@@ -101,7 +101,6 @@ contract RewardsDistributor is IRewardsDistributor {
     /// it.
     function setUpdater(uint256 id, address newUpdater) external {
         require(msg.sender == campaigns[id].updater, NotUpdater());
-        require(newUpdater != campaigns[id].updater, AlreadySet());
         campaigns[id].updater = newUpdater;
         emit SetUpdater(id, newUpdater);
     }
@@ -113,7 +112,6 @@ contract RewardsDistributor is IRewardsDistributor {
         returns (uint256 amount)
     {
         Campaign storage campaign = campaigns[id];
-        require(campaign.root != bytes32(0), RootNotSet());
         bytes32 computedRoot = keccak256(bytes.concat(keccak256(abi.encode(account, campaign.token, claimable))));
         for (uint256 i; i < proof.length; ++i) {
             bytes32 sibling = proof[i];
@@ -122,7 +120,7 @@ contract RewardsDistributor is IRewardsDistributor {
                 : keccak256(abi.encodePacked(sibling, computedRoot));
         }
         require(computedRoot == campaign.root, InvalidProofOrExpired());
-        require(claimable > claimed[id][account], ClaimableTooLow());
+        require(claimable >= claimed[id][account], ClaimableTooLow());
         amount = claimable - claimed[id][account];
         require(amount <= campaign.balance, InsufficientBalance());
         claimed[id][account] = claimable;

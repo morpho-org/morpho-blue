@@ -12,6 +12,8 @@ Campaign IDs start at 1. Zero roots may be submitted and accepted, but do not en
 
 This draft is unaudited.
 
+No-ops are allowed: setting the current updater or revoking a non-pending root still emits the corresponding event. A valid claim equal to the amount already claimed transfers zero and emits `Claim`; a lower cumulative amount still reverts. Access control, Merkle proof verification and funding safety checks still apply. Accepting a root always requires a pending submission.
+
 ## Development
 
 From the repository root, run:

@@ -16,10 +16,8 @@ struct Campaign {
 interface IRewardsDistributor {
     error UnknownCampaign();
     error NotUpdater();
-    error AlreadySet();
     error NoPendingRoot();
     error TimelockNotExpired();
-    error RootNotSet();
     error InvalidProofOrExpired();
     error ClaimableTooLow();
     error InsufficientBalance();
