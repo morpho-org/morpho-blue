@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.39;
 
-import {Campaign, IRewardsDistributor} from "./interfaces/IRewardsDistributor.sol";
+import {Campaign, CampaignParams, IRewardsDistributor} from "./interfaces/IRewardsDistributor.sol";
 import {IERC20} from "../../interfaces/IERC20.sol";
 import {SafeTransferLib} from "../../libraries/SafeTransferLib.sol";
 
@@ -15,18 +15,14 @@ contract RewardsDistributor is IRewardsDistributor {
 
     /* STORAGE */
 
+    mapping(bytes32 id => Campaign) public campaigns;
     /// @inheritdoc IRewardsDistributor
-    uint256 public campaignCount;
-    /// @inheritdoc IRewardsDistributor
-    mapping(uint256 => Campaign) public campaigns;
-    /// @inheritdoc IRewardsDistributor
-    mapping(uint256 id => mapping(bytes32 root => uint256)) public validAt;
-    /// @inheritdoc IRewardsDistributor
-    mapping(uint256 id => mapping(address account => uint256)) public claimed;
+    mapping(bytes32 id => mapping(bytes32 root => uint256)) public validAt;
+    mapping(bytes32 id => mapping(address account => uint256)) public claimed;
 
     /* EXTERNAL */
 
-    /// @dev Batches calls to this contract, preserving the caller and reverting the whole batch on failure.
+    /// @dev Delegatecalls preserve msg.sender; any failed call reverts the entire batch.
     /// @dev Useful for EOAs to batch admin calls.
     function multicall(bytes[] calldata data) external returns (bytes[] memory results) {
         results = new bytes[](data.length);
@@ -41,36 +37,36 @@ contract RewardsDistributor is IRewardsDistributor {
         }
     }
 
-    /// @dev Creates a campaign with a fixed timelock and no active root.
-    /// @return id The newly created campaign ID.
-    function createCampaign(address token, address updater, uint256 timelock) external returns (uint256 id) {
-        id = ++campaignCount;
-        campaigns[id] = Campaign(token, updater, timelock, 0, bytes32(0));
-        emit CreateCampaign(id, msg.sender, token, updater, timelock);
+    /// @dev A nonzero updater marks a created campaign.
+    /// @dev Recreation restores only the initial updater; other state is preserved.
+    function createCampaign(CampaignParams calldata params) external returns (bytes32 id) {
+        id = keccak256(abi.encode(params));
+        require(campaigns[id].updater == address(0), AlreadyCreated());
+        campaigns[id].updater = params.initialUpdater;
+        emit CreateCampaign(id, msg.sender, params);
     }
 
-    /// @dev Funds a campaign with the specified amount from the caller.
-    function fund(uint256 id, uint256 amount) external {
-        require(campaigns[id].token != address(0), UnknownCampaign());
-        IERC20 token = IERC20(campaigns[id].token);
+    function fund(CampaignParams calldata params, uint256 amount) external {
+        bytes32 id = keccak256(abi.encode(params));
+        require(campaigns[id].updater != address(0), UnknownCampaign());
+        IERC20 token = IERC20(params.token);
         token.safeTransferFrom(msg.sender, address(this), amount);
         campaigns[id].balance += amount;
         emit Fund(id, msg.sender, amount);
     }
 
-    /// @dev Submits a root, restarting its timelock if it is already pending.
-    /// @dev Will revert if the timelock value is type(uint256).max or any value that overflows when added to the block
-    /// timestamp.
-    /// @dev Several roots may be pending at once and any matured one can be accepted. Updaters should revoke roots
-    /// they no longer want.
-    function submitRoot(uint256 id, bytes32 newRoot) external {
+    /// @dev Resubmitting a pending root restarts its timelock.
+    /// @dev Submitting reverts if adding the timelock to the block timestamp overflows.
+    /// @dev Several roots may be pending at once and any matured one can be accepted.
+    /// @dev Updaters should revoke roots they no longer want.
+    function submitRoot(CampaignParams calldata params, bytes32 newRoot) external {
+        bytes32 id = keccak256(abi.encode(params));
         require(msg.sender == campaigns[id].updater, NotUpdater());
-        validAt[id][newRoot] = block.timestamp + campaigns[id].timelock;
+        validAt[id][newRoot] = block.timestamp + params.timelock;
         emit SubmitRoot(id, msg.sender, newRoot);
     }
 
-    /// @dev Accepts a matured pending root. Anyone may call this function.
-    function acceptRoot(uint256 id, bytes32 root) external {
+    function acceptRoot(bytes32 id, bytes32 root) external {
         uint256 rootValidAt = validAt[id][root];
         require(rootValidAt != 0, NoPendingRoot());
         require(block.timestamp >= rootValidAt, TimelockNotExpired());
@@ -80,38 +76,36 @@ contract RewardsDistributor is IRewardsDistributor {
         emit AcceptRoot(id, root);
     }
 
-    /// @dev Revokes a pending root. A matured root may be accepted before this transaction.
-    function revokePendingRoot(uint256 id, bytes32 root) external {
+    /// @dev A matured root may be accepted before this transaction.
+    function revokePendingRoot(bytes32 id, bytes32 root) external {
         require(msg.sender == campaigns[id].updater, NotUpdater());
         validAt[id][root] = 0;
         emit RevokePendingRoot(id, msg.sender, root);
     }
 
-    /// @dev Stops claims by setting the active root to zero.
     /// @dev Pending roots are unaffected. The updater should revoke any it does not want accepted.
-    function pauseCampaign(uint256 id) external {
+    function pauseCampaign(bytes32 id) external {
         require(msg.sender == campaigns[id].updater, NotUpdater());
         campaigns[id].root = bytes32(0);
         emit PauseCampaign(id, msg.sender);
     }
 
-    /// @dev Transfers the campaign's updater role.
-    /// @dev Roles are not "two-step", so anyone can give a role to anyone, but it does not mean that they will exercise
-    /// it.
-    function setUpdater(uint256 id, address newUpdater) external {
+    /// @dev The updater transfer is not two-step; the recipient may not exercise the role.
+    function setUpdater(bytes32 id, address newUpdater) external {
         require(msg.sender == campaigns[id].updater, NotUpdater());
         campaigns[id].updater = newUpdater;
         emit SetUpdater(id, newUpdater);
     }
 
-    /// @dev Claims cumulative rewards on behalf of an account, paying only that account.
+    /// @dev Equal cumulative claims still transfer zero and emit; lower values revert.
     /// @return amount The incremental amount transferred from the campaign.
-    function claim(uint256 id, address account, uint256 claimable, bytes32[] calldata proof)
+    function claim(CampaignParams calldata params, address account, uint256 claimable, bytes32[] calldata proof)
         external
         returns (uint256 amount)
     {
+        bytes32 id = keccak256(abi.encode(params));
         Campaign storage campaign = campaigns[id];
-        bytes32 computedRoot = keccak256(bytes.concat(keccak256(abi.encode(account, campaign.token, claimable))));
+        bytes32 computedRoot = keccak256(bytes.concat(keccak256(abi.encode(account, params.token, claimable))));
         for (uint256 i; i < proof.length; ++i) {
             bytes32 sibling = proof[i];
             computedRoot = computedRoot < sibling
@@ -124,7 +118,7 @@ contract RewardsDistributor is IRewardsDistributor {
         require(amount <= campaign.balance, InsufficientBalance());
         claimed[id][account] = claimable;
         campaign.balance -= amount;
-        IERC20(campaign.token).safeTransfer(account, amount);
+        IERC20(params.token).safeTransfer(account, amount);
         emit Claim(id, account, amount);
     }
 }

@@ -5,7 +5,10 @@ import {Test} from "../../../lib/forge-std/src/Test.sol";
 import {Merkle} from "./helpers/Merkle.sol";
 import {ERC20Mock} from "../../mocks/ERC20Mock.sol";
 import {RewardsDistributor} from "../../../src/periphery/rewards-distributor/RewardsDistributor.sol";
-import {IRewardsDistributor} from "../../../src/periphery/rewards-distributor/interfaces/IRewardsDistributor.sol";
+import {
+    CampaignParams,
+    IRewardsDistributor
+} from "../../../src/periphery/rewards-distributor/interfaces/IRewardsDistributor.sol";
 import {ErrorsLib} from "../../../src/libraries/ErrorsLib.sol";
 
 contract RewardsToken is ERC20Mock {
@@ -23,24 +26,32 @@ contract RewardsDistributorTest is Test {
     address internal updater = makeAddr("updater");
     address internal alice = makeAddr("alice");
     address internal bob = makeAddr("bob");
-    uint256 internal id;
+    bytes32 internal id;
+    mapping(bytes32 => CampaignParams) internal paramsById;
+    uint256 internal salt;
 
     function setUp() public {
         distributor = new RewardsDistributor();
         distribution = IRewardsDistributor(address(distributor));
         token = new RewardsToken();
         merkle = new Merkle();
-        id = distributor.createCampaign(address(token), updater, TIMELOCK);
+        id = _create(address(token), updater, TIMELOCK);
         token.mint(address(this), 1e30);
         token.approve(address(distributor), type(uint256).max);
     }
 
-    function _balance(uint256 campaignId) internal view returns (uint256 balance) {
-        (,,, balance,) = distributor.campaigns(campaignId);
+    function _create(address reward, address initialUpdater, uint256 timelock) internal returns (bytes32 campaignId) {
+        CampaignParams memory params = CampaignParams(reward, timelock, initialUpdater, bytes32(++salt));
+        campaignId = distributor.createCampaign(params);
+        paramsById[campaignId] = params;
     }
 
-    function _root(uint256 campaignId) internal view returns (bytes32 root) {
-        (,,,, root) = distributor.campaigns(campaignId);
+    function _balance(bytes32 campaignId) internal view returns (uint256 balance) {
+        (, balance,) = distributor.campaigns(campaignId);
+    }
+
+    function _root(bytes32 campaignId) internal view returns (bytes32 root) {
+        (,, root) = distributor.campaigns(campaignId);
     }
 
     function _tree(address reward, uint256 amount) internal view returns (bytes32[] memory leaves) {
@@ -49,12 +60,12 @@ contract RewardsDistributorTest is Test {
         leaves[1] = keccak256(bytes.concat(keccak256(abi.encode(bob, reward, amount))));
     }
 
-    function _submit(uint256 campaignId, bytes32 root) internal {
+    function _submit(bytes32 campaignId, bytes32 root) internal {
         vm.prank(updater);
-        distributor.submitRoot(campaignId, root);
+        distributor.submitRoot(paramsById[campaignId], root);
     }
 
-    function _activate(uint256 campaignId, bytes32 root) internal {
+    function _activate(bytes32 campaignId, bytes32 root) internal {
         _submit(campaignId, root);
         uint256 validAt = distributor.validAt(campaignId, root);
         vm.warp(validAt);
@@ -62,19 +73,19 @@ contract RewardsDistributorTest is Test {
     }
 
     function testCreateCampaign(address creator, uint256 timelock) public {
-        vm.expectEmit(true, true, true, true);
-        emit IRewardsDistributor.CreateCampaign(2, creator, address(token), updater, timelock);
+        CampaignParams memory params = CampaignParams(address(token), timelock, updater, bytes32(uint256(42)));
+        bytes32 expectedId = keccak256(abi.encode(params));
+        vm.expectEmit(true, true, false, true);
+        emit IRewardsDistributor.CreateCampaign(expectedId, creator, params);
         vm.prank(creator);
-        uint256 otherId = distributor.createCampaign(address(token), updater, timelock);
-        assertEq(otherId, 2);
-        assertEq(distribution.campaignCount(), 2);
-        (address reward, address actualUpdater, uint256 delay, uint256 balance, bytes32 root) =
-            distribution.campaigns(otherId);
-        assertEq(reward, address(token));
+        bytes32 otherId = distributor.createCampaign(params);
+        assertEq(otherId, expectedId);
+        (address actualUpdater, uint256 balance, bytes32 root) = distribution.campaigns(otherId);
         assertEq(actualUpdater, updater);
-        assertEq(delay, timelock);
         assertEq(balance, 0);
         assertEq(root, bytes32(0));
+        vm.expectRevert(IRewardsDistributor.AlreadyCreated.selector);
+        distributor.createCampaign(params);
     }
 
     function testFund(uint128 amount) public {
@@ -84,10 +95,94 @@ contract RewardsDistributorTest is Test {
         vm.expectEmit(true, true, false, true);
         emit IRewardsDistributor.Fund(id, bob, amount);
         vm.prank(bob);
-        distributor.fund(id, amount);
+        distributor.fund(paramsById[id], amount);
         assertEq(_balance(id), amount);
         assertEq(token.balanceOf(address(distributor)), amount);
         assertEq(token.balanceOf(bob), 0);
+    }
+
+    function testEveryParameterContributesToId() public {
+        CampaignParams memory params = paramsById[id];
+        params.token = address(0);
+        bytes32 otherId = distributor.createCampaign(params);
+        assertTrue(otherId != id);
+        params = paramsById[id];
+        params.timelock += 1;
+        otherId = distributor.createCampaign(params);
+        assertTrue(otherId != id);
+        params = paramsById[id];
+        params.initialUpdater = bob;
+        otherId = distributor.createCampaign(params);
+        assertTrue(otherId != id);
+        params = paramsById[id];
+        params.salt = bytes32(uint256(42));
+        otherId = distributor.createCampaign(params);
+        assertTrue(otherId != id);
+    }
+
+    function testFrontRunnerCanOnlyCreateIdenticalCampaign() public {
+        CampaignParams memory params = CampaignParams(address(token), TIMELOCK, updater, bytes32(uint256(42)));
+        vm.prank(bob);
+        bytes32 otherId = distributor.createCampaign(params);
+        assertEq(otherId, keccak256(abi.encode(params)));
+        (address actualUpdater,,) = distributor.campaigns(otherId);
+        assertEq(actualUpdater, updater);
+        vm.expectRevert(IRewardsDistributor.AlreadyCreated.selector);
+        distributor.createCampaign(params);
+        vm.prank(bob);
+        vm.expectRevert(IRewardsDistributor.NotUpdater.selector);
+        distributor.submitRoot(params, bytes32(uint256(1)));
+    }
+
+    function testDuplicateCreationCannotResetState() public {
+        distributor.fund(paramsById[id], 100);
+        _activate(id, bytes32(uint256(1)));
+        vm.prank(updater);
+        distributor.setUpdater(id, bob);
+        vm.expectRevert(IRewardsDistributor.AlreadyCreated.selector);
+        distributor.createCampaign(paramsById[id]);
+        (address actualUpdater,,) = distributor.campaigns(id);
+        assertEq(actualUpdater, bob);
+        assertEq(_balance(id), 100);
+        assertEq(_root(id), bytes32(uint256(1)));
+    }
+
+    function testParamsCannotBeChangedForExistingCampaign() public {
+        bytes32[] memory leaves = _tree(address(token), 100);
+        bytes32[] memory proof = merkle.getProof(leaves, 0);
+        bytes32 root = merkle.getRoot(leaves);
+        _activate(id, root);
+        CampaignParams memory params = paramsById[id];
+        params.timelock = 0;
+        vm.expectRevert(IRewardsDistributor.UnknownCampaign.selector);
+        distributor.fund(params, 100);
+        vm.prank(updater);
+        vm.expectRevert(IRewardsDistributor.NotUpdater.selector);
+        distributor.submitRoot(params, root);
+        vm.expectRevert(IRewardsDistributor.InvalidProofOrExpired.selector);
+        distributor.claim(params, alice, 100, proof);
+        assertEq(_balance(id), 0);
+        assertEq(distributor.claimed(id, alice), 0);
+    }
+
+    function testZeroUpdaterCreationMarker() public {
+        CampaignParams memory params = CampaignParams(address(token), TIMELOCK, address(0), bytes32(uint256(42)));
+        bytes32 otherId = distributor.createCampaign(params);
+        vm.expectRevert(IRewardsDistributor.UnknownCampaign.selector);
+        distributor.fund(params, 0);
+        assertEq(distributor.createCampaign(params), otherId);
+
+        distributor.fund(paramsById[id], 100);
+        _activate(id, bytes32(uint256(1)));
+        vm.prank(updater);
+        distributor.setUpdater(id, address(0));
+        vm.expectRevert(IRewardsDistributor.UnknownCampaign.selector);
+        distributor.fund(paramsById[id], 0);
+        assertEq(distributor.createCampaign(paramsById[id]), id);
+        (address actualUpdater,,) = distributor.campaigns(id);
+        assertEq(actualUpdater, updater);
+        assertEq(_balance(id), 100);
+        assertEq(_root(id), bytes32(uint256(1)));
     }
 
     function testDirectTransferDoesNotCreditCampaign() public {
@@ -97,18 +192,18 @@ contract RewardsDistributorTest is Test {
         bytes32[] memory proof = merkle.getProof(leaves, 0);
         _activate(id, merkle.getRoot(leaves));
         vm.expectRevert(IRewardsDistributor.InsufficientBalance.selector);
-        distributor.claim(id, alice, 100, proof);
-        distributor.fund(id, 40);
+        distributor.claim(paramsById[id], alice, 100, proof);
+        distributor.fund(paramsById[id], 40);
         assertEq(_balance(id), 40);
         assertEq(token.balanceOf(address(distributor)), 140);
     }
 
     function testCampaignIsolation(uint128 fundingA, uint128 fundingB) public {
         uint256 amountB = bound(fundingB, 1, type(uint128).max);
-        uint256 otherId = distributor.createCampaign(address(token), updater, TIMELOCK);
+        bytes32 otherId = _create(address(token), updater, TIMELOCK);
         token.mint(address(this), uint256(fundingA) + amountB);
-        distributor.fund(id, fundingA);
-        distributor.fund(otherId, amountB);
+        distributor.fund(paramsById[id], fundingA);
+        distributor.fund(paramsById[otherId], amountB);
         bytes32[] memory badLeaves = _tree(address(token), uint256(fundingA) + 1);
         bytes32[] memory goodLeaves = _tree(address(token), amountB);
         bytes32[] memory badProof = merkle.getProof(badLeaves, 0);
@@ -116,11 +211,11 @@ contract RewardsDistributorTest is Test {
         _activate(id, merkle.getRoot(badLeaves));
         _activate(otherId, merkle.getRoot(goodLeaves));
         vm.expectRevert(IRewardsDistributor.InsufficientBalance.selector);
-        distributor.claim(id, alice, uint256(fundingA) + 1, badProof);
+        distributor.claim(paramsById[id], alice, uint256(fundingA) + 1, badProof);
         assertEq(distributor.claimed(id, alice), 0);
         assertEq(_balance(id), fundingA);
         assertEq(_balance(otherId), amountB);
-        distributor.claim(otherId, alice, amountB, goodProof);
+        distributor.claim(paramsById[otherId], alice, amountB, goodProof);
         assertEq(token.balanceOf(alice), amountB);
         assertEq(_balance(otherId), 0);
         assertEq(token.balanceOf(address(distributor)), fundingA);
@@ -146,7 +241,7 @@ contract RewardsDistributorTest is Test {
     }
 
     function testIndependentTimelocks() public {
-        uint256 otherId = distributor.createCampaign(address(token), updater, 2 * TIMELOCK);
+        bytes32 otherId = _create(address(token), updater, 2 * TIMELOCK);
         _submit(id, bytes32(uint256(1)));
         _submit(otherId, bytes32(uint256(2)));
         uint256 validAtA = distributor.validAt(id, bytes32(uint256(1)));
@@ -163,7 +258,7 @@ contract RewardsDistributorTest is Test {
     }
 
     function testZeroTimelockAndZeroRoot() public {
-        uint256 otherId = distributor.createCampaign(address(token), updater, 0);
+        bytes32 otherId = _create(address(token), updater, 0);
         _submit(otherId, bytes32(0));
         _submit(otherId, bytes32(0));
         distributor.acceptRoot(otherId, bytes32(0));
@@ -226,7 +321,7 @@ contract RewardsDistributorTest is Test {
         bytes32[] memory leaves = _tree(address(token), 100);
         bytes32[] memory proof = merkle.getProof(leaves, 0);
         bytes32 root = merkle.getRoot(leaves);
-        distributor.fund(id, 100);
+        distributor.fund(paramsById[id], 100);
         _activate(id, root);
         vm.expectEmit(true, true, false, true);
         emit IRewardsDistributor.PauseCampaign(id, updater);
@@ -235,7 +330,7 @@ contract RewardsDistributorTest is Test {
         assertEq(_root(id), bytes32(0));
         assertEq(_balance(id), 100);
         vm.expectRevert(IRewardsDistributor.InvalidProofOrExpired.selector);
-        distributor.claim(id, alice, 100, proof);
+        distributor.claim(paramsById[id], alice, 100, proof);
         vm.expectRevert(IRewardsDistributor.NoPendingRoot.selector);
         distributor.acceptRoot(id, root);
         _submit(id, root);
@@ -244,12 +339,12 @@ contract RewardsDistributorTest is Test {
         distributor.acceptRoot(id, root);
         vm.warp(resumeValidAt);
         distributor.acceptRoot(id, root);
-        distributor.claim(id, alice, 100, proof);
+        distributor.claim(paramsById[id], alice, 100, proof);
         assertEq(token.balanceOf(alice), 100);
     }
 
     function testPauseWithZeroTimelockAndSameBlockSubmission() public {
-        uint256 otherId = distributor.createCampaign(address(token), updater, 0);
+        bytes32 otherId = _create(address(token), updater, 0);
         bytes32 rootA = bytes32(uint256(1));
         bytes32 rootB = bytes32(uint256(2));
         _submit(otherId, rootA);
@@ -302,7 +397,7 @@ contract RewardsDistributorTest is Test {
         vm.assume(caller != updater);
         _submit(id, bytes32(uint256(1)));
         bytes[] memory calls = new bytes[](4);
-        calls[0] = abi.encodeCall(distributor.submitRoot, (id, bytes32(uint256(2))));
+        calls[0] = abi.encodeCall(distributor.submitRoot, (paramsById[id], bytes32(uint256(2))));
         calls[1] = abi.encodeCall(distributor.revokePendingRoot, (id, bytes32(uint256(1))));
         calls[2] = abi.encodeCall(distributor.pauseCampaign, (id));
         calls[3] = abi.encodeCall(distributor.setUpdater, (id, bob));
@@ -323,34 +418,34 @@ contract RewardsDistributorTest is Test {
         emit IRewardsDistributor.SetUpdater(id, bob);
         distributor.setUpdater(id, bob);
         vm.expectRevert(IRewardsDistributor.NotUpdater.selector);
-        distributor.submitRoot(id, bytes32(uint256(1)));
+        distributor.submitRoot(paramsById[id], bytes32(uint256(1)));
         vm.stopPrank();
         vm.prank(bob);
-        distributor.submitRoot(id, bytes32(uint256(1)));
+        distributor.submitRoot(paramsById[id], bytes32(uint256(1)));
     }
 
     function testCumulativeClaims(uint128 first, uint128 increment) public {
         uint256 amount = bound(first, 1, type(uint128).max);
         uint256 total = amount + bound(increment, 1, type(uint128).max);
         token.mint(address(this), total);
-        distributor.fund(id, total);
+        distributor.fund(paramsById[id], total);
         bytes32[] memory leaves = _tree(address(token), amount);
         bytes32[] memory proof = merkle.getProof(leaves, 0);
         _activate(id, merkle.getRoot(leaves));
         vm.expectEmit(true, true, false, true);
         emit IRewardsDistributor.Claim(id, alice, amount);
         vm.prank(bob);
-        assertEq(distributor.claim(id, alice, amount, proof), amount);
+        assertEq(distributor.claim(paramsById[id], alice, amount, proof), amount);
         vm.expectEmit(true, true, false, true);
         emit IRewardsDistributor.Claim(id, alice, 0);
-        assertEq(distributor.claim(id, alice, amount, proof), 0);
+        assertEq(distributor.claim(paramsById[id], alice, amount, proof), 0);
         assertEq(token.balanceOf(alice), amount);
         assertEq(distributor.claimed(id, alice), amount);
         assertEq(_balance(id), total - amount);
         leaves = _tree(address(token), total);
         proof = merkle.getProof(leaves, 0);
         _activate(id, merkle.getRoot(leaves));
-        assertEq(distributor.claim(id, alice, total, proof), total - amount);
+        assertEq(distributor.claim(paramsById[id], alice, total, proof), total - amount);
         assertEq(token.balanceOf(alice), total);
         assertEq(distributor.claimed(id, alice), total);
         assertEq(_balance(id), 0);
@@ -358,21 +453,21 @@ contract RewardsDistributorTest is Test {
         proof = merkle.getProof(leaves, 0);
         _activate(id, merkle.getRoot(leaves));
         vm.expectRevert(IRewardsDistributor.ClaimableTooLow.selector);
-        distributor.claim(id, alice, amount, proof);
+        distributor.claim(paramsById[id], alice, amount, proof);
     }
 
     function testInvalidProofAndUnsetRoot() public {
         bytes32[] memory leaves = _tree(address(token), 100);
         bytes32[] memory proof = merkle.getProof(leaves, 0);
         vm.expectRevert(IRewardsDistributor.InvalidProofOrExpired.selector);
-        distributor.claim(id, alice, 100, proof);
+        distributor.claim(paramsById[id], alice, 100, proof);
         _activate(id, merkle.getRoot(leaves));
         vm.expectRevert(IRewardsDistributor.InvalidProofOrExpired.selector);
-        distributor.claim(id, alice, 101, proof);
+        distributor.claim(paramsById[id], alice, 101, proof);
         vm.expectRevert(IRewardsDistributor.InvalidProofOrExpired.selector);
-        distributor.claim(id, bob, 100, proof);
+        distributor.claim(paramsById[id], bob, 100, proof);
         vm.expectRevert(IRewardsDistributor.InvalidProofOrExpired.selector);
-        distributor.claim(id, alice, 100, new bytes32[](0));
+        distributor.claim(paramsById[id], alice, 100, new bytes32[](0));
         assertEq(distributor.claimed(id, alice), 0);
     }
 
@@ -382,22 +477,24 @@ contract RewardsDistributorTest is Test {
         _activate(id, merkle.getRoot(leaves));
         vm.expectEmit(true, true, false, true);
         emit IRewardsDistributor.Claim(id, alice, 0);
-        assertEq(distributor.claim(id, alice, 0, proof), 0);
+        assertEq(distributor.claim(paramsById[id], alice, 0, proof), 0);
         assertEq(distributor.claimed(id, alice), 0);
         assertEq(token.balanceOf(alice), 0);
         assertEq(_balance(id), 0);
     }
 
-    function testUnknownCampaigns(uint256 unknown) public {
+    function testUnknownCampaigns(bytes32 unknownSalt) public {
+        CampaignParams memory params = CampaignParams(address(token), TIMELOCK, updater, unknownSalt);
+        bytes32 unknown = keccak256(abi.encode(params));
         vm.assume(unknown != id);
         bytes[] memory calls = new bytes[](7);
-        calls[0] = abi.encodeCall(distributor.fund, (unknown, 1));
-        calls[1] = abi.encodeCall(distributor.submitRoot, (unknown, bytes32(uint256(1))));
+        calls[0] = abi.encodeCall(distributor.fund, (params, 1));
+        calls[1] = abi.encodeCall(distributor.submitRoot, (params, bytes32(uint256(1))));
         calls[2] = abi.encodeCall(distributor.acceptRoot, (unknown, bytes32(uint256(1))));
         calls[3] = abi.encodeCall(distributor.revokePendingRoot, (unknown, bytes32(uint256(1))));
         calls[4] = abi.encodeCall(distributor.pauseCampaign, (unknown));
         calls[5] = abi.encodeCall(distributor.setUpdater, (unknown, bob));
-        calls[6] = abi.encodeCall(distributor.claim, (unknown, alice, 1, new bytes32[](0)));
+        calls[6] = abi.encodeCall(distributor.claim, (params, alice, 1, new bytes32[](0)));
         bytes4[] memory errors = new bytes4[](7);
         errors[0] = IRewardsDistributor.UnknownCampaign.selector;
         errors[1] = IRewardsDistributor.NotUpdater.selector;
@@ -414,10 +511,10 @@ contract RewardsDistributorTest is Test {
     }
 
     function testMulticallSubmissionsAndAcceptances() public {
-        uint256 otherId = distributor.createCampaign(address(token), updater, TIMELOCK);
+        bytes32 otherId = _create(address(token), updater, TIMELOCK);
         bytes[] memory calls = new bytes[](2);
-        calls[0] = abi.encodeCall(distributor.submitRoot, (id, bytes32(uint256(1))));
-        calls[1] = abi.encodeCall(distributor.submitRoot, (otherId, bytes32(uint256(2))));
+        calls[0] = abi.encodeCall(distributor.submitRoot, (paramsById[id], bytes32(uint256(1))));
+        calls[1] = abi.encodeCall(distributor.submitRoot, (paramsById[otherId], bytes32(uint256(2))));
         vm.prank(updater);
         distribution.multicall(calls);
         uint256 validAt = distributor.validAt(id, bytes32(uint256(1)));
@@ -438,27 +535,32 @@ contract RewardsDistributorTest is Test {
     function testTransferFailureRollsBackClaim() public {
         bytes32[] memory leaves = _tree(address(token), 100);
         bytes32[] memory proof = merkle.getProof(leaves, 0);
-        distributor.fund(id, 100);
+        distributor.fund(paramsById[id], 100);
         _activate(id, merkle.getRoot(leaves));
         vm.mockCallRevert(
             address(token), abi.encodeWithSelector(token.transfer.selector, alice, 100), bytes("transfer failed")
         );
         vm.expectRevert(bytes(ErrorsLib.TRANSFER_REVERTED));
-        distributor.claim(id, alice, 100, proof);
+        distributor.claim(paramsById[id], alice, 100, proof);
         assertEq(distributor.claimed(id, alice), 0);
         assertEq(_balance(id), 100);
     }
 
     function testMulticallReturnDataAndRollback() public {
+        CampaignParams memory params = CampaignParams(address(token), TIMELOCK, updater, bytes32(uint256(42)));
+        bytes32 otherId = keccak256(abi.encode(params));
         bytes[] memory calls = new bytes[](2);
-        calls[0] = abi.encodeCall(distributor.createCampaign, (address(token), updater, TIMELOCK));
-        calls[1] = abi.encodeCall(distributor.campaignCount, ());
+        calls[0] = abi.encodeCall(distributor.createCampaign, (params));
+        calls[1] = abi.encodeCall(distributor.campaigns, (otherId));
         bytes[] memory results = distributor.multicall(calls);
-        assertEq(abi.decode(results[0], (uint256)), 2);
-        assertEq(abi.decode(results[1], (uint256)), 2);
+        assertEq(abi.decode(results[0], (bytes32)), otherId);
+        (address actualUpdater, uint256 balance, bytes32 root) = abi.decode(results[1], (address, uint256, bytes32));
+        assertEq(actualUpdater, updater);
+        assertEq(balance, 0);
+        assertEq(root, bytes32(0));
 
-        calls[0] = abi.encodeCall(distributor.submitRoot, (id, bytes32(uint256(1))));
-        calls[1] = abi.encodeCall(distributor.acceptRoot, (3, bytes32(uint256(1))));
+        calls[0] = abi.encodeCall(distributor.submitRoot, (paramsById[id], bytes32(uint256(1))));
+        calls[1] = abi.encodeCall(distributor.acceptRoot, (otherId, bytes32(uint256(1))));
         vm.prank(updater);
         vm.expectRevert(IRewardsDistributor.NoPendingRoot.selector);
         distributor.multicall(calls);
@@ -468,35 +570,35 @@ contract RewardsDistributorTest is Test {
     function testFundingFailureDoesNotCreditBalance() public {
         vm.prank(bob);
         vm.expectRevert();
-        distributor.fund(id, 100);
+        distributor.fund(paramsById[id], 100);
         assertEq(_balance(id), 0);
     }
 
     function testFundingRejectsTokenWithoutCode() public {
         address noCodeToken = makeAddr("no code token");
-        uint256 otherId = distributor.createCampaign(noCodeToken, updater, TIMELOCK);
+        bytes32 otherId = _create(noCodeToken, updater, TIMELOCK);
         vm.expectRevert(bytes(ErrorsLib.NO_CODE));
-        distributor.fund(otherId, 100);
+        distributor.fund(paramsById[otherId], 100);
         assertEq(_balance(otherId), 0);
     }
 
     function testTransferReturningFalseRollsBackClaim() public {
         bytes32[] memory leaves = _tree(address(token), 100);
         bytes32[] memory proof = merkle.getProof(leaves, 0);
-        distributor.fund(id, 100);
+        distributor.fund(paramsById[id], 100);
         _activate(id, merkle.getRoot(leaves));
         vm.mockCall(address(token), abi.encodeWithSelector(token.transfer.selector, alice, 100), abi.encode(false));
         vm.expectRevert(bytes(ErrorsLib.TRANSFER_RETURNED_FALSE));
-        distributor.claim(id, alice, 100, proof);
+        distributor.claim(paramsById[id], alice, 100, proof);
         assertEq(distributor.claimed(id, alice), 0);
         assertEq(_balance(id), 100);
     }
 
     function testSingleLeafEmptyProof() public {
         bytes32 root = keccak256(bytes.concat(keccak256(abi.encode(alice, address(token), uint256(100)))));
-        distributor.fund(id, 100);
+        distributor.fund(paramsById[id], 100);
         _activate(id, root);
-        distributor.claim(id, alice, 100, new bytes32[](0));
+        distributor.claim(paramsById[id], alice, 100, new bytes32[](0));
         assertEq(token.balanceOf(alice), 100);
     }
 
@@ -511,9 +613,9 @@ contract RewardsDistributorTest is Test {
         proof[0] = leftLeaves[1];
         proof[1] = parents[1];
         token.mint(address(this), amount);
-        distributor.fund(id, amount);
+        distributor.fund(paramsById[id], amount);
         _activate(id, merkle.getRoot(parents));
-        distributor.claim(id, alice, amount, proof);
+        distributor.claim(paramsById[id], alice, amount, proof);
         assertEq(token.balanceOf(alice), amount);
         assertEq(_balance(id), 0);
     }

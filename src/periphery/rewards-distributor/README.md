@@ -8,7 +8,11 @@ Pausing only sets the active root to zero. Pending roots are unaffected and can 
 
 Only amounts supplied through `fund` are credited. Direct transfers are unallocated and cannot be recovered. Funding credits the specified amount without measuring token balance changes. Fee-on-transfer and rebasing tokens are not supported.
 
-Campaign IDs start at 1. Zero roots may be submitted and accepted, but do not enable claims. A zero timelock still requires an explicit acceptance. Existing URD proofs can be reused; leaves do not bind campaign IDs, so updaters must choose campaign roots carefully.
+Campaign IDs are `keccak256(abi.encode(params))`, where `CampaignParams` contains `token`, `timelock`, `initialUpdater` and `salt` in that order. Only the mutable updater, balance and root are stored. Creation emits the full parameters; callers supply them to `fund`, `submitRoot` and `claim`. Other campaign operations take the ID. Including the initial updater prevents a front-runner from changing the intended role, while salts allow independent campaigns with the same token and timelock.
+
+A campaign is considered created while its updater is nonzero. Duplicate creation reverts in that state. Setting the updater to zero disables funding and updater-only actions, but allows anyone to recreate the identical parameters and restore the initial updater without clearing balances, roots, pending roots or claims. A zero initial updater leaves a campaign uncreated under this convention.
+
+Zero roots may be submitted and accepted, but do not enable claims. A zero timelock still requires an explicit acceptance. Existing URD proofs can be reused; leaves do not bind campaign IDs, so updaters must choose campaign roots carefully.
 
 This draft is unaudited.
 
