@@ -6,7 +6,6 @@ import {Merkle} from "./helpers/Merkle.sol";
 import {ERC20Mock} from "../../mocks/ERC20Mock.sol";
 import {RewardsDistributor} from "../../../src/periphery/rewards-distributor/RewardsDistributor.sol";
 import {IRewardsDistributor} from "../../../src/periphery/rewards-distributor/interfaces/IRewardsDistributor.sol";
-import {ErrorsLib} from "../../../src/periphery/rewards-distributor/libraries/ErrorsLib.sol";
 
 contract RewardsToken is ERC20Mock {
     function mint(address account, uint256 amount) external {
@@ -78,9 +77,9 @@ contract RewardsDistributorTest is Test {
     }
 
     function testCreateRejectsZeroAddresses() public {
-        vm.expectRevert(bytes(ErrorsLib.ZERO_ADDRESS));
+        vm.expectRevert(IRewardsDistributor.ZeroAddress.selector);
         distributor.createCampaign(address(0), updater, 0);
-        vm.expectRevert(bytes(ErrorsLib.ZERO_ADDRESS));
+        vm.expectRevert(IRewardsDistributor.ZeroAddress.selector);
         distributor.createCampaign(address(token), address(0), 0);
     }
 
@@ -103,7 +102,7 @@ contract RewardsDistributorTest is Test {
         bytes32[] memory leaves = _tree(address(token), 100);
         bytes32[] memory proof = merkle.getProof(leaves, 0);
         _activate(id, merkle.getRoot(leaves));
-        vm.expectRevert(bytes(ErrorsLib.INSUFFICIENT_BALANCE));
+        vm.expectRevert(IRewardsDistributor.InsufficientBalance.selector);
         distributor.claim(id, alice, 100, proof);
         distributor.fund(id, 40);
         assertEq(_balance(id), 40);
@@ -122,7 +121,7 @@ contract RewardsDistributorTest is Test {
         bytes32[] memory goodProof = merkle.getProof(goodLeaves, 0);
         _activate(id, merkle.getRoot(badLeaves));
         _activate(otherId, merkle.getRoot(goodLeaves));
-        vm.expectRevert(bytes(ErrorsLib.INSUFFICIENT_BALANCE));
+        vm.expectRevert(IRewardsDistributor.InsufficientBalance.selector);
         distributor.claim(id, alice, uint256(fundingA) + 1, badProof);
         assertEq(distributor.claimed(id, alice), 0);
         assertEq(_balance(id), fundingA);
@@ -139,7 +138,7 @@ contract RewardsDistributorTest is Test {
         (, uint256 validAt) = distributor.pendingRoot(id);
         assertEq(validAt, block.timestamp + TIMELOCK);
         vm.warp(validAt - 1);
-        vm.expectRevert(bytes(ErrorsLib.TIMELOCK_NOT_EXPIRED));
+        vm.expectRevert(IRewardsDistributor.TimelockNotExpired.selector);
         distributor.acceptRoot(id);
         vm.warp(validAt);
         vm.expectEmit(true, false, false, true);
@@ -150,7 +149,7 @@ contract RewardsDistributorTest is Test {
         (bytes32 pending, uint256 timestamp) = distributor.pendingRoot(id);
         assertEq(pending, bytes32(0));
         assertEq(timestamp, 0);
-        vm.expectRevert(bytes(ErrorsLib.NO_PENDING_ROOT));
+        vm.expectRevert(IRewardsDistributor.NoPendingRoot.selector);
         distributor.acceptRoot(id);
     }
 
@@ -163,7 +162,7 @@ contract RewardsDistributorTest is Test {
         assertEq(validAtB, validAtA + TIMELOCK);
         vm.warp(validAtA);
         distributor.acceptRoot(id);
-        vm.expectRevert(bytes(ErrorsLib.TIMELOCK_NOT_EXPIRED));
+        vm.expectRevert(IRewardsDistributor.TimelockNotExpired.selector);
         distributor.acceptRoot(otherId);
         vm.warp(validAtB);
         distributor.acceptRoot(otherId);
@@ -174,21 +173,21 @@ contract RewardsDistributorTest is Test {
     function testZeroTimelockAndZeroRoot() public {
         uint256 otherId = distributor.createCampaign(address(token), updater, 0);
         _submit(otherId, bytes32(0));
-        vm.expectRevert(bytes(ErrorsLib.ALREADY_PENDING));
+        vm.expectRevert(IRewardsDistributor.AlreadyPending.selector);
         _submit(otherId, bytes32(0));
         distributor.acceptRoot(otherId);
-        vm.expectRevert(bytes(ErrorsLib.NO_PENDING_ROOT));
+        vm.expectRevert(IRewardsDistributor.NoPendingRoot.selector);
         distributor.acceptRoot(otherId);
     }
 
     function testReplaceAndRevokePendingRoot() public {
         _submit(id, bytes32(uint256(1)));
-        vm.expectRevert(bytes(ErrorsLib.ALREADY_PENDING));
+        vm.expectRevert(IRewardsDistributor.AlreadyPending.selector);
         _submit(id, bytes32(uint256(1)));
         (, uint256 firstValidAt) = distributor.pendingRoot(id);
         vm.warp(firstValidAt);
         _submit(id, bytes32(uint256(2)));
-        vm.expectRevert(bytes(ErrorsLib.TIMELOCK_NOT_EXPIRED));
+        vm.expectRevert(IRewardsDistributor.TimelockNotExpired.selector);
         distributor.acceptRoot(id);
         vm.expectEmit(true, true, false, true);
         emit IRewardsDistributor.PendingRootRevoked(id, updater);
@@ -197,10 +196,10 @@ contract RewardsDistributorTest is Test {
         (bytes32 root, uint256 validAt) = distributor.pendingRoot(id);
         assertEq(root, bytes32(0));
         assertEq(validAt, 0);
-        vm.expectRevert(bytes(ErrorsLib.NO_PENDING_ROOT));
+        vm.expectRevert(IRewardsDistributor.NoPendingRoot.selector);
         distributor.acceptRoot(id);
         vm.prank(updater);
-        vm.expectRevert(bytes(ErrorsLib.NO_PENDING_ROOT));
+        vm.expectRevert(IRewardsDistributor.NoPendingRoot.selector);
         distributor.revokePendingRoot(id);
     }
 
@@ -220,14 +219,14 @@ contract RewardsDistributorTest is Test {
         assertEq(_balance(id), 100);
         (, uint256 validAt) = distributor.pendingRoot(id);
         assertEq(validAt, 0);
-        vm.expectRevert(bytes(ErrorsLib.ROOT_NOT_SET));
+        vm.expectRevert(IRewardsDistributor.RootNotSet.selector);
         distributor.claim(id, alice, 100, proof);
         vm.warp(revokedValidAt);
-        vm.expectRevert(bytes(ErrorsLib.NO_PENDING_ROOT));
+        vm.expectRevert(IRewardsDistributor.NoPendingRoot.selector);
         distributor.acceptRoot(id);
         _submit(id, root);
         (, uint256 resumeValidAt) = distributor.pendingRoot(id);
-        vm.expectRevert(bytes(ErrorsLib.TIMELOCK_NOT_EXPIRED));
+        vm.expectRevert(IRewardsDistributor.TimelockNotExpired.selector);
         distributor.acceptRoot(id);
         vm.warp(resumeValidAt);
         distributor.acceptRoot(id);
@@ -247,20 +246,20 @@ contract RewardsDistributorTest is Test {
             vm.prank(caller);
             (bool success, bytes memory reason) = address(distributor).call(calls[i]);
             assertFalse(success);
-            assertEq(reason, abi.encodeWithSignature("Error(string)", ErrorsLib.NOT_UPDATER_ROLE));
+            assertEq(reason, abi.encodeWithSelector(IRewardsDistributor.NotUpdater.selector));
         }
     }
 
     function testSetUpdater() public {
         vm.startPrank(updater);
-        vm.expectRevert(bytes(ErrorsLib.ZERO_ADDRESS));
+        vm.expectRevert(IRewardsDistributor.ZeroAddress.selector);
         distributor.setUpdater(id, address(0));
-        vm.expectRevert(bytes(ErrorsLib.ALREADY_SET));
+        vm.expectRevert(IRewardsDistributor.AlreadySet.selector);
         distributor.setUpdater(id, updater);
         vm.expectEmit(true, true, false, true);
         emit IRewardsDistributor.UpdaterSet(id, bob);
         distributor.setUpdater(id, bob);
-        vm.expectRevert(bytes(ErrorsLib.NOT_UPDATER_ROLE));
+        vm.expectRevert(IRewardsDistributor.NotUpdater.selector);
         distributor.submitRoot(id, bytes32(uint256(1)));
         vm.stopPrank();
         vm.prank(bob);
@@ -279,7 +278,7 @@ contract RewardsDistributorTest is Test {
         emit IRewardsDistributor.Claimed(id, alice, amount);
         vm.prank(bob);
         assertEq(distributor.claim(id, alice, amount, proof), amount);
-        vm.expectRevert(bytes(ErrorsLib.CLAIMABLE_TOO_LOW));
+        vm.expectRevert(IRewardsDistributor.ClaimableTooLow.selector);
         distributor.claim(id, alice, amount, proof);
         leaves = _tree(address(token), total);
         proof = merkle.getProof(leaves, 0);
@@ -291,21 +290,21 @@ contract RewardsDistributorTest is Test {
         leaves = _tree(address(token), amount);
         proof = merkle.getProof(leaves, 0);
         _activate(id, merkle.getRoot(leaves));
-        vm.expectRevert(bytes(ErrorsLib.CLAIMABLE_TOO_LOW));
+        vm.expectRevert(IRewardsDistributor.ClaimableTooLow.selector);
         distributor.claim(id, alice, amount, proof);
     }
 
     function testInvalidProofAndUnsetRoot() public {
         bytes32[] memory leaves = _tree(address(token), 100);
         bytes32[] memory proof = merkle.getProof(leaves, 0);
-        vm.expectRevert(bytes(ErrorsLib.ROOT_NOT_SET));
+        vm.expectRevert(IRewardsDistributor.RootNotSet.selector);
         distributor.claim(id, alice, 100, proof);
         _activate(id, merkle.getRoot(leaves));
-        vm.expectRevert(bytes(ErrorsLib.INVALID_PROOF_OR_EXPIRED));
+        vm.expectRevert(IRewardsDistributor.InvalidProofOrExpired.selector);
         distributor.claim(id, alice, 101, proof);
-        vm.expectRevert(bytes(ErrorsLib.INVALID_PROOF_OR_EXPIRED));
+        vm.expectRevert(IRewardsDistributor.InvalidProofOrExpired.selector);
         distributor.claim(id, bob, 100, proof);
-        vm.expectRevert(bytes(ErrorsLib.INVALID_PROOF_OR_EXPIRED));
+        vm.expectRevert(IRewardsDistributor.InvalidProofOrExpired.selector);
         distributor.claim(id, alice, 100, new bytes32[](0));
         assertEq(distributor.claimed(id, alice), 0);
     }
@@ -314,7 +313,7 @@ contract RewardsDistributorTest is Test {
         bytes32[] memory leaves = _tree(address(token), 0);
         bytes32[] memory proof = merkle.getProof(leaves, 0);
         _activate(id, merkle.getRoot(leaves));
-        vm.expectRevert(bytes(ErrorsLib.CLAIMABLE_TOO_LOW));
+        vm.expectRevert(IRewardsDistributor.ClaimableTooLow.selector);
         distributor.claim(id, alice, 0, proof);
     }
 
@@ -328,18 +327,18 @@ contract RewardsDistributorTest is Test {
         calls[4] = abi.encodeCall(distributor.pauseCampaign, (unknown));
         calls[5] = abi.encodeCall(distributor.setUpdater, (unknown, bob));
         calls[6] = abi.encodeCall(distributor.claim, (unknown, alice, 1, new bytes32[](0)));
-        string[] memory errors = new string[](7);
-        errors[0] = ErrorsLib.UNKNOWN_CAMPAIGN;
-        errors[1] = ErrorsLib.NOT_UPDATER_ROLE;
-        errors[2] = ErrorsLib.NO_PENDING_ROOT;
-        errors[3] = ErrorsLib.NOT_UPDATER_ROLE;
-        errors[4] = ErrorsLib.NOT_UPDATER_ROLE;
-        errors[5] = ErrorsLib.NOT_UPDATER_ROLE;
-        errors[6] = ErrorsLib.ROOT_NOT_SET;
+        bytes4[] memory errors = new bytes4[](7);
+        errors[0] = IRewardsDistributor.UnknownCampaign.selector;
+        errors[1] = IRewardsDistributor.NotUpdater.selector;
+        errors[2] = IRewardsDistributor.NoPendingRoot.selector;
+        errors[3] = IRewardsDistributor.NotUpdater.selector;
+        errors[4] = IRewardsDistributor.NotUpdater.selector;
+        errors[5] = IRewardsDistributor.NotUpdater.selector;
+        errors[6] = IRewardsDistributor.RootNotSet.selector;
         for (uint256 i; i < calls.length; ++i) {
             (bool success, bytes memory reason) = address(distributor).call(calls[i]);
             assertFalse(success);
-            assertEq(reason, abi.encodeWithSignature("Error(string)", errors[i]));
+            assertEq(reason, abi.encodeWithSelector(errors[i]));
         }
     }
 
@@ -356,7 +355,7 @@ contract RewardsDistributorTest is Test {
         assertEq(pendingB, bytes32(uint256(2)));
         calls[0] = abi.encodeCall(distributor.acceptRoot, (id));
         calls[1] = abi.encodeCall(distributor.acceptRoot, (otherId));
-        vm.expectRevert(bytes(ErrorsLib.TIMELOCK_NOT_EXPIRED));
+        vm.expectRevert(IRewardsDistributor.TimelockNotExpired.selector);
         distributor.multicall(calls);
         vm.warp(validAt);
         vm.prank(bob);
@@ -391,7 +390,7 @@ contract RewardsDistributorTest is Test {
         calls[0] = abi.encodeCall(distributor.submitRoot, (id, bytes32(uint256(1))));
         calls[1] = abi.encodeCall(distributor.acceptRoot, (3));
         vm.prank(updater);
-        vm.expectRevert(bytes(ErrorsLib.NO_PENDING_ROOT));
+        vm.expectRevert(IRewardsDistributor.NoPendingRoot.selector);
         distributor.multicall(calls);
         (bytes32 root, uint256 validAt) = distributor.pendingRoot(id);
         assertEq(root, bytes32(0));

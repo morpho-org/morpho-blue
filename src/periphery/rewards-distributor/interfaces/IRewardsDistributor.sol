@@ -21,6 +21,18 @@ struct PendingRoot {
 /// @custom:contact security@morpho.org
 /// @notice Singleton distribution of independently funded, timelocked rewards campaigns.
 interface IRewardsDistributor {
+    error ZeroAddress();
+    error UnknownCampaign();
+    error NotUpdater();
+    error AlreadyPending();
+    error AlreadySet();
+    error NoPendingRoot();
+    error TimelockNotExpired();
+    error RootNotSet();
+    error InvalidProofOrExpired();
+    error ClaimableTooLow();
+    error InsufficientBalance();
+
     event CampaignCreated(
         uint256 indexed id, address indexed caller, address indexed token, address updater, uint256 timelock
     );

@@ -2,7 +2,6 @@
 pragma solidity 0.8.27;
 
 import {Campaign, PendingRoot, IRewardsDistributor} from "./interfaces/IRewardsDistributor.sol";
-import {ErrorsLib} from "./libraries/ErrorsLib.sol";
 import {ERC20} from "../../../lib/solmate/src/tokens/ERC20.sol";
 import {SafeTransferLib} from "../../../lib/solmate/src/utils/SafeTransferLib.sol";
 import {MerkleProofLib} from "../../../lib/solmate/src/utils/MerkleProofLib.sol";
@@ -45,7 +44,7 @@ contract RewardsDistributor is IRewardsDistributor {
     /// @notice Creates a campaign with a fixed timelock and no active root.
     /// @return id The newly created campaign ID.
     function createCampaign(address token, address updater, uint256 timelock) external returns (uint256 id) {
-        require(token != address(0) && updater != address(0), ErrorsLib.ZERO_ADDRESS);
+        if (token == address(0) || updater == address(0)) revert ZeroAddress();
         id = ++campaignCount;
         campaigns[id] = Campaign(token, updater, timelock, 0, bytes32(0));
         emit CampaignCreated(id, msg.sender, token, updater, timelock);
@@ -53,7 +52,7 @@ contract RewardsDistributor is IRewardsDistributor {
 
     /// @notice Funds a campaign with the specified amount from the caller.
     function fund(uint256 id, uint256 amount) external {
-        require(campaigns[id].token != address(0), ErrorsLib.UNKNOWN_CAMPAIGN);
+        if (campaigns[id].token == address(0)) revert UnknownCampaign();
         ERC20 token = ERC20(campaigns[id].token);
         token.safeTransferFrom(msg.sender, address(this), amount);
         campaigns[id].balance += amount;
@@ -62,16 +61,16 @@ contract RewardsDistributor is IRewardsDistributor {
 
     /// @notice Submits or replaces a pending root, restarting the campaign's timelock.
     function submitRoot(uint256 id, bytes32 newRoot) external {
-        require(msg.sender == campaigns[id].updater, ErrorsLib.NOT_UPDATER_ROLE);
-        require(pendingRoot[id].validAt == 0 || newRoot != pendingRoot[id].root, ErrorsLib.ALREADY_PENDING);
+        if (msg.sender != campaigns[id].updater) revert NotUpdater();
+        if (pendingRoot[id].validAt != 0 && newRoot == pendingRoot[id].root) revert AlreadyPending();
         pendingRoot[id] = PendingRoot(newRoot, block.timestamp + campaigns[id].timelock);
         emit PendingRootSet(id, msg.sender, newRoot);
     }
 
     /// @notice Accepts a matured pending root. Anyone may call this function.
     function acceptRoot(uint256 id) external {
-        require(pendingRoot[id].validAt != 0, ErrorsLib.NO_PENDING_ROOT);
-        require(block.timestamp >= pendingRoot[id].validAt, ErrorsLib.TIMELOCK_NOT_EXPIRED);
+        if (pendingRoot[id].validAt == 0) revert NoPendingRoot();
+        if (block.timestamp < pendingRoot[id].validAt) revert TimelockNotExpired();
         campaigns[id].root = pendingRoot[id].root;
         delete pendingRoot[id];
         emit RootSet(id, campaigns[id].root);
@@ -79,15 +78,15 @@ contract RewardsDistributor is IRewardsDistributor {
 
     /// @notice Revokes a pending root. A matured root may be accepted before this transaction.
     function revokePendingRoot(uint256 id) external {
-        require(msg.sender == campaigns[id].updater, ErrorsLib.NOT_UPDATER_ROLE);
-        require(pendingRoot[id].validAt != 0, ErrorsLib.NO_PENDING_ROOT);
+        if (msg.sender != campaigns[id].updater) revert NotUpdater();
+        if (pendingRoot[id].validAt == 0) revert NoPendingRoot();
         delete pendingRoot[id];
         emit PendingRootRevoked(id, msg.sender);
     }
 
     /// @notice Stops claims and deletes any pending root. Resuming requires a new timelocked submission.
     function pauseCampaign(uint256 id) external {
-        require(msg.sender == campaigns[id].updater, ErrorsLib.NOT_UPDATER_ROLE);
+        if (msg.sender != campaigns[id].updater) revert NotUpdater();
         campaigns[id].root = bytes32(0);
         delete pendingRoot[id];
         emit CampaignPaused(id, msg.sender);
@@ -95,9 +94,9 @@ contract RewardsDistributor is IRewardsDistributor {
 
     /// @notice Transfers the campaign's updater role to a nonzero address.
     function setUpdater(uint256 id, address newUpdater) external {
-        require(msg.sender == campaigns[id].updater, ErrorsLib.NOT_UPDATER_ROLE);
-        require(newUpdater != address(0), ErrorsLib.ZERO_ADDRESS);
-        require(newUpdater != campaigns[id].updater, ErrorsLib.ALREADY_SET);
+        if (msg.sender != campaigns[id].updater) revert NotUpdater();
+        if (newUpdater == address(0)) revert ZeroAddress();
+        if (newUpdater == campaigns[id].updater) revert AlreadySet();
         campaigns[id].updater = newUpdater;
         emit UpdaterSet(id, newUpdater);
     }
@@ -109,16 +108,13 @@ contract RewardsDistributor is IRewardsDistributor {
         returns (uint256 amount)
     {
         Campaign storage campaign = campaigns[id];
-        require(campaign.root != bytes32(0), ErrorsLib.ROOT_NOT_SET);
-        require(
-            MerkleProofLib.verify(
+        if (campaign.root == bytes32(0)) revert RootNotSet();
+        if (!MerkleProofLib.verify(
                 proof, campaign.root, keccak256(bytes.concat(keccak256(abi.encode(account, campaign.token, claimable))))
-            ),
-            ErrorsLib.INVALID_PROOF_OR_EXPIRED
-        );
-        require(claimable > claimed[id][account], ErrorsLib.CLAIMABLE_TOO_LOW);
+            )) revert InvalidProofOrExpired();
+        if (claimable <= claimed[id][account]) revert ClaimableTooLow();
         amount = claimable - claimed[id][account];
-        require(amount <= campaign.balance, ErrorsLib.INSUFFICIENT_BALANCE);
+        if (amount > campaign.balance) revert InsufficientBalance();
         claimed[id][account] = claimable;
         campaign.balance -= amount;
         ERC20(campaign.token).safeTransfer(account, amount);
