@@ -12,6 +12,7 @@ contract RewardsDistributor is IRewardsDistributor {
 
     /* STORAGE */
 
+    mapping(bytes32 id => bool) public created;
     mapping(bytes32 id => address) public updater;
     mapping(bytes32 id => address) public sentinel;
     mapping(bytes32 id => uint256) public balance;
@@ -38,8 +39,6 @@ contract RewardsDistributor is IRewardsDistributor {
         return results;
     }
 
-    /// @dev A nonzero updater marks a created campaign.
-    /// @dev Only the original creator can recreate the ID after its updater is zeroed, overwriting both roles.
     /// @dev The salt is derived from msg.sender to prevent front-running issues.
     /// @dev Bundles sharing msg.sender must also bind preSalt to their initiator.
     function createCampaign(address token, uint256 timelock, address newUpdater, address newSentinel, bytes32 preSalt)
@@ -48,7 +47,8 @@ contract RewardsDistributor is IRewardsDistributor {
     {
         CampaignParams memory params = CampaignParams(token, timelock, keccak256(abi.encode(preSalt, msg.sender)));
         bytes32 id = keccak256(abi.encode(params));
-        require(updater[id] == address(0), AlreadyCreated());
+        require(!created[id], AlreadyCreated());
+        created[id] = true;
         updater[id] = newUpdater;
         sentinel[id] = newSentinel;
         emit CreateCampaign(id, msg.sender, params, newUpdater, newSentinel);
@@ -57,7 +57,7 @@ contract RewardsDistributor is IRewardsDistributor {
 
     function fund(CampaignParams calldata params, uint256 amount) external {
         bytes32 id = keccak256(abi.encode(params));
-        require(updater[id] != address(0), UnknownCampaign());
+        require(created[id], UnknownCampaign());
         IERC20 token = IERC20(params.token);
         token.safeTransferFrom(msg.sender, address(this), amount);
         balance[id] += amount;

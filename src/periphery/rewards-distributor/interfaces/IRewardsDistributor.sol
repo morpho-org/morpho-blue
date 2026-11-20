@@ -32,6 +32,7 @@ interface IRewardsDistributor {
     event SetSentinel(bytes32 indexed id, address indexed sentinel);
     event Claim(bytes32 indexed id, address indexed account, uint256 assets);
 
+    function created(bytes32 id) external view returns (bool);
     function updater(bytes32 id) external view returns (address);
     function sentinel(bytes32 id) external view returns (address);
     function balance(bytes32 id) external view returns (uint256);
