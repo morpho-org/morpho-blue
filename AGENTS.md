@@ -7,6 +7,8 @@
 
 Pinned versions should not be updated unless certora-cli requires new versions or a pinned program has a bug that affects the CI. certora-cli can float.
 
+Software installed from the runner image does not need to be checked, since we trust the image in the first place.
+
 The goal is to avoid a wrongly green CI. Leaking keys & repo content is not critical.
 
 If a tool needs updating, do an update PR across the repos you are checking.
