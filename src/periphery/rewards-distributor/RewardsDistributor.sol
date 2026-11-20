@@ -2,9 +2,8 @@
 pragma solidity 0.8.27;
 
 import {Campaign, IRewardsDistributor} from "./interfaces/IRewardsDistributor.sol";
-import {ERC20} from "../../../lib/solmate/src/tokens/ERC20.sol";
-import {SafeTransferLib} from "../../../lib/solmate/src/utils/SafeTransferLib.sol";
-import {MerkleProofLib} from "../../../lib/solmate/src/utils/MerkleProofLib.sol";
+import {IERC20} from "../../interfaces/IERC20.sol";
+import {SafeTransferLib} from "../../libraries/SafeTransferLib.sol";
 
 /// @title RewardsDistributor
 /// @author Morpho Labs
@@ -12,7 +11,7 @@ import {MerkleProofLib} from "../../../lib/solmate/src/utils/MerkleProofLib.sol"
 /// @notice Distributes rewards through independently funded, timelocked Merkle campaigns.
 /// @dev Fee-on-transfer and rebasing tokens are not supported.
 contract RewardsDistributor is IRewardsDistributor {
-    using SafeTransferLib for ERC20;
+    using SafeTransferLib for IERC20;
 
     /* STORAGE */
 
@@ -53,7 +52,7 @@ contract RewardsDistributor is IRewardsDistributor {
     /// @notice Funds a campaign with the specified amount from the caller.
     function fund(uint256 id, uint256 amount) external {
         if (campaigns[id].token == address(0)) revert UnknownCampaign();
-        ERC20 token = ERC20(campaigns[id].token);
+        IERC20 token = IERC20(campaigns[id].token);
         token.safeTransferFrom(msg.sender, address(this), amount);
         campaigns[id].balance += amount;
         emit Funded(id, msg.sender, amount);
@@ -115,15 +114,20 @@ contract RewardsDistributor is IRewardsDistributor {
     {
         Campaign storage campaign = campaigns[id];
         if (campaign.root == bytes32(0)) revert RootNotSet();
-        if (!MerkleProofLib.verify(
-                proof, campaign.root, keccak256(bytes.concat(keccak256(abi.encode(account, campaign.token, claimable))))
-            )) revert InvalidProofOrExpired();
+        bytes32 computedRoot = keccak256(bytes.concat(keccak256(abi.encode(account, campaign.token, claimable))));
+        for (uint256 i; i < proof.length; ++i) {
+            bytes32 sibling = proof[i];
+            computedRoot = computedRoot < sibling
+                ? keccak256(abi.encodePacked(computedRoot, sibling))
+                : keccak256(abi.encodePacked(sibling, computedRoot));
+        }
+        if (computedRoot != campaign.root) revert InvalidProofOrExpired();
         if (claimable <= claimed[id][account]) revert ClaimableTooLow();
         amount = claimable - claimed[id][account];
         if (amount > campaign.balance) revert InsufficientBalance();
         claimed[id][account] = claimable;
         campaign.balance -= amount;
-        ERC20(campaign.token).safeTransfer(account, amount);
+        IERC20(campaign.token).safeTransfer(account, amount);
         emit Claimed(id, account, amount);
     }
 }

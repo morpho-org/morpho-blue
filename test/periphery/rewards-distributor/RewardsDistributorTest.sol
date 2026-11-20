@@ -6,6 +6,7 @@ import {Merkle} from "./helpers/Merkle.sol";
 import {ERC20Mock} from "../../mocks/ERC20Mock.sol";
 import {RewardsDistributor} from "../../../src/periphery/rewards-distributor/RewardsDistributor.sol";
 import {IRewardsDistributor} from "../../../src/periphery/rewards-distributor/interfaces/IRewardsDistributor.sol";
+import {ErrorsLib} from "../../../src/libraries/ErrorsLib.sol";
 
 contract RewardsToken is ERC20Mock {
     function mint(address account, uint256 amount) external {
@@ -433,7 +434,7 @@ contract RewardsDistributorTest is Test {
         vm.mockCallRevert(
             address(token), abi.encodeWithSelector(token.transfer.selector, alice, 100), bytes("transfer failed")
         );
-        vm.expectRevert(bytes("TRANSFER_FAILED"));
+        vm.expectRevert(bytes(ErrorsLib.TRANSFER_REVERTED));
         distributor.claim(id, alice, 100, proof);
         assertEq(distributor.claimed(id, alice), 0);
         assertEq(_balance(id), 100);
@@ -459,6 +460,52 @@ contract RewardsDistributorTest is Test {
         vm.prank(bob);
         vm.expectRevert();
         distributor.fund(id, 100);
+        assertEq(_balance(id), 0);
+    }
+
+    function testFundingRejectsTokenWithoutCode() public {
+        address noCodeToken = makeAddr("no code token");
+        uint256 otherId = distributor.createCampaign(noCodeToken, updater, TIMELOCK);
+        vm.expectRevert(bytes(ErrorsLib.NO_CODE));
+        distributor.fund(otherId, 100);
+        assertEq(_balance(otherId), 0);
+    }
+
+    function testTransferReturningFalseRollsBackClaim() public {
+        bytes32[] memory leaves = _tree(address(token), 100);
+        bytes32[] memory proof = merkle.getProof(leaves, 0);
+        distributor.fund(id, 100);
+        _activate(id, merkle.getRoot(leaves));
+        vm.mockCall(address(token), abi.encodeWithSelector(token.transfer.selector, alice, 100), abi.encode(false));
+        vm.expectRevert(bytes(ErrorsLib.TRANSFER_RETURNED_FALSE));
+        distributor.claim(id, alice, 100, proof);
+        assertEq(distributor.claimed(id, alice), 0);
+        assertEq(_balance(id), 100);
+    }
+
+    function testSingleLeafEmptyProof() public {
+        bytes32 root = keccak256(bytes.concat(keccak256(abi.encode(alice, address(token), uint256(100)))));
+        distributor.fund(id, 100);
+        _activate(id, root);
+        distributor.claim(id, alice, 100, new bytes32[](0));
+        assertEq(token.balanceOf(alice), 100);
+    }
+
+    function testMultipleLevelSortedProof(uint128 claimable) public {
+        uint256 amount = bound(claimable, 1, type(uint128).max);
+        bytes32[] memory leftLeaves = _tree(address(token), amount);
+        bytes32[] memory rightLeaves = _tree(address(token), amount + 1);
+        bytes32[] memory parents = new bytes32[](2);
+        parents[0] = merkle.getRoot(leftLeaves);
+        parents[1] = merkle.getRoot(rightLeaves);
+        bytes32[] memory proof = new bytes32[](2);
+        proof[0] = leftLeaves[1];
+        proof[1] = parents[1];
+        token.mint(address(this), amount);
+        distributor.fund(id, amount);
+        _activate(id, merkle.getRoot(parents));
+        distributor.claim(id, alice, amount, proof);
+        assertEq(token.balanceOf(alice), amount);
         assertEq(_balance(id), 0);
     }
 }
