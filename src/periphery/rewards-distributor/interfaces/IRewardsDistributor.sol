@@ -4,7 +4,6 @@ pragma solidity 0.8.39;
 struct CampaignParams {
     address token;
     uint256 timelock;
-    address initialUpdater;
     bytes32 salt;
 }
 
@@ -26,7 +25,7 @@ interface IRewardsDistributor {
     error ClaimableTooLow();
     error InsufficientBalance();
 
-    event CreateCampaign(bytes32 indexed id, address indexed caller, CampaignParams params);
+    event CreateCampaign(bytes32 indexed id, address indexed caller, CampaignParams params, address updater);
     event Fund(bytes32 indexed id, address indexed caller, uint256 amount);
     event SubmitRoot(bytes32 indexed id, address indexed caller, bytes32 root);
     event RevokePendingRoot(bytes32 indexed id, address indexed caller, bytes32 root);
@@ -42,7 +41,9 @@ interface IRewardsDistributor {
         returns (address updater, address sentinel, uint256 balance, bytes32 root);
     function validAt(bytes32 id, bytes32 root) external view returns (uint256);
     function claimed(bytes32 id, address account) external view returns (uint256);
-    function createCampaign(CampaignParams calldata params) external returns (bytes32 id);
+    function createCampaign(address token, uint256 timelock, address updater, bytes32 salt)
+        external
+        returns (bytes32 id);
     function fund(CampaignParams calldata params, uint256 amount) external;
     function submitRoot(CampaignParams calldata params, bytes32 newRoot) external;
     function acceptRoot(bytes32 id, bytes32 root) external;

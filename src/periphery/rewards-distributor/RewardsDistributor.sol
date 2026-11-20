@@ -38,12 +38,18 @@ contract RewardsDistributor is IRewardsDistributor {
     }
 
     /// @dev A nonzero updater marks a created campaign.
-    /// @dev Recreation restores only the initial updater; other state is preserved.
-    function createCampaign(CampaignParams calldata params) external returns (bytes32 id) {
+    /// @dev Only the original creator can recreate the ID after its updater is zeroed; other state is preserved.
+    /// @dev The salt is derived from msg.sender to prevent front-running issues.
+    /// @dev Bundles sharing msg.sender must also bind the supplied salt to their initiator.
+    function createCampaign(address token, uint256 timelock, address updater, bytes32 salt)
+        external
+        returns (bytes32 id)
+    {
+        CampaignParams memory params = CampaignParams(token, timelock, keccak256(abi.encode(msg.sender, salt)));
         id = keccak256(abi.encode(params));
         require(campaigns[id].updater == address(0), AlreadyCreated());
-        campaigns[id].updater = params.initialUpdater;
-        emit CreateCampaign(id, msg.sender, params);
+        campaigns[id].updater = updater;
+        emit CreateCampaign(id, msg.sender, params, updater);
     }
 
     function fund(CampaignParams calldata params, uint256 amount) external {
