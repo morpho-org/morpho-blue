@@ -117,6 +117,9 @@ contract RewardsDistributor is IRewardsDistributor {
         returns (uint256)
     {
         bytes32 id = keccak256(abi.encode(params));
+        require(claimable >= claimed[id][account], ClaimableTooLow());
+        uint256 assets = claimable - claimed[id][account];
+        require(assets <= balance[id], InsufficientBalance());
         bytes32 computedRoot = keccak256(bytes.concat(keccak256(abi.encode(account, claimable))));
         for (uint256 i; i < proof.length; ++i) {
             bytes32 sibling = proof[i];
@@ -125,9 +128,6 @@ contract RewardsDistributor is IRewardsDistributor {
                 : keccak256(abi.encodePacked(sibling, computedRoot));
         }
         require(computedRoot == root[id], InvalidProofOrExpired());
-        require(claimable >= claimed[id][account], ClaimableTooLow());
-        uint256 assets = claimable - claimed[id][account];
-        require(assets <= balance[id], InsufficientBalance());
         claimed[id][account] = claimable;
         balance[id] -= assets;
         IERC20(params.token).safeTransfer(account, assets);

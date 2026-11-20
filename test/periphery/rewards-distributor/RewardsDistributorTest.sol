@@ -174,7 +174,7 @@ contract RewardsDistributorTest is Test {
         vm.prank(updater);
         vm.expectRevert(IRewardsDistributor.NotUpdater.selector);
         distributor.submitRoot(params, root);
-        vm.expectRevert(IRewardsDistributor.InvalidProofOrExpired.selector);
+        vm.expectRevert(IRewardsDistributor.InsufficientBalance.selector);
         distributor.claim(params, alice, 100, proof);
         assertEq(_balance(id), 0);
         assertEq(distributor.claimed(id, alice), 0);
@@ -539,6 +539,7 @@ contract RewardsDistributorTest is Test {
     }
 
     function testInvalidProofAndUnsetRoot() public {
+        distributor.fund(paramsById[id], 101);
         bytes32[] memory leaves = _tree(100);
         bytes32[] memory proof = merkle.getProof(leaves, 0);
         vm.expectRevert(IRewardsDistributor.InvalidProofOrExpired.selector);
@@ -551,6 +552,23 @@ contract RewardsDistributorTest is Test {
         vm.expectRevert(IRewardsDistributor.InvalidProofOrExpired.selector);
         distributor.claim(paramsById[id], alice, 100, new bytes32[](0));
         assertEq(distributor.claimed(id, alice), 0);
+    }
+
+    function testAmountChecksBeforeInvalidProof() public {
+        distributor.fund(paramsById[id], 100);
+        bytes32[] memory leaves = _tree(100);
+        bytes32[] memory proof = merkle.getProof(leaves, 0);
+        _activate(id, merkle.getRoot(leaves));
+        distributor.claim(paramsById[id], alice, 100, proof);
+        vm.expectRevert(IRewardsDistributor.ClaimableTooLow.selector);
+        distributor.claim(paramsById[id], alice, 99, new bytes32[](0));
+        vm.expectRevert(IRewardsDistributor.InsufficientBalance.selector);
+        distributor.claim(paramsById[id], alice, 101, new bytes32[](0));
+        vm.expectRevert(IRewardsDistributor.InvalidProofOrExpired.selector);
+        distributor.claim(paramsById[id], alice, 100, new bytes32[](0));
+        assertEq(distributor.claimed(id, alice), 100);
+        assertEq(_balance(id), 0);
+        assertEq(token.balanceOf(alice), 100);
     }
 
     function testZeroClaimable() public {
@@ -589,7 +607,7 @@ contract RewardsDistributorTest is Test {
         errors[3] = IRewardsDistributor.NotUpdaterNorSentinel.selector;
         errors[4] = IRewardsDistributor.NotUpdaterNorSentinel.selector;
         errors[5] = IRewardsDistributor.NotUpdater.selector;
-        errors[6] = IRewardsDistributor.InvalidProofOrExpired.selector;
+        errors[6] = IRewardsDistributor.InsufficientBalance.selector;
         errors[7] = IRewardsDistributor.NotUpdater.selector;
         for (uint256 i; i < calls.length; ++i) {
             (bool success, bytes memory reason) = address(distributor).call(calls[i]);
