@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.39;
 
-/// @dev A campaign's immutable parameters. Its ID is keccak256(abi.encode(params)).
 struct CampaignParams {
     address token;
     uint256 timelock;
@@ -35,7 +34,6 @@ interface IRewardsDistributor {
     event Claim(bytes32 indexed id, address indexed account, uint256 amount);
 
     function campaigns(bytes32 id) external view returns (address updater, uint256 balance, bytes32 root);
-    /// @dev Zero means no pending root.
     function validAt(bytes32 id, bytes32 root) external view returns (uint256);
     function claimed(bytes32 id, address account) external view returns (uint256);
     function createCampaign(CampaignParams calldata params) external returns (bytes32 id);

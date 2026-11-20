@@ -16,7 +16,7 @@ contract RewardsDistributor is IRewardsDistributor {
     /* STORAGE */
 
     mapping(bytes32 id => Campaign) public campaigns;
-    /// @inheritdoc IRewardsDistributor
+    /// @dev Zero means no pending root.
     mapping(bytes32 id => mapping(bytes32 root => uint256)) public validAt;
     mapping(bytes32 id => mapping(address account => uint256)) public claimed;
 
