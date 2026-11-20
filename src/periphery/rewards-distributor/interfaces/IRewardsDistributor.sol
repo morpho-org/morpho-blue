@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.39;
 
-/// @notice A campaign's distribution parameters and remaining funded balance.
+/// @dev A campaign's distribution parameters and remaining funded balance.
 struct Campaign {
     address token;
     address updater;
@@ -12,7 +12,7 @@ struct Campaign {
 
 /// @title IRewardsDistributor
 /// @author Morpho Labs
-/// @notice Singleton distribution of independently funded, timelocked rewards campaigns.
+/// @dev Singleton distribution of independently funded, timelocked rewards campaigns.
 interface IRewardsDistributor {
     error UnknownCampaign();
     error NotUpdater();
@@ -33,16 +33,16 @@ interface IRewardsDistributor {
     event SetUpdater(uint256 indexed id, address indexed updater);
     event Claim(uint256 indexed id, address indexed account, uint256 amount);
 
-    /// @notice The number of campaigns created. IDs start at 1.
+    /// @dev The number of campaigns created. IDs start at 1.
     function campaignCount() external view returns (uint256);
-    /// @notice The state of the campaign corresponding to `id`.
+    /// @dev The state of the campaign corresponding to `id`.
     function campaigns(uint256 id)
         external
         view
         returns (address token, address updater, uint256 timelock, uint256 balance, bytes32 root);
-    /// @notice The earliest acceptance timestamp for each pending campaign root.
+    /// @dev The earliest acceptance timestamp for each pending campaign root.
     function validAt(uint256 id, bytes32 root) external view returns (uint256);
-    /// @notice The cumulative amount already claimed by an account in a campaign.
+    /// @dev The cumulative amount already claimed by an account in a campaign.
     function claimed(uint256 id, address account) external view returns (uint256);
     function createCampaign(address token, address updater, uint256 timelock) external returns (uint256 id);
     function fund(uint256 id, uint256 amount) external;

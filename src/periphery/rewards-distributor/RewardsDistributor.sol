@@ -8,7 +8,6 @@ import {SafeTransferLib} from "../../libraries/SafeTransferLib.sol";
 /// @title RewardsDistributor
 /// @author Morpho Labs
 /// @custom:contact security@morpho.org
-/// @notice Distributes rewards through independently funded, timelocked Merkle campaigns.
 /// @dev Fee-on-transfer and rebasing tokens are not supported.
 /// @dev No-ops are allowed.
 contract RewardsDistributor is IRewardsDistributor {
@@ -27,7 +26,7 @@ contract RewardsDistributor is IRewardsDistributor {
 
     /* EXTERNAL */
 
-    /// @notice Batches calls to this contract, preserving the caller and reverting the whole batch on failure.
+    /// @dev Batches calls to this contract, preserving the caller and reverting the whole batch on failure.
     /// @dev Useful for EOAs to batch admin calls.
     function multicall(bytes[] calldata data) external returns (bytes[] memory results) {
         results = new bytes[](data.length);
@@ -42,7 +41,7 @@ contract RewardsDistributor is IRewardsDistributor {
         }
     }
 
-    /// @notice Creates a campaign with a fixed timelock and no active root.
+    /// @dev Creates a campaign with a fixed timelock and no active root.
     /// @return id The newly created campaign ID.
     function createCampaign(address token, address updater, uint256 timelock) external returns (uint256 id) {
         id = ++campaignCount;
@@ -50,7 +49,7 @@ contract RewardsDistributor is IRewardsDistributor {
         emit CreateCampaign(id, msg.sender, token, updater, timelock);
     }
 
-    /// @notice Funds a campaign with the specified amount from the caller.
+    /// @dev Funds a campaign with the specified amount from the caller.
     function fund(uint256 id, uint256 amount) external {
         require(campaigns[id].token != address(0), UnknownCampaign());
         IERC20 token = IERC20(campaigns[id].token);
@@ -59,7 +58,7 @@ contract RewardsDistributor is IRewardsDistributor {
         emit Fund(id, msg.sender, amount);
     }
 
-    /// @notice Submits a root, restarting its timelock if it is already pending.
+    /// @dev Submits a root, restarting its timelock if it is already pending.
     /// @dev Will revert if the timelock value is type(uint256).max or any value that overflows when added to the block
     /// timestamp.
     /// @dev Several roots may be pending at once and any matured one can be accepted. Updaters should revoke roots
@@ -70,7 +69,7 @@ contract RewardsDistributor is IRewardsDistributor {
         emit SubmitRoot(id, msg.sender, newRoot);
     }
 
-    /// @notice Accepts a matured pending root. Anyone may call this function.
+    /// @dev Accepts a matured pending root. Anyone may call this function.
     function acceptRoot(uint256 id, bytes32 root) external {
         uint256 rootValidAt = validAt[id][root];
         require(rootValidAt != 0, NoPendingRoot());
@@ -81,14 +80,14 @@ contract RewardsDistributor is IRewardsDistributor {
         emit AcceptRoot(id, root);
     }
 
-    /// @notice Revokes a pending root. A matured root may be accepted before this transaction.
+    /// @dev Revokes a pending root. A matured root may be accepted before this transaction.
     function revokePendingRoot(uint256 id, bytes32 root) external {
         require(msg.sender == campaigns[id].updater, NotUpdater());
         validAt[id][root] = 0;
         emit RevokePendingRoot(id, msg.sender, root);
     }
 
-    /// @notice Stops claims by setting the active root to zero.
+    /// @dev Stops claims by setting the active root to zero.
     /// @dev Pending roots are unaffected. The updater should revoke any it does not want accepted.
     function pauseCampaign(uint256 id) external {
         require(msg.sender == campaigns[id].updater, NotUpdater());
@@ -96,7 +95,7 @@ contract RewardsDistributor is IRewardsDistributor {
         emit PauseCampaign(id, msg.sender);
     }
 
-    /// @notice Transfers the campaign's updater role.
+    /// @dev Transfers the campaign's updater role.
     /// @dev Roles are not "two-step", so anyone can give a role to anyone, but it does not mean that they will exercise
     /// it.
     function setUpdater(uint256 id, address newUpdater) external {
@@ -105,7 +104,7 @@ contract RewardsDistributor is IRewardsDistributor {
         emit SetUpdater(id, newUpdater);
     }
 
-    /// @notice Claims cumulative rewards on behalf of an account, paying only that account.
+    /// @dev Claims cumulative rewards on behalf of an account, paying only that account.
     /// @return amount The incremental amount transferred from the campaign.
     function claim(uint256 id, address account, uint256 claimable, bytes32[] calldata proof)
         external
