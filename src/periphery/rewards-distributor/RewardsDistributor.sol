@@ -73,21 +73,21 @@ contract RewardsDistributor is ReentrancyGuard {
         require(pendingRoot[id].validAt != 0, ErrorsLib.NO_PENDING_ROOT);
         require(block.timestamp >= pendingRoot[id].validAt, ErrorsLib.TIMELOCK_NOT_EXPIRED);
         campaigns[id].root = pendingRoot[id].root;
-        _deletePendingRoot(id);
+        delete pendingRoot[id];
         emit EventsLib.RootSet(id, campaigns[id].root);
     }
 
     /// @notice Revokes a pending root. A matured root may be accepted before this transaction.
     function revokePendingRoot(uint256 id) external knownCampaign(id) onlyUpdater(id) {
         require(pendingRoot[id].validAt != 0, ErrorsLib.NO_PENDING_ROOT);
-        _deletePendingRoot(id);
+        delete pendingRoot[id];
         emit EventsLib.PendingRootRevoked(id, msg.sender);
     }
 
     /// @notice Stops claims and deletes any pending root. Resuming requires a new timelocked submission.
     function pauseCampaign(uint256 id) external knownCampaign(id) onlyUpdater(id) {
         campaigns[id].root = bytes32(0);
-        _deletePendingRoot(id);
+        delete pendingRoot[id];
         emit EventsLib.CampaignPaused(id, msg.sender);
     }
 
@@ -136,11 +136,5 @@ contract RewardsDistributor is ReentrancyGuard {
             }
             results[i] = result;
         }
-    }
-
-    /* INTERNAL */
-
-    function _deletePendingRoot(uint256 id) internal {
-        delete pendingRoot[id];
     }
 }
