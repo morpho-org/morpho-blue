@@ -58,10 +58,12 @@ contract RewardsDistributor is IRewardsDistributor {
     function fund(CampaignParams calldata params, uint256 amount) external {
         bytes32 id = keccak256(abi.encode(params));
         require(created[id], UnknownCampaign());
-        IERC20 token = IERC20(params.token);
-        token.safeTransferFrom(msg.sender, address(this), amount);
+
         balance[id] += amount;
+
         emit Fund(id, msg.sender, amount);
+
+        IERC20(params.token).safeTransferFrom(msg.sender, address(this), amount);
     }
 
     /// @dev Submitting reverts if adding the timelock to the block timestamp overflows.
