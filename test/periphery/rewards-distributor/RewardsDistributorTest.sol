@@ -282,19 +282,39 @@ contract RewardsDistributorTest is Test {
     function testZeroTimelockAndZeroRoot() public {
         bytes32 otherId = _create(address(token), updater, 0);
         _submit(otherId, bytes32(0));
+        vm.expectRevert(IRewardsDistributor.AlreadyPending.selector);
         _submit(otherId, bytes32(0));
         distributor.acceptRoot(otherId, bytes32(0));
         vm.expectRevert(IRewardsDistributor.NoPendingRoot.selector);
         distributor.acceptRoot(otherId, bytes32(0));
     }
 
-    function testResubmitRestartsOnlyThatRootsTimelock() public {
+    function testResubmittingPendingRootReverts() public {
+        bytes32 pendingRoot = bytes32(uint256(1));
+        _submit(id, pendingRoot);
+        uint256 firstValidAt = distributor.validAt(id, pendingRoot);
+        vm.expectRevert(IRewardsDistributor.AlreadyPending.selector);
+        _submit(id, pendingRoot);
+        assertEq(distributor.validAt(id, pendingRoot), firstValidAt);
+        vm.warp(firstValidAt);
+        vm.expectRevert(IRewardsDistributor.AlreadyPending.selector);
+        _submit(id, pendingRoot);
+        assertEq(distributor.validAt(id, pendingRoot), firstValidAt);
+        distributor.acceptRoot(id, pendingRoot);
+        assertEq(_root(id), pendingRoot);
+        _submit(id, pendingRoot);
+        assertEq(distributor.validAt(id, pendingRoot), firstValidAt + TIMELOCK);
+    }
+
+    function testRevokeThenResubmitRestartsOnlyThatRootsTimelock() public {
         bytes32 rootA = bytes32(uint256(1));
         bytes32 rootB = bytes32(uint256(2));
         _submit(id, rootA);
         _submit(id, rootB);
         uint256 firstValidAt = distributor.validAt(id, rootA);
         vm.warp(firstValidAt);
+        vm.prank(updater);
+        distributor.revokePendingRoot(id, rootA);
         vm.expectEmit(true, true, false, true);
         emit IRewardsDistributor.SubmitRoot(id, updater, rootA);
         _submit(id, rootA);

@@ -9,6 +9,7 @@ struct CampaignParams {
 
 interface IRewardsDistributor {
     error AlreadyCreated();
+    error AlreadyPending();
     error UnknownCampaign();
     error NotUpdater();
     error NotSentinel();

@@ -64,13 +64,13 @@ contract RewardsDistributor is IRewardsDistributor {
         emit Fund(id, msg.sender, amount);
     }
 
-    /// @dev Resubmitting a pending root restarts its timelock.
     /// @dev Submitting reverts if adding the timelock to the block timestamp overflows.
     /// @dev Several roots may be pending at once and any matured one can be accepted.
     /// @dev Updaters should revoke roots they no longer want.
     function submitRoot(CampaignParams calldata params, bytes32 newRoot) external {
         bytes32 id = keccak256(abi.encode(params));
         require(msg.sender == updater[id], NotUpdater());
+        require(validAt[id][newRoot] == 0, AlreadyPending());
         validAt[id][newRoot] = block.timestamp + params.timelock;
         emit SubmitRoot(id, msg.sender, newRoot);
     }
