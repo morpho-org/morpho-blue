@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.28;
+pragma solidity 0.8.39;
 
 /// @notice Sorted-pair Merkle helper for the two-recipient test trees.
 contract Merkle {

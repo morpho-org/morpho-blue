@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.28;
+pragma solidity 0.8.39;
 
 import {Test} from "../../../lib/forge-std/src/Test.sol";
 import {Merkle} from "./helpers/Merkle.sol";
