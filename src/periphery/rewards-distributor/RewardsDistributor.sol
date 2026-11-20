@@ -44,7 +44,6 @@ contract RewardsDistributor is IRewardsDistributor {
     /// @notice Creates a campaign with a fixed timelock and no active root.
     /// @return id The newly created campaign ID.
     function createCampaign(address token, address updater, uint256 timelock) external returns (uint256 id) {
-        if (token == address(0) || updater == address(0)) revert ZeroAddress();
         id = ++campaignCount;
         campaigns[id] = Campaign(token, updater, timelock, 0, bytes32(0), 0);
         emit CreateCampaign(id, msg.sender, token, updater, timelock);
@@ -100,12 +99,11 @@ contract RewardsDistributor is IRewardsDistributor {
         emit PauseCampaign(id, msg.sender);
     }
 
-    /// @notice Transfers the campaign's updater role to a nonzero address.
+    /// @notice Transfers the campaign's updater role.
     /// @dev Roles are not "two-step", so anyone can give a role to anyone, but it does not mean that they will exercise
     /// it.
     function setUpdater(uint256 id, address newUpdater) external {
         if (msg.sender != campaigns[id].updater) revert NotUpdater();
-        if (newUpdater == address(0)) revert ZeroAddress();
         if (newUpdater == campaigns[id].updater) revert AlreadySet();
         campaigns[id].updater = newUpdater;
         emit SetUpdater(id, newUpdater);

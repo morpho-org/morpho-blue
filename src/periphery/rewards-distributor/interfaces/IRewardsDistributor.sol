@@ -15,7 +15,6 @@ struct Campaign {
 /// @author Morpho Labs
 /// @notice Singleton distribution of independently funded, timelocked rewards campaigns.
 interface IRewardsDistributor {
-    error ZeroAddress();
     error UnknownCampaign();
     error NotUpdater();
     error RootRevokedByPause();

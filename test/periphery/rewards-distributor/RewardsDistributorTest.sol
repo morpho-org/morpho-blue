@@ -78,13 +78,6 @@ contract RewardsDistributorTest is Test {
         assertEq(pausedAt, 0);
     }
 
-    function testCreateRejectsZeroAddresses() public {
-        vm.expectRevert(IRewardsDistributor.ZeroAddress.selector);
-        distributor.createCampaign(address(0), updater, 0);
-        vm.expectRevert(IRewardsDistributor.ZeroAddress.selector);
-        distributor.createCampaign(address(token), address(0), 0);
-    }
-
     function testFund(uint128 amount) public {
         token.mint(bob, amount);
         vm.prank(bob);
@@ -314,8 +307,6 @@ contract RewardsDistributorTest is Test {
 
     function testSetUpdater() public {
         vm.startPrank(updater);
-        vm.expectRevert(IRewardsDistributor.ZeroAddress.selector);
-        distributor.setUpdater(id, address(0));
         vm.expectRevert(IRewardsDistributor.AlreadySet.selector);
         distributor.setUpdater(id, updater);
         vm.expectEmit(true, true, false, true);
