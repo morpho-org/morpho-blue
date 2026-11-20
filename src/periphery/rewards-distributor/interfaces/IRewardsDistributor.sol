@@ -8,12 +8,7 @@ struct Campaign {
     uint256 timelock;
     uint256 balance;
     bytes32 root;
-}
-
-/// @notice A submitted root and the earliest timestamp at which it can be accepted.
-struct PendingRoot {
-    bytes32 root;
-    uint256 validAt;
+    uint256 pausedAt;
 }
 
 /// @title IRewardsDistributor
@@ -24,7 +19,7 @@ interface IRewardsDistributor {
     error ZeroAddress();
     error UnknownCampaign();
     error NotUpdater();
-    error AlreadyPending();
+    error RootRevokedByPause();
     error AlreadySet();
     error NoPendingRoot();
     error TimelockNotExpired();
@@ -38,7 +33,7 @@ interface IRewardsDistributor {
     );
     event Funded(uint256 indexed id, address indexed caller, uint256 amount);
     event PendingRootSet(uint256 indexed id, address indexed caller, bytes32 root);
-    event PendingRootRevoked(uint256 indexed id, address indexed caller);
+    event PendingRootRevoked(uint256 indexed id, address indexed caller, bytes32 root);
     event RootSet(uint256 indexed id, bytes32 root);
     event CampaignPaused(uint256 indexed id, address indexed caller);
     event UpdaterSet(uint256 indexed id, address indexed updater);
@@ -48,14 +43,14 @@ interface IRewardsDistributor {
     function campaigns(uint256 id)
         external
         view
-        returns (address token, address updater, uint256 timelock, uint256 balance, bytes32 root);
-    function pendingRoot(uint256 id) external view returns (bytes32 root, uint256 validAt);
+        returns (address token, address updater, uint256 timelock, uint256 balance, bytes32 root, uint256 pausedAt);
+    function pendingRoot(uint256 id, bytes32 root) external view returns (uint256 validAt);
     function claimed(uint256 id, address account) external view returns (uint256);
     function createCampaign(address token, address updater, uint256 timelock) external returns (uint256 id);
     function fund(uint256 id, uint256 amount) external;
     function submitRoot(uint256 id, bytes32 newRoot) external;
-    function acceptRoot(uint256 id) external;
-    function revokePendingRoot(uint256 id) external;
+    function acceptRoot(uint256 id, bytes32 root) external;
+    function revokePendingRoot(uint256 id, bytes32 root) external;
     function pauseCampaign(uint256 id) external;
     function setUpdater(uint256 id, address newUpdater) external;
     function claim(uint256 id, address account, uint256 claimable, bytes32[] calldata proof)

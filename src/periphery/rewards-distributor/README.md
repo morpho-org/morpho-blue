@@ -2,7 +2,9 @@
 
 A singleton distributor for new rewards campaigns. Each campaign has one token, an updater, an immutable timelock and isolated funded accounting. There is no owner, withdrawal function or root-update bypass.
 
-Anyone can create and fund campaigns, accept matured roots, and claim on behalf of recipients. Updaters submit or revoke roots and can immediately pause a campaign; resuming always requires submission and acceptance through its timelock. Claims are cumulative and use the URD double-hashed account/token/amount leaf format.
+Anyone can create and fund campaigns, accept matured roots, and claim on behalf of recipients. Updaters submit or revoke specific roots and can immediately pause a campaign. Several roots may be pending at once; any matured root can be accepted, including an older root after a newer one. Updaters should revoke roots they no longer want. Resubmitting a root restarts only that root's timelock. Claims are cumulative and use the URD double-hashed account/token/amount leaf format.
+
+Pausing sets the active root to zero and records `pausedAt`. Every root submitted at or before that timestamp is invalidated, even if its timelock has already elapsed. Pending timestamps remain stored until explicitly revoked or overwritten. Resuming requires submitting a root in a later block and accepting it after its timelock; submissions in the same block as a pause are also invalidated.
 
 Only amounts supplied through `fund` are credited. Direct transfers are unallocated and cannot be recovered. Funding credits the specified amount without measuring token balance changes. Fee-on-transfer and rebasing tokens are not supported.
 
