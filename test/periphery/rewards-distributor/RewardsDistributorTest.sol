@@ -63,7 +63,7 @@ contract RewardsDistributorTest is Test {
 
     function testCreateCampaign(address creator, uint256 timelock) public {
         vm.expectEmit(true, true, true, true);
-        emit IRewardsDistributor.CampaignCreated(2, creator, address(token), updater, timelock);
+        emit IRewardsDistributor.CreateCampaign(2, creator, address(token), updater, timelock);
         vm.prank(creator);
         uint256 otherId = distributor.createCampaign(address(token), updater, timelock);
         assertEq(otherId, 2);
@@ -90,7 +90,7 @@ contract RewardsDistributorTest is Test {
         vm.prank(bob);
         token.approve(address(distributor), amount);
         vm.expectEmit(true, true, false, true);
-        emit IRewardsDistributor.Funded(id, bob, amount);
+        emit IRewardsDistributor.Fund(id, bob, amount);
         vm.prank(bob);
         distributor.fund(id, amount);
         assertEq(_balance(id), amount);
@@ -144,7 +144,7 @@ contract RewardsDistributorTest is Test {
         distributor.acceptRoot(id, root);
         vm.warp(validAt);
         vm.expectEmit(true, false, false, true);
-        emit IRewardsDistributor.RootSet(id, root);
+        emit IRewardsDistributor.AcceptRoot(id, root);
         vm.prank(caller);
         distributor.acceptRoot(id, root);
         assertEq(_root(id), root);
@@ -187,7 +187,7 @@ contract RewardsDistributorTest is Test {
         uint256 firstValidAt = distributor.pendingRoot(id, rootA);
         vm.warp(firstValidAt);
         vm.expectEmit(true, true, false, true);
-        emit IRewardsDistributor.PendingRootSet(id, updater, rootA);
+        emit IRewardsDistributor.SubmitRoot(id, updater, rootA);
         _submit(id, rootA);
         assertEq(distributor.pendingRoot(id, rootA), firstValidAt + TIMELOCK);
         vm.expectRevert(IRewardsDistributor.TimelockNotExpired.selector);
@@ -208,7 +208,7 @@ contract RewardsDistributorTest is Test {
         _submit(id, rootC);
         uint256 validAt = distributor.pendingRoot(id, rootA);
         vm.expectEmit(true, true, false, true);
-        emit IRewardsDistributor.PendingRootRevoked(id, updater, rootB);
+        emit IRewardsDistributor.RevokePendingRoot(id, updater, rootB);
         vm.prank(updater);
         distributor.revokePendingRoot(id, rootB);
         assertEq(distributor.pendingRoot(id, rootB), 0);
@@ -242,7 +242,7 @@ contract RewardsDistributorTest is Test {
         _submit(id, rootB);
         uint256 revokedValidAt = distributor.pendingRoot(id, rootB);
         vm.expectEmit(true, true, false, true);
-        emit IRewardsDistributor.CampaignPaused(id, updater);
+        emit IRewardsDistributor.PauseCampaign(id, updater);
         vm.prank(updater);
         distributor.pauseCampaign(id);
         assertEq(_root(id), bytes32(0));
@@ -319,7 +319,7 @@ contract RewardsDistributorTest is Test {
         vm.expectRevert(IRewardsDistributor.AlreadySet.selector);
         distributor.setUpdater(id, updater);
         vm.expectEmit(true, true, false, true);
-        emit IRewardsDistributor.UpdaterSet(id, bob);
+        emit IRewardsDistributor.SetUpdater(id, bob);
         distributor.setUpdater(id, bob);
         vm.expectRevert(IRewardsDistributor.NotUpdater.selector);
         distributor.submitRoot(id, bytes32(uint256(1)));
@@ -337,7 +337,7 @@ contract RewardsDistributorTest is Test {
         bytes32[] memory proof = merkle.getProof(leaves, 0);
         _activate(id, merkle.getRoot(leaves));
         vm.expectEmit(true, true, false, true);
-        emit IRewardsDistributor.Claimed(id, alice, amount);
+        emit IRewardsDistributor.Claim(id, alice, amount);
         vm.prank(bob);
         assertEq(distributor.claim(id, alice, amount, proof), amount);
         vm.expectRevert(IRewardsDistributor.ClaimableTooLow.selector);

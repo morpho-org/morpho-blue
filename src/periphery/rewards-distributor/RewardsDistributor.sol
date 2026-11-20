@@ -46,7 +46,7 @@ contract RewardsDistributor is IRewardsDistributor {
         if (token == address(0) || updater == address(0)) revert ZeroAddress();
         id = ++campaignCount;
         campaigns[id] = Campaign(token, updater, timelock, 0, bytes32(0), 0);
-        emit CampaignCreated(id, msg.sender, token, updater, timelock);
+        emit CreateCampaign(id, msg.sender, token, updater, timelock);
     }
 
     /// @notice Funds a campaign with the specified amount from the caller.
@@ -55,7 +55,7 @@ contract RewardsDistributor is IRewardsDistributor {
         IERC20 token = IERC20(campaigns[id].token);
         token.safeTransferFrom(msg.sender, address(this), amount);
         campaigns[id].balance += amount;
-        emit Funded(id, msg.sender, amount);
+        emit Fund(id, msg.sender, amount);
     }
 
     /// @notice Submits a root, restarting its timelock if it is already pending.
@@ -64,7 +64,7 @@ contract RewardsDistributor is IRewardsDistributor {
     function submitRoot(uint256 id, bytes32 newRoot) external {
         if (msg.sender != campaigns[id].updater) revert NotUpdater();
         pendingRoot[id][newRoot] = block.timestamp + campaigns[id].timelock;
-        emit PendingRootSet(id, msg.sender, newRoot);
+        emit SubmitRoot(id, msg.sender, newRoot);
     }
 
     /// @notice Accepts a matured pending root. Anyone may call this function.
@@ -77,7 +77,7 @@ contract RewardsDistributor is IRewardsDistributor {
         if (validAt - campaign.timelock <= campaign.pausedAt) revert RootRevokedByPause();
         campaign.root = root;
         delete pendingRoot[id][root];
-        emit RootSet(id, root);
+        emit AcceptRoot(id, root);
     }
 
     /// @notice Revokes a pending root. A matured root may be accepted before this transaction.
@@ -85,7 +85,7 @@ contract RewardsDistributor is IRewardsDistributor {
         if (msg.sender != campaigns[id].updater) revert NotUpdater();
         if (pendingRoot[id][root] == 0) revert NoPendingRoot();
         delete pendingRoot[id][root];
-        emit PendingRootRevoked(id, msg.sender, root);
+        emit RevokePendingRoot(id, msg.sender, root);
     }
 
     /// @notice Stops claims and invalidates every root submitted at or before this timestamp.
@@ -94,7 +94,7 @@ contract RewardsDistributor is IRewardsDistributor {
         if (msg.sender != campaigns[id].updater) revert NotUpdater();
         campaigns[id].root = bytes32(0);
         campaigns[id].pausedAt = block.timestamp;
-        emit CampaignPaused(id, msg.sender);
+        emit PauseCampaign(id, msg.sender);
     }
 
     /// @notice Transfers the campaign's updater role to a nonzero address.
@@ -103,7 +103,7 @@ contract RewardsDistributor is IRewardsDistributor {
         if (newUpdater == address(0)) revert ZeroAddress();
         if (newUpdater == campaigns[id].updater) revert AlreadySet();
         campaigns[id].updater = newUpdater;
-        emit UpdaterSet(id, newUpdater);
+        emit SetUpdater(id, newUpdater);
     }
 
     /// @notice Claims cumulative rewards on behalf of an account, paying only that account.
@@ -128,6 +128,6 @@ contract RewardsDistributor is IRewardsDistributor {
         claimed[id][account] = claimable;
         campaign.balance -= amount;
         IERC20(campaign.token).safeTransfer(account, amount);
-        emit Claimed(id, account, amount);
+        emit Claim(id, account, amount);
     }
 }

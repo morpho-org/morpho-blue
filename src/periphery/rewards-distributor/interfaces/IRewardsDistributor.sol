@@ -28,16 +28,16 @@ interface IRewardsDistributor {
     error ClaimableTooLow();
     error InsufficientBalance();
 
-    event CampaignCreated(
+    event CreateCampaign(
         uint256 indexed id, address indexed caller, address indexed token, address updater, uint256 timelock
     );
-    event Funded(uint256 indexed id, address indexed caller, uint256 amount);
-    event PendingRootSet(uint256 indexed id, address indexed caller, bytes32 root);
-    event PendingRootRevoked(uint256 indexed id, address indexed caller, bytes32 root);
-    event RootSet(uint256 indexed id, bytes32 root);
-    event CampaignPaused(uint256 indexed id, address indexed caller);
-    event UpdaterSet(uint256 indexed id, address indexed updater);
-    event Claimed(uint256 indexed id, address indexed account, uint256 amount);
+    event Fund(uint256 indexed id, address indexed caller, uint256 amount);
+    event SubmitRoot(uint256 indexed id, address indexed caller, bytes32 root);
+    event RevokePendingRoot(uint256 indexed id, address indexed caller, bytes32 root);
+    event AcceptRoot(uint256 indexed id, bytes32 root);
+    event PauseCampaign(uint256 indexed id, address indexed caller);
+    event SetUpdater(uint256 indexed id, address indexed updater);
+    event Claim(uint256 indexed id, address indexed account, uint256 amount);
 
     function campaignCount() external view returns (uint256);
     function campaigns(uint256 id)
