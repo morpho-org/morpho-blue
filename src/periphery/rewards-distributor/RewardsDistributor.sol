@@ -45,7 +45,7 @@ contract RewardsDistributor is IRewardsDistributor {
     /// @return id The newly created campaign ID.
     function createCampaign(address token, address updater, uint256 timelock) external returns (uint256 id) {
         id = ++campaignCount;
-        campaigns[id] = Campaign(token, updater, timelock, 0, bytes32(0), 0);
+        campaigns[id] = Campaign(token, updater, timelock, 0, bytes32(0));
         emit CreateCampaign(id, msg.sender, token, updater, timelock);
     }
 
@@ -70,13 +70,11 @@ contract RewardsDistributor is IRewardsDistributor {
     }
 
     /// @notice Accepts a matured pending root. Anyone may call this function.
-    /// @dev Roots submitted at or before the latest pause cannot be accepted.
     function acceptRoot(uint256 id, bytes32 root) external {
         uint256 rootValidAt = validAt[id][root];
         require(rootValidAt != 0, NoPendingRoot());
         require(block.timestamp >= rootValidAt, TimelockNotExpired());
         Campaign storage campaign = campaigns[id];
-        require(rootValidAt - campaign.timelock > campaign.pausedAt, RootRevokedByPause());
         campaign.root = root;
         validAt[id][root] = 0;
         emit AcceptRoot(id, root);
@@ -90,12 +88,11 @@ contract RewardsDistributor is IRewardsDistributor {
         emit RevokePendingRoot(id, msg.sender, root);
     }
 
-    /// @notice Stops claims and invalidates every root submitted at or before this timestamp.
-    /// @dev Resuming requires a timelocked submission in a later block.
+    /// @notice Stops claims by setting the active root to zero.
+    /// @dev Pending roots are unaffected. The updater should revoke any it does not want accepted.
     function pauseCampaign(uint256 id) external {
         require(msg.sender == campaigns[id].updater, NotUpdater());
         campaigns[id].root = bytes32(0);
-        campaigns[id].pausedAt = block.timestamp;
         emit PauseCampaign(id, msg.sender);
     }
 

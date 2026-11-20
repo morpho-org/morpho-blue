@@ -36,11 +36,11 @@ contract RewardsDistributorTest is Test {
     }
 
     function _balance(uint256 campaignId) internal view returns (uint256 balance) {
-        (,,, balance,,) = distributor.campaigns(campaignId);
+        (,,, balance,) = distributor.campaigns(campaignId);
     }
 
     function _root(uint256 campaignId) internal view returns (bytes32 root) {
-        (,,,, root,) = distributor.campaigns(campaignId);
+        (,,,, root) = distributor.campaigns(campaignId);
     }
 
     function _tree(address reward, uint256 amount) internal view returns (bytes32[] memory leaves) {
@@ -68,14 +68,13 @@ contract RewardsDistributorTest is Test {
         uint256 otherId = distributor.createCampaign(address(token), updater, timelock);
         assertEq(otherId, 2);
         assertEq(distribution.campaignCount(), 2);
-        (address reward, address actualUpdater, uint256 delay, uint256 balance, bytes32 root, uint256 pausedAt) =
+        (address reward, address actualUpdater, uint256 delay, uint256 balance, bytes32 root) =
             distribution.campaigns(otherId);
         assertEq(reward, address(token));
         assertEq(actualUpdater, updater);
         assertEq(delay, timelock);
         assertEq(balance, 0);
         assertEq(root, bytes32(0));
-        assertEq(pausedAt, 0);
     }
 
     function testFund(uint128 amount) public {
@@ -227,36 +226,16 @@ contract RewardsDistributorTest is Test {
         bytes32 root = merkle.getRoot(leaves);
         distributor.fund(id, 100);
         _activate(id, root);
-        bytes32 rootA = bytes32(uint256(1));
-        bytes32 rootB = bytes32(uint256(2));
-        _submit(id, rootA);
-        uint256 earlierValidAt = distributor.validAt(id, rootA);
-        vm.warp(earlierValidAt - TIMELOCK + 1);
-        _submit(id, rootB);
-        uint256 revokedValidAt = distributor.validAt(id, rootB);
         vm.expectEmit(true, true, false, true);
         emit IRewardsDistributor.PauseCampaign(id, updater);
         vm.prank(updater);
         distributor.pauseCampaign(id);
         assertEq(_root(id), bytes32(0));
         assertEq(_balance(id), 100);
-        (,,,,, uint256 pausedAt) = distributor.campaigns(id);
-        assertEq(pausedAt, revokedValidAt - TIMELOCK);
-        assertEq(distributor.validAt(id, rootA), earlierValidAt);
-        assertEq(distributor.validAt(id, rootB), revokedValidAt);
-        _submit(id, root);
-        assertEq(distributor.validAt(id, root), revokedValidAt);
         vm.expectRevert(IRewardsDistributor.RootNotSet.selector);
         distributor.claim(id, alice, 100, proof);
-        vm.warp(revokedValidAt);
-        vm.expectRevert(IRewardsDistributor.RootRevokedByPause.selector);
-        distributor.acceptRoot(id, rootA);
-        vm.expectRevert(IRewardsDistributor.RootRevokedByPause.selector);
-        distributor.acceptRoot(id, rootB);
-        vm.expectRevert(IRewardsDistributor.RootRevokedByPause.selector);
+        vm.expectRevert(IRewardsDistributor.NoPendingRoot.selector);
         distributor.acceptRoot(id, root);
-        vm.warp(revokedValidAt + 1);
-        vm.roll(block.number + 1);
         _submit(id, root);
         uint256 resumeValidAt = distributor.validAt(id, root);
         vm.expectRevert(IRewardsDistributor.TimelockNotExpired.selector);
@@ -267,7 +246,7 @@ contract RewardsDistributorTest is Test {
         assertEq(token.balanceOf(alice), 100);
     }
 
-    function testPauseWithZeroTimelockAndNextBlockSubmission() public {
+    function testPauseWithZeroTimelockAndSameBlockSubmission() public {
         uint256 otherId = distributor.createCampaign(address(token), updater, 0);
         bytes32 rootA = bytes32(uint256(1));
         bytes32 rootB = bytes32(uint256(2));
@@ -275,18 +254,46 @@ contract RewardsDistributorTest is Test {
         vm.prank(updater);
         distributor.pauseCampaign(otherId);
         _submit(otherId, rootB);
-        vm.expectRevert(IRewardsDistributor.RootRevokedByPause.selector);
         distributor.acceptRoot(otherId, rootA);
-        vm.expectRevert(IRewardsDistributor.RootRevokedByPause.selector);
-        distributor.acceptRoot(otherId, rootB);
-        (,,,,, uint256 pausedAt) = distributor.campaigns(otherId);
-        vm.warp(pausedAt + 1);
-        vm.roll(block.number + 1);
-        _submit(otherId, rootB);
+        assertEq(_root(otherId), rootA);
         distributor.acceptRoot(otherId, rootB);
         assertEq(_root(otherId), rootB);
-        vm.expectRevert(IRewardsDistributor.RootRevokedByPause.selector);
+        vm.expectRevert(IRewardsDistributor.NoPendingRoot.selector);
         distributor.acceptRoot(otherId, rootA);
+    }
+
+    function testPendingRootsSurvivePause() public {
+        bytes32 rootA = bytes32(uint256(1));
+        bytes32 rootB = bytes32(uint256(2));
+        _submit(id, rootA);
+        uint256 firstValidAt = distributor.validAt(id, rootA);
+        vm.warp(firstValidAt);
+        _submit(id, rootB);
+        uint256 secondValidAt = distributor.validAt(id, rootB);
+        vm.prank(updater);
+        distributor.pauseCampaign(id);
+        assertEq(distributor.validAt(id, rootA), firstValidAt);
+        assertEq(distributor.validAt(id, rootB), secondValidAt);
+        vm.expectRevert(IRewardsDistributor.TimelockNotExpired.selector);
+        distributor.acceptRoot(id, rootB);
+        distributor.acceptRoot(id, rootA);
+        assertEq(_root(id), rootA);
+        vm.warp(secondValidAt);
+        distributor.acceptRoot(id, rootB);
+        assertEq(_root(id), rootB);
+    }
+
+    function testRevokePendingRootAfterPause() public {
+        bytes32 root = bytes32(uint256(1));
+        _submit(id, root);
+        vm.warp(distributor.validAt(id, root));
+        vm.startPrank(updater);
+        distributor.pauseCampaign(id);
+        distributor.revokePendingRoot(id, root);
+        vm.stopPrank();
+        vm.expectRevert(IRewardsDistributor.NoPendingRoot.selector);
+        distributor.acceptRoot(id, root);
+        assertEq(_root(id), bytes32(0));
     }
 
     function testAccessControl(address caller) public {

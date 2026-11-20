@@ -8,7 +8,6 @@ struct Campaign {
     uint256 timelock;
     uint256 balance;
     bytes32 root;
-    uint256 pausedAt;
 }
 
 /// @title IRewardsDistributor
@@ -17,7 +16,6 @@ struct Campaign {
 interface IRewardsDistributor {
     error UnknownCampaign();
     error NotUpdater();
-    error RootRevokedByPause();
     error AlreadySet();
     error NoPendingRoot();
     error TimelockNotExpired();
@@ -43,7 +41,7 @@ interface IRewardsDistributor {
     function campaigns(uint256 id)
         external
         view
-        returns (address token, address updater, uint256 timelock, uint256 balance, bytes32 root, uint256 pausedAt);
+        returns (address token, address updater, uint256 timelock, uint256 balance, bytes32 root);
     /// @notice The earliest acceptance timestamp for each pending campaign root.
     function validAt(uint256 id, bytes32 root) external view returns (uint256);
     /// @notice The cumulative amount already claimed by an account in a campaign.
