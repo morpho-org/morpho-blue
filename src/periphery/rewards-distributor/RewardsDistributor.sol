@@ -45,7 +45,7 @@ contract RewardsDistributor is IRewardsDistributor {
         external
         returns (bytes32 id)
     {
-        CampaignParams memory params = CampaignParams(token, timelock, keccak256(abi.encode(msg.sender, salt)));
+        CampaignParams memory params = CampaignParams(token, timelock, keccak256(abi.encode(salt, msg.sender)));
         id = keccak256(abi.encode(params));
         require(campaigns[id].updater == address(0), AlreadyCreated());
         campaigns[id].updater = updater;

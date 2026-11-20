@@ -52,7 +52,7 @@ contract RewardsDistributorTest is Test {
         pure
         returns (CampaignParams memory)
     {
-        return CampaignParams(reward, timelock, keccak256(abi.encode(creator, rawSalt)));
+        return CampaignParams(reward, timelock, keccak256(abi.encode(rawSalt, creator)));
     }
 
     function _balance(bytes32 campaignId) internal view returns (uint256 balance) {
