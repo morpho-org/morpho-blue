@@ -51,7 +51,7 @@ contract RewardsDistributor is IRewardsDistributor {
 
     /// @notice Funds a campaign with the specified amount from the caller.
     function fund(uint256 id, uint256 amount) external {
-        if (campaigns[id].token == address(0)) revert UnknownCampaign();
+        require(campaigns[id].token != address(0), UnknownCampaign());
         IERC20 token = IERC20(campaigns[id].token);
         token.safeTransferFrom(msg.sender, address(this), amount);
         campaigns[id].balance += amount;
@@ -64,7 +64,7 @@ contract RewardsDistributor is IRewardsDistributor {
     /// @dev Several roots may be pending at once and any matured one can be accepted. Updaters should revoke roots
     /// they no longer want.
     function submitRoot(uint256 id, bytes32 newRoot) external {
-        if (msg.sender != campaigns[id].updater) revert NotUpdater();
+        require(msg.sender == campaigns[id].updater, NotUpdater());
         pendingRoot[id][newRoot] = block.timestamp + campaigns[id].timelock;
         emit SubmitRoot(id, msg.sender, newRoot);
     }
@@ -73,10 +73,10 @@ contract RewardsDistributor is IRewardsDistributor {
     /// @dev Roots submitted at or before the latest pause cannot be accepted.
     function acceptRoot(uint256 id, bytes32 root) external {
         uint256 validAt = pendingRoot[id][root];
-        if (validAt == 0) revert NoPendingRoot();
-        if (block.timestamp < validAt) revert TimelockNotExpired();
+        require(validAt != 0, NoPendingRoot());
+        require(block.timestamp >= validAt, TimelockNotExpired());
         Campaign storage campaign = campaigns[id];
-        if (validAt - campaign.timelock <= campaign.pausedAt) revert RootRevokedByPause();
+        require(validAt - campaign.timelock > campaign.pausedAt, RootRevokedByPause());
         campaign.root = root;
         delete pendingRoot[id][root];
         emit AcceptRoot(id, root);
@@ -84,8 +84,8 @@ contract RewardsDistributor is IRewardsDistributor {
 
     /// @notice Revokes a pending root. A matured root may be accepted before this transaction.
     function revokePendingRoot(uint256 id, bytes32 root) external {
-        if (msg.sender != campaigns[id].updater) revert NotUpdater();
-        if (pendingRoot[id][root] == 0) revert NoPendingRoot();
+        require(msg.sender == campaigns[id].updater, NotUpdater());
+        require(pendingRoot[id][root] != 0, NoPendingRoot());
         delete pendingRoot[id][root];
         emit RevokePendingRoot(id, msg.sender, root);
     }
@@ -93,7 +93,7 @@ contract RewardsDistributor is IRewardsDistributor {
     /// @notice Stops claims and invalidates every root submitted at or before this timestamp.
     /// @dev Resuming requires a timelocked submission in a later block.
     function pauseCampaign(uint256 id) external {
-        if (msg.sender != campaigns[id].updater) revert NotUpdater();
+        require(msg.sender == campaigns[id].updater, NotUpdater());
         campaigns[id].root = bytes32(0);
         campaigns[id].pausedAt = block.timestamp;
         emit PauseCampaign(id, msg.sender);
@@ -103,8 +103,8 @@ contract RewardsDistributor is IRewardsDistributor {
     /// @dev Roles are not "two-step", so anyone can give a role to anyone, but it does not mean that they will exercise
     /// it.
     function setUpdater(uint256 id, address newUpdater) external {
-        if (msg.sender != campaigns[id].updater) revert NotUpdater();
-        if (newUpdater == campaigns[id].updater) revert AlreadySet();
+        require(msg.sender == campaigns[id].updater, NotUpdater());
+        require(newUpdater != campaigns[id].updater, AlreadySet());
         campaigns[id].updater = newUpdater;
         emit SetUpdater(id, newUpdater);
     }
@@ -116,7 +116,7 @@ contract RewardsDistributor is IRewardsDistributor {
         returns (uint256 amount)
     {
         Campaign storage campaign = campaigns[id];
-        if (campaign.root == bytes32(0)) revert RootNotSet();
+        require(campaign.root != bytes32(0), RootNotSet());
         bytes32 computedRoot = keccak256(bytes.concat(keccak256(abi.encode(account, campaign.token, claimable))));
         for (uint256 i; i < proof.length; ++i) {
             bytes32 sibling = proof[i];
@@ -124,10 +124,10 @@ contract RewardsDistributor is IRewardsDistributor {
                 ? keccak256(abi.encodePacked(computedRoot, sibling))
                 : keccak256(abi.encodePacked(sibling, computedRoot));
         }
-        if (computedRoot != campaign.root) revert InvalidProofOrExpired();
-        if (claimable <= claimed[id][account]) revert ClaimableTooLow();
+        require(computedRoot == campaign.root, InvalidProofOrExpired());
+        require(claimable > claimed[id][account], ClaimableTooLow());
         amount = claimable - claimed[id][account];
-        if (amount > campaign.balance) revert InsufficientBalance();
+        require(amount <= campaign.balance, InsufficientBalance());
         claimed[id][account] = claimable;
         campaign.balance -= amount;
         IERC20(campaign.token).safeTransfer(account, amount);
