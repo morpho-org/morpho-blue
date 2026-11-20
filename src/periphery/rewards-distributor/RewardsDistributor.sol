@@ -5,9 +5,6 @@ import {Campaign, CampaignParams, IRewardsDistributor} from "./interfaces/IRewar
 import {IERC20} from "../../interfaces/IERC20.sol";
 import {SafeTransferLib} from "../../libraries/SafeTransferLib.sol";
 
-/// @title RewardsDistributor
-/// @author Morpho Labs
-/// @custom:contact security@morpho.org
 /// @dev Fee-on-transfer and rebasing tokens are not supported.
 /// @dev No-ops are allowed.
 contract RewardsDistributor is IRewardsDistributor {
