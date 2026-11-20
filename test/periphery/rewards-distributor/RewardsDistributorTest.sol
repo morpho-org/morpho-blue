@@ -47,11 +47,11 @@ contract RewardsDistributorTest is Test {
     }
 
     function _balance(bytes32 campaignId) internal view returns (uint256 balance) {
-        (, balance,) = distributor.campaigns(campaignId);
+        (,, balance,) = distributor.campaigns(campaignId);
     }
 
     function _root(bytes32 campaignId) internal view returns (bytes32 root) {
-        (,, root) = distributor.campaigns(campaignId);
+        (,,, root) = distributor.campaigns(campaignId);
     }
 
     function _tree(address reward, uint256 amount) internal view returns (bytes32[] memory leaves) {
@@ -80,7 +80,8 @@ contract RewardsDistributorTest is Test {
         vm.prank(creator);
         bytes32 otherId = distributor.createCampaign(params);
         assertEq(otherId, expectedId);
-        (address actualUpdater, uint256 balance, bytes32 root) = distribution.campaigns(otherId);
+        (address actualUpdater, address sentinel, uint256 balance, bytes32 root) = distribution.campaigns(otherId);
+        assertEq(sentinel, address(0));
         assertEq(actualUpdater, updater);
         assertEq(balance, 0);
         assertEq(root, bytes32(0));
@@ -125,7 +126,7 @@ contract RewardsDistributorTest is Test {
         vm.prank(bob);
         bytes32 otherId = distributor.createCampaign(params);
         assertEq(otherId, keccak256(abi.encode(params)));
-        (address actualUpdater,,) = distributor.campaigns(otherId);
+        (address actualUpdater,,,) = distributor.campaigns(otherId);
         assertEq(actualUpdater, updater);
         vm.expectRevert(IRewardsDistributor.AlreadyCreated.selector);
         distributor.createCampaign(params);
@@ -141,7 +142,7 @@ contract RewardsDistributorTest is Test {
         distributor.setUpdater(id, bob);
         vm.expectRevert(IRewardsDistributor.AlreadyCreated.selector);
         distributor.createCampaign(paramsById[id]);
-        (address actualUpdater,,) = distributor.campaigns(id);
+        (address actualUpdater,,,) = distributor.campaigns(id);
         assertEq(actualUpdater, bob);
         assertEq(_balance(id), 100);
         assertEq(_root(id), bytes32(uint256(1)));
@@ -179,7 +180,7 @@ contract RewardsDistributorTest is Test {
         vm.expectRevert(IRewardsDistributor.UnknownCampaign.selector);
         distributor.fund(paramsById[id], 0);
         assertEq(distributor.createCampaign(paramsById[id]), id);
-        (address actualUpdater,,) = distributor.campaigns(id);
+        (address actualUpdater,,,) = distributor.campaigns(id);
         assertEq(actualUpdater, updater);
         assertEq(_balance(id), 100);
         assertEq(_root(id), bytes32(uint256(1)));
@@ -394,19 +395,84 @@ contract RewardsDistributorTest is Test {
     }
 
     function testAccessControl(address caller) public {
-        vm.assume(caller != updater);
+        vm.assume(caller != updater && caller != bob);
+        vm.prank(updater);
+        distributor.setSentinel(id, bob);
         _submit(id, bytes32(uint256(1)));
-        bytes[] memory calls = new bytes[](4);
+        bytes[] memory calls = new bytes[](5);
         calls[0] = abi.encodeCall(distributor.submitRoot, (paramsById[id], bytes32(uint256(2))));
         calls[1] = abi.encodeCall(distributor.revokePendingRoot, (id, bytes32(uint256(1))));
         calls[2] = abi.encodeCall(distributor.pauseCampaign, (id));
         calls[3] = abi.encodeCall(distributor.setUpdater, (id, bob));
+        calls[4] = abi.encodeCall(distributor.setSentinel, (id, caller));
         for (uint256 i; i < calls.length; ++i) {
             vm.prank(caller);
             (bool success, bytes memory reason) = address(distributor).call(calls[i]);
             assertFalse(success);
-            assertEq(reason, abi.encodeWithSelector(IRewardsDistributor.NotUpdater.selector));
+            bytes4 expectedError = i == 1 || i == 2
+                ? IRewardsDistributor.NotUpdaterNorSentinel.selector
+                : IRewardsDistributor.NotUpdater.selector;
+            assertEq(reason, abi.encodeWithSelector(expectedError));
         }
+    }
+
+    function testSetSentinelAllowsNoOpsAndZero() public {
+        vm.startPrank(updater);
+        vm.expectEmit(true, true, false, true);
+        emit IRewardsDistributor.SetSentinel(id, bob);
+        distributor.setSentinel(id, bob);
+        (, address sentinel,,) = distributor.campaigns(id);
+        assertEq(sentinel, bob);
+        vm.expectEmit(true, true, false, true);
+        emit IRewardsDistributor.SetSentinel(id, bob);
+        distributor.setSentinel(id, bob);
+        vm.expectEmit(true, true, false, true);
+        emit IRewardsDistributor.SetSentinel(id, address(0));
+        distributor.setSentinel(id, address(0));
+        vm.stopPrank();
+        (, sentinel,,) = distributor.campaigns(id);
+        assertEq(sentinel, address(0));
+        vm.prank(bob);
+        vm.expectRevert(IRewardsDistributor.NotUpdaterNorSentinel.selector);
+        distributor.pauseCampaign(id);
+        vm.prank(bob);
+        vm.expectRevert(IRewardsDistributor.NotUpdaterNorSentinel.selector);
+        distributor.revokePendingRoot(id, bytes32(uint256(1)));
+    }
+
+    function testSentinelCannotUseUpdaterFunctions() public {
+        vm.prank(updater);
+        distributor.setSentinel(id, bob);
+        vm.startPrank(bob);
+        vm.expectRevert(IRewardsDistributor.NotUpdater.selector);
+        distributor.submitRoot(paramsById[id], bytes32(uint256(1)));
+        vm.expectRevert(IRewardsDistributor.NotUpdater.selector);
+        distributor.setUpdater(id, bob);
+        vm.expectRevert(IRewardsDistributor.NotUpdater.selector);
+        distributor.setSentinel(id, alice);
+        vm.stopPrank();
+    }
+
+    function testSentinelMulticallPauseAndRevoke() public {
+        bytes32 root = bytes32(uint256(1));
+        bytes32 pendingRoot = bytes32(uint256(2));
+        _activate(id, root);
+        _submit(id, pendingRoot);
+        vm.prank(updater);
+        distributor.setSentinel(id, bob);
+        bytes[] memory calls = new bytes[](2);
+        calls[0] = abi.encodeCall(distributor.pauseCampaign, (id));
+        calls[1] = abi.encodeCall(distributor.revokePendingRoot, (id, pendingRoot));
+        vm.expectEmit(true, true, false, true);
+        emit IRewardsDistributor.PauseCampaign(id, bob);
+        vm.expectEmit(true, true, false, true);
+        emit IRewardsDistributor.RevokePendingRoot(id, bob, pendingRoot);
+        vm.prank(bob);
+        distributor.multicall(calls);
+        assertEq(_root(id), bytes32(0));
+        assertEq(distributor.validAt(id, pendingRoot), 0);
+        vm.expectRevert(IRewardsDistributor.NoPendingRoot.selector);
+        distributor.acceptRoot(id, pendingRoot);
     }
 
     function testSetUpdater() public {
@@ -487,7 +553,7 @@ contract RewardsDistributorTest is Test {
         CampaignParams memory params = CampaignParams(address(token), TIMELOCK, updater, unknownSalt);
         bytes32 unknown = keccak256(abi.encode(params));
         vm.assume(unknown != id);
-        bytes[] memory calls = new bytes[](7);
+        bytes[] memory calls = new bytes[](8);
         calls[0] = abi.encodeCall(distributor.fund, (params, 1));
         calls[1] = abi.encodeCall(distributor.submitRoot, (params, bytes32(uint256(1))));
         calls[2] = abi.encodeCall(distributor.acceptRoot, (unknown, bytes32(uint256(1))));
@@ -495,14 +561,16 @@ contract RewardsDistributorTest is Test {
         calls[4] = abi.encodeCall(distributor.pauseCampaign, (unknown));
         calls[5] = abi.encodeCall(distributor.setUpdater, (unknown, bob));
         calls[6] = abi.encodeCall(distributor.claim, (params, alice, 1, new bytes32[](0)));
-        bytes4[] memory errors = new bytes4[](7);
+        calls[7] = abi.encodeCall(distributor.setSentinel, (unknown, bob));
+        bytes4[] memory errors = new bytes4[](8);
         errors[0] = IRewardsDistributor.UnknownCampaign.selector;
         errors[1] = IRewardsDistributor.NotUpdater.selector;
         errors[2] = IRewardsDistributor.NoPendingRoot.selector;
-        errors[3] = IRewardsDistributor.NotUpdater.selector;
-        errors[4] = IRewardsDistributor.NotUpdater.selector;
+        errors[3] = IRewardsDistributor.NotUpdaterNorSentinel.selector;
+        errors[4] = IRewardsDistributor.NotUpdaterNorSentinel.selector;
         errors[5] = IRewardsDistributor.NotUpdater.selector;
         errors[6] = IRewardsDistributor.InvalidProofOrExpired.selector;
+        errors[7] = IRewardsDistributor.NotUpdater.selector;
         for (uint256 i; i < calls.length; ++i) {
             (bool success, bytes memory reason) = address(distributor).call(calls[i]);
             assertFalse(success);
@@ -554,7 +622,9 @@ contract RewardsDistributorTest is Test {
         calls[1] = abi.encodeCall(distributor.campaigns, (otherId));
         bytes[] memory results = distributor.multicall(calls);
         assertEq(abi.decode(results[0], (bytes32)), otherId);
-        (address actualUpdater, uint256 balance, bytes32 root) = abi.decode(results[1], (address, uint256, bytes32));
+        (address actualUpdater, address sentinel, uint256 balance, bytes32 root) =
+            abi.decode(results[1], (address, address, uint256, bytes32));
+        assertEq(sentinel, address(0));
         assertEq(actualUpdater, updater);
         assertEq(balance, 0);
         assertEq(root, bytes32(0));

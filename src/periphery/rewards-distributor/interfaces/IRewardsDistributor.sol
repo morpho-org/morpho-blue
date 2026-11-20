@@ -10,6 +10,7 @@ struct CampaignParams {
 
 struct Campaign {
     address updater;
+    address sentinel;
     uint256 balance;
     bytes32 root;
 }
@@ -18,6 +19,7 @@ interface IRewardsDistributor {
     error AlreadyCreated();
     error UnknownCampaign();
     error NotUpdater();
+    error NotUpdaterNorSentinel();
     error NoPendingRoot();
     error TimelockNotExpired();
     error InvalidProofOrExpired();
@@ -31,9 +33,13 @@ interface IRewardsDistributor {
     event AcceptRoot(bytes32 indexed id, bytes32 root);
     event PauseCampaign(bytes32 indexed id, address indexed caller);
     event SetUpdater(bytes32 indexed id, address indexed updater);
+    event SetSentinel(bytes32 indexed id, address indexed sentinel);
     event Claim(bytes32 indexed id, address indexed account, uint256 amount);
 
-    function campaigns(bytes32 id) external view returns (address updater, uint256 balance, bytes32 root);
+    function campaigns(bytes32 id)
+        external
+        view
+        returns (address updater, address sentinel, uint256 balance, bytes32 root);
     function validAt(bytes32 id, bytes32 root) external view returns (uint256);
     function claimed(bytes32 id, address account) external view returns (uint256);
     function createCampaign(CampaignParams calldata params) external returns (bytes32 id);
@@ -43,6 +49,7 @@ interface IRewardsDistributor {
     function revokePendingRoot(bytes32 id, bytes32 root) external;
     function pauseCampaign(bytes32 id) external;
     function setUpdater(bytes32 id, address newUpdater) external;
+    function setSentinel(bytes32 id, address newSentinel) external;
     function claim(CampaignParams calldata params, address account, uint256 claimable, bytes32[] calldata proof)
         external
         returns (uint256 amount);

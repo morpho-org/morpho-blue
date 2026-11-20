@@ -78,14 +78,14 @@ contract RewardsDistributor is IRewardsDistributor {
 
     /// @dev A matured root may be accepted before this transaction.
     function revokePendingRoot(bytes32 id, bytes32 root) external {
-        require(msg.sender == campaigns[id].updater, NotUpdater());
+        require(msg.sender == campaigns[id].updater || msg.sender == campaigns[id].sentinel, NotUpdaterNorSentinel());
         validAt[id][root] = 0;
         emit RevokePendingRoot(id, msg.sender, root);
     }
 
     /// @dev Pending roots are unaffected. The updater should revoke any it does not want accepted.
     function pauseCampaign(bytes32 id) external {
-        require(msg.sender == campaigns[id].updater, NotUpdater());
+        require(msg.sender == campaigns[id].updater || msg.sender == campaigns[id].sentinel, NotUpdaterNorSentinel());
         campaigns[id].root = bytes32(0);
         emit PauseCampaign(id, msg.sender);
     }
@@ -95,6 +95,12 @@ contract RewardsDistributor is IRewardsDistributor {
         require(msg.sender == campaigns[id].updater, NotUpdater());
         campaigns[id].updater = newUpdater;
         emit SetUpdater(id, newUpdater);
+    }
+
+    function setSentinel(bytes32 id, address newSentinel) external {
+        require(msg.sender == campaigns[id].updater, NotUpdater());
+        campaigns[id].sentinel = newSentinel;
+        emit SetSentinel(id, newSentinel);
     }
 
     /// @dev Equal cumulative claims still transfer zero and emit; lower values revert.
