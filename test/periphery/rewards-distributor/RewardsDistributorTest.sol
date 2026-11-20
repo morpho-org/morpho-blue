@@ -56,7 +56,7 @@ contract RewardsDistributorTest is Test {
 
     function _activate(uint256 campaignId, bytes32 root) internal {
         _submit(campaignId, root);
-        uint256 validAt = distributor.pendingRoot(campaignId, root);
+        uint256 validAt = distributor.validAt(campaignId, root);
         vm.warp(validAt);
         distributor.acceptRoot(campaignId, root);
     }
@@ -130,7 +130,7 @@ contract RewardsDistributorTest is Test {
     function testTimelockAndPermissionlessAccept(address caller) public {
         bytes32 root = bytes32(uint256(42));
         _submit(id, root);
-        uint256 validAt = distributor.pendingRoot(id, root);
+        uint256 validAt = distributor.validAt(id, root);
         assertEq(validAt, block.timestamp + TIMELOCK);
         vm.warp(validAt - 1);
         vm.expectRevert(IRewardsDistributor.TimelockNotExpired.selector);
@@ -141,7 +141,7 @@ contract RewardsDistributorTest is Test {
         vm.prank(caller);
         distributor.acceptRoot(id, root);
         assertEq(_root(id), root);
-        assertEq(distributor.pendingRoot(id, root), 0);
+        assertEq(distributor.validAt(id, root), 0);
         vm.expectRevert(IRewardsDistributor.NoPendingRoot.selector);
         distributor.acceptRoot(id, root);
     }
@@ -150,8 +150,8 @@ contract RewardsDistributorTest is Test {
         uint256 otherId = distributor.createCampaign(address(token), updater, 2 * TIMELOCK);
         _submit(id, bytes32(uint256(1)));
         _submit(otherId, bytes32(uint256(2)));
-        uint256 validAtA = distributor.pendingRoot(id, bytes32(uint256(1)));
-        uint256 validAtB = distributor.pendingRoot(otherId, bytes32(uint256(2)));
+        uint256 validAtA = distributor.validAt(id, bytes32(uint256(1)));
+        uint256 validAtB = distributor.validAt(otherId, bytes32(uint256(2)));
         assertEq(validAtB, validAtA + TIMELOCK);
         vm.warp(validAtA);
         distributor.acceptRoot(id, bytes32(uint256(1)));
@@ -177,12 +177,12 @@ contract RewardsDistributorTest is Test {
         bytes32 rootB = bytes32(uint256(2));
         _submit(id, rootA);
         _submit(id, rootB);
-        uint256 firstValidAt = distributor.pendingRoot(id, rootA);
+        uint256 firstValidAt = distributor.validAt(id, rootA);
         vm.warp(firstValidAt);
         vm.expectEmit(true, true, false, true);
         emit IRewardsDistributor.SubmitRoot(id, updater, rootA);
         _submit(id, rootA);
-        assertEq(distributor.pendingRoot(id, rootA), firstValidAt + TIMELOCK);
+        assertEq(distributor.validAt(id, rootA), firstValidAt + TIMELOCK);
         vm.expectRevert(IRewardsDistributor.TimelockNotExpired.selector);
         distributor.acceptRoot(id, rootA);
         distributor.acceptRoot(id, rootB);
@@ -199,14 +199,14 @@ contract RewardsDistributorTest is Test {
         _submit(id, rootA);
         _submit(id, rootB);
         _submit(id, rootC);
-        uint256 validAt = distributor.pendingRoot(id, rootA);
+        uint256 validAt = distributor.validAt(id, rootA);
         vm.expectEmit(true, true, false, true);
         emit IRewardsDistributor.RevokePendingRoot(id, updater, rootB);
         vm.prank(updater);
         distributor.revokePendingRoot(id, rootB);
-        assertEq(distributor.pendingRoot(id, rootB), 0);
-        assertEq(distributor.pendingRoot(id, rootA), validAt);
-        assertEq(distributor.pendingRoot(id, rootC), validAt);
+        assertEq(distributor.validAt(id, rootB), 0);
+        assertEq(distributor.validAt(id, rootA), validAt);
+        assertEq(distributor.validAt(id, rootC), validAt);
         vm.expectRevert(IRewardsDistributor.NoPendingRoot.selector);
         distributor.acceptRoot(id, rootB);
         vm.prank(updater);
@@ -215,8 +215,8 @@ contract RewardsDistributorTest is Test {
         vm.warp(validAt);
         distributor.acceptRoot(id, rootC);
         assertEq(_root(id), rootC);
-        assertEq(distributor.pendingRoot(id, rootA), validAt);
-        assertEq(distributor.pendingRoot(id, rootC), 0);
+        assertEq(distributor.validAt(id, rootA), validAt);
+        assertEq(distributor.validAt(id, rootC), 0);
         distributor.acceptRoot(id, rootA);
         assertEq(_root(id), rootA);
     }
@@ -230,10 +230,10 @@ contract RewardsDistributorTest is Test {
         bytes32 rootA = bytes32(uint256(1));
         bytes32 rootB = bytes32(uint256(2));
         _submit(id, rootA);
-        uint256 earlierValidAt = distributor.pendingRoot(id, rootA);
+        uint256 earlierValidAt = distributor.validAt(id, rootA);
         vm.warp(earlierValidAt - TIMELOCK + 1);
         _submit(id, rootB);
-        uint256 revokedValidAt = distributor.pendingRoot(id, rootB);
+        uint256 revokedValidAt = distributor.validAt(id, rootB);
         vm.expectEmit(true, true, false, true);
         emit IRewardsDistributor.PauseCampaign(id, updater);
         vm.prank(updater);
@@ -242,10 +242,10 @@ contract RewardsDistributorTest is Test {
         assertEq(_balance(id), 100);
         (,,,,, uint256 pausedAt) = distributor.campaigns(id);
         assertEq(pausedAt, revokedValidAt - TIMELOCK);
-        assertEq(distributor.pendingRoot(id, rootA), earlierValidAt);
-        assertEq(distributor.pendingRoot(id, rootB), revokedValidAt);
+        assertEq(distributor.validAt(id, rootA), earlierValidAt);
+        assertEq(distributor.validAt(id, rootB), revokedValidAt);
         _submit(id, root);
-        assertEq(distributor.pendingRoot(id, root), revokedValidAt);
+        assertEq(distributor.validAt(id, root), revokedValidAt);
         vm.expectRevert(IRewardsDistributor.RootNotSet.selector);
         distributor.claim(id, alice, 100, proof);
         vm.warp(revokedValidAt);
@@ -258,7 +258,7 @@ contract RewardsDistributorTest is Test {
         vm.warp(revokedValidAt + 1);
         vm.roll(block.number + 1);
         _submit(id, root);
-        uint256 resumeValidAt = distributor.pendingRoot(id, root);
+        uint256 resumeValidAt = distributor.validAt(id, root);
         vm.expectRevert(IRewardsDistributor.TimelockNotExpired.selector);
         distributor.acceptRoot(id, root);
         vm.warp(resumeValidAt);
@@ -402,9 +402,9 @@ contract RewardsDistributorTest is Test {
         calls[1] = abi.encodeCall(distributor.submitRoot, (otherId, bytes32(uint256(2))));
         vm.prank(updater);
         distribution.multicall(calls);
-        uint256 validAt = distributor.pendingRoot(id, bytes32(uint256(1)));
+        uint256 validAt = distributor.validAt(id, bytes32(uint256(1)));
         assertGt(validAt, 0);
-        assertEq(distributor.pendingRoot(otherId, bytes32(uint256(2))), validAt);
+        assertEq(distributor.validAt(otherId, bytes32(uint256(2))), validAt);
         calls[0] = abi.encodeCall(distributor.acceptRoot, (id, bytes32(uint256(1))));
         calls[1] = abi.encodeCall(distributor.acceptRoot, (otherId, bytes32(uint256(2))));
         vm.expectRevert(IRewardsDistributor.TimelockNotExpired.selector);
@@ -444,7 +444,7 @@ contract RewardsDistributorTest is Test {
         vm.prank(updater);
         vm.expectRevert(IRewardsDistributor.NoPendingRoot.selector);
         distributor.multicall(calls);
-        assertEq(distributor.pendingRoot(id, bytes32(uint256(1))), 0);
+        assertEq(distributor.validAt(id, bytes32(uint256(1))), 0);
     }
 
     function testFundingFailureDoesNotCreditBalance() public {

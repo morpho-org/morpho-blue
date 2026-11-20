@@ -45,7 +45,7 @@ interface IRewardsDistributor {
         view
         returns (address token, address updater, uint256 timelock, uint256 balance, bytes32 root, uint256 pausedAt);
     /// @notice The earliest acceptance timestamp for each pending campaign root.
-    function pendingRoot(uint256 id, bytes32 root) external view returns (uint256 validAt);
+    function validAt(uint256 id, bytes32 root) external view returns (uint256);
     /// @notice The cumulative amount already claimed by an account in a campaign.
     function claimed(uint256 id, address account) external view returns (uint256);
     function createCampaign(address token, address updater, uint256 timelock) external returns (uint256 id);

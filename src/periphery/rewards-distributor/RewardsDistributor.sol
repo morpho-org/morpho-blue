@@ -20,7 +20,7 @@ contract RewardsDistributor is IRewardsDistributor {
     /// @inheritdoc IRewardsDistributor
     mapping(uint256 => Campaign) public campaigns;
     /// @inheritdoc IRewardsDistributor
-    mapping(uint256 id => mapping(bytes32 root => uint256 validAt)) public pendingRoot;
+    mapping(uint256 id => mapping(bytes32 root => uint256)) public validAt;
     /// @inheritdoc IRewardsDistributor
     mapping(uint256 id => mapping(address account => uint256)) public claimed;
 
@@ -65,28 +65,28 @@ contract RewardsDistributor is IRewardsDistributor {
     /// they no longer want.
     function submitRoot(uint256 id, bytes32 newRoot) external {
         require(msg.sender == campaigns[id].updater, NotUpdater());
-        pendingRoot[id][newRoot] = block.timestamp + campaigns[id].timelock;
+        validAt[id][newRoot] = block.timestamp + campaigns[id].timelock;
         emit SubmitRoot(id, msg.sender, newRoot);
     }
 
     /// @notice Accepts a matured pending root. Anyone may call this function.
     /// @dev Roots submitted at or before the latest pause cannot be accepted.
     function acceptRoot(uint256 id, bytes32 root) external {
-        uint256 validAt = pendingRoot[id][root];
-        require(validAt != 0, NoPendingRoot());
-        require(block.timestamp >= validAt, TimelockNotExpired());
+        uint256 rootValidAt = validAt[id][root];
+        require(rootValidAt != 0, NoPendingRoot());
+        require(block.timestamp >= rootValidAt, TimelockNotExpired());
         Campaign storage campaign = campaigns[id];
-        require(validAt - campaign.timelock > campaign.pausedAt, RootRevokedByPause());
+        require(rootValidAt - campaign.timelock > campaign.pausedAt, RootRevokedByPause());
         campaign.root = root;
-        delete pendingRoot[id][root];
+        validAt[id][root] = 0;
         emit AcceptRoot(id, root);
     }
 
     /// @notice Revokes a pending root. A matured root may be accepted before this transaction.
     function revokePendingRoot(uint256 id, bytes32 root) external {
         require(msg.sender == campaigns[id].updater, NotUpdater());
-        require(pendingRoot[id][root] != 0, NoPendingRoot());
-        delete pendingRoot[id][root];
+        require(validAt[id][root] != 0, NoPendingRoot());
+        validAt[id][root] = 0;
         emit RevokePendingRoot(id, msg.sender, root);
     }
 
