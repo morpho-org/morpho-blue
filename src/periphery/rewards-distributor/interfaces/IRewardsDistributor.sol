@@ -41,7 +41,7 @@ interface IRewardsDistributor {
         returns (address updater, address sentinel, uint256 balance, bytes32 root);
     function validAt(bytes32 id, bytes32 root) external view returns (uint256);
     function claimed(bytes32 id, address account) external view returns (uint256);
-    function createCampaign(address token, uint256 timelock, address updater, bytes32 salt)
+    function createCampaign(address token, uint256 timelock, address updater, bytes32 preSalt)
         external
         returns (bytes32 id);
     function fund(CampaignParams calldata params, uint256 amount) external;
