@@ -39,10 +39,10 @@ contract RewardsDistributor is IRewardsDistributor {
     }
 
     /// @dev A nonzero updater marks a created campaign.
-    /// @dev Only the original creator can recreate the ID after its updater is zeroed; other state is preserved.
+    /// @dev Only the original creator can recreate the ID after its updater is zeroed, overwriting both roles.
     /// @dev The salt is derived from msg.sender to prevent front-running issues.
     /// @dev Bundles sharing msg.sender must also bind preSalt to their initiator.
-    function createCampaign(address token, uint256 timelock, address newUpdater, bytes32 preSalt)
+    function createCampaign(address token, uint256 timelock, address newUpdater, address newSentinel, bytes32 preSalt)
         external
         returns (bytes32)
     {
@@ -50,7 +50,8 @@ contract RewardsDistributor is IRewardsDistributor {
         bytes32 id = keccak256(abi.encode(params));
         require(updater[id] == address(0), AlreadyCreated());
         updater[id] = newUpdater;
-        emit CreateCampaign(id, msg.sender, params, newUpdater);
+        sentinel[id] = newSentinel;
+        emit CreateCampaign(id, msg.sender, params, newUpdater, newSentinel);
         return id;
     }
 
@@ -105,7 +106,7 @@ contract RewardsDistributor is IRewardsDistributor {
     }
 
     function setSentinel(bytes32 id, address newSentinel) external {
-        require(msg.sender == updater[id], NotUpdater());
+        require(msg.sender == sentinel[id], NotSentinel());
         sentinel[id] = newSentinel;
         emit SetSentinel(id, newSentinel);
     }

@@ -43,7 +43,7 @@ contract RewardsDistributorTest is Test {
     function _create(address reward, address campaignUpdater, uint256 timelock) internal returns (bytes32 campaignId) {
         bytes32 preSalt = bytes32(++salt);
         CampaignParams memory params = _params(address(this), reward, timelock, preSalt);
-        campaignId = distributor.createCampaign(reward, timelock, campaignUpdater, preSalt);
+        campaignId = distributor.createCampaign(reward, timelock, campaignUpdater, bob, preSalt);
         paramsById[campaignId] = params;
     }
 
@@ -81,22 +81,22 @@ contract RewardsDistributorTest is Test {
         distributor.acceptRoot(campaignId, root);
     }
 
-    function testCreateCampaign(address creator, uint256 timelock) public {
+    function testCreateCampaign(address creator, uint256 timelock, address initialSentinel) public {
         bytes32 preSalt = bytes32(uint256(42));
         CampaignParams memory params = _params(creator, address(token), timelock, preSalt);
         bytes32 expectedId = keccak256(abi.encode(params));
         vm.expectEmit(true, true, false, true);
-        emit IRewardsDistributor.CreateCampaign(expectedId, creator, params, updater);
+        emit IRewardsDistributor.CreateCampaign(expectedId, creator, params, updater, initialSentinel);
         vm.prank(creator);
-        bytes32 otherId = distributor.createCampaign(address(token), timelock, updater, preSalt);
+        bytes32 otherId = distributor.createCampaign(address(token), timelock, updater, initialSentinel, preSalt);
         assertEq(otherId, expectedId);
-        assertEq(distribution.sentinel(otherId), address(0));
+        assertEq(distribution.sentinel(otherId), initialSentinel);
         assertEq(distribution.updater(otherId), updater);
         assertEq(distribution.balance(otherId), 0);
         assertEq(distribution.root(otherId), bytes32(0));
         vm.prank(creator);
         vm.expectRevert(IRewardsDistributor.AlreadyCreated.selector);
-        distributor.createCampaign(address(token), timelock, bob, preSalt);
+        distributor.createCampaign(address(token), timelock, bob, address(0), preSalt);
     }
 
     function testFund(uint128 amount) public {
@@ -113,11 +113,11 @@ contract RewardsDistributorTest is Test {
     }
 
     function testEveryParameterContributesToId() public {
-        bytes32 otherId = distributor.createCampaign(address(0), TIMELOCK, updater, bytes32(uint256(1)));
+        bytes32 otherId = distributor.createCampaign(address(0), TIMELOCK, updater, address(0), bytes32(uint256(1)));
         assertTrue(otherId != id);
-        otherId = distributor.createCampaign(address(token), TIMELOCK + 1, updater, bytes32(uint256(1)));
+        otherId = distributor.createCampaign(address(token), TIMELOCK + 1, updater, address(0), bytes32(uint256(1)));
         assertTrue(otherId != id);
-        otherId = distributor.createCampaign(address(token), TIMELOCK, updater, bytes32(uint256(42)));
+        otherId = distributor.createCampaign(address(token), TIMELOCK, updater, address(0), bytes32(uint256(42)));
         assertTrue(otherId != id);
     }
 
@@ -126,10 +126,10 @@ contract RewardsDistributorTest is Test {
         CampaignParams memory creatorParams = _params(alice, address(token), TIMELOCK, preSalt);
         bytes32 expectedId = keccak256(abi.encode(creatorParams));
         vm.prank(bob);
-        bytes32 frontRunnerId = distributor.createCampaign(address(token), TIMELOCK, bob, preSalt);
+        bytes32 frontRunnerId = distributor.createCampaign(address(token), TIMELOCK, bob, address(0), preSalt);
         assertTrue(frontRunnerId != expectedId);
         vm.prank(alice);
-        bytes32 creatorId = distributor.createCampaign(address(token), TIMELOCK, updater, preSalt);
+        bytes32 creatorId = distributor.createCampaign(address(token), TIMELOCK, updater, address(0), preSalt);
         assertEq(creatorId, expectedId);
         assertEq(distributor.updater(creatorId), updater);
         vm.prank(bob);
@@ -142,9 +142,9 @@ contract RewardsDistributorTest is Test {
         vm.assume(keccak256(abi.encode(_params(creatorA, address(token), TIMELOCK, preSalt))) != id);
         vm.assume(keccak256(abi.encode(_params(creatorB, address(token), TIMELOCK, preSalt))) != id);
         vm.prank(creatorA);
-        bytes32 idA = distributor.createCampaign(address(token), TIMELOCK, updater, preSalt);
+        bytes32 idA = distributor.createCampaign(address(token), TIMELOCK, updater, address(0), preSalt);
         vm.prank(creatorB);
-        bytes32 idB = distributor.createCampaign(address(token), TIMELOCK, updater, preSalt);
+        bytes32 idB = distributor.createCampaign(address(token), TIMELOCK, updater, address(0), preSalt);
         assertTrue(idA != idB);
         assertEq(idA, keccak256(abi.encode(_params(creatorA, address(token), TIMELOCK, preSalt))));
         assertEq(idB, keccak256(abi.encode(_params(creatorB, address(token), TIMELOCK, preSalt))));
@@ -156,8 +156,9 @@ contract RewardsDistributorTest is Test {
         vm.prank(updater);
         distributor.setUpdater(id, bob);
         vm.expectRevert(IRewardsDistributor.AlreadyCreated.selector);
-        distributor.createCampaign(address(token), TIMELOCK, updater, bytes32(uint256(1)));
+        distributor.createCampaign(address(token), TIMELOCK, updater, address(0), bytes32(uint256(1)));
         assertEq(distributor.updater(id), bob);
+        assertEq(distributor.sentinel(id), bob);
         assertEq(_balance(id), 100);
         assertEq(_root(id), bytes32(uint256(1)));
     }
@@ -183,10 +184,10 @@ contract RewardsDistributorTest is Test {
     function testZeroUpdaterCreationMarker() public {
         bytes32 preSalt = bytes32(uint256(42));
         CampaignParams memory params = _params(address(this), address(token), TIMELOCK, preSalt);
-        bytes32 otherId = distributor.createCampaign(address(token), TIMELOCK, address(0), preSalt);
+        bytes32 otherId = distributor.createCampaign(address(token), TIMELOCK, address(0), address(0), preSalt);
         vm.expectRevert(IRewardsDistributor.UnknownCampaign.selector);
         distributor.fund(params, 0);
-        assertEq(distributor.createCampaign(address(token), TIMELOCK, address(0), preSalt), otherId);
+        assertEq(distributor.createCampaign(address(token), TIMELOCK, address(0), address(0), preSalt), otherId);
 
         distributor.fund(paramsById[id], 100);
         _activate(id, bytes32(uint256(1)));
@@ -195,11 +196,13 @@ contract RewardsDistributorTest is Test {
         vm.expectRevert(IRewardsDistributor.UnknownCampaign.selector);
         distributor.fund(paramsById[id], 0);
         vm.prank(bob);
-        bytes32 frontRunnerId = distributor.createCampaign(address(token), TIMELOCK, bob, bytes32(uint256(1)));
+        bytes32 frontRunnerId =
+            distributor.createCampaign(address(token), TIMELOCK, bob, address(0), bytes32(uint256(1)));
         assertTrue(frontRunnerId != id);
         assertEq(distributor.updater(id), address(0));
-        assertEq(distributor.createCampaign(address(token), TIMELOCK, updater, bytes32(uint256(1))), id);
-        assertEq(distributor.updater(id), updater);
+        assertEq(distributor.createCampaign(address(token), TIMELOCK, alice, alice, bytes32(uint256(1))), id);
+        assertEq(distributor.updater(id), alice);
+        assertEq(distributor.sentinel(id), alice);
         assertEq(_balance(id), 100);
         assertEq(_root(id), bytes32(uint256(1)));
     }
@@ -414,8 +417,6 @@ contract RewardsDistributorTest is Test {
 
     function testAccessControl(address caller) public {
         vm.assume(caller != updater && caller != bob);
-        vm.prank(updater);
-        distributor.setSentinel(id, bob);
         _submit(id, bytes32(uint256(1)));
         bytes[] memory calls = new bytes[](5);
         calls[0] = abi.encodeCall(distributor.submitRoot, (paramsById[id], bytes32(uint256(2))));
@@ -427,25 +428,32 @@ contract RewardsDistributorTest is Test {
             vm.prank(caller);
             (bool success, bytes memory reason) = address(distributor).call(calls[i]);
             assertFalse(success);
-            bytes4 expectedError = i == 1 || i == 2
-                ? IRewardsDistributor.NotUpdaterNorSentinel.selector
-                : IRewardsDistributor.NotUpdater.selector;
+            bytes4 expectedError = IRewardsDistributor.NotUpdater.selector;
+            if (i == 1 || i == 2) expectedError = IRewardsDistributor.NotUpdaterNorSentinel.selector;
+            if (i == 4) expectedError = IRewardsDistributor.NotSentinel.selector;
             assertEq(reason, abi.encodeWithSelector(expectedError));
         }
     }
 
     function testSetSentinelAllowsNoOpsAndZero() public {
-        vm.startPrank(updater);
+        vm.startPrank(bob);
         vm.expectEmit(true, true, false, true);
         emit IRewardsDistributor.SetSentinel(id, bob);
         distributor.setSentinel(id, bob);
         assertEq(distributor.sentinel(id), bob);
         vm.expectEmit(true, true, false, true);
-        emit IRewardsDistributor.SetSentinel(id, bob);
+        emit IRewardsDistributor.SetSentinel(id, alice);
+        distributor.setSentinel(id, alice);
+        assertEq(distributor.sentinel(id), alice);
+        vm.expectRevert(IRewardsDistributor.NotSentinel.selector);
         distributor.setSentinel(id, bob);
+        vm.stopPrank();
+        vm.startPrank(alice);
         vm.expectEmit(true, true, false, true);
         emit IRewardsDistributor.SetSentinel(id, address(0));
         distributor.setSentinel(id, address(0));
+        vm.expectRevert(IRewardsDistributor.NotSentinel.selector);
+        distributor.setSentinel(id, alice);
         vm.stopPrank();
         assertEq(distributor.sentinel(id), address(0));
         vm.prank(bob);
@@ -457,16 +465,36 @@ contract RewardsDistributorTest is Test {
     }
 
     function testSentinelCannotUseUpdaterFunctions() public {
-        vm.prank(updater);
-        distributor.setSentinel(id, bob);
         vm.startPrank(bob);
         vm.expectRevert(IRewardsDistributor.NotUpdater.selector);
         distributor.submitRoot(paramsById[id], bytes32(uint256(1)));
         vm.expectRevert(IRewardsDistributor.NotUpdater.selector);
         distributor.setUpdater(id, bob);
-        vm.expectRevert(IRewardsDistributor.NotUpdater.selector);
-        distributor.setSentinel(id, alice);
         vm.stopPrank();
+    }
+
+    function testUpdaterCannotSetSentinel() public {
+        vm.prank(updater);
+        vm.expectRevert(IRewardsDistributor.NotSentinel.selector);
+        distributor.setSentinel(id, alice);
+        assertEq(distributor.sentinel(id), bob);
+    }
+
+    function testZeroSentinelCannotBeAssigned() public {
+        bytes32 preSalt = bytes32(uint256(42));
+        bytes32 otherId = distributor.createCampaign(address(token), TIMELOCK, updater, address(0), preSalt);
+        assertEq(distributor.sentinel(otherId), address(0));
+        vm.prank(updater);
+        vm.expectRevert(IRewardsDistributor.NotSentinel.selector);
+        distributor.setSentinel(otherId, bob);
+        vm.prank(bob);
+        vm.expectRevert(IRewardsDistributor.NotSentinel.selector);
+        distributor.setSentinel(otherId, bob);
+        vm.expectRevert(IRewardsDistributor.NotSentinel.selector);
+        distributor.setSentinel(otherId, bob);
+        vm.expectRevert(IRewardsDistributor.AlreadyCreated.selector);
+        distributor.createCampaign(address(token), TIMELOCK, updater, bob, preSalt);
+        assertEq(distributor.sentinel(otherId), address(0));
     }
 
     function testSentinelMulticallPauseAndRevoke() public {
@@ -474,8 +502,6 @@ contract RewardsDistributorTest is Test {
         bytes32 pendingRoot = bytes32(uint256(2));
         _activate(id, root);
         _submit(id, pendingRoot);
-        vm.prank(updater);
-        distributor.setSentinel(id, bob);
         bytes[] memory calls = new bytes[](2);
         calls[0] = abi.encodeCall(distributor.pauseCampaign, (id));
         calls[1] = abi.encodeCall(distributor.revokePendingRoot, (id, pendingRoot));
@@ -608,7 +634,7 @@ contract RewardsDistributorTest is Test {
         errors[4] = IRewardsDistributor.NotUpdaterNorSentinel.selector;
         errors[5] = IRewardsDistributor.NotUpdater.selector;
         errors[6] = IRewardsDistributor.InsufficientBalance.selector;
-        errors[7] = IRewardsDistributor.NotUpdater.selector;
+        errors[7] = IRewardsDistributor.NotSentinel.selector;
         for (uint256 i; i < calls.length; ++i) {
             (bool success, bytes memory reason) = address(distributor).call(calls[i]);
             assertFalse(success);
@@ -657,7 +683,7 @@ contract RewardsDistributorTest is Test {
         CampaignParams memory params = _params(address(this), address(token), TIMELOCK, preSalt);
         bytes32 otherId = keccak256(abi.encode(params));
         bytes[] memory calls = new bytes[](5);
-        calls[0] = abi.encodeCall(distributor.createCampaign, (address(token), TIMELOCK, updater, preSalt));
+        calls[0] = abi.encodeCall(distributor.createCampaign, (address(token), TIMELOCK, updater, address(0), preSalt));
         calls[1] = abi.encodeCall(distributor.updater, (otherId));
         calls[2] = abi.encodeCall(distributor.sentinel, (otherId));
         calls[3] = abi.encodeCall(distributor.balance, (otherId));

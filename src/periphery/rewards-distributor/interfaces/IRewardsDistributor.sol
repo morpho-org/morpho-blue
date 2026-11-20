@@ -11,6 +11,7 @@ interface IRewardsDistributor {
     error AlreadyCreated();
     error UnknownCampaign();
     error NotUpdater();
+    error NotSentinel();
     error NotUpdaterNorSentinel();
     error NoPendingRoot();
     error TimelockNotExpired();
@@ -18,7 +19,9 @@ interface IRewardsDistributor {
     error ClaimableTooLow();
     error InsufficientBalance();
 
-    event CreateCampaign(bytes32 indexed id, address indexed caller, CampaignParams params, address updater);
+    event CreateCampaign(
+        bytes32 indexed id, address indexed caller, CampaignParams params, address updater, address sentinel
+    );
     event Fund(bytes32 indexed id, address indexed caller, uint256 amount);
     event SubmitRoot(bytes32 indexed id, address indexed caller, bytes32 root);
     event RevokePendingRoot(bytes32 indexed id, address indexed caller, bytes32 root);
@@ -34,7 +37,7 @@ interface IRewardsDistributor {
     function root(bytes32 id) external view returns (bytes32);
     function validAt(bytes32 id, bytes32 root) external view returns (uint256);
     function claimed(bytes32 id, address account) external view returns (uint256);
-    function createCampaign(address token, uint256 timelock, address newUpdater, bytes32 preSalt)
+    function createCampaign(address token, uint256 timelock, address newUpdater, address newSentinel, bytes32 preSalt)
         external
         returns (bytes32);
     function fund(CampaignParams calldata params, uint256 amount) external;
