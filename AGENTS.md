@@ -18,6 +18,5 @@ Do not report:
 - A change applied the same way in every repo.
 
 Allowed differences:
-- Fork-test RPC secret: `MORPHO_RPC_KEY` (deployments) vs `PROTOCOL_ALCHEMY_KEY` (morpho-blue-oracles, morpho-token).
 - CI or foundry.toml settings where the difference is explained by a comment above, or that follow from what the repo contains (like no Certora, different solc versions, compiler settings, Makefile needs, etc.).
 - `certora/Makefile` layouts.
