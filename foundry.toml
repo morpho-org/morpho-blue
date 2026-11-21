@@ -1,7 +1,7 @@
 [profile.default]
+ignored_error_codes_from = [["test", ["code-size", "init-code-size"]]]
+ignored_warnings_from = ["lib"]
 libs = ["lib"]
-names = true
-sizes = true
 via_ir = true
 optimizer = true
 optimizer_runs = 999999
@@ -16,23 +16,42 @@ compilation_restrictions = [
     { paths = "src/periphery/adaptive-curve-irm/**", evm_version = "paris" },
 ]
 
-[profile.default.invariant]
+[profile.default.fuzz]
 runs = 1024
-depth = 32
-fail_on_revert = true
-
-[profile.default.fmt]
-wrap_comments = true
 
 [lint]
+severity = ["high", "medium", "low", "info"]
 exclude_lints = [
-    "unaliased-plain-import",
-    "asm-keccak256",
-    "unwrapped-modifier-logic",
-    "unsafe-typecast",
+    "arbitrary-send-erc20",
     "block-timestamp",
+    "boolean-cst",
+    "calls-loop",
+    "cyclomatic-complexity",
+    "incorrect-shift",
+    "inline-assembly",
+    "internal-function-used-once",
+    "literal-instead-of-constant",
+    "low-level-calls",
+    "missing-events-access-control",
+    "missing-zero-check",
+    "mixed-case-variable",
+    "multi-contract-file",
+    "pragma-inconsistent",
+    "reentrancy-events",
+    "require-revert-in-loop",
+    "screaming-snake-case-immutable",
+    "too-many-digits",
+    "uninitialized-local",
+    "unsafe-cheatcode",
+    "unused-return",
+    # Those exclusions are added to not add inline lint suppressors in the following contracts: Morpho, AdaptiveCurveIrm, PreLiquidation.
+    "divide-before-multiply",
+    "ecrecover",
+    "reentrancy-no-eth",
+    "solmate-safe-transfer-lib",
+    "unaliased-plain-import",
+    "unsafe-typecast",
 ]
-ignore = ['test/**/*.sol']
 
 [profile.no_via_ir]
 via_ir = false

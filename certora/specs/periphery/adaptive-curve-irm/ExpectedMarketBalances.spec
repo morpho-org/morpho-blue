@@ -23,15 +23,13 @@ rule balancesLibEquivalence(env e, address morpho, AdaptiveCurveIrm.MarketParams
     uint256 adaptiveTotalSupplyShares;
     uint256 adaptiveTotalBorrowAssets;
     uint256 adaptiveTotalBorrowShares;
-    (adaptiveTotalSupplyAssets, adaptiveTotalSupplyShares, adaptiveTotalBorrowAssets, adaptiveTotalBorrowShares) =
-        AdaptiveCurveIrmLibHarness.adaptiveCurveIrmLibExpectedMarketBalances(e, morpho, id, AdaptiveCurveIrm);
+    adaptiveTotalSupplyAssets, adaptiveTotalSupplyShares, adaptiveTotalBorrowAssets, adaptiveTotalBorrowShares = AdaptiveCurveIrmLibHarness.adaptiveCurveIrmLibExpectedMarketBalances(e, morpho, id, AdaptiveCurveIrm);
 
     uint256 morphoTotalSupplyAssets;
     uint256 morphoTotalSupplyShares;
     uint256 morphoTotalBorrowAssets;
     uint256 morphoTotalBorrowShares;
-    (morphoTotalSupplyAssets, morphoTotalSupplyShares, morphoTotalBorrowAssets, morphoTotalBorrowShares) =
-        AdaptiveCurveIrmLibHarness.morphoBalancesLibExpectedMarketBalances(e, morpho, marketParams);
+    morphoTotalSupplyAssets, morphoTotalSupplyShares, morphoTotalBorrowAssets, morphoTotalBorrowShares = AdaptiveCurveIrmLibHarness.morphoBalancesLibExpectedMarketBalances(e, morpho, marketParams);
 
     // Both libraries should return identical results
     assert adaptiveTotalSupplyAssets == morphoTotalSupplyAssets;

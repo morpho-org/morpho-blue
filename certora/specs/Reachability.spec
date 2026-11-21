@@ -3,22 +3,22 @@
 using Util as Util;
 
 methods {
-    function extSloads(bytes32[]) external returns bytes32[] => NONDET DELETE;
-    function supplyShares(MorphoInternalAccess.Id, address) external returns uint256 envfree;
-    function borrowShares(MorphoInternalAccess.Id, address) external returns uint256 envfree;
-    function collateral(MorphoInternalAccess.Id, address) external returns uint256 envfree;
-    function totalSupplyAssets(MorphoInternalAccess.Id) external returns uint256 envfree;
-    function totalBorrowAssets(MorphoInternalAccess.Id) external returns uint256 envfree;
-    function lastUpdate(MorphoInternalAccess.Id) external returns uint256 envfree;
-    function nonce(address) external returns uint256 envfree;
-    function isAuthorized(address, address) external returns bool envfree;
+    function extSloads(bytes32[]) external returns (bytes32[]) => NONDET DELETE;
+    function supplyShares(MorphoInternalAccess.Id, address) external returns (uint256) envfree;
+    function borrowShares(MorphoInternalAccess.Id, address) external returns (uint256) envfree;
+    function collateral(MorphoInternalAccess.Id, address) external returns (uint256) envfree;
+    function totalSupplyAssets(MorphoInternalAccess.Id) external returns (uint256) envfree;
+    function totalBorrowAssets(MorphoInternalAccess.Id) external returns (uint256) envfree;
+    function lastUpdate(MorphoInternalAccess.Id) external returns (uint256) envfree;
+    function nonce(address) external returns (uint256) envfree;
+    function isAuthorized(address, address) external returns (bool) envfree;
 
-    function Util.libId(MorphoInternalAccess.MarketParams) external returns MorphoInternalAccess.Id envfree;
-    function Util.refId(MorphoInternalAccess.MarketParams) external returns MorphoInternalAccess.Id envfree;
+    function Util.libId(MorphoInternalAccess.MarketParams) external returns (MorphoInternalAccess.Id) envfree;
+    function Util.refId(MorphoInternalAccess.MarketParams) external returns (MorphoInternalAccess.Id) envfree;
 
-    function _._accrueInterest(MorphoInternalAccess.MarketParams memory marketParams, MorphoInternalAccess.Id id) internal with (env e) => summaryAccrueInterest(e, marketParams, id) expect void;
+    function _._accrueInterest(MorphoInternalAccess.MarketParams memory marketParams, MorphoInternalAccess.Id id) internal with(env e) => summaryAccrueInterest(e, marketParams, id) expect void;
 
-    function MarketParamsLib.id(MorphoInternalAccess.MarketParams memory marketParams) internal returns MorphoInternalAccess.Id => summaryId(marketParams);
+    function MarketParamsLib.id(MorphoInternalAccess.MarketParams memory marketParams) internal returns (MorphoInternalAccess.Id) => summaryId(marketParams);
     function SafeTransferLib.safeTransfer(address token, address to, uint256 value) internal => summarySafeTransferFrom(token, currentContract, to, value);
     function SafeTransferLib.safeTransferFrom(address token, address from, address to, uint256 value) internal => summarySafeTransferFrom(token, from, to, value);
 }
@@ -48,13 +48,15 @@ function min(mathint a, mathint b) returns mathint {
 // Summarize the accrue interest to avoid having to deal with reverts with absurdly high borrow rates.
 function summaryAccrueInterest(env e, MorphoInternalAccess.MarketParams marketParams, MorphoInternalAccess.Id id) {
     // Safe require because timestamps cannot realistically be that large.
-    require e.block.timestamp < 2^128;
+    require e.block.timestamp < 2 ^ 128;
     if (e.block.timestamp != lastUpdate(id) && totalBorrowAssets(id) != 0) {
         uint128 interest;
         uint256 supply = totalSupplyAssets(id);
+    
         // Safe require because tokens should have bounded supply.
-        require interest + supply < 2^128;
+        require interest + supply < 2 ^ 128;
         uint256 borrow = totalBorrowAssets(id);
+    
         // Safe require because it is verified in borrowLessThanSupply.
         require borrow <= supply;
         increaseInterest(e, id, interest);
@@ -69,6 +71,7 @@ rule supplyChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams marke
 
     // Safe require because Morpho cannot call such functions by itself.
     require currentContract != e.msg.sender;
+
     // Assumption to ensure that no interest is accumulated.
     require lastUpdate(id) == e.block.timestamp;
 
@@ -105,6 +108,7 @@ rule withdrawChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams mar
 
     // Assume that Morpho is not the receiver.
     require currentContract != receiver;
+
     // Assumption to ensure that no interest is accumulated.
     require lastUpdate(id) == e.block.timestamp;
 
@@ -141,6 +145,7 @@ rule borrowChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams marke
 
     // Assume that Morpho is not the receiver.
     require currentContract != receiver;
+
     // Assumption to ensure that no interest is accumulated.
     require lastUpdate(id) == e.block.timestamp;
 
@@ -177,6 +182,7 @@ rule repayChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams market
 
     // Safe require because Morpho cannot call such functions by itself.
     require currentContract != e.msg.sender;
+
     // Assumption to ensure that no interest is accumulated.
     require lastUpdate(id) == e.block.timestamp;
 
@@ -198,6 +204,7 @@ rule repayChangesTokensAndShares(env e, MorphoInternalAccess.MarketParams market
     assert shares != 0 => repaidShares == shares;
     assert sharesAfter == sharesBefore - repaidShares;
     assert balanceAfter == balanceBefore + repaidAssets;
+
     // Taking the min to handle the zeroFloorSub in the code.
     assert liquidityAfter == liquidityBefore + min(repaidAssets, borrowAssetsBefore);
 }
@@ -235,6 +242,7 @@ rule withdrawCollateralChangesTokensAndBalance(env e, MorphoInternalAccess.Marke
 
     // Assume that Morpho is not the receiver.
     require currentContract != receiver;
+
     // Assumption to ensure that no interest is accumulated.
     require lastUpdate(id) == e.block.timestamp;
 
@@ -256,8 +264,10 @@ rule liquidateChangesTokens(env e, MorphoInternalAccess.MarketParams marketParam
 
     // Safe require because Morpho cannot call such functions by itself.
     require currentContract != e.msg.sender;
+
     // Assumption to simplify the balance specification in the rest of this rule.
     require marketParams.loanToken != marketParams.collateralToken;
+
     // Assumption to ensure that no interest is accumulated.
     require lastUpdate(id) == e.block.timestamp;
 
@@ -281,6 +291,7 @@ rule liquidateChangesTokens(env e, MorphoInternalAccess.MarketParams marketParam
     assert collateralBefore > seizedAssets => collateralAfter == collateralBefore - seizedAssets;
     assert balanceLoanAfter == balanceLoanBefore + repaidAssets;
     assert balanceCollateralAfter == balanceCollateralBefore - seizedAssets;
+
     // Taking the min to handle the zeroFloorSub in the code.
     assert liquidityAfter == liquidityBefore + min(repaidAssets, borrowLoanAssetsBefore);
 }
@@ -289,7 +300,7 @@ rule liquidateChangesTokens(env e, MorphoInternalAccess.MarketParams marketParam
 rule canLiquidateByPassingShares(env e, MorphoInternalAccess.MarketParams marketParams, address borrower, uint256 repaidShares, bytes data) {
     uint256 seizedAssets;
     uint256 repaidAssets;
-    seizedAssets, repaidAssets = liquidate(e, marketParams, borrower, 0, repaidShares,  data);
+    seizedAssets, repaidAssets = liquidate(e, marketParams, borrower, 0, repaidShares, data);
 
     satisfy seizedAssets != 0 && repaidAssets != 0;
 }

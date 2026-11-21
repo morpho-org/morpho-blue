@@ -7,60 +7,81 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions: {}
+
 jobs:
   matrix:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     outputs:
       confs: ${{ steps.list.outputs.confs }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
+        with:
+          persist-credentials: false
       - id: list
-        run: echo "confs=$(find certora/confs -name '*.conf' | sed 's|^certora/confs/||;s|\.conf$||' | sort | jq -nRc '[inputs]')" >> "$GITHUB_OUTPUT"
+        run: echo "confs=$(find certora/confs -type f -name '*.conf' | sed 's|^certora/confs/||;s|\.conf$||' | sort | jq -nRc '[inputs]')" >> "$GITHUB_OUTPUT"
+
+  format-certora:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Use Java 21
+        run: echo "$JAVA_HOME_21_X64/bin" >> "$GITHUB_PATH"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: pip install certora-cli
+      - name: Run Certora Config Formatter
+        run: |
+          find certora -type f -name '*.conf' | sort |
+          while read -r file; do
+            jq . "$file" | diff -u "$file" -
+          done
+      - name: Run Certora Specs Formatter
+        run: |
+          find certora -type f -name '*.spec' | sort |
+          while read -r file; do
+            certoraCVLFormatter "$file" | diff -u "$file" -
+          done
 
   verify:
-    needs: matrix
+    permissions:
+      contents: read
+    needs: [matrix, format-certora]
     runs-on: ubuntu-latest
-
     strategy:
       fail-fast: false
       matrix:
         conf: ${{ fromJson(needs.matrix.outputs.confs) }}
 
     steps:
+      - name: Use Java 21
+        run: echo "$JAVA_HOME_21_X64/bin" >> "$GITHUB_PATH"
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           submodules: recursive
 
-      - name: Run Certora Config Linter
-        env:
-          CONF: ${{ matrix.conf }}
+      - name: Install certora
+        run: pip install certora-cli
+
+      - name: Install solc
         run: |
-          file="certora/confs/$CONF.conf"
-          echo "Fix lint errors by applying the following diff to $file:"
-          diff -u "$file" <(jq < "$file")
+          echo "0.8.19 7a5c1d3dc9a8eba62bb2ec37192c9178ae5fe8a54a56e5573fd3c9c17cd9eb48
+          0.8.27 b9977d500c17cba6f0032ca939ef98c4decf6363f19f386d05fb02f708115264" |
+          while read -r version sha256; do
+            curl -fsSL -o solc "https://github.com/ethereum/solidity/releases/download/v$version/solc-static-linux"
+            echo "$sha256  solc" | sha256sum --check --strict
+            chmod +x solc
+            sudo mv solc "/usr/local/bin/solc-$version"
+          done
 
-      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
-        with:
-          python-version: ">=3.15.2"
-
-      - run: pip install certora-cli
-
-      - name: Install solc (0.8.19)
-        run: |
-          wget https://github.com/ethereum/solidity/releases/download/v0.8.19/solc-static-linux
-          echo "7805ee2c1e70f2004eeb514f98a18d8260644c2f4bbf2e50f7f92e24b9ec2dbdc3e96ccbfe2570912f48bf0611b885594d2a6635527bc53d811dd56fb596e41b  solc-static-linux" | sha512sum --check --strict -
-          chmod +x solc-static-linux
-          sudo mv solc-static-linux /usr/local/bin/solc-0.8.19
-
-      - name: Install solc (0.8.27)
-        run: |
-          wget https://github.com/ethereum/solidity/releases/download/v0.8.27/solc-static-linux
-          echo "6550177d642061f1698cc724e7dad063f44bb85e6b4cb54cbc86530452ac9e1f02c9b573eb640167aa972e0592985d9464e55e4efb2894ec7cd3cbba0cae2729  solc-static-linux" | sha512sum --check --strict -
-          chmod +x solc-static-linux
-          sudo mv solc-static-linux /usr/local/bin/solc-0.8.27
-
-      - run: certoraRun "certora/confs/$CONF.conf"
+      - name: Verify ${{ matrix.conf }} specification
+        run: certoraRun "certora/confs/$CONF.conf"
         env:
           CONF: ${{ matrix.conf }}
           CERTORAKEY: ${{ secrets.CERTORAKEY }}

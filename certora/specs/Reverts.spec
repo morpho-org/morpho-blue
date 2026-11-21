@@ -3,66 +3,59 @@
 using Util as Util;
 
 methods {
-    function extSloads(bytes32[]) external returns bytes32[] => NONDET DELETE;
+    function extSloads(bytes32[]) external returns (bytes32[]) => NONDET DELETE;
 
-    function owner() external returns address envfree;
-    function feeRecipient() external returns address envfree;
-    function totalSupplyAssets(MorphoHarness.Id) external returns uint256 envfree;
-    function totalBorrowAssets(MorphoHarness.Id) external returns uint256 envfree;
-    function totalSupplyShares(MorphoHarness.Id) external returns uint256 envfree;
-    function totalBorrowShares(MorphoHarness.Id) external returns uint256 envfree;
-    function lastUpdate(MorphoHarness.Id) external returns uint256 envfree;
-    function isIrmEnabled(address) external returns bool envfree;
-    function isLltvEnabled(uint256) external returns bool envfree;
-    function isAuthorized(address, address) external returns bool envfree;
-    function nonce(address) external returns uint256 envfree;
+    function owner() external returns (address) envfree;
+    function feeRecipient() external returns (address) envfree;
+    function totalSupplyAssets(MorphoHarness.Id) external returns (uint256) envfree;
+    function totalBorrowAssets(MorphoHarness.Id) external returns (uint256) envfree;
+    function totalSupplyShares(MorphoHarness.Id) external returns (uint256) envfree;
+    function totalBorrowShares(MorphoHarness.Id) external returns (uint256) envfree;
+    function lastUpdate(MorphoHarness.Id) external returns (uint256) envfree;
+    function isIrmEnabled(address) external returns (bool) envfree;
+    function isLltvEnabled(uint256) external returns (bool) envfree;
+    function isAuthorized(address, address) external returns (bool) envfree;
+    function nonce(address) external returns (uint256) envfree;
 
-    function Util.libId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
+    function Util.libId(MorphoHarness.MarketParams) external returns (MorphoHarness.Id) envfree;
 
-    function Util.maxFee() external returns uint256 envfree;
-    function Util.wad() external returns uint256 envfree;
+    function Util.maxFee() external returns (uint256) envfree;
+    function Util.wad() external returns (uint256) envfree;
 }
 
-definition isCreated(MorphoHarness.Id id) returns bool =
-    (lastUpdate(id) != 0);
+definition isCreated(MorphoHarness.Id id) returns bool = (lastUpdate(id) != 0);
 
-persistent ghost mapping(MorphoHarness.Id => mathint) sumCollateral
-{
+persistent ghost mapping(MorphoHarness.Id => mathint) sumCollateral {
     init_state axiom (forall MorphoHarness.Id id. sumCollateral[id] == 0);
 }
+
 hook Sstore position[KEY MorphoHarness.Id id][KEY address owner].collateral uint128 newAmount (uint128 oldAmount) {
     sumCollateral[id] = sumCollateral[id] - oldAmount + newAmount;
 }
 
-definition emptyMarket(MorphoHarness.Id id) returns bool =
-    totalSupplyAssets(id) == 0 &&
-    totalSupplyShares(id) == 0 &&
-    totalBorrowAssets(id) == 0 &&
-    totalBorrowShares(id) == 0 &&
-    sumCollateral[id] == 0;
+definition emptyMarket(MorphoHarness.Id id) returns bool = totalSupplyAssets(id) == 0 && totalSupplyShares(id) == 0 && totalBorrowAssets(id) == 0 && totalBorrowShares(id) == 0 && sumCollateral[id] == 0;
 
-definition exactlyOneZero(uint256 assets, uint256 shares) returns bool =
-    (assets == 0 && shares != 0) || (assets != 0 && shares == 0);
+definition exactlyOneZero(uint256 assets, uint256 shares) returns bool = (assets == 0 && shares != 0) || (assets != 0 && shares == 0);
 
 // This invariant catches bugs when not checking that the market is created with lastUpdate.
 invariant notCreatedIsEmpty(MorphoHarness.Id id)
     !isCreated(id) => emptyMarket(id)
-{
-    preserved with (env e) {
-        // Safe require because timestamps cannot realistically be that large.
-        require e.block.timestamp < 2^128;
+    {
+        preserved with (env e) {
+            // Safe require because timestamps cannot realistically be that large.
+            require e.block.timestamp < 2 ^ 128;
+        }
     }
-}
 
 // Useful to ensure that authorized parties are not the zero address and so we can omit the sanity check in this case.
 invariant zeroDoesNotAuthorize(address authorized)
     !isAuthorized(0, authorized)
-{
-    preserved setAuthorization(address _authorized, bool _newAuthorization) with (env e) {
-        // Safe require because no one controls the zero address.
-        require e.msg.sender != 0;
+    {
+        preserved setAuthorization(address _authorized, bool _newAuthorization) with (env e) {
+            // Safe require because no one controls the zero address.
+            require e.msg.sender != 0;
+        }
     }
-}
 
 // Check the revert condition for the setOwner function.
 rule setOwnerRevertCondition(env e, address newOwner) {
@@ -137,7 +130,7 @@ rule borrowInputValidation(env e, MorphoHarness.MarketParams marketParams, uint2
     require e.msg.sender != 0;
     requireInvariant zeroDoesNotAuthorize(e.msg.sender);
     borrow@withrevert(e, marketParams, assets, shares, onBehalf, receiver);
-    assert !exactlyOneZero(assets, shares) || onBehalf == 0  || receiver == 0 => lastReverted;
+    assert !exactlyOneZero(assets, shares) || onBehalf == 0 || receiver == 0 => lastReverted;
 }
 
 // Check that repay reverts when its inputs are not validated.

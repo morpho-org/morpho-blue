@@ -1,4 +1,4 @@
-name: forge-old
+name: Forge old
 
 on:
   push:
@@ -7,21 +7,24 @@ on:
   pull_request:
   workflow_dispatch:
 
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
-  forge-old:
+  test:
+    name: Forge old tests
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           submodules: recursive
       - name: Install Foundry (old)
         run: |
           curl -fsSL -o foundry.tar.gz https://github.com/foundry-rs/foundry/releases/download/v1.8.3/foundry_v1.8.3_linux_amd64.tar.gz
-          echo "7ca48e6ca3cac1bce1403ca67e5bc1dc3bc1fd818199c9957c7165079c228568  foundry.tar.gz" | sha256sum -c -
+          echo "7ca48e6ca3cac1bce1403ca67e5bc1dc3bc1fd818199c9957c7165079c228568  foundry.tar.gz" | sha256sum --check --strict
           mkdir "$RUNNER_TEMP/foundry"
           tar -xzf foundry.tar.gz -C "$RUNNER_TEMP/foundry"
           echo "$RUNNER_TEMP/foundry" >> "$GITHUB_PATH"
@@ -33,8 +36,24 @@ jobs:
             solc="$HOME/.svm/$version/solc-$version"
             mkdir -p "${solc%/*}"
             curl -fsSL -o "$solc" "https://github.com/ethereum/solidity/releases/download/v$version/solc-static-linux"
-            echo "$sha256  $solc" | sha256sum -c -
+            echo "$sha256  $solc" | sha256sum --check --strict
             chmod +x "$solc"
           done
       - name: Run Forge tests
-        run: forge test --offline
+        run: forge test --offline -vvv
+        env:
+          FOUNDRY_FUZZ_SEED: 0x${{ github.sha }}
+          FOUNDRY_FUZZ_MAX_TEST_REJECTS: 500000
+
+  # Same check name as in the other repos.
+  forge-old:
+    permissions:
+      contents: read
+    if: ${{ always() }}
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every legacy test combination
+        env:
+          RESULT: ${{ needs.test.result }}
+        run: test "$RESULT" = success

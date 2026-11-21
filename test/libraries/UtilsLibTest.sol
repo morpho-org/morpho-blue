@@ -9,15 +9,15 @@ import "../../src/libraries/UtilsLib.sol";
 contract UtilsLibTest is Test {
     using UtilsLib for uint256;
 
-    function testExactlyOneZero(uint256 x, uint256 y) public {
+    function testExactlyOneZero(uint256 x, uint256 y) public pure {
         assertEq(UtilsLib.exactlyOneZero(x, y), (x > 0 && y == 0) || (x == 0 && y > 0));
     }
 
-    function testMin(uint256 x, uint256 y) public {
+    function testMin(uint256 x, uint256 y) public pure {
         assertEq(UtilsLib.min(x, y), x < y ? x : y);
     }
 
-    function testToUint128(uint256 x) public {
+    function testToUint128(uint256 x) public pure {
         vm.assume(x <= type(uint128).max);
         assertEq(uint256(x.toUint128()), x);
     }
@@ -29,7 +29,7 @@ contract UtilsLibTest is Test {
         x.toUint128();
     }
 
-    function testZeroFloorSub(uint256 x, uint256 y) public {
+    function testZeroFloorSub(uint256 x, uint256 y) public pure {
         assertEq(UtilsLib.zeroFloorSub(x, y), x < y ? 0 : x - y);
     }
 }

@@ -29,8 +29,10 @@ rule boundInRange(int256 x, int256 low, int256 high) {
 rule wDivDownBounded(uint256 x, uint256 y) {
     // Market.totalBorrowAssets and Market.totalSupplyAssets are uint128.
     require x <= max_uint128 && y <= max_uint128;
+
     // AdaptiveCurveIrm only evaluates wDivDown when totalSupplyAssets > 0.
     require y > 0;
+
     // morpho-blue proves invariant borrowLessThanSupply in ConsistentState.
     require x <= y;
 
@@ -38,5 +40,5 @@ rule wDivDownBounded(uint256 x, uint256 y) {
     bool reverted = lastReverted;
 
     assert !reverted;
-    assert result <= 10^18;
+    assert result <= 10 ^ 18;
 }
