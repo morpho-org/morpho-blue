@@ -5,25 +5,25 @@
 using Util as Util;
 
 methods {
-    function extSloads(bytes32[]) external returns bytes32[] => NONDET DELETE;
-    function supplyShares(MorphoInternalAccess.Id, address) external returns uint256 envfree;
-    function borrowShares(MorphoInternalAccess.Id, address) external returns uint256 envfree;
-    function collateral(MorphoInternalAccess.Id, address) external returns uint256 envfree;
-    function totalSupplyAssets(MorphoInternalAccess.Id) external returns uint256 envfree;
-    function totalSupplyShares(MorphoInternalAccess.Id) external returns uint256 envfree;
-    function virtualTotalSupplyAssets(MorphoInternalAccess.Id) external returns uint256 envfree;
-    function virtualTotalSupplyShares(MorphoInternalAccess.Id) external returns uint256 envfree;
-    function totalBorrowAssets(MorphoInternalAccess.Id) external returns uint256 envfree;
-    function totalBorrowShares(MorphoInternalAccess.Id) external returns uint256 envfree;
-    function lastUpdate(MorphoInternalAccess.Id) external returns uint256 envfree;
+    function extSloads(bytes32[]) external returns (bytes32[]) => NONDET DELETE;
+    function supplyShares(MorphoInternalAccess.Id, address) external returns (uint256) envfree;
+    function borrowShares(MorphoInternalAccess.Id, address) external returns (uint256) envfree;
+    function collateral(MorphoInternalAccess.Id, address) external returns (uint256) envfree;
+    function totalSupplyAssets(MorphoInternalAccess.Id) external returns (uint256) envfree;
+    function totalSupplyShares(MorphoInternalAccess.Id) external returns (uint256) envfree;
+    function virtualTotalSupplyAssets(MorphoInternalAccess.Id) external returns (uint256) envfree;
+    function virtualTotalSupplyShares(MorphoInternalAccess.Id) external returns (uint256) envfree;
+    function totalBorrowAssets(MorphoInternalAccess.Id) external returns (uint256) envfree;
+    function totalBorrowShares(MorphoInternalAccess.Id) external returns (uint256) envfree;
+    function lastUpdate(MorphoInternalAccess.Id) external returns (uint256) envfree;
 
-    function Util.libId(MorphoInternalAccess.MarketParams) external returns MorphoInternalAccess.Id envfree;
-    function Util.refId(MorphoInternalAccess.MarketParams) external returns MorphoInternalAccess.Id envfree;
-    function Util.libMulDivDown(uint256 x, uint256 y, uint256 d) external returns uint256 envfree;
+    function Util.libId(MorphoInternalAccess.MarketParams) external returns (MorphoInternalAccess.Id) envfree;
+    function Util.refId(MorphoInternalAccess.MarketParams) external returns (MorphoInternalAccess.Id) envfree;
+    function Util.libMulDivDown(uint256 x, uint256 y, uint256 d) external returns (uint256) envfree;
 
-    function _._accrueInterest(MorphoInternalAccess.MarketParams memory marketParams, MorphoInternalAccess.Id id) internal with (env e) => summaryAccrueInterest(e, marketParams, id) expect void;
+    function _._accrueInterest(MorphoInternalAccess.MarketParams memory marketParams, MorphoInternalAccess.Id id) internal with(env e) => summaryAccrueInterest(e, marketParams, id) expect void;
 
-    function MarketParamsLib.id(MorphoInternalAccess.MarketParams memory marketParams) internal returns MorphoInternalAccess.Id => summaryId(marketParams);
+    function MarketParamsLib.id(MorphoInternalAccess.MarketParams memory marketParams) internal returns (MorphoInternalAccess.Id) => summaryId(marketParams);
     function SafeTransferLib.safeTransfer(address token, address to, uint256 value) internal => summarySafeTransferFrom(token, currentContract, to, value);
     function SafeTransferLib.safeTransferFrom(address token, address from, address to, uint256 value) internal => summarySafeTransferFrom(token, from, to, value);
 }
@@ -53,13 +53,15 @@ function min(mathint a, mathint b) returns mathint {
 // Summarize the accrue interest to avoid having to deal with reverts with absurdly high borrow rates.
 function summaryAccrueInterest(env e, MorphoInternalAccess.MarketParams marketParams, MorphoInternalAccess.Id id) {
     // Safe require because timestamps cannot realistically be that large.
-    require e.block.timestamp < 2^128;
+    require e.block.timestamp < 2 ^ 128;
     if (e.block.timestamp != lastUpdate(id) && totalBorrowAssets(id) != 0) {
         uint128 interest;
         uint256 supply = totalSupplyAssets(id);
+    
         // Safe require because tokens should have bounded supply.
-        require interest + supply < 2^128;
+        require interest + supply < 2 ^ 128;
         uint256 borrow = totalBorrowAssets(id);
+    
         // Safe require because it is verified in borrowLessThanSupply.
         require borrow <= supply;
         increaseInterest(e, id, interest);
@@ -68,8 +70,7 @@ function summaryAccrueInterest(env e, MorphoInternalAccess.MarketParams marketPa
     update(e, id, e.block.timestamp);
 }
 
-definition isCreated(MorphoInternalAccess.Id id) returns bool =
-    lastUpdate(id) != 0;
+definition isCreated(MorphoInternalAccess.Id id) returns bool = lastUpdate(id) != 0;
 
 // Check that one can always repay the debt in full.
 rule canRepayAll(env e, MorphoInternalAccess.MarketParams marketParams, uint256 shares, bytes data) {
@@ -80,15 +81,19 @@ rule canRepayAll(env e, MorphoInternalAccess.MarketParams marketParams, uint256 
 
     // Assume a full repay.
     require shares == borrowShares(id, e.msg.sender);
+
     // Omit sanity checks.
     require isCreated(id);
     require e.msg.sender != 0;
+
     // Safe require because Morpho cannot call such functions by itself.
     require currentContract != e.msg.sender;
     require e.msg.value == 0;
     require shares > 0;
+
     // Safe require because of the noTimeTravel rule.
     require lastUpdate(id) <= e.block.timestamp;
+
     // Safe require because of the sumBorrowSharesCorrect invariant.
     require shares <= totalBorrowShares(id);
 
@@ -97,7 +102,7 @@ rule canRepayAll(env e, MorphoInternalAccess.MarketParams marketParams, uint256 
     summaryAccrueInterest(e, marketParams, id);
 
     // Assume that the invariant about tokens total supply is respected.
-    require totalBorrowAssets(id) < 10^35;
+    require totalBorrowAssets(id) < 10 ^ 35;
 
     repay@withrevert(e, marketParams, 0, shares, e.msg.sender, data);
 
@@ -110,16 +115,20 @@ rule canWithdrawAll(env e, MorphoInternalAccess.MarketParams marketParams, uint2
 
     // Assume a full withdraw.
     require shares == supplyShares(id, e.msg.sender);
+
     // Omit sanity checks.
     require isCreated(id);
     require e.msg.sender != 0;
     require receiver != 0;
     require e.msg.value == 0;
     require shares > 0;
+
     // Safe require because of the noTimeTravel rule.
     require lastUpdate(id) <= e.block.timestamp;
+
     // Safe require because of the sumSupplySharesCorrect invariant.
     require shares <= totalSupplyShares(id);
+
     // Justified by the idleAmountLessThanBalance invariant (ConsistentState.spec), since idle amount includes total supply assets minus total borrow assets.
     require balance[marketParams.loanToken] >= totalSupplyAssets(id) - totalBorrowAssets(id);
 
@@ -128,6 +137,7 @@ rule canWithdrawAll(env e, MorphoInternalAccess.MarketParams marketParams, uint2
     summaryAccrueInterest(e, marketParams, id);
 
     uint256 assets = Util.libMulDivDown(shares, virtualTotalSupplyAssets(id), virtualTotalSupplyShares(id));
+
     // Assume the market has enough liquidity to cover the withdrawal: exactly the condition under which withdraw's INSUFFICIENT_LIQUIDITY check passes.
     require assets <= totalSupplyAssets(id) - totalBorrowAssets(id);
 
@@ -143,15 +153,19 @@ rule canWithdrawCollateralAll(env e, MorphoInternalAccess.MarketParams marketPar
 
     // Ensure a full withdrawCollateral.
     require assets == collateral(id, e.msg.sender);
+
     // Omit sanity checks.
     require isCreated(id);
     require receiver != 0;
     require e.msg.value == 0;
     require assets > 0;
+
     // Safe require because of the noTimeTravel rule.
     require lastUpdate(id) <= e.block.timestamp;
+
     // Assume that the user does not have an outstanding debt.
     require borrowShares(id, e.msg.sender) == 0;
+
     // Justified by the idleAmountLessThanBalance invariant (ConsistentState.spec), since idle amount includes the sum of all the collateral on the market.
     require balance[marketParams.collateralToken] >= assets;
 

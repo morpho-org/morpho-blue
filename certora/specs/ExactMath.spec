@@ -3,23 +3,23 @@
 using Util as Util;
 
 methods {
-    function extSloads(bytes32[]) external returns bytes32[] => NONDET DELETE;
+    function extSloads(bytes32[]) external returns (bytes32[]) => NONDET DELETE;
 
-    function feeRecipient() external returns address envfree;
-    function supplyShares(MorphoHarness.Id, address) external returns uint256 envfree;
-    function borrowShares(MorphoHarness.Id, address) external returns uint256 envfree;
-    function virtualTotalSupplyAssets(MorphoHarness.Id) external returns uint256 envfree;
-    function virtualTotalSupplyShares(MorphoHarness.Id) external returns uint256 envfree;
-    function virtualTotalBorrowAssets(MorphoHarness.Id) external returns uint256 envfree;
-    function virtualTotalBorrowShares(MorphoHarness.Id) external returns uint256 envfree;
-    function lastUpdate(MorphoHarness.Id) external returns uint256 envfree;
-    function fee(MorphoHarness.Id) external returns uint256 envfree;
+    function feeRecipient() external returns (address) envfree;
+    function supplyShares(MorphoHarness.Id, address) external returns (uint256) envfree;
+    function borrowShares(MorphoHarness.Id, address) external returns (uint256) envfree;
+    function virtualTotalSupplyAssets(MorphoHarness.Id) external returns (uint256) envfree;
+    function virtualTotalSupplyShares(MorphoHarness.Id) external returns (uint256) envfree;
+    function virtualTotalBorrowAssets(MorphoHarness.Id) external returns (uint256) envfree;
+    function virtualTotalBorrowShares(MorphoHarness.Id) external returns (uint256) envfree;
+    function lastUpdate(MorphoHarness.Id) external returns (uint256) envfree;
+    function fee(MorphoHarness.Id) external returns (uint256) envfree;
 
-    function Util.maxFee() external returns uint256 envfree;
-    function Util.libId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
-    function Util.libMulDivDown(uint256, uint256, uint256) external returns uint256 envfree;
+    function Util.maxFee() external returns (uint256) envfree;
+    function Util.libId(MorphoHarness.MarketParams) external returns (MorphoHarness.Id) envfree;
+    function Util.libMulDivDown(uint256, uint256, uint256) external returns (uint256) envfree;
 
-    function MathLib.wTaylorCompounded(uint256, uint256) internal returns uint256 => NONDET;
+    function MathLib.wTaylorCompounded(uint256, uint256) internal returns (uint256) => NONDET;
     function SafeTransferLib.safeTransfer(address token, address to, uint256 value) internal => NONDET;
     function SafeTransferLib.safeTransferFrom(address token, address from, address to, uint256 value) internal => NONDET;
     function _.onMorphoSupply(uint256 assets, bytes data) external => HAVOC_ECF;
@@ -40,6 +40,7 @@ function expectedSupplyAssets(MorphoHarness.Id id, address user) returns uint256
 // More details on the purpose of this rule in ExchangeRate.spec.
 rule repayAllResetsBorrowExchangeRate(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data) {
     MorphoHarness.Id id = Util.libId(marketParams);
+
     // Safe require because this invariant is checked in ConsistentState.spec
     require fee(id) <= Util.maxFee();
 
@@ -72,14 +73,19 @@ rule supplyWithdraw() {
 
     // Assume that interactions happen at the same block.
     require e1.block.timestamp == e2.block.timestamp;
+
     // Assume that the user starts without any supply position.
     require supplyShares(id, onBehalf) == 0;
+
     // Assume that the user is not the fee recipient, otherwise the gain can come from the fee.
     require onBehalf != feeRecipient();
-    // Safe require because timestamps cannot realistically be that large.
-    require e1.block.timestamp < 2^128;
 
-    uint256 supplyAssets; uint256 supplyShares; bytes data;
+    // Safe require because timestamps cannot realistically be that large.
+    require e1.block.timestamp < 2 ^ 128;
+
+    uint256 supplyAssets;
+    uint256 supplyShares;
+    bytes data;
     uint256 suppliedAssets;
     uint256 suppliedShares;
     suppliedAssets, suppliedShares = supply(e1, marketParams, supplyAssets, supplyShares, onBehalf, data);
@@ -88,7 +94,9 @@ rule supplyWithdraw() {
     assert suppliedAssets * (virtualTotalSupplyShares(id) - suppliedShares) >= suppliedShares * (virtualTotalSupplyAssets(id) - suppliedAssets);
     assert suppliedAssets * virtualTotalSupplyShares(id) >= suppliedShares * virtualTotalSupplyAssets(id);
 
-    uint256 withdrawAssets; uint256 withdrawShares; address receiver;
+    uint256 withdrawAssets;
+    uint256 withdrawShares;
+    address receiver;
     uint256 withdrawnAssets;
     withdrawnAssets, _ = withdraw(e2, marketParams, withdrawAssets, withdrawShares, onBehalf, receiver);
 
@@ -100,7 +108,7 @@ rule supplyExpectedAssetsLossBounded(env e, MorphoHarness.MarketParams marketPar
     MorphoHarness.Id id = Util.libId(marketParams);
 
     // Safe require because timestamps cannot realistically be that large.
-    require e.block.timestamp < 2^128;
+    require e.block.timestamp < 2 ^ 128;
 
     // Accrue interest up front so the price bound and expected assets are evaluated at supply time.
     accrueInterest(e, marketParams);
@@ -120,7 +128,7 @@ rule withdrawExpectedAssetsLossBounded(env e, MorphoHarness.MarketParams marketP
     MorphoHarness.Id id = Util.libId(marketParams);
 
     // Safe require because timestamps cannot realistically be that large.
-    require e.block.timestamp < 2^128;
+    require e.block.timestamp < 2 ^ 128;
 
     // Accrue interest up front so the price bound and expected assets are evaluated at withdraw time.
     accrueInterest(e, marketParams);
@@ -145,12 +153,16 @@ rule borrowRepay() {
 
     // Assume interactions happen at the same block.
     require e1.block.timestamp == e2.block.timestamp;
+
     // Assume that the user starts without any borrow position.
     require borrowShares(id, onBehalf) == 0;
-    // Safe require because timestamps cannot realistically be that large.
-    require e1.block.timestamp < 2^128;
 
-    uint256 borrowAssets; uint256 borrowShares; address receiver;
+    // Safe require because timestamps cannot realistically be that large.
+    require e1.block.timestamp < 2 ^ 128;
+
+    uint256 borrowAssets;
+    uint256 borrowShares;
+    address receiver;
     uint256 borrowedAssets;
     uint256 borrowedShares;
     borrowedAssets, borrowedShares = borrow(e2, marketParams, borrowAssets, borrowShares, onBehalf, receiver);

@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 methods {
-    function extSloads(bytes32[]) external returns bytes32[] => NONDET DELETE;
+    function extSloads(bytes32[]) external returns (bytes32[]) => NONDET DELETE;
 
     function Morpho._accrueInterest(Morpho.MarketParams memory, Morpho.Id) internal => accrueInterestSummary();
 
     // Check that there are no call to borrowRate before an interest accrual.
-    function _.borrowRate(Morpho.MarketParams, Morpho.Market) external => borrowRateSummary() expect uint256;
+    function _.borrowRate(Morpho.MarketParams, Morpho.Market) external => borrowRateSummary() expect(uint256);
 }
 
 persistent ghost bool accrued;
@@ -72,10 +72,7 @@ hook Sstore position[KEY Morpho.Id _][KEY address _].supplyShares uint256 _ {
     recordAccess();
 }
 
-definition accessesWithoutAccruingInterest(method f) returns bool =
-    f.selector == sig:createMarket(Morpho.MarketParams).selector ||
-    f.selector == sig:market(Morpho.Id).selector ||
-    f.selector == sig:position(Morpho.Id, address).selector;
+definition accessesWithoutAccruingInterest(method f) returns bool = f.selector == sig:createMarket(Morpho.MarketParams).selector || f.selector == sig:market(Morpho.Id).selector || f.selector == sig:position(Morpho.Id, address).selector;
 
 // Check that the functions filtered out of noAccessBeforeAccrueInterest access the tracked variables or the borrow rate without accruing interest.
 rule accessesWithoutAccruingInterestAccess(method f, env e, calldataarg data) filtered { f -> accessesWithoutAccruingInterest(f) } {

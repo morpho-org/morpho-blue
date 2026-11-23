@@ -33,27 +33,25 @@ function summaryWDivDown(uint256 x, uint256 y) returns uint256 {
     assert y > 0;
     assert x <= y;
     uint256 result;
-    require result <= 10^18;
+    require result <= 10 ^ 18;
     return result;
 }
 
 invariant rateAtTargetInRange(AdaptiveCurveIrmHarness.Id id)
-    rateAtTarget(id) == 0 ||
-    (rateAtTarget(id) >= minRateAtTarget() && rateAtTarget(id) <= maxRateAtTarget());
+    rateAtTarget(id) == 0 || (rateAtTarget(id) >= minRateAtTarget() && rateAtTarget(id) <= maxRateAtTarget());
 
 // This rule proves that borrowRateView never reverts when called with msg.value == 0.
-rule borrowRateViewNeverReverts(
-    env e,
-    AdaptiveCurveIrmHarness.MarketParams marketParams,
-    AdaptiveCurveIrmHarness.Market market
-) {
+rule borrowRateViewNeverReverts(env e, AdaptiveCurveIrmHarness.MarketParams marketParams, AdaptiveCurveIrmHarness.Market market) {
     requireInvariant rateAtTargetInRange(toId(marketParams));
+
     // morpho-blue proves rule noTimeTravel in ConsistentState.
     require market.lastUpdate <= e.block.timestamp;
+
     // morpho-blue proves invariant borrowLessThanSupply in ConsistentState.
     require market.totalBorrowAssets <= market.totalSupplyAssets;
+
     // Unrealistically high timestamp.
-    require e.block.timestamp < 2^128;
+    require e.block.timestamp < 2 ^ 128;
 
     // borrowRateView is not payable.
     require e.msg.value == 0;
@@ -64,21 +62,21 @@ rule borrowRateViewNeverReverts(
 }
 
 // This rule proves that borrowRate never reverts when called by MORPHO, with msg.value == 0.
-rule borrowRateNeverReverts(
-    env e,
-    AdaptiveCurveIrmHarness.MarketParams marketParams,
-    AdaptiveCurveIrmHarness.Market market
-) {
+rule borrowRateNeverReverts(env e, AdaptiveCurveIrmHarness.MarketParams marketParams, AdaptiveCurveIrmHarness.Market market) {
     requireInvariant rateAtTargetInRange(toId(marketParams));
+
     // morpho-blue proves rule noTimeTravel in ConsistentState.
     require market.lastUpdate <= e.block.timestamp;
+
     // morpho-blue proves invariant borrowLessThanSupply in ConsistentState.
     require market.totalBorrowAssets <= market.totalSupplyAssets;
+
     // Unrealistically high timestamp.
-    require e.block.timestamp < 2^128;
+    require e.block.timestamp < 2 ^ 128;
 
     // borrowRate rejects every caller other than MORPHO.
     require e.msg.sender == currentContract.MORPHO;
+
     // borrowRate is not payable.
     require e.msg.value == 0;
 
