@@ -20,4 +20,3 @@ Do not report:
 Allowed differences:
 - CI or foundry.toml settings where the difference is explained by a comment above, or that follow from what the repo contains (like no Certora, different solc versions, compiler settings, Makefile needs, etc.).
 - `certora/Makefile` layouts.
-- Increase fuzz for blue only for now.
