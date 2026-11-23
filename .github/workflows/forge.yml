@@ -56,9 +56,7 @@ jobs:
         with:
           version: nightly
       - name: Run forge build
-        run: forge build --sizes
-      - name: Check foundry.lock matches submodule pins
-        run: forge build --locked
+        run: forge build --sizes --locked
 
   test:
     permissions:
