@@ -16,7 +16,6 @@ import {IMorphoRepayCallback} from "../../../src/interfaces/IMorphoCallbacks.sol
 import {PreLiquidation} from "../../../src/periphery/pre-liquidation/PreLiquidation.sol";
 import {PreLiquidationFactory} from "../../../src/periphery/pre-liquidation/PreLiquidationFactory.sol";
 import "../../../src/interfaces/IMorpho.sol";
-import {ERC20} from "../../../lib/solmate/src/tokens/ERC20.sol";
 import {ErrorsLib} from "../../../src/periphery/pre-liquidation/libraries/ErrorsLib.sol";
 import {MarketParamsLib} from "../../../src/libraries/MarketParamsLib.sol";
 import {MathLib, WAD} from "../../../src/libraries/MathLib.sol";

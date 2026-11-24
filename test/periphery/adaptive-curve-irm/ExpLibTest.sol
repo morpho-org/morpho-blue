@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import {MathLib, WAD_INT} from "../../../src/periphery/adaptive-curve-irm/libraries/MathLib.sol";
 import {ExpLib} from "../../../src/periphery/adaptive-curve-irm/libraries/ExpLib.sol";
-import {wadExp} from "../../../lib/solmate/src/utils/SignedWadMath.sol";
+import {wadExp} from "../../helpers/SignedWadMath.sol";
 import {ConstantsLib} from "../../../src/periphery/adaptive-curve-irm/libraries/ConstantsLib.sol";
 import {MathLib as MorphoMathLib} from "../../../src/libraries/MathLib.sol";
 
