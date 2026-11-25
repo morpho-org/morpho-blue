@@ -55,9 +55,8 @@ jobs:
         uses: foundry-rs/foundry-toolchain@dba66c27052e63476d886f22216e119ba7e615bf # v1.9.2
         with:
           version: nightly
-      - run: forge build --sizes
-      - name: Check foundry.lock matches submodule pins
-        run: forge build --locked
+      - name: Run forge build
+        run: forge build --sizes --locked
 
   test:
     permissions:
@@ -72,7 +71,8 @@ jobs:
         uses: foundry-rs/foundry-toolchain@dba66c27052e63476d886f22216e119ba7e615bf # v1.9.2
         with:
           version: nightly
-      - run: forge test --deny warnings -vvv
+      - name: Run forge test
+        run: forge test --deny warnings -vvv
         env:
           FOUNDRY_FUZZ_SEED: 0x${{ github.sha }}
           FOUNDRY_FUZZ_MAX_TEST_REJECTS: 500000
