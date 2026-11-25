@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import {MathLib, WAD_INT} from "../../../src/periphery/adaptive-curve-irm/libraries/MathLib.sol";
 import {ExpLib} from "../../../src/periphery/adaptive-curve-irm/libraries/ExpLib.sol";
-import {wadExp} from "../../../lib/solmate/src/utils/SignedWadMath.sol";
+import {wadExp} from "../../helpers/SignedWadMath.sol";
 import {ConstantsLib} from "../../../src/periphery/adaptive-curve-irm/libraries/ConstantsLib.sol";
 import {MathLib as MorphoMathLib} from "../../../src/libraries/MathLib.sol";
 
@@ -16,47 +16,47 @@ contract ExpLibTest is Test {
     /// @dev ln(1e-9) truncated at 2 decimal places.
     int256 internal constant LN_GWEI_INT = -20.72 ether;
 
-    function testWExp(int256 x) public {
+    function testWExp(int256 x) public pure {
         // Bounded to have sub-1% relative error.
         x = bound(x, LN_GWEI_INT, ExpLib.WEXP_UPPER_BOUND);
 
         assertApproxEqRel(ExpLib.wExp(x), wadExp(x), 0.01 ether);
     }
 
-    function testWExpSmall(int256 x) public {
+    function testWExpSmall(int256 x) public pure {
         x = bound(x, ExpLib.LN_WEI_INT, LN_GWEI_INT);
 
         assertApproxEqAbs(ExpLib.wExp(x), 0, 1e10);
     }
 
-    function testWExpTooSmall(int256 x) public {
+    function testWExpTooSmall(int256 x) public pure {
         x = bound(x, type(int256).min, ExpLib.LN_WEI_INT);
 
         assertEq(ExpLib.wExp(x), 0);
     }
 
-    function testWExpTooLarge(int256 x) public {
+    function testWExpTooLarge(int256 x) public pure {
         x = bound(x, ExpLib.WEXP_UPPER_BOUND, type(int256).max);
 
         assertEq(ExpLib.wExp(x), ExpLib.WEXP_UPPER_VALUE);
     }
 
-    function testWExpDoesNotLeadToOverflow() public {
+    function testWExpDoesNotLeadToOverflow() public pure {
         assertGt(ExpLib.WEXP_UPPER_VALUE * 1e18, 0);
     }
 
-    function testWExpContinuousUpperBound() public {
+    function testWExpContinuousUpperBound() public pure {
         assertApproxEqRel(ExpLib.wExp(ExpLib.WEXP_UPPER_BOUND - 1), ExpLib.WEXP_UPPER_VALUE, 1e-10 ether);
         assertEq(_wExpUnbounded(ExpLib.WEXP_UPPER_BOUND), ExpLib.WEXP_UPPER_VALUE);
     }
 
-    function testWExpPositive(int256 x) public {
+    function testWExpPositive(int256 x) public pure {
         x = bound(x, 0, type(int256).max);
 
         assertGe(ExpLib.wExp(x), 1e18);
     }
 
-    function testWExpNegative(int256 x) public {
+    function testWExpNegative(int256 x) public pure {
         x = bound(x, type(int256).min, 0);
 
         assertLe(ExpLib.wExp(x), 1e18);

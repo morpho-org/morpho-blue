@@ -3,13 +3,13 @@
 using Util as Util;
 
 methods {
-    function extSloads(bytes32[]) external returns bytes32[] => NONDET DELETE;
+    function extSloads(bytes32[]) external returns (bytes32[]) => NONDET DELETE;
 
-    function Util.libMulDivUp(uint256, uint256, uint256) external returns uint256 envfree;
-    function Util.libMulDivDown(uint256, uint256, uint256) external returns uint256 envfree;
-    function Util.libId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
-    function Util.refId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
-    function Util.libMin(uint256 x, uint256 y) external returns uint256 envfree;
+    function Util.libMulDivUp(uint256, uint256, uint256) external returns (uint256) envfree;
+    function Util.libMulDivDown(uint256, uint256, uint256) external returns (uint256) envfree;
+    function Util.libId(MorphoHarness.MarketParams) external returns (MorphoHarness.Id) envfree;
+    function Util.refId(MorphoHarness.MarketParams) external returns (MorphoHarness.Id) envfree;
+    function Util.libMin(uint256 x, uint256 y) external returns (uint256) envfree;
 }
 
 // Check the summary of MathLib.mulDivUp required by ExchangeRate.spec

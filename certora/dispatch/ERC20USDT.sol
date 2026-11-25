@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+// forge-lint: disable-next-line(missing-inheritance) Certora test token, not deployed.
 contract ERC20USDT {
     address public owner;
     uint256 public totalSupply;
@@ -9,11 +10,6 @@ contract ERC20USDT {
 
     constructor() {
         owner = msg.sender;
-    }
-
-    modifier onlyOwner() {
-        require(msg.sender == owner);
-        _;
     }
 
     function _transfer(address _from, address _to, uint256 _amount) internal {
@@ -38,7 +34,8 @@ contract ERC20USDT {
         allowance[msg.sender][_spender] = _amount;
     }
 
-    function mint(address _receiver, uint256 _amount) public onlyOwner {
+    function mint(address _receiver, uint256 _amount) public {
+        require(msg.sender == owner);
         balanceOf[_receiver] += _amount;
         totalSupply += _amount;
     }

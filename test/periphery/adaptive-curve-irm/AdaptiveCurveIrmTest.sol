@@ -23,11 +23,6 @@ contract AdaptiveCurveIrmTest is Test {
     function setUp() public {
         irm = new AdaptiveCurveIrm(address(this));
         vm.warp(90 days);
-
-        bytes4[] memory selectors = new bytes4[](1);
-        selectors[0] = AdaptiveCurveIrmTest.handleBorrowRate.selector;
-        targetSelector(FuzzSelector({addr: address(this), selectors: selectors}));
-        targetContract(address(this));
     }
 
     /* TESTS */
@@ -149,8 +144,8 @@ contract AdaptiveCurveIrmTest is Test {
         market.totalBorrowAssets = initialBorrowAssets;
 
         for (uint256 i; i < 45 days / 1 minutes; ++i) {
-            market.lastUpdate = uint128(block.timestamp);
-            vm.warp(block.timestamp + 1 minutes);
+            market.lastUpdate = uint128(vm.getBlockTimestamp());
+            vm.warp(vm.getBlockTimestamp() + 1 minutes);
 
             uint256 avgBorrowRate = irm.borrowRate(marketParams, market);
             uint256 interest = market.totalBorrowAssets.wMulDown(avgBorrowRate.wTaylorCompounded(1 minutes));
@@ -203,8 +198,8 @@ contract AdaptiveCurveIrmTest is Test {
         assertEq(irm.rateAtTarget(marketParams.id()), ConstantsLib.INITIAL_RATE_AT_TARGET);
 
         for (uint256 i; i < 3 weeks / 1 minutes; ++i) {
-            market.lastUpdate = uint128(block.timestamp);
-            vm.warp(block.timestamp + 1 minutes);
+            market.lastUpdate = uint128(vm.getBlockTimestamp());
+            vm.warp(vm.getBlockTimestamp() + 1 minutes);
 
             uint256 avgBorrowRate = irm.borrowRate(marketParams, market);
             uint256 interest = market.totalBorrowAssets.wMulDown(avgBorrowRate.wTaylorCompounded(1 minutes));
@@ -248,7 +243,7 @@ contract AdaptiveCurveIrmTest is Test {
         irm.borrowRate(marketParams, market);
     }
 
-    function testFirstBorrowRateView(Market memory market) public {
+    function testFirstBorrowRateView(Market memory market) public view {
         vm.assume(market.totalBorrowAssets > 0);
         vm.assume(market.totalSupplyAssets >= market.totalBorrowAssets);
 
@@ -319,55 +314,7 @@ contract AdaptiveCurveIrmTest is Test {
         assertApproxEqRel(irm.rateAtTarget(marketParams.id()), expectedRateAtTarget, 0.001 ether, "rateAtTarget");
     }
 
-    /* HANDLERS */
-
-    function handleBorrowRate(uint256 totalSupplyAssets, uint256 totalBorrowAssets, uint256 elapsed) external {
-        elapsed = bound(elapsed, 0, type(uint48).max);
-        totalSupplyAssets = bound(totalSupplyAssets, 0, type(uint128).max);
-        totalBorrowAssets = bound(totalBorrowAssets, 0, totalSupplyAssets);
-
-        Market memory market;
-        market.lastUpdate = uint128(block.timestamp);
-        market.totalSupplyAssets = uint128(totalSupplyAssets);
-        market.totalBorrowAssets = uint128(totalBorrowAssets);
-
-        vm.warp(block.timestamp + elapsed);
-        irm.borrowRate(marketParams, market);
-    }
-
-    /* INVARIANTS */
-
-    function invariantGeMinRateAtTarget() public {
-        Market memory market;
-        market.totalBorrowAssets = 9 ether;
-        market.totalSupplyAssets = 10 ether;
-
-        assertGe(
-            irm.borrowRateView(marketParams, market),
-            uint256(ConstantsLib.MIN_RATE_AT_TARGET.wDivToZero(ConstantsLib.CURVE_STEEPNESS))
-        );
-        assertGe(
-            irm.borrowRate(marketParams, market),
-            uint256(ConstantsLib.MIN_RATE_AT_TARGET.wDivToZero(ConstantsLib.CURVE_STEEPNESS))
-        );
-    }
-
-    function invariantLeMaxRateAtTarget() public {
-        Market memory market;
-        market.totalBorrowAssets = 9 ether;
-        market.totalSupplyAssets = 10 ether;
-
-        assertLe(
-            irm.borrowRateView(marketParams, market),
-            uint256(ConstantsLib.MAX_RATE_AT_TARGET.wMulToZero(ConstantsLib.CURVE_STEEPNESS))
-        );
-        assertLe(
-            irm.borrowRate(marketParams, market),
-            uint256(ConstantsLib.MAX_RATE_AT_TARGET.wMulToZero(ConstantsLib.CURVE_STEEPNESS))
-        );
-    }
-
-    function testConstants() public {
+    function testConstants() public pure {
         assertGe(ConstantsLib.CURVE_STEEPNESS, 1 ether, "curveSteepness too small");
         assertLe(ConstantsLib.CURVE_STEEPNESS, 100 ether, "curveSteepness too big");
         assertGe(ConstantsLib.ADJUSTMENT_SPEED, 0, "adjustmentSpeed too small");

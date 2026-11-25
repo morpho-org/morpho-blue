@@ -1,18 +1,19 @@
 // SPDX-License-Identifier: MIT
 methods {
-    function extSloads(bytes32[]) external returns bytes32[] => NONDET DELETE;
+    function extSloads(bytes32[]) external returns (bytes32[]) => NONDET DELETE;
 
-    function Util.maxFee() external returns uint256 envfree;
+    function Util.maxFee() external returns (uint256) envfree;
 
-    function MathLib.mulDivDown(uint256 a, uint256 b, uint256 c) internal returns uint256 => ghostMulDivDown(a, b, c);
-    function MathLib.mulDivUp(uint256 a, uint256 b, uint256 c) internal returns uint256 => ghostMulDivUp(a, b, c);
-    function MathLib.wTaylorCompounded(uint256 a, uint256 b) internal returns uint256 => ghostTaylorCompounded(a, b);
+    function MathLib.mulDivDown(uint256 a, uint256 b, uint256 c) internal returns (uint256) => ghostMulDivDown(a, b, c);
+    function MathLib.mulDivUp(uint256 a, uint256 b, uint256 c) internal returns (uint256) => ghostMulDivUp(a, b, c);
+    function MathLib.wTaylorCompounded(uint256 a, uint256 b) internal returns (uint256) => ghostTaylorCompounded(a, b);
+
     // We assume here that all external functions will not access storage, since we cannot show commutativity otherwise.
     // We also need to assume that the price and borrow rate return always the same value (and do not depend on msg.origin), so we use ghost functions for them.
-    function _.borrowRate(MorphoHarness.MarketParams marketParams, MorphoHarness.Market market) external with (env e) => ghostBorrowRate(marketParams.irm, e.block.timestamp) expect uint256;
-    function _.price() external with (env e) => ghostOraclePrice(e.block.timestamp) expect uint256;
-    function _.transfer(address to, uint256 amount) external => ghostTransfer(to, amount) expect bool;
-    function _.transferFrom(address from, address to, uint256 amount) external => ghostTransferFrom(from, to, amount) expect bool;
+    function _.borrowRate(MorphoHarness.MarketParams marketParams, MorphoHarness.Market market) external with(env e) => ghostBorrowRate(marketParams.irm, e.block.timestamp) expect(uint256);
+    function _.price() external with(env e) => ghostOraclePrice(e.block.timestamp) expect(uint256);
+    function _.transfer(address to, uint256 amount) external => ghostTransfer(to, amount) expect(bool);
+    function _.transferFrom(address from, address to, uint256 amount) external => ghostTransferFrom(from, to, amount) expect(bool);
     function _.onMorphoLiquidate(uint256, bytes) external => NONDET;
     function _.onMorphoRepay(uint256, bytes) external => NONDET;
     function _.onMorphoSupply(uint256, bytes) external => NONDET;
@@ -21,19 +22,24 @@ methods {
 }
 
 ghost ghostMulDivUp(uint256, uint256, uint256) returns uint256;
-ghost ghostMulDivDown(uint256, uint256, uint256) returns uint256;
-ghost ghostTaylorCompounded(uint256, uint256) returns uint256;
-ghost ghostBorrowRate(address, uint256) returns uint256;
-ghost ghostOraclePrice(uint256) returns uint256;
-ghost ghostTransfer(address, uint256) returns bool;
-ghost ghostTransferFrom(address, address, uint256) returns bool;
 
+ghost ghostMulDivDown(uint256, uint256, uint256) returns uint256;
+
+ghost ghostTaylorCompounded(uint256, uint256) returns uint256;
+
+ghost ghostBorrowRate(address, uint256) returns uint256;
+
+ghost ghostOraclePrice(uint256) returns uint256;
+
+ghost ghostTransfer(address, uint256) returns bool;
+
+ghost ghostTransferFrom(address, address, uint256) returns bool;
 
 // Check that calling accrueInterest first has no effect.
 // This is because supply should call accrueInterest itself.
 rule supplyAccruesInterest(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data) {
     // Safe require because timestamps cannot realistically be that large.
-    require e.block.timestamp < 2^128;
+    require e.block.timestamp < 2 ^ 128;
 
     storage init = lastStorage;
 
@@ -51,7 +57,7 @@ rule supplyAccruesInterest(env e, MorphoHarness.MarketParams marketParams, uint2
 // This is because withdraw should call accrueInterest itself.
 rule withdrawAccruesInterest(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, address receiver) {
     // Safe require because timestamps cannot realistically be that large.
-    require e.block.timestamp < 2^128;
+    require e.block.timestamp < 2 ^ 128;
 
     storage init = lastStorage;
 
@@ -69,7 +75,7 @@ rule withdrawAccruesInterest(env e, MorphoHarness.MarketParams marketParams, uin
 // This is because borrow should call accrueInterest itself.
 rule borrowAccruesInterest(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, address receiver) {
     // Safe require because timestamps cannot realistically be that large.
-    require e.block.timestamp < 2^128;
+    require e.block.timestamp < 2 ^ 128;
 
     storage init = lastStorage;
 
@@ -87,7 +93,7 @@ rule borrowAccruesInterest(env e, MorphoHarness.MarketParams marketParams, uint2
 // This is because repay should call accrueInterest itself.
 rule repayAccruesInterest(env e, MorphoHarness.MarketParams marketParams, uint256 assets, uint256 shares, address onBehalf, bytes data) {
     // Safe require because timestamps cannot realistically be that large.
-    require e.block.timestamp < 2^128;
+    require e.block.timestamp < 2 ^ 128;
 
     storage init = lastStorage;
 
@@ -106,19 +112,16 @@ rule repayAccruesInterest(env e, MorphoHarness.MarketParams marketParams, uint25
 // (a) we cannot check the return value and for storage commutativity is trivial, and
 // (b) most view functions, e.g. totalSupplyShares, are not commutative, i.e. they return a different value if called before accrueInterest is called.
 // We also exclude setFeeRecipient, as it is known to be not commutative.
-rule accrueInterestCommutesExceptForSetFeeRecipient(method f, calldataarg args)
-filtered {
-    f -> !f.isView && f.selector != sig:setFeeRecipient(address).selector
-}
-{
+rule accrueInterestCommutesExceptForSetFeeRecipient(method f, calldataarg args) filtered { f -> !f.isView && f.selector != sig:setFeeRecipient(address).selector } {
     env e1;
     env e2;
     MorphoHarness.MarketParams marketParams;
 
     // Assume interactions to happen at the same block.
     require e1.block.timestamp == e2.block.timestamp;
+
     // Safe require because timestamps cannot realistically be that large.
-    require e1.block.timestamp < 2^128;
+    require e1.block.timestamp < 2 ^ 128;
 
     storage init = lastStorage;
 
@@ -126,7 +129,6 @@ filtered {
     f@withrevert(e2, args);
     bool revert1 = lastReverted;
     storage store1 = lastStorage;
-
 
     f@withrevert(e2, args) at init;
     bool revert2 = lastReverted;

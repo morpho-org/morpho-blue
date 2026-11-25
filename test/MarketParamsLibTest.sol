@@ -8,7 +8,7 @@ import {MarketParamsLib, MarketParams, Id} from "../src/libraries/MarketParamsLi
 contract MarketParamsLibTest is Test {
     using MarketParamsLib for MarketParams;
 
-    function testMarketParamsId(MarketParams memory marketParamsFuzz) public {
+    function testMarketParamsId(MarketParams memory marketParamsFuzz) public pure {
         assertEq(Id.unwrap(marketParamsFuzz.id()), keccak256(abi.encode(marketParamsFuzz)));
     }
 }

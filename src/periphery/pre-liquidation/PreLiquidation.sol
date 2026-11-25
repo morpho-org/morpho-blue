@@ -9,10 +9,10 @@ import {IOracle} from "../../interfaces/IOracle.sol";
 
 import {ORACLE_PRICE_SCALE} from "../../libraries/ConstantsLib.sol";
 import {SharesMathLib} from "../../libraries/SharesMathLib.sol";
-import {SafeTransferLib} from "../../../lib/solmate/src/utils/SafeTransferLib.sol";
+import {SafeTransferLib} from "./libraries/SafeTransferLib.sol";
 import {WAD, MathLib} from "../../libraries/MathLib.sol";
 import {UtilsLib} from "../../libraries/UtilsLib.sol";
-import {ERC20} from "../../../lib/solmate/src/tokens/ERC20.sol";
+import {IERC20} from "../../interfaces/IERC20.sol";
 import {EventsLib} from "./libraries/EventsLib.sol";
 import {ErrorsLib} from "./libraries/ErrorsLib.sol";
 
@@ -23,7 +23,7 @@ import {ErrorsLib} from "./libraries/ErrorsLib.sol";
 contract PreLiquidation is IPreLiquidation, IMorphoRepayCallback {
     using SharesMathLib for uint256;
     using MathLib for uint256;
-    using SafeTransferLib for ERC20;
+    using SafeTransferLib for IERC20;
 
     /* IMMUTABLE */
 
@@ -105,7 +105,7 @@ contract PreLiquidation is IPreLiquidation, IMorphoRepayCallback {
         PRE_LIF_2 = _preLiquidationParams.preLIF2;
         PRE_LIQUIDATION_ORACLE = _preLiquidationParams.preLiquidationOracle;
 
-        ERC20(_marketParams.loanToken).safeApprove(morpho, type(uint256).max);
+        IERC20(_marketParams.loanToken).safeApprove(morpho, type(uint256).max);
     }
 
     /* PRE-LIQUIDATION */
@@ -190,6 +190,6 @@ contract PreLiquidation is IPreLiquidation, IMorphoRepayCallback {
             IPreLiquidationCallback(liquidator).onPreLiquidate(repaidAssets, data);
         }
 
-        ERC20(LOAN_TOKEN).safeTransferFrom(liquidator, address(this), repaidAssets);
+        IERC20(LOAN_TOKEN).safeTransferFrom(liquidator, address(this), repaidAssets);
     }
 }

@@ -3,23 +3,23 @@
 using Util as Util;
 
 methods {
-    function extSloads(bytes32[]) external returns bytes32[] => NONDET DELETE;
+    function extSloads(bytes32[]) external returns (bytes32[]) => NONDET DELETE;
 
-    function totalBorrowAssets(MorphoHarness.Id) external returns uint256 envfree;
-    function totalBorrowShares(MorphoHarness.Id) external returns uint256 envfree;
-    function virtualTotalBorrowAssets(MorphoHarness.Id) external returns uint256 envfree;
-    function virtualTotalBorrowShares(MorphoHarness.Id) external returns uint256 envfree;
-    function lastUpdate(MorphoHarness.Id) external returns uint256 envfree;
-    function borrowShares(MorphoHarness.Id, address) external returns uint256 envfree;
-    function collateral(MorphoHarness.Id, address) external returns uint256 envfree;
-    function isAuthorized(address, address user) external returns bool envfree;
-    function lastUpdate(MorphoHarness.Id) external returns uint256 envfree;
+    function totalBorrowAssets(MorphoHarness.Id) external returns (uint256) envfree;
+    function totalBorrowShares(MorphoHarness.Id) external returns (uint256) envfree;
+    function virtualTotalBorrowAssets(MorphoHarness.Id) external returns (uint256) envfree;
+    function virtualTotalBorrowShares(MorphoHarness.Id) external returns (uint256) envfree;
+    function lastUpdate(MorphoHarness.Id) external returns (uint256) envfree;
+    function borrowShares(MorphoHarness.Id, address) external returns (uint256) envfree;
+    function collateral(MorphoHarness.Id, address) external returns (uint256) envfree;
+    function isAuthorized(address, address user) external returns (bool) envfree;
+    function lastUpdate(MorphoHarness.Id) external returns (uint256) envfree;
 
-    function Util.libId(MorphoHarness.MarketParams) external returns MorphoHarness.Id envfree;
-    function isHealthy(MorphoHarness.MarketParams, address user) external returns bool envfree;
+    function Util.libId(MorphoHarness.MarketParams) external returns (MorphoHarness.Id) envfree;
+    function isHealthy(MorphoHarness.MarketParams, address user) external returns (bool) envfree;
 
     function _.price() external => CONSTANT;
-    function UtilsLib.min(uint256 a, uint256 b) internal returns uint256 => summaryMin(a, b);
+    function UtilsLib.min(uint256 a, uint256 b) internal returns (uint256) => summaryMin(a, b);
 }
 
 function summaryMin(uint256 a, uint256 b) returns uint256 {
@@ -27,9 +27,7 @@ function summaryMin(uint256 a, uint256 b) returns uint256 {
 }
 
 // Check that users cannot lose collateral by unauthorized parties except in case of an unhealthy position.
-rule healthyUserCannotLoseCollateral(env e, method f, calldataarg data)
-filtered { f -> !f.isView }
-{
+rule healthyUserCannotLoseCollateral(env e, method f, calldataarg data) filtered { f -> !f.isView } {
     MorphoHarness.MarketParams marketParams;
     MorphoHarness.Id id = Util.libId(marketParams);
     address user;
@@ -37,8 +35,10 @@ filtered { f -> !f.isView }
     // Assume that the e.msg.sender is not authorized.
     require !isAuthorized(user, e.msg.sender);
     require user != e.msg.sender;
+
     // Assumption to ensure that no interest is accumulated.
     require lastUpdate(id) == e.block.timestamp;
+
     // Assume that the user is healthy.
     require isHealthy(marketParams, user);
 
@@ -66,6 +66,7 @@ rule liquidateEquivalentInputDebtAndInputCollateral(env e, MorphoHarness.MarketP
 
     uint256 repaidAssets1;
     _, repaidAssets1 = liquidate(e, marketParams, borrower, seizedAssets, 0, data);
+
     // Omit the bad debt realization case.
     require collateral(id, borrower) != 0;
     uint256 sharesAfter = borrowShares(id, borrower);
