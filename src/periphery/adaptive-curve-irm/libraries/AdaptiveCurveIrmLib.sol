@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity >=0.8.0;
 
 import {Id, Market, IMorpho} from "../../../interfaces/IMorpho.sol";
 import {IAdaptiveCurveIrm} from "../interfaces/IAdaptiveCurveIrm.sol";

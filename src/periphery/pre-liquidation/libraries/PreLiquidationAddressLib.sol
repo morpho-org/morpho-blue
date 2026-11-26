@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity >=0.8.0;
 
 import {PreLiquidation} from "../PreLiquidation.sol";
 import {PreLiquidationParams} from "../interfaces/IPreLiquidation.sol";

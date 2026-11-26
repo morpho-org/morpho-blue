@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity >=0.8.0;
 
 library ArrayLib {
     function removeAll(address[] memory inputs, address removed) internal pure returns (address[] memory result) {
